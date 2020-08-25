@@ -1,0 +1,21 @@
+ Volume in drive R is Data
+ Volume Serial Number is 6E7B-D8B7
+
+ Directory of R:\work\FORTE\FPGA\fabric
+
+20/05/2019  00:26            11,071 another.csv
+20/05/2019  18:08            11,071 CLB_switch_matrix.csv
+20/05/2019  17:59            18,439 DEBUG_IO_switch_matrix.csv
+20/05/2019  18:08               352 E_term_switch_matrix.csv
+07/05/2019  22:03             1,918 fabric - Copy (2).csv
+07/05/2019  22:01             1,918 fabric - Copy.csv
+12/05/2019  21:41             2,753 fabric.csv
+20/05/2019  18:08             9,138 IO_switch_matrix.csv
+20/05/2019  18:08               253 N_term_IO_switch_matrix.csv
+20/05/2019  18:08               304 N_term_switch_matrix.csv
+20/05/2019  18:08               249 S_term_IO_switch_matrix.csv
+20/05/2019  18:08               302 S_term_switch_matrix.csv
+20/05/2019  00:10            11,071 tst.csv
+20/05/2019  18:08               348 W_term_switch_matrix.csv
+              14 File(s)         69,187 bytes
+               0 Dir(s)  44,842,659,840 bytes free

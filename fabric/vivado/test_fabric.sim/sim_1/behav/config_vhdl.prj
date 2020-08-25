@@ -1,0 +1,26 @@
+# compile vhdl design source files
+vhdl xil_defaultlib  "../../../../test.vhd"
+vhdl xil_defaultlib  "../../../../CLB_switch_matrix.vhdl"
+vhdl xil_defaultlib  "../../../../clb_slice_4xLUT4.vhdl"
+vhdl xil_defaultlib  "../../../../CLB_tile.vhdl"
+vhdl xil_defaultlib  "../../../../IO_4_bidirectional.vhdl"
+vhdl xil_defaultlib  "../../../../IO_switch_matrix.vhdl"
+vhdl xil_defaultlib  "../../../../IO_tile.vhdl"
+vhdl xil_defaultlib  "../../../../N_term_tile.vhdl"
+vhdl xil_defaultlib  "../../../../E_term_switch_matrix.vhdl"
+vhdl xil_defaultlib  "../../../../S_term_tile.vhdl"
+vhdl xil_defaultlib  "../../../../W_term_tile.vhdl"
+vhdl xil_defaultlib  "../../../../E_term_tile.vhdl"
+vhdl xil_defaultlib  "../../../../S_term_switch_matrix.vhdl"
+vhdl xil_defaultlib  "../../../../N_term_switch_matrix.vhdl"
+vhdl xil_defaultlib  "../../../../W_term_switch_matrix.vhdl"
+vhdl xil_defaultlib  "../../../../fabric.vhdl"
+vhdl xil_defaultlib  "../../../../S_term_IO_tile.vhdl"
+vhdl xil_defaultlib  "../../../../N_term_IO_tile.vhdl"
+vhdl xil_defaultlib  "../../../../S_term_IO_switch_matrix.vhdl"
+vhdl xil_defaultlib  "../../../../N_term_IO_switch_matrix.vhdl"
+vhdl xil_defaultlib  "../../../../clb_slice_2xLUT4.vhdl"
+vhdl xil_defaultlib  "../../../test_fabric.srcs/sim_1/new/config.vhd"
+
+# Do not sort compile order
+nosort

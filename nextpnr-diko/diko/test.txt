@@ -1,0 +1,597 @@
+arch.cc:68:        if (type == id_LUT4 || type == id_IOBUF)
+arch.cc:326:    if (bel_type == id_LUT4){
+arch.cc:584:    if (cell->type == id_LUT4) {
+arch.cc:610:    if (cell->type == id_LUT4) {
+arch.cc:666:    if (cell->type == id_LUT4) {
+arch.cc:714:    if (cell->type == id_LUT4) {
+blinky.json:14480:    "LUT4": {
+blinky.json:21272:          "type": "LUT4",
+blinky.json:21296:          "type": "LUT4",
+blinky.json:21320:          "type": "LUT4",
+blinky.json:21344:          "type": "LUT4",
+blinky.json:21368:          "type": "LUT4",
+blinky.json:21655:          "type": "LUT4",
+blinky.json:21679:          "type": "LUT4",
+blinky.json:21703:          "type": "LUT4",
+blinky.json:21727:          "type": "LUT4",
+blinky.json:21900:          "type": "LUT4",
+blinky.json:21924:          "type": "LUT4",
+blinky.json:21948:          "type": "LUT4",
+blinky.json:21972:          "type": "LUT4",
+blinky.json:21996:          "type": "LUT4",
+blinky.json:22125:          "type": "LUT4",
+blinky.json:22149:          "type": "LUT4",
+blinky.json:22173:          "type": "LUT4",
+blinky.json:22218:          "type": "LUT4",
+blinky.json:22242:          "type": "LUT4",
+blinky.json:22266:          "type": "LUT4",
+blinky.json:22290:          "type": "LUT4",
+blinky.json:22397:          "type": "LUT4",
+blinky.json:22421:          "type": "LUT4",
+blinky.json:22445:          "type": "LUT4",
+blinky.json:22469:          "type": "LUT4",
+blinky.json:22578:          "type": "LUT4",
+blinky.json:22602:          "type": "LUT4",
+blinky.json:22626:          "type": "LUT4",
+blinky.json:22671:          "type": "LUT4",
+blinky.json:22695:          "type": "LUT4",
+blinky.json:22719:          "type": "LUT4",
+blinky.json:22743:          "type": "LUT4",
+blinky.json:22850:          "type": "LUT4",
+blinky.json:22874:          "type": "LUT4",
+blinky.json:22898:          "type": "LUT4",
+blinky.json:22922:          "type": "LUT4",
+blinky.json:23031:          "type": "LUT4",
+blinky.json:23055:          "type": "LUT4",
+blinky.json:23079:          "type": "LUT4",
+blinky.json:23124:          "type": "LUT4",
+blinky.json:23148:          "type": "LUT4",
+blinky.json:23172:          "type": "LUT4",
+blinky.json:23196:          "type": "LUT4",
+blinky.json:23303:          "type": "LUT4",
+blinky.json:23327:          "type": "LUT4",
+blinky.json:23351:          "type": "LUT4",
+blinky.json:23375:          "type": "LUT4",
+cells.cc:46:        new_cell->type = id_LUT4;
+bel.txt:19:X3Y8,X3,Y8,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:20:X3Y8,X3,Y8,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:21:X3Y8,X3,Y8,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:22:X3Y8,X3,Y8,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:23:X3Y8,X3,Y8,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:24:X3Y8,X3,Y8,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:25:X3Y8,X3,Y8,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:26:X3Y8,X3,Y8,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:29:X4Y8,X4,Y8,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:30:X4Y8,X4,Y8,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:31:X4Y8,X4,Y8,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:32:X4Y8,X4,Y8,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:33:X4Y8,X4,Y8,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:34:X4Y8,X4,Y8,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:35:X4Y8,X4,Y8,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:36:X4Y8,X4,Y8,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:39:X5Y8,X5,Y8,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:40:X5Y8,X5,Y8,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:41:X5Y8,X5,Y8,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:42:X5Y8,X5,Y8,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:43:X5Y8,X5,Y8,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:44:X5Y8,X5,Y8,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:45:X5Y8,X5,Y8,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:46:X5Y8,X5,Y8,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:49:X6Y8,X6,Y8,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:50:X6Y8,X6,Y8,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:51:X6Y8,X6,Y8,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:52:X6Y8,X6,Y8,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:53:X6Y8,X6,Y8,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:54:X6Y8,X6,Y8,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:55:X6Y8,X6,Y8,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:56:X6Y8,X6,Y8,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:59:X7Y8,X7,Y8,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:60:X7Y8,X7,Y8,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:61:X7Y8,X7,Y8,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:62:X7Y8,X7,Y8,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:63:X7Y8,X7,Y8,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:64:X7Y8,X7,Y8,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:65:X7Y8,X7,Y8,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:66:X7Y8,X7,Y8,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:69:X8Y8,X8,Y8,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:70:X8Y8,X8,Y8,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:71:X8Y8,X8,Y8,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:72:X8Y8,X8,Y8,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:73:X8Y8,X8,Y8,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:74:X8Y8,X8,Y8,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:75:X8Y8,X8,Y8,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:76:X8Y8,X8,Y8,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:92:X3Y7,X3,Y7,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:93:X3Y7,X3,Y7,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:94:X3Y7,X3,Y7,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:95:X3Y7,X3,Y7,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:96:X3Y7,X3,Y7,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:97:X3Y7,X3,Y7,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:98:X3Y7,X3,Y7,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:99:X3Y7,X3,Y7,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:102:X4Y7,X4,Y7,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:103:X4Y7,X4,Y7,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:104:X4Y7,X4,Y7,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:105:X4Y7,X4,Y7,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:106:X4Y7,X4,Y7,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:107:X4Y7,X4,Y7,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:108:X4Y7,X4,Y7,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:109:X4Y7,X4,Y7,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:112:X5Y7,X5,Y7,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:113:X5Y7,X5,Y7,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:114:X5Y7,X5,Y7,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:115:X5Y7,X5,Y7,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:116:X5Y7,X5,Y7,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:117:X5Y7,X5,Y7,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:118:X5Y7,X5,Y7,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:119:X5Y7,X5,Y7,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:122:X6Y7,X6,Y7,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:123:X6Y7,X6,Y7,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:124:X6Y7,X6,Y7,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:125:X6Y7,X6,Y7,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:126:X6Y7,X6,Y7,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:127:X6Y7,X6,Y7,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:128:X6Y7,X6,Y7,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:129:X6Y7,X6,Y7,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:132:X7Y7,X7,Y7,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:133:X7Y7,X7,Y7,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:134:X7Y7,X7,Y7,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:135:X7Y7,X7,Y7,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:136:X7Y7,X7,Y7,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:137:X7Y7,X7,Y7,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:138:X7Y7,X7,Y7,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:139:X7Y7,X7,Y7,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:142:X8Y7,X8,Y7,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:143:X8Y7,X8,Y7,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:144:X8Y7,X8,Y7,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:145:X8Y7,X8,Y7,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:146:X8Y7,X8,Y7,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:147:X8Y7,X8,Y7,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:148:X8Y7,X8,Y7,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:149:X8Y7,X8,Y7,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:164:X3Y6,X3,Y6,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:165:X3Y6,X3,Y6,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:166:X3Y6,X3,Y6,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:167:X3Y6,X3,Y6,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:168:X3Y6,X3,Y6,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:169:X3Y6,X3,Y6,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:170:X3Y6,X3,Y6,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:171:X3Y6,X3,Y6,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:174:X4Y6,X4,Y6,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:175:X4Y6,X4,Y6,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:176:X4Y6,X4,Y6,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:177:X4Y6,X4,Y6,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:178:X4Y6,X4,Y6,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:179:X4Y6,X4,Y6,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:180:X4Y6,X4,Y6,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:181:X4Y6,X4,Y6,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:184:X5Y6,X5,Y6,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:185:X5Y6,X5,Y6,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:186:X5Y6,X5,Y6,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:187:X5Y6,X5,Y6,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:188:X5Y6,X5,Y6,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:189:X5Y6,X5,Y6,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:190:X5Y6,X5,Y6,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:191:X5Y6,X5,Y6,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:194:X6Y6,X6,Y6,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:195:X6Y6,X6,Y6,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:196:X6Y6,X6,Y6,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:197:X6Y6,X6,Y6,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:198:X6Y6,X6,Y6,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:199:X6Y6,X6,Y6,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:200:X6Y6,X6,Y6,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:201:X6Y6,X6,Y6,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:204:X7Y6,X7,Y6,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:205:X7Y6,X7,Y6,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:206:X7Y6,X7,Y6,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:207:X7Y6,X7,Y6,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:208:X7Y6,X7,Y6,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:209:X7Y6,X7,Y6,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:210:X7Y6,X7,Y6,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:211:X7Y6,X7,Y6,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:214:X8Y6,X8,Y6,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:215:X8Y6,X8,Y6,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:216:X8Y6,X8,Y6,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:217:X8Y6,X8,Y6,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:218:X8Y6,X8,Y6,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:219:X8Y6,X8,Y6,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:220:X8Y6,X8,Y6,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:221:X8Y6,X8,Y6,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:237:X3Y5,X3,Y5,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:238:X3Y5,X3,Y5,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:239:X3Y5,X3,Y5,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:240:X3Y5,X3,Y5,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:241:X3Y5,X3,Y5,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:242:X3Y5,X3,Y5,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:243:X3Y5,X3,Y5,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:244:X3Y5,X3,Y5,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:247:X4Y5,X4,Y5,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:248:X4Y5,X4,Y5,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:249:X4Y5,X4,Y5,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:250:X4Y5,X4,Y5,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:251:X4Y5,X4,Y5,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:252:X4Y5,X4,Y5,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:253:X4Y5,X4,Y5,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:254:X4Y5,X4,Y5,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:257:X5Y5,X5,Y5,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:258:X5Y5,X5,Y5,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:259:X5Y5,X5,Y5,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:260:X5Y5,X5,Y5,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:261:X5Y5,X5,Y5,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:262:X5Y5,X5,Y5,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:263:X5Y5,X5,Y5,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:264:X5Y5,X5,Y5,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:267:X6Y5,X6,Y5,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:268:X6Y5,X6,Y5,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:269:X6Y5,X6,Y5,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:270:X6Y5,X6,Y5,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:271:X6Y5,X6,Y5,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:272:X6Y5,X6,Y5,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:273:X6Y5,X6,Y5,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:274:X6Y5,X6,Y5,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:277:X7Y5,X7,Y5,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:278:X7Y5,X7,Y5,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:279:X7Y5,X7,Y5,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:280:X7Y5,X7,Y5,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:281:X7Y5,X7,Y5,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:282:X7Y5,X7,Y5,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:283:X7Y5,X7,Y5,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:284:X7Y5,X7,Y5,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:287:X8Y5,X8,Y5,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:288:X8Y5,X8,Y5,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:289:X8Y5,X8,Y5,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:290:X8Y5,X8,Y5,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:291:X8Y5,X8,Y5,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:292:X8Y5,X8,Y5,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:293:X8Y5,X8,Y5,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:294:X8Y5,X8,Y5,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:309:X3Y4,X3,Y4,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:310:X3Y4,X3,Y4,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:311:X3Y4,X3,Y4,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:312:X3Y4,X3,Y4,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:313:X3Y4,X3,Y4,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:314:X3Y4,X3,Y4,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:315:X3Y4,X3,Y4,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:316:X3Y4,X3,Y4,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:319:X4Y4,X4,Y4,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:320:X4Y4,X4,Y4,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:321:X4Y4,X4,Y4,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:322:X4Y4,X4,Y4,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:323:X4Y4,X4,Y4,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:324:X4Y4,X4,Y4,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:325:X4Y4,X4,Y4,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:326:X4Y4,X4,Y4,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:329:X5Y4,X5,Y4,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:330:X5Y4,X5,Y4,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:331:X5Y4,X5,Y4,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:332:X5Y4,X5,Y4,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:333:X5Y4,X5,Y4,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:334:X5Y4,X5,Y4,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:335:X5Y4,X5,Y4,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:336:X5Y4,X5,Y4,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:339:X6Y4,X6,Y4,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:340:X6Y4,X6,Y4,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:341:X6Y4,X6,Y4,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:342:X6Y4,X6,Y4,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:343:X6Y4,X6,Y4,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:344:X6Y4,X6,Y4,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:345:X6Y4,X6,Y4,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:346:X6Y4,X6,Y4,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:349:X7Y4,X7,Y4,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:350:X7Y4,X7,Y4,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:351:X7Y4,X7,Y4,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:352:X7Y4,X7,Y4,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:353:X7Y4,X7,Y4,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:354:X7Y4,X7,Y4,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:355:X7Y4,X7,Y4,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:356:X7Y4,X7,Y4,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:359:X8Y4,X8,Y4,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:360:X8Y4,X8,Y4,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:361:X8Y4,X8,Y4,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:362:X8Y4,X8,Y4,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:363:X8Y4,X8,Y4,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:364:X8Y4,X8,Y4,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:365:X8Y4,X8,Y4,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:366:X8Y4,X8,Y4,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:382:X3Y3,X3,Y3,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:383:X3Y3,X3,Y3,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:384:X3Y3,X3,Y3,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:385:X3Y3,X3,Y3,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:386:X3Y3,X3,Y3,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:387:X3Y3,X3,Y3,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:388:X3Y3,X3,Y3,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:389:X3Y3,X3,Y3,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:392:X4Y3,X4,Y3,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:393:X4Y3,X4,Y3,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:394:X4Y3,X4,Y3,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:395:X4Y3,X4,Y3,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:396:X4Y3,X4,Y3,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:397:X4Y3,X4,Y3,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:398:X4Y3,X4,Y3,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:399:X4Y3,X4,Y3,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:402:X5Y3,X5,Y3,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:403:X5Y3,X5,Y3,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:404:X5Y3,X5,Y3,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:405:X5Y3,X5,Y3,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:406:X5Y3,X5,Y3,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:407:X5Y3,X5,Y3,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:408:X5Y3,X5,Y3,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:409:X5Y3,X5,Y3,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:412:X6Y3,X6,Y3,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:413:X6Y3,X6,Y3,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:414:X6Y3,X6,Y3,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:415:X6Y3,X6,Y3,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:416:X6Y3,X6,Y3,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:417:X6Y3,X6,Y3,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:418:X6Y3,X6,Y3,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:419:X6Y3,X6,Y3,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:422:X7Y3,X7,Y3,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:423:X7Y3,X7,Y3,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:424:X7Y3,X7,Y3,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:425:X7Y3,X7,Y3,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:426:X7Y3,X7,Y3,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:427:X7Y3,X7,Y3,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:428:X7Y3,X7,Y3,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:429:X7Y3,X7,Y3,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:432:X8Y3,X8,Y3,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:433:X8Y3,X8,Y3,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:434:X8Y3,X8,Y3,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:435:X8Y3,X8,Y3,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:436:X8Y3,X8,Y3,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:437:X8Y3,X8,Y3,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:438:X8Y3,X8,Y3,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:439:X8Y3,X8,Y3,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:454:X3Y2,X3,Y2,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:455:X3Y2,X3,Y2,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:456:X3Y2,X3,Y2,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:457:X3Y2,X3,Y2,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:458:X3Y2,X3,Y2,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:459:X3Y2,X3,Y2,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:460:X3Y2,X3,Y2,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:461:X3Y2,X3,Y2,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:464:X4Y2,X4,Y2,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:465:X4Y2,X4,Y2,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:466:X4Y2,X4,Y2,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:467:X4Y2,X4,Y2,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:468:X4Y2,X4,Y2,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:469:X4Y2,X4,Y2,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:470:X4Y2,X4,Y2,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:471:X4Y2,X4,Y2,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:474:X5Y2,X5,Y2,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:475:X5Y2,X5,Y2,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:476:X5Y2,X5,Y2,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:477:X5Y2,X5,Y2,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:478:X5Y2,X5,Y2,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:479:X5Y2,X5,Y2,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:480:X5Y2,X5,Y2,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:481:X5Y2,X5,Y2,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:484:X6Y2,X6,Y2,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:485:X6Y2,X6,Y2,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:486:X6Y2,X6,Y2,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:487:X6Y2,X6,Y2,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:488:X6Y2,X6,Y2,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:489:X6Y2,X6,Y2,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:490:X6Y2,X6,Y2,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:491:X6Y2,X6,Y2,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:494:X7Y2,X7,Y2,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:495:X7Y2,X7,Y2,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:496:X7Y2,X7,Y2,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:497:X7Y2,X7,Y2,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:498:X7Y2,X7,Y2,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:499:X7Y2,X7,Y2,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:500:X7Y2,X7,Y2,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:501:X7Y2,X7,Y2,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:504:X8Y2,X8,Y2,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:505:X8Y2,X8,Y2,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:506:X8Y2,X8,Y2,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:507:X8Y2,X8,Y2,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:508:X8Y2,X8,Y2,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:509:X8Y2,X8,Y2,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:510:X8Y2,X8,Y2,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:511:X8Y2,X8,Y2,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:527:X3Y1,X3,Y1,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:528:X3Y1,X3,Y1,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:529:X3Y1,X3,Y1,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:530:X3Y1,X3,Y1,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:531:X3Y1,X3,Y1,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:532:X3Y1,X3,Y1,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:533:X3Y1,X3,Y1,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:534:X3Y1,X3,Y1,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:537:X4Y1,X4,Y1,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:538:X4Y1,X4,Y1,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:539:X4Y1,X4,Y1,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:540:X4Y1,X4,Y1,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:541:X4Y1,X4,Y1,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:542:X4Y1,X4,Y1,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:543:X4Y1,X4,Y1,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:544:X4Y1,X4,Y1,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:547:X5Y1,X5,Y1,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:548:X5Y1,X5,Y1,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:549:X5Y1,X5,Y1,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:550:X5Y1,X5,Y1,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:551:X5Y1,X5,Y1,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:552:X5Y1,X5,Y1,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:553:X5Y1,X5,Y1,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:554:X5Y1,X5,Y1,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:557:X6Y1,X6,Y1,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:558:X6Y1,X6,Y1,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:559:X6Y1,X6,Y1,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:560:X6Y1,X6,Y1,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:561:X6Y1,X6,Y1,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:562:X6Y1,X6,Y1,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:563:X6Y1,X6,Y1,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:564:X6Y1,X6,Y1,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:567:X7Y1,X7,Y1,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:568:X7Y1,X7,Y1,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:569:X7Y1,X7,Y1,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:570:X7Y1,X7,Y1,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:571:X7Y1,X7,Y1,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:572:X7Y1,X7,Y1,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:573:X7Y1,X7,Y1,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:574:X7Y1,X7,Y1,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+bel.txt:577:X8Y1,X8,Y1,A,LUT4,LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_O,LA_Co
+bel.txt:578:X8Y1,X8,Y1,B,LUT4,LB_I0,LB_I1,LB_I2,LB_I3,LB_Ci,LB_O,LB_Co
+bel.txt:579:X8Y1,X8,Y1,C,LUT4,LC_I0,LC_I1,LC_I2,LC_I3,LC_Ci,LC_O,LC_Co
+bel.txt:580:X8Y1,X8,Y1,D,LUT4,LD_I0,LD_I1,LD_I2,LD_I3,LD_Ci,LD_O,LD_Co
+bel.txt:581:X8Y1,X8,Y1,E,LUT4,LE_I0,LE_I1,LE_I2,LE_I3,LE_Ci,LE_O,LE_Co
+bel.txt:582:X8Y1,X8,Y1,F,LUT4,LF_I0,LF_I1,LF_I2,LF_I3,LF_Ci,LF_O,LF_Co
+bel.txt:583:X8Y1,X8,Y1,G,LUT4,LG_I0,LG_I1,LG_I2,LG_I3,LG_Ci,LG_O,LG_Co
+bel.txt:584:X8Y1,X8,Y1,H,LUT4,LH_I0,LH_I1,LH_I2,LH_I3,LH_Ci,LH_O,LH_Co
+xdl.cc:36:        if (cell.second->type == id_LUT4) {
+fastfir.json:14480:    "LUT4": {
+fastfir.json:21779:          "type": "LUT4",
+fastfir.json:22441:          "type": "LUT4",
+fastfir.json:22569:          "type": "LUT4",
+fastfir.json:23511:          "type": "LUT4",
+fastfir.json:24235:          "type": "LUT4",
+fastfir.json:25173:          "type": "LUT4",
+fastfir.json:25835:          "type": "LUT4",
+fastfir.json:25963:          "type": "LUT4",
+fastfir.json:26903:          "type": "LUT4",
+fastfir.json:27565:          "type": "LUT4",
+fastfir.json:27693:          "type": "LUT4",
+fastfir.json:28633:          "type": "LUT4",
+fastfir.json:29295:          "type": "LUT4",
+fastfir.json:29423:          "type": "LUT4",
+fastfir.json:30363:          "type": "LUT4",
+fastfir.json:31025:          "type": "LUT4",
+fastfir.json:31153:          "type": "LUT4",
+fastfir.json:32093:          "type": "LUT4",
+fastfir.json:32755:          "type": "LUT4",
+fastfir.json:32883:          "type": "LUT4",
+fastfir.json:33823:          "type": "LUT4",
+fastfir.json:34485:          "type": "LUT4",
+fastfir.json:34613:          "type": "LUT4",
+fastfir.json:35553:          "type": "LUT4",
+fastfir.json:36215:          "type": "LUT4",
+fastfir.json:36343:          "type": "LUT4",
+fastfir.json:37283:          "type": "LUT4",
+fastfir.json:37945:          "type": "LUT4",
+fastfir.json:38073:          "type": "LUT4",
+fastfir.json:38591:          "type": "LUT4",
+fastfir.json:38615:          "type": "LUT4",
+fastfir.json:38639:          "type": "LUT4",
+fastfir.json:38663:          "type": "LUT4",
+fastfir.json:38687:          "type": "LUT4",
+fastfir.json:38711:          "type": "LUT4",
+fastfir.json:38735:          "type": "LUT4",
+fastfir.json:38759:          "type": "LUT4",
+fastfir.json:38783:          "type": "LUT4",
+fastfir.json:38807:          "type": "LUT4",
+fastfir.json:38831:          "type": "LUT4",
+fastfir.json:38855:          "type": "LUT4",
+fastfir.json:38879:          "type": "LUT4",
+fastfir.json:38903:          "type": "LUT4",
+fastfir.json:38927:          "type": "LUT4",
+fastfir.json:38951:          "type": "LUT4",
+fastfir.json:38975:          "type": "LUT4",
+fastfir.json:39933:          "type": "LUT4",
+fastfir.json:40595:          "type": "LUT4",
+fastfir.json:40723:          "type": "LUT4",
+fastfir.json:42319:          "type": "LUT4",
+fastfir.json:42371:          "type": "LUT4",
+fastfir.json:43955:          "type": "LUT4",
+fastfir.json:44085:          "type": "LUT4",
+fastfir.json:45681:          "type": "LUT4",
+fastfir.json:45733:          "type": "LUT4",
+fastfir.json:47317:          "type": "LUT4",
+fastfir.json:47447:          "type": "LUT4",
+constids.inc:465:X(LUT4)
+cells.h:35:    return cell->type == id_LUT1 || cell->type == id_LUT2 || cell->type == id_LUT3 || cell->type == id_LUT4 ||
+blinky.log:43:Generating RTLIL representation for module `\LUT4'.
+blinky.log:1272:17.9. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1274:Generating RTLIL representation for module `$paramod\LUT4\INIT=16'0111111110000000'.
+blinky.log:1276:17.10. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1278:Generating RTLIL representation for module `$paramod\LUT4\INIT=16'0000000000000000'.
+blinky.log:1280:17.11. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1282:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'0000000000000000'.
+blinky.log:1284:17.12. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1286:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'0000000000000000'.
+blinky.log:1288:17.13. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1290:Generating RTLIL representation for module `$paramod\LUT4\INIT=16'1000000000000000'.
+blinky.log:1332:17.24. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1334:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'0000000000000000'.
+blinky.log:1336:17.25. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1338:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'0000000000000000'.
+blinky.log:1340:17.26. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1342:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'0000000000000000'.
+blinky.log:1344:17.27. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1346:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'1000000000000000'.
+blinky.log:1364:17.32. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1366:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'0111111110000000'.
+blinky.log:1368:17.33. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1370:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'0000000000000000'.
+blinky.log:1372:17.34. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1374:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'0000000000000000'.
+blinky.log:1376:17.35. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1378:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'0000000000000000'.
+blinky.log:1380:17.36. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1382:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'1000000000000000'.
+blinky.log:1392:17.39. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1394:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'0111111110000000'.
+blinky.log:1396:17.40. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1398:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'1000000000000000'.
+blinky.log:1400:17.41. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1402:Generating RTLIL representation for module `$paramod\LUT4\INIT=16'0111111111111111'.
+blinky.log:1404:17.42. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1406:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'0000000000000000'.
+blinky.log:1408:17.43. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1410:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'1000000000000000'.
+blinky.log:1412:17.44. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1414:Generating RTLIL representation for module `$paramod\LUT4\INIT=16'1111111111111111'.
+blinky.log:1416:17.45. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1418:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'0111111111111111'.
+blinky.log:1424:17.47. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1426:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'0000000000000000'.
+blinky.log:1428:17.48. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1430:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'0000000000000000'.
+blinky.log:1432:17.49. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1434:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'0000000000000000'.
+blinky.log:1436:17.50. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1438:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'1000000000000000'.
+blinky.log:1444:17.52. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1446:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'0111111110000000'.
+blinky.log:1448:17.53. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1450:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'1000000000000000'.
+blinky.log:1452:17.54. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1454:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'0111111111111111'.
+blinky.log:1456:17.55. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1458:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'0000000000000000'.
+blinky.log:1460:17.56. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1462:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'1000000000000000'.
+blinky.log:1464:17.57. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1466:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'1111111111111111'.
+blinky.log:1468:17.58. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1470:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'0111111111111111'.
+blinky.log:1476:17.60. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1478:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'0000000000000000'.
+blinky.log:1480:17.61. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1482:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'0000000000000000'.
+blinky.log:1484:17.62. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1486:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'0000000000000000'.
+blinky.log:1488:17.63. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1490:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'1000000000000000'.
+blinky.log:1496:17.65. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1498:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'0111111110000000'.
+blinky.log:1500:17.66. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1502:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'1000000000000000'.
+blinky.log:1504:17.67. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1506:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'0111111111111111'.
+blinky.log:1508:17.68. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1510:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'0000000000000000'.
+blinky.log:1512:17.69. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1514:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'1000000000000000'.
+blinky.log:1516:17.70. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1518:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'1111111111111111'.
+blinky.log:1520:17.71. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1522:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'0111111111111111'.
+blinky.log:1528:17.73. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1530:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'0000000000000000'.
+blinky.log:1532:17.74. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1534:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'0000000000000000'.
+blinky.log:1536:17.75. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1538:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'0000000000000000'.
+blinky.log:1540:17.76. Executing AST frontend in derive mode using pre-parsed AST for module `\LUT4'.
+blinky.log:1542:Found cached RTLIL representation for module `$paramod\LUT4\INIT=16'1000000000000000'.
+blinky.log:1828:     LUT4                           47
+simple.json:14480:    "LUT4": {

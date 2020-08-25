@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/icons">
+        <file>resources/open_pcf.png</file>
+        <file>resources/save_asc.png</file>
+    </qresource>
+</RCC>

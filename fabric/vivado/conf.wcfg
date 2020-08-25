@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="config_behav.wdb" id="1">
+         <top_modules>
+            <top_module name="config" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="0fs"></ZoomStartTime>
+      <ZoomEndTime time="386500001fs"></ZoomEndTime>
+      <Cursor1Time time="105000000fs"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="161"></NameColumnWidth>
+      <ValueColumnWidth column_width="50"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="21" />
+   <wvobject fp_name="/config/tb_S" type="logic">
+      <obj_property name="ElementShortName">tb_S</obj_property>
+      <obj_property name="ObjectShortName">tb_S</obj_property>
+   </wvobject>
+   <wvobject fp_name="/config/tb_R" type="logic">
+      <obj_property name="ElementShortName">tb_R</obj_property>
+      <obj_property name="ObjectShortName">tb_R</obj_property>
+   </wvobject>
+   <wvobject fp_name="/config/tb_C" type="logic">
+      <obj_property name="ElementShortName">tb_C</obj_property>
+      <obj_property name="ObjectShortName">tb_C</obj_property>
+      <obj_property name="CustomSignalColor">#FF0000</obj_property>
+      <obj_property name="UseCustomSignalColor">true</obj_property>
+   </wvobject>
+   <wvobject fp_name="/config/tb_Cn" type="logic">
+      <obj_property name="ElementShortName">tb_Cn</obj_property>
+      <obj_property name="ObjectShortName">tb_Cn</obj_property>
+   </wvobject>
+   <wvobject fp_name="/config/bitstream" type="array">
+      <obj_property name="ElementShortName">bitstream[5:0]</obj_property>
+      <obj_property name="ObjectShortName">bitstream[5:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+      <wvobject fp_name="/config/bitstream[5]" type="logic">
+         <obj_property name="ElementShortName">[5]</obj_property>
+         <obj_property name="ObjectShortName">[5]</obj_property>
+         <obj_property name="CustomSignalColor">#E0FFFF</obj_property>
+         <obj_property name="UseCustomSignalColor">true</obj_property>
+      </wvobject>
+      <wvobject fp_name="/config/bitstream[4]" type="logic">
+         <obj_property name="ElementShortName">[4]</obj_property>
+         <obj_property name="ObjectShortName">[4]</obj_property>
+         <obj_property name="CustomSignalColor">#E0FFFF</obj_property>
+         <obj_property name="UseCustomSignalColor">true</obj_property>
+      </wvobject>
+      <wvobject fp_name="/config/bitstream[3]" type="logic">
+         <obj_property name="ElementShortName">[3]</obj_property>
+         <obj_property name="ObjectShortName">[3]</obj_property>
+         <obj_property name="CustomSignalColor">#E0FFFF</obj_property>
+         <obj_property name="UseCustomSignalColor">true</obj_property>
+      </wvobject>
+      <wvobject fp_name="/config/bitstream[2]" type="logic">
+         <obj_property name="ElementShortName">[2]</obj_property>
+         <obj_property name="ObjectShortName">[2]</obj_property>
+         <obj_property name="CustomSignalColor">#E0FFFF</obj_property>
+         <obj_property name="UseCustomSignalColor">true</obj_property>
+      </wvobject>
+      <wvobject fp_name="/config/bitstream[1]" type="logic">
+         <obj_property name="ElementShortName">[1]</obj_property>
+         <obj_property name="ObjectShortName">[1]</obj_property>
+         <obj_property name="CustomSignalColor">#E0FFFF</obj_property>
+         <obj_property name="UseCustomSignalColor">true</obj_property>
+      </wvobject>
+      <wvobject fp_name="/config/bitstream[0]" type="logic">
+         <obj_property name="ElementShortName">[0]</obj_property>
+         <obj_property name="ObjectShortName">[0]</obj_property>
+         <obj_property name="CustomSignalColor">#E0FFFF</obj_property>
+         <obj_property name="UseCustomSignalColor">true</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject fp_name="/config/Inst_first/S" type="logic">
+      <obj_property name="ElementShortName">S</obj_property>
+      <obj_property name="ObjectShortName">S</obj_property>
+   </wvobject>
+   <wvobject fp_name="/config/Inst_first/R" type="logic">
+      <obj_property name="ElementShortName">R</obj_property>
+      <obj_property name="ObjectShortName">R</obj_property>
+   </wvobject>
+   <wvobject fp_name="/config/Inst_first/Mq" type="logic">
+      <obj_property name="ElementShortName">Mq</obj_property>
+      <obj_property name="ObjectShortName">Mq</obj_property>
+      <obj_property name="CustomSignalColor">#00FFFF</obj_property>
+      <obj_property name="UseCustomSignalColor">true</obj_property>
+   </wvobject>
+   <wvobject fp_name="/config/Inst_first/Mqn" type="logic">
+      <obj_property name="ElementShortName">Mqn</obj_property>
+      <obj_property name="ObjectShortName">Mqn</obj_property>
+      <obj_property name="CustomSignalColor">#00FFFF</obj_property>
+      <obj_property name="UseCustomSignalColor">true</obj_property>
+   </wvobject>
+   <wvobject fp_name="/config/Inst_first/Sq" type="logic">
+      <obj_property name="ElementShortName">Sq</obj_property>
+      <obj_property name="ObjectShortName">Sq</obj_property>
+      <obj_property name="CustomSignalColor">#FF0080</obj_property>
+      <obj_property name="UseCustomSignalColor">true</obj_property>
+   </wvobject>
+   <wvobject fp_name="/config/Inst_first/Sqn" type="logic">
+      <obj_property name="ElementShortName">Sqn</obj_property>
+      <obj_property name="ObjectShortName">Sqn</obj_property>
+      <obj_property name="CustomSignalColor">#FF0080</obj_property>
+      <obj_property name="UseCustomSignalColor">true</obj_property>
+   </wvobject>
+   <wvobject fp_name="/config/Inst_first/C" type="logic">
+      <obj_property name="ElementShortName">C</obj_property>
+      <obj_property name="ObjectShortName">C</obj_property>
+   </wvobject>
+   <wvobject fp_name="/config/Inst_first/Cn" type="logic">
+      <obj_property name="ElementShortName">Cn</obj_property>
+      <obj_property name="ObjectShortName">Cn</obj_property>
+   </wvobject>
+   <wvobject fp_name="/config/Inst_first/M_set_gate" type="logic">
+      <obj_property name="ElementShortName">M_set_gate</obj_property>
+      <obj_property name="ObjectShortName">M_set_gate</obj_property>
+      <obj_property name="CustomSignalColor">#00FFFF</obj_property>
+      <obj_property name="UseCustomSignalColor">true</obj_property>
+   </wvobject>
+   <wvobject fp_name="/config/Inst_first/M_reset_gate" type="logic">
+      <obj_property name="ElementShortName">M_reset_gate</obj_property>
+      <obj_property name="ObjectShortName">M_reset_gate</obj_property>
+      <obj_property name="CustomSignalColor">#00FFFF</obj_property>
+      <obj_property name="UseCustomSignalColor">true</obj_property>
+   </wvobject>
+   <wvobject fp_name="/config/Inst_first/S_set_gate" type="logic">
+      <obj_property name="ElementShortName">S_set_gate</obj_property>
+      <obj_property name="ObjectShortName">S_set_gate</obj_property>
+      <obj_property name="CustomSignalColor">#FF0080</obj_property>
+      <obj_property name="UseCustomSignalColor">true</obj_property>
+   </wvobject>
+   <wvobject fp_name="/config/Inst_first/S_reset_gate" type="logic">
+      <obj_property name="ElementShortName">S_reset_gate</obj_property>
+      <obj_property name="ObjectShortName">S_reset_gate</obj_property>
+      <obj_property name="CustomSignalColor">#FF0080</obj_property>
+      <obj_property name="UseCustomSignalColor">true</obj_property>
+   </wvobject>
+   <wvobject fp_name="/config/Inst_first/M_q" type="logic">
+      <obj_property name="ElementShortName">M_q</obj_property>
+      <obj_property name="ObjectShortName">M_q</obj_property>
+   </wvobject>
+   <wvobject fp_name="/config/Inst_first/M_qn" type="logic">
+      <obj_property name="ElementShortName">M_qn</obj_property>
+      <obj_property name="ObjectShortName">M_qn</obj_property>
+   </wvobject>
+   <wvobject fp_name="/config/Inst_first/S_q" type="logic">
+      <obj_property name="ElementShortName">S_q</obj_property>
+      <obj_property name="ObjectShortName">S_q</obj_property>
+   </wvobject>
+   <wvobject fp_name="/config/Inst_first/S_qn" type="logic">
+      <obj_property name="ElementShortName">S_qn</obj_property>
+      <obj_property name="ObjectShortName">S_qn</obj_property>
+   </wvobject>
+</wave_config>

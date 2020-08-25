@@ -1,0 +1,29 @@
+# CPU_IO_switch_matrix 
+# located EAST
+
+# Connect OPA
+W2BEGb[2|3|4|5],OPA_O[0|1|2|3]
+# Connect OPB
+W2BEG[2|3|4|5],OPB_O[0|1|2|3]
+# Connect RES0
+RES0_I[0|1|2|3],E6END[0|1|6|7]
+RES1_I[0|1|2|3],E6END[2|3|8|9]
+RES2_I[0|1|2|3],E6END[4|5|10|11]
+
+# The remaining single and double wires just ping pong back
+
+# The MID are half way in so they get connected to the longest patch (S2BEG)
+# The END are longest so get on the cascading begin (S2BEGb)
+# on top we twist wire indexes for more entropy
+W2BEG[0|1|6|7],E2MID[7|6|1|0]
+W2BEGb[0|1|6|7],E2END[7|6|1|0]
+
+# single just go back, we swap bits in vector to get more twists into the graph
+W1BEG[0|1|2|3],E1END[3|2|1|0]
+
+# the East wires are the CPU result bits
+# We currently set the West hex wires to GND
+W6BEG[0|1|2|3|4|5|6|7],GND[0|0|0|0|0|0|0|0]
+W6BEG[8|9|10|11],GND[0|0|0|0]
+
+

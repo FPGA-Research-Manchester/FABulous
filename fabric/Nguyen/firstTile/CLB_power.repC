@@ -1,0 +1,53 @@
+ 
+****************************************
+Report : power
+        -analysis_effort low
+Design : CLB
+Version: P-2019.03-SP1
+Date   : Thu May  9 11:04:47 2019
+****************************************
+
+
+Library(s) Used:
+
+    tcb018bcdgp2atc (File: /home/nguyendao/FORTE/180n_FORTE/libs/tcb018bcdgp2a_110c_FE/TSMCHOME/digital/Front_End/timing_power_noise/NLDM/tcb018bcdgp2a_110a/tcb018bcdgp2atc.db)
+
+
+Operating Conditions: NCCOM   Library: tcb018bcdgp2atc
+Wire Load Model Mode: segmented
+
+Design        Wire Load Model            Library
+------------------------------------------------
+CLB                    ZeroWireload      tcb018bcdgp2atc
+
+
+Global Operating Voltage = 5    
+Power-specific unit information :
+    Voltage Units = 1V
+    Capacitance Units = 1.000000pf
+    Time Units = 1ns
+    Dynamic Power Units = 1mW    (derived from V,C,T units)
+    Leakage Power Units = 1nW
+
+
+  Cell Internal Power  =   4.6330 uW    (3%)
+  Net Switching Power  = 134.9070 uW   (97%)
+                         ---------
+Total Dynamic Power    = 139.5400 uW  (100%)
+
+Cell Leakage Power     = 174.4574 nW
+
+
+                 Internal         Switching           Leakage            Total
+Power Group      Power            Power               Power              Power   (   %    )  Attrs
+--------------------------------------------------------------------------------------------------
+io_pad             0.0000            0.0000            0.0000            0.0000  (   0.00%)
+memory             0.0000            0.0000            0.0000            0.0000  (   0.00%)
+black_box          0.0000            0.0000            0.0000            0.0000  (   0.00%)
+clock_network      0.0000            0.0000            0.0000            0.0000  (   0.00%)
+register       5.8205e-03        3.5648e-05           73.8832        5.9300e-03  (   4.24%)
+sequential         0.0000            0.0000            0.0000            0.0000  (   0.00%)
+combinational  -1.1874e-03            0.1349          100.5742            0.1338 (  95.76%)
+--------------------------------------------------------------------------------------------------
+Total          4.6330e-03 mW         0.1349 mW       174.4574 nW         0.1397 mW
+1

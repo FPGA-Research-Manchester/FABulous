@@ -1,0 +1,709 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="tb_com_loader_behav.wdb" id="1">
+         <top_modules>
+            <top_module name="my_package" />
+            <top_module name="tb_com_loader" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="0fs"></ZoomStartTime>
+      <ZoomEndTime time="1769145802653fs"></ZoomEndTime>
+      <Cursor1Time time="10000000fs"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="161"></NameColumnWidth>
+      <ValueColumnWidth column_width="50"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="172" />
+   <wvobject fp_name="/tb_com_loader/tb_i" type="other">
+      <obj_property name="ElementShortName">tb_i</obj_property>
+      <obj_property name="ObjectShortName">tb_i</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/tb_clock" type="logic">
+      <obj_property name="ElementShortName">tb_clock</obj_property>
+      <obj_property name="ObjectShortName">tb_clock</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/tb_clk_send" type="logic">
+      <obj_property name="ElementShortName">tb_clk_send</obj_property>
+      <obj_property name="ObjectShortName">tb_clk_send</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/tb_rx" type="logic">
+      <obj_property name="ElementShortName">tb_rx</obj_property>
+      <obj_property name="ObjectShortName">tb_rx</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/tb_d_address" type="array">
+      <obj_property name="ElementShortName">tb_d_address[31:0]</obj_property>
+      <obj_property name="ObjectShortName">tb_d_address[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/tb_d_read_en" type="logic">
+      <obj_property name="ElementShortName">tb_d_read_en</obj_property>
+      <obj_property name="ObjectShortName">tb_d_read_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/tb_d_write_en" type="logic">
+      <obj_property name="ElementShortName">tb_d_write_en</obj_property>
+      <obj_property name="ObjectShortName">tb_d_write_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/tb_d_waitrequest" type="logic">
+      <obj_property name="ElementShortName">tb_d_waitrequest</obj_property>
+      <obj_property name="ObjectShortName">tb_d_waitrequest</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/tb_d_writedata" type="array">
+      <obj_property name="ElementShortName">tb_d_writedata[31:0]</obj_property>
+      <obj_property name="ObjectShortName">tb_d_writedata[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/tb_d_byteenable" type="array">
+      <obj_property name="ElementShortName">tb_d_byteenable[3:0]</obj_property>
+      <obj_property name="ObjectShortName">tb_d_byteenable[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/tb_d_readdata" type="array">
+      <obj_property name="ElementShortName">tb_d_readdata[31:0]</obj_property>
+      <obj_property name="ObjectShortName">tb_d_readdata[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/tb_active" type="logic">
+      <obj_property name="ElementShortName">tb_active</obj_property>
+      <obj_property name="ObjectShortName">tb_active</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/tb_Tx" type="logic">
+      <obj_property name="ElementShortName">tb_Tx</obj_property>
+      <obj_property name="ObjectShortName">tb_Tx</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/tb_reset_cpu" type="logic">
+      <obj_property name="ElementShortName">tb_reset_cpu</obj_property>
+      <obj_property name="ObjectShortName">tb_reset_cpu</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/tb_next_instr" type="logic">
+      <obj_property name="ElementShortName">tb_next_instr</obj_property>
+      <obj_property name="ObjectShortName">tb_next_instr</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/tb_Command" type="array">
+      <obj_property name="ElementShortName">tb_Command[3:0]</obj_property>
+      <obj_property name="ObjectShortName">tb_Command[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/tb_CRC" type="array">
+      <obj_property name="ElementShortName">tb_CRC[15:0]</obj_property>
+      <obj_property name="ObjectShortName">tb_CRC[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/tb_ReceiveLED" type="logic">
+      <obj_property name="ElementShortName">tb_ReceiveLED</obj_property>
+      <obj_property name="ObjectShortName">tb_ReceiveLED</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/tb_ready" type="logic">
+      <obj_property name="ElementShortName">tb_ready</obj_property>
+      <obj_property name="ObjectShortName">tb_ready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/tb_clk" type="logic">
+      <obj_property name="ElementShortName">tb_clk</obj_property>
+      <obj_property name="ObjectShortName">tb_clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/clk_send_period" type="other">
+      <obj_property name="ElementShortName">clk_send_period</obj_property>
+      <obj_property name="ObjectShortName">clk_send_period</obj_property>
+   </wvobject>
+   <wvobject type="divider" fp_name="divider419">
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/DUT/CLK" type="logic">
+      <obj_property name="ElementShortName">CLK</obj_property>
+      <obj_property name="ObjectShortName">CLK</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/DUT/Rx" type="logic">
+      <obj_property name="ElementShortName">Rx</obj_property>
+      <obj_property name="ObjectShortName">Rx</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/DUT/ReceiveLED" type="logic">
+      <obj_property name="ElementShortName">ReceiveLED</obj_property>
+      <obj_property name="ObjectShortName">ReceiveLED</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/DUT/WriteData" type="array">
+      <obj_property name="ElementShortName">WriteData[7:0]</obj_property>
+      <obj_property name="ObjectShortName">WriteData[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/DUT/Command" type="array">
+      <obj_property name="ElementShortName">Command[7:0]</obj_property>
+      <obj_property name="ObjectShortName">Command[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/DUT/Col" type="array">
+      <obj_property name="ElementShortName">Col[7:0]</obj_property>
+      <obj_property name="ObjectShortName">Col[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/DUT/Row" type="array">
+      <obj_property name="ElementShortName">Row[7:0]</obj_property>
+      <obj_property name="ObjectShortName">Row[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/DUT/ComActive" type="logic">
+      <obj_property name="ElementShortName">ComActive</obj_property>
+      <obj_property name="ObjectShortName">ComActive</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/DUT/WriteStrobe" type="logic">
+      <obj_property name="ElementShortName">WriteStrobe</obj_property>
+      <obj_property name="ObjectShortName">WriteStrobe</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/DUT/Col_Reg" type="array">
+      <obj_property name="ElementShortName">Col_Reg[7:0]</obj_property>
+      <obj_property name="ObjectShortName">Col_Reg[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/DUT/Row_Reg" type="array">
+      <obj_property name="ElementShortName">Row_Reg[7:0]</obj_property>
+      <obj_property name="ObjectShortName">Row_Reg[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/DUT/ConfData" type="array">
+      <obj_property name="ElementShortName">ConfData[7:0]</obj_property>
+      <obj_property name="ObjectShortName">ConfData[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/DUT/Clk1" type="logic">
+      <obj_property name="ElementShortName">Clk1</obj_property>
+      <obj_property name="ObjectShortName">Clk1</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/DUT/Clk2" type="logic">
+      <obj_property name="ElementShortName">Clk2</obj_property>
+      <obj_property name="ObjectShortName">Clk2</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/DUT/State" type="other">
+      <obj_property name="ElementShortName">State</obj_property>
+      <obj_property name="ObjectShortName">State</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/DUT/StrobeState" type="other">
+      <obj_property name="ElementShortName">StrobeState</obj_property>
+      <obj_property name="ObjectShortName">StrobeState</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/DUT/Mode" type="array">
+      <obj_property name="ElementShortName">Mode[1:4]</obj_property>
+      <obj_property name="ObjectShortName">Mode[1:4]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/DUT/ComRate" type="other">
+      <obj_property name="ElementShortName">ComRate</obj_property>
+      <obj_property name="ObjectShortName">ComRate</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/N1BEG" type="array">
+      <obj_property name="ElementShortName">N1BEG[3:0]</obj_property>
+      <obj_property name="ObjectShortName">N1BEG[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/N2BEG" type="array">
+      <obj_property name="ElementShortName">N2BEG[7:0]</obj_property>
+      <obj_property name="ObjectShortName">N2BEG[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/N2BEGb" type="array">
+      <obj_property name="ElementShortName">N2BEGb[7:0]</obj_property>
+      <obj_property name="ObjectShortName">N2BEGb[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/N4BEG" type="array">
+      <obj_property name="ElementShortName">N4BEG[15:0]</obj_property>
+      <obj_property name="ObjectShortName">N4BEG[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/Co" type="array">
+      <obj_property name="ElementShortName">Co[0:0]</obj_property>
+      <obj_property name="ObjectShortName">Co[0:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/N1END" type="array">
+      <obj_property name="ElementShortName">N1END[3:0]</obj_property>
+      <obj_property name="ObjectShortName">N1END[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/N2MID" type="array">
+      <obj_property name="ElementShortName">N2MID[7:0]</obj_property>
+      <obj_property name="ObjectShortName">N2MID[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/N2END" type="array">
+      <obj_property name="ElementShortName">N2END[7:0]</obj_property>
+      <obj_property name="ObjectShortName">N2END[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/N4END" type="array">
+      <obj_property name="ElementShortName">N4END[15:0]</obj_property>
+      <obj_property name="ObjectShortName">N4END[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/Ci" type="array">
+      <obj_property name="ElementShortName">Ci[0:0]</obj_property>
+      <obj_property name="ObjectShortName">Ci[0:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/E1BEG" type="array">
+      <obj_property name="ElementShortName">E1BEG[3:0]</obj_property>
+      <obj_property name="ObjectShortName">E1BEG[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/E2BEG" type="array">
+      <obj_property name="ElementShortName">E2BEG[7:0]</obj_property>
+      <obj_property name="ObjectShortName">E2BEG[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/E2BEGb" type="array">
+      <obj_property name="ElementShortName">E2BEGb[7:0]</obj_property>
+      <obj_property name="ObjectShortName">E2BEGb[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/E6BEG" type="array">
+      <obj_property name="ElementShortName">E6BEG[11:0]</obj_property>
+      <obj_property name="ObjectShortName">E6BEG[11:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/E1END" type="array">
+      <obj_property name="ElementShortName">E1END[3:0]</obj_property>
+      <obj_property name="ObjectShortName">E1END[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/E2MID" type="array">
+      <obj_property name="ElementShortName">E2MID[7:0]</obj_property>
+      <obj_property name="ObjectShortName">E2MID[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/E2END" type="array">
+      <obj_property name="ElementShortName">E2END[7:0]</obj_property>
+      <obj_property name="ObjectShortName">E2END[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/E6END" type="array">
+      <obj_property name="ElementShortName">E6END[11:0]</obj_property>
+      <obj_property name="ObjectShortName">E6END[11:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/S1BEG" type="array">
+      <obj_property name="ElementShortName">S1BEG[3:0]</obj_property>
+      <obj_property name="ObjectShortName">S1BEG[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/S2BEG" type="array">
+      <obj_property name="ElementShortName">S2BEG[7:0]</obj_property>
+      <obj_property name="ObjectShortName">S2BEG[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/S2BEGb" type="array">
+      <obj_property name="ElementShortName">S2BEGb[7:0]</obj_property>
+      <obj_property name="ObjectShortName">S2BEGb[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/S4BEG" type="array">
+      <obj_property name="ElementShortName">S4BEG[15:0]</obj_property>
+      <obj_property name="ObjectShortName">S4BEG[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/S1END" type="array">
+      <obj_property name="ElementShortName">S1END[3:0]</obj_property>
+      <obj_property name="ObjectShortName">S1END[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/S2MID" type="array">
+      <obj_property name="ElementShortName">S2MID[7:0]</obj_property>
+      <obj_property name="ObjectShortName">S2MID[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/S2END" type="array">
+      <obj_property name="ElementShortName">S2END[7:0]</obj_property>
+      <obj_property name="ObjectShortName">S2END[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/S4END" type="array">
+      <obj_property name="ElementShortName">S4END[15:0]</obj_property>
+      <obj_property name="ObjectShortName">S4END[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/W1BEG" type="array">
+      <obj_property name="ElementShortName">W1BEG[3:0]</obj_property>
+      <obj_property name="ObjectShortName">W1BEG[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/W2BEG" type="array">
+      <obj_property name="ElementShortName">W2BEG[7:0]</obj_property>
+      <obj_property name="ObjectShortName">W2BEG[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/W2BEGb" type="array">
+      <obj_property name="ElementShortName">W2BEGb[7:0]</obj_property>
+      <obj_property name="ObjectShortName">W2BEGb[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/W6BEG" type="array">
+      <obj_property name="ElementShortName">W6BEG[11:0]</obj_property>
+      <obj_property name="ObjectShortName">W6BEG[11:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/W1END" type="array">
+      <obj_property name="ElementShortName">W1END[3:0]</obj_property>
+      <obj_property name="ObjectShortName">W1END[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/W2MID" type="array">
+      <obj_property name="ElementShortName">W2MID[7:0]</obj_property>
+      <obj_property name="ObjectShortName">W2MID[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/W2END" type="array">
+      <obj_property name="ElementShortName">W2END[7:0]</obj_property>
+      <obj_property name="ObjectShortName">W2END[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/W6END" type="array">
+      <obj_property name="ElementShortName">W6END[11:0]</obj_property>
+      <obj_property name="ObjectShortName">W6END[11:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/UserCLK" type="logic">
+      <obj_property name="ElementShortName">UserCLK</obj_property>
+      <obj_property name="ObjectShortName">UserCLK</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/MODE" type="logic">
+      <obj_property name="ElementShortName">MODE</obj_property>
+      <obj_property name="ObjectShortName">MODE</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/CONFin" type="logic">
+      <obj_property name="ElementShortName">CONFin</obj_property>
+      <obj_property name="ObjectShortName">CONFin</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/CONFout" type="logic">
+      <obj_property name="ElementShortName">CONFout</obj_property>
+      <obj_property name="ObjectShortName">CONFout</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/CLK" type="logic">
+      <obj_property name="ElementShortName">CLK</obj_property>
+      <obj_property name="ObjectShortName">CLK</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LA_I0" type="logic">
+      <obj_property name="ElementShortName">LA_I0</obj_property>
+      <obj_property name="ObjectShortName">LA_I0</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LA_I1" type="logic">
+      <obj_property name="ElementShortName">LA_I1</obj_property>
+      <obj_property name="ObjectShortName">LA_I1</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LA_I2" type="logic">
+      <obj_property name="ElementShortName">LA_I2</obj_property>
+      <obj_property name="ObjectShortName">LA_I2</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LA_I3" type="logic">
+      <obj_property name="ElementShortName">LA_I3</obj_property>
+      <obj_property name="ObjectShortName">LA_I3</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LA_Ci" type="logic">
+      <obj_property name="ElementShortName">LA_Ci</obj_property>
+      <obj_property name="ObjectShortName">LA_Ci</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LB_I0" type="logic">
+      <obj_property name="ElementShortName">LB_I0</obj_property>
+      <obj_property name="ObjectShortName">LB_I0</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LB_I1" type="logic">
+      <obj_property name="ElementShortName">LB_I1</obj_property>
+      <obj_property name="ObjectShortName">LB_I1</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LB_I2" type="logic">
+      <obj_property name="ElementShortName">LB_I2</obj_property>
+      <obj_property name="ObjectShortName">LB_I2</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LB_I3" type="logic">
+      <obj_property name="ElementShortName">LB_I3</obj_property>
+      <obj_property name="ObjectShortName">LB_I3</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LB_Ci" type="logic">
+      <obj_property name="ElementShortName">LB_Ci</obj_property>
+      <obj_property name="ObjectShortName">LB_Ci</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LC_I0" type="logic">
+      <obj_property name="ElementShortName">LC_I0</obj_property>
+      <obj_property name="ObjectShortName">LC_I0</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LC_I1" type="logic">
+      <obj_property name="ElementShortName">LC_I1</obj_property>
+      <obj_property name="ObjectShortName">LC_I1</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LC_I2" type="logic">
+      <obj_property name="ElementShortName">LC_I2</obj_property>
+      <obj_property name="ObjectShortName">LC_I2</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LC_I3" type="logic">
+      <obj_property name="ElementShortName">LC_I3</obj_property>
+      <obj_property name="ObjectShortName">LC_I3</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LC_Ci" type="logic">
+      <obj_property name="ElementShortName">LC_Ci</obj_property>
+      <obj_property name="ObjectShortName">LC_Ci</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LD_I0" type="logic">
+      <obj_property name="ElementShortName">LD_I0</obj_property>
+      <obj_property name="ObjectShortName">LD_I0</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LD_I1" type="logic">
+      <obj_property name="ElementShortName">LD_I1</obj_property>
+      <obj_property name="ObjectShortName">LD_I1</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LD_I2" type="logic">
+      <obj_property name="ElementShortName">LD_I2</obj_property>
+      <obj_property name="ObjectShortName">LD_I2</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LD_I3" type="logic">
+      <obj_property name="ElementShortName">LD_I3</obj_property>
+      <obj_property name="ObjectShortName">LD_I3</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LD_Ci" type="logic">
+      <obj_property name="ElementShortName">LD_Ci</obj_property>
+      <obj_property name="ObjectShortName">LD_Ci</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LE_I0" type="logic">
+      <obj_property name="ElementShortName">LE_I0</obj_property>
+      <obj_property name="ObjectShortName">LE_I0</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LE_I1" type="logic">
+      <obj_property name="ElementShortName">LE_I1</obj_property>
+      <obj_property name="ObjectShortName">LE_I1</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LE_I2" type="logic">
+      <obj_property name="ElementShortName">LE_I2</obj_property>
+      <obj_property name="ObjectShortName">LE_I2</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LE_I3" type="logic">
+      <obj_property name="ElementShortName">LE_I3</obj_property>
+      <obj_property name="ObjectShortName">LE_I3</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LE_Ci" type="logic">
+      <obj_property name="ElementShortName">LE_Ci</obj_property>
+      <obj_property name="ObjectShortName">LE_Ci</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LF_I0" type="logic">
+      <obj_property name="ElementShortName">LF_I0</obj_property>
+      <obj_property name="ObjectShortName">LF_I0</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LF_I1" type="logic">
+      <obj_property name="ElementShortName">LF_I1</obj_property>
+      <obj_property name="ObjectShortName">LF_I1</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LF_I2" type="logic">
+      <obj_property name="ElementShortName">LF_I2</obj_property>
+      <obj_property name="ObjectShortName">LF_I2</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LF_I3" type="logic">
+      <obj_property name="ElementShortName">LF_I3</obj_property>
+      <obj_property name="ObjectShortName">LF_I3</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LF_Ci" type="logic">
+      <obj_property name="ElementShortName">LF_Ci</obj_property>
+      <obj_property name="ObjectShortName">LF_Ci</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LG_I0" type="logic">
+      <obj_property name="ElementShortName">LG_I0</obj_property>
+      <obj_property name="ObjectShortName">LG_I0</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LG_I1" type="logic">
+      <obj_property name="ElementShortName">LG_I1</obj_property>
+      <obj_property name="ObjectShortName">LG_I1</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LG_I2" type="logic">
+      <obj_property name="ElementShortName">LG_I2</obj_property>
+      <obj_property name="ObjectShortName">LG_I2</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LG_I3" type="logic">
+      <obj_property name="ElementShortName">LG_I3</obj_property>
+      <obj_property name="ObjectShortName">LG_I3</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LG_Ci" type="logic">
+      <obj_property name="ElementShortName">LG_Ci</obj_property>
+      <obj_property name="ObjectShortName">LG_Ci</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LH_I0" type="logic">
+      <obj_property name="ElementShortName">LH_I0</obj_property>
+      <obj_property name="ObjectShortName">LH_I0</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LH_I1" type="logic">
+      <obj_property name="ElementShortName">LH_I1</obj_property>
+      <obj_property name="ObjectShortName">LH_I1</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LH_I2" type="logic">
+      <obj_property name="ElementShortName">LH_I2</obj_property>
+      <obj_property name="ObjectShortName">LH_I2</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LH_I3" type="logic">
+      <obj_property name="ElementShortName">LH_I3</obj_property>
+      <obj_property name="ObjectShortName">LH_I3</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LH_Ci" type="logic">
+      <obj_property name="ElementShortName">LH_Ci</obj_property>
+      <obj_property name="ObjectShortName">LH_Ci</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/A" type="logic">
+      <obj_property name="ElementShortName">A</obj_property>
+      <obj_property name="ObjectShortName">A</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/B" type="logic">
+      <obj_property name="ElementShortName">B</obj_property>
+      <obj_property name="ObjectShortName">B</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/C" type="logic">
+      <obj_property name="ElementShortName">C</obj_property>
+      <obj_property name="ObjectShortName">C</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/D" type="logic">
+      <obj_property name="ElementShortName">D</obj_property>
+      <obj_property name="ObjectShortName">D</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/E" type="logic">
+      <obj_property name="ElementShortName">E</obj_property>
+      <obj_property name="ObjectShortName">E</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/F" type="logic">
+      <obj_property name="ElementShortName">F</obj_property>
+      <obj_property name="ObjectShortName">F</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/G" type="logic">
+      <obj_property name="ElementShortName">G</obj_property>
+      <obj_property name="ObjectShortName">G</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/H" type="logic">
+      <obj_property name="ElementShortName">H</obj_property>
+      <obj_property name="ObjectShortName">H</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/S0" type="logic">
+      <obj_property name="ElementShortName">S0</obj_property>
+      <obj_property name="ObjectShortName">S0</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/S1" type="logic">
+      <obj_property name="ElementShortName">S1</obj_property>
+      <obj_property name="ObjectShortName">S1</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/S2" type="logic">
+      <obj_property name="ElementShortName">S2</obj_property>
+      <obj_property name="ObjectShortName">S2</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/S3" type="logic">
+      <obj_property name="ElementShortName">S3</obj_property>
+      <obj_property name="ObjectShortName">S3</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LA_O" type="logic">
+      <obj_property name="ElementShortName">LA_O</obj_property>
+      <obj_property name="ObjectShortName">LA_O</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LA_Co" type="logic">
+      <obj_property name="ElementShortName">LA_Co</obj_property>
+      <obj_property name="ObjectShortName">LA_Co</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LB_O" type="logic">
+      <obj_property name="ElementShortName">LB_O</obj_property>
+      <obj_property name="ObjectShortName">LB_O</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LB_Co" type="logic">
+      <obj_property name="ElementShortName">LB_Co</obj_property>
+      <obj_property name="ObjectShortName">LB_Co</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LC_O" type="logic">
+      <obj_property name="ElementShortName">LC_O</obj_property>
+      <obj_property name="ObjectShortName">LC_O</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LC_Co" type="logic">
+      <obj_property name="ElementShortName">LC_Co</obj_property>
+      <obj_property name="ObjectShortName">LC_Co</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LD_O" type="logic">
+      <obj_property name="ElementShortName">LD_O</obj_property>
+      <obj_property name="ObjectShortName">LD_O</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LD_Co" type="logic">
+      <obj_property name="ElementShortName">LD_Co</obj_property>
+      <obj_property name="ObjectShortName">LD_Co</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LE_O" type="logic">
+      <obj_property name="ElementShortName">LE_O</obj_property>
+      <obj_property name="ObjectShortName">LE_O</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LE_Co" type="logic">
+      <obj_property name="ElementShortName">LE_Co</obj_property>
+      <obj_property name="ObjectShortName">LE_Co</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LF_O" type="logic">
+      <obj_property name="ElementShortName">LF_O</obj_property>
+      <obj_property name="ObjectShortName">LF_O</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LF_Co" type="logic">
+      <obj_property name="ElementShortName">LF_Co</obj_property>
+      <obj_property name="ObjectShortName">LF_Co</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LG_O" type="logic">
+      <obj_property name="ElementShortName">LG_O</obj_property>
+      <obj_property name="ObjectShortName">LG_O</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LG_Co" type="logic">
+      <obj_property name="ElementShortName">LG_Co</obj_property>
+      <obj_property name="ObjectShortName">LG_Co</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LH_O" type="logic">
+      <obj_property name="ElementShortName">LH_O</obj_property>
+      <obj_property name="ObjectShortName">LH_O</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/LH_Co" type="logic">
+      <obj_property name="ElementShortName">LH_Co</obj_property>
+      <obj_property name="ObjectShortName">LH_Co</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/M_AB" type="logic">
+      <obj_property name="ElementShortName">M_AB</obj_property>
+      <obj_property name="ObjectShortName">M_AB</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/M_AD" type="logic">
+      <obj_property name="ElementShortName">M_AD</obj_property>
+      <obj_property name="ObjectShortName">M_AD</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/M_AH" type="logic">
+      <obj_property name="ElementShortName">M_AH</obj_property>
+      <obj_property name="ObjectShortName">M_AH</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/M_EF" type="logic">
+      <obj_property name="ElementShortName">M_EF</obj_property>
+      <obj_property name="ObjectShortName">M_EF</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/J2MID_ABa_BEG" type="array">
+      <obj_property name="ElementShortName">J2MID_ABa_BEG[4:0]</obj_property>
+      <obj_property name="ObjectShortName">J2MID_ABa_BEG[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/J2MID_CDa_BEG" type="array">
+      <obj_property name="ElementShortName">J2MID_CDa_BEG[4:0]</obj_property>
+      <obj_property name="ObjectShortName">J2MID_CDa_BEG[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/J2MID_EFa_BEG" type="array">
+      <obj_property name="ElementShortName">J2MID_EFa_BEG[4:0]</obj_property>
+      <obj_property name="ObjectShortName">J2MID_EFa_BEG[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/J2MID_GHa_BEG" type="array">
+      <obj_property name="ElementShortName">J2MID_GHa_BEG[4:0]</obj_property>
+      <obj_property name="ObjectShortName">J2MID_GHa_BEG[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/J2MID_ABb_BEG" type="array">
+      <obj_property name="ElementShortName">J2MID_ABb_BEG[4:0]</obj_property>
+      <obj_property name="ObjectShortName">J2MID_ABb_BEG[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/J2MID_CDb_BEG" type="array">
+      <obj_property name="ElementShortName">J2MID_CDb_BEG[4:0]</obj_property>
+      <obj_property name="ObjectShortName">J2MID_CDb_BEG[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/J2MID_EFb_BEG" type="array">
+      <obj_property name="ElementShortName">J2MID_EFb_BEG[4:0]</obj_property>
+      <obj_property name="ObjectShortName">J2MID_EFb_BEG[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/J2MID_GHb_BEG" type="array">
+      <obj_property name="ElementShortName">J2MID_GHb_BEG[4:0]</obj_property>
+      <obj_property name="ObjectShortName">J2MID_GHb_BEG[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/J2END_AB_BEG" type="array">
+      <obj_property name="ElementShortName">J2END_AB_BEG[4:0]</obj_property>
+      <obj_property name="ObjectShortName">J2END_AB_BEG[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/J2END_CD_BEG" type="array">
+      <obj_property name="ElementShortName">J2END_CD_BEG[4:0]</obj_property>
+      <obj_property name="ObjectShortName">J2END_CD_BEG[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/J2END_EF_BEG" type="array">
+      <obj_property name="ElementShortName">J2END_EF_BEG[4:0]</obj_property>
+      <obj_property name="ObjectShortName">J2END_EF_BEG[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/J2END_GH_BEG" type="array">
+      <obj_property name="ElementShortName">J2END_GH_BEG[4:0]</obj_property>
+      <obj_property name="ObjectShortName">J2END_GH_BEG[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/JN2BEG" type="array">
+      <obj_property name="ElementShortName">JN2BEG[8:0]</obj_property>
+      <obj_property name="ObjectShortName">JN2BEG[8:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/JE2BEG" type="array">
+      <obj_property name="ElementShortName">JE2BEG[8:0]</obj_property>
+      <obj_property name="ObjectShortName">JE2BEG[8:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/JS2BEG" type="array">
+      <obj_property name="ElementShortName">JS2BEG[8:0]</obj_property>
+      <obj_property name="ObjectShortName">JS2BEG[8:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/JW2BEG" type="array">
+      <obj_property name="ElementShortName">JW2BEG[8:0]</obj_property>
+      <obj_property name="ObjectShortName">JW2BEG[8:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/J_l_AB_BEG" type="array">
+      <obj_property name="ElementShortName">J_l_AB_BEG[4:0]</obj_property>
+      <obj_property name="ObjectShortName">J_l_AB_BEG[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/J_l_CD_BEG" type="array">
+      <obj_property name="ElementShortName">J_l_CD_BEG[4:0]</obj_property>
+      <obj_property name="ObjectShortName">J_l_CD_BEG[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/J_l_EF_BEG" type="array">
+      <obj_property name="ElementShortName">J_l_EF_BEG[4:0]</obj_property>
+      <obj_property name="ObjectShortName">J_l_EF_BEG[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/J_l_GH_BEG" type="array">
+      <obj_property name="ElementShortName">J_l_GH_BEG[4:0]</obj_property>
+      <obj_property name="ObjectShortName">J_l_GH_BEG[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_com_loader/Tile_X6Y3_LUT4AB/conf_data" type="array">
+      <obj_property name="ElementShortName">conf_data[10:0]</obj_property>
+      <obj_property name="ObjectShortName">conf_data[10:0]</obj_property>
+   </wvobject>
+</wave_config>

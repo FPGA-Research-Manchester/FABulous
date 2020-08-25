@@ -1,0 +1,44 @@
+Vivado Simulator 2016.3
+Copyright 1986-1999, 2001-2016 Xilinx, Inc. All Rights Reserved.
+Running: C:/Xilinx/Vivado/2016.3/bin/unwrapped/win64.o/xelab.exe -wto 87f8b7b1cecd4e3c9340a6f0d61fcc62 --debug typical --relax --mt 2 -L xil_defaultlib -L secureip --snapshot tb_eFPGA_top_behav xil_defaultlib.tb_eFPGA_top -log elaborate.log 
+Using 2 slave threads.
+Starting static elaboration
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling package std.standard
+Compiling package std.textio
+Compiling package ieee.std_logic_1164
+Compiling package ieee.std_logic_arith
+Compiling package ieee.std_logic_unsigned
+Compiling package ieee.numeric_std
+Compiling package xil_defaultlib.my_package
+Compiling package unisim.vcomponents
+Compiling architecture a_com_conf of entity xil_defaultlib.config_UART [\config_UART(comrate=25)(1,4)\]
+Compiling architecture behavioral of entity xil_defaultlib.N_term_single_switch_matrix [n_term_single_switch_matrix_defa...]
+Compiling architecture behavioral of entity xil_defaultlib.N_term_single [n_term_single_default]
+Compiling architecture behavioral of entity xil_defaultlib.LHQD1 [lhqd1_default]
+Compiling architecture behavioral of entity xil_defaultlib.W_IO_ConfigMem [w_io_configmem_default]
+Compiling architecture iobuf_v of entity unisim.IOBUF [\IOBUF(1,7,1,4)\]
+Compiling architecture behavioral of entity xil_defaultlib.IO_1_bidirectional_frame_config [io_1_bidirectional_frame_config_...]
+Compiling architecture behavioral of entity xil_defaultlib.MUX16PTv2 [mux16ptv2_default]
+Compiling architecture behavioral of entity xil_defaultlib.MUX4PTv4 [mux4ptv4_default]
+Compiling architecture behavioral of entity xil_defaultlib.W_IO_switch_matrix [w_io_switch_matrix_default]
+Compiling architecture behavioral of entity xil_defaultlib.W_IO [w_io_default]
+Compiling architecture behavioral of entity xil_defaultlib.LUT4AB_ConfigMem [lut4ab_configmem_default]
+Compiling architecture behavioral of entity xil_defaultlib.LUT4c_frame_config [lut4c_frame_config_default]
+Compiling architecture behavioral of entity xil_defaultlib.MUX8LUT_frame_config [mux8lut_frame_config_default]
+Compiling architecture behavioral of entity xil_defaultlib.LUT4AB_switch_matrix [lut4ab_switch_matrix_default]
+Compiling architecture behavioral of entity xil_defaultlib.LUT4AB [lut4ab_default]
+Compiling architecture behavioral of entity xil_defaultlib.CPU_IO_ConfigMem [cpu_io_configmem_default]
+Compiling architecture behavioral of entity xil_defaultlib.InPass4_frame_config [inpass4_frame_config_default]
+Compiling architecture behavioral of entity xil_defaultlib.OutPass4_frame_config [outpass4_frame_config_default]
+Compiling architecture behavioral of entity xil_defaultlib.CPU_IO_switch_matrix [cpu_io_switch_matrix_default]
+Compiling architecture behavioral of entity xil_defaultlib.CPU_IO [cpu_io_default]
+Compiling architecture behavioral of entity xil_defaultlib.S_term_single_switch_matrix [s_term_single_switch_matrix_defa...]
+Compiling architecture behavioral of entity xil_defaultlib.S_term_single [s_term_single_default]
+Compiling architecture behavioral of entity xil_defaultlib.eFPGA [efpga_default]
+Compiling architecture behavioral of entity xil_defaultlib.eFPGA_top [efpga_top_default]
+Compiling architecture a_tb_efpga_top of entity xil_defaultlib.tb_efpga_top
+Built simulation snapshot tb_eFPGA_top_behav

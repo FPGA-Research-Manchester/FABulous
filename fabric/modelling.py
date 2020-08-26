@@ -241,34 +241,23 @@ def genNextpnrModel(archObject: Fabric):
 				pipsStr += "\n"
 
 			#TODO: fix this when able to techmap to MUX8 tiles.
-			if tile.tileType == "LUT4AB":
-				pipsStr += "Temporary mux filler:" + "\n"
-				# for i in range(8):
-				# 	pipsStr += ",".join((tileLoc, letters[i], tileLoc, "M_AH",sDelay,".".join((letters[i], "M_AH"))))
-				# 	pipsStr += "\n"
-				# for i in range(4):
-				# 	pipsStr += ",".join((tileLoc, letters[i], tileLoc, "M_AD",sDelay,".".join((letters[i], "M_AD"))))
-				# 	pipsStr += "\n"
-				# for i in range(2):
-				# 	pipsStr += ",".join((tileLoc, letters[i], tileLoc, "M_AB",sDelay,".".join((letters[i], "M_AB"))))
-				# 	pipsStr += "\n"
-				# for i in range(4,6):
-				# 	pipsStr += ",".join((tileLoc, letters[i], tileLoc, "M_EF",sDelay,".".join((letters[i], "M_EF"))))
-				# 	pipsStr += "\n"
-				pipsStr += ",".join((tileLoc, "AB", tileLoc, "M_AB",sDelay,"AB.M_AB"))
-				pipsStr += ",".join((tileLoc, "EF", tileLoc, "M_EF",sDelay,"EF.M_EF"))
-				pipsStr += ",".join((tileLoc, "S0", tileLoc, "sCD",sDelay,"S0.sCD"))
-				pipsStr += ",".join((tileLoc, "S1", tileLoc, "sCD",sDelay,"S1.sCD"))
-				pipsStr += ",".join((tileLoc, "S0", tileLoc, "sEF",sDelay,"S0.sEF"))
-				pipsStr += ",".join((tileLoc, "S2", tileLoc, "sEF",sDelay,"S2.sEF"))
-				pipsStr += ",".join((tileLoc, "sEF", tileLoc, "sGH",sDelay,"sEF.sGH"))
-				pipsStr += ",".join((tileLoc, "sEH", tileLoc, "sGH",sDelay,"sEH.sGH"))
-				pipsStr += ",".join((tileLoc, "S1", tileLoc, "sEH",sDelay,"S1.sEH"))
-				pipsStr += ",".join((tileLoc, "S3", tileLoc, "sEH",sDelay,"S3.sEH"))
-				pipsStr += ",".join((tileLoc, "AD", tileLoc, "M_AD",sDelay,"AD.M_AD"))
-				pipsStr += ",".join((tileLoc, "CD", tileLoc, "M_AD",sDelay,"CD.M_AD"))
-				pipsStr += ",".join((tileLoc, "AH", tileLoc, "M_AH",sDelay,"AH.M_AH"))
-				pipsStr += ",".join((tileLoc, "EH_GH", tileLoc, "M_AH",sDelay,"EH_GH.M_AH"))
+			# if tile.tileType == "LUT4AB":
+			# 	pipsStr += "Temporary mux filler:" + "\n"
+
+				# pipsStr += ",".join((tileLoc, "AB", tileLoc, "M_AB",sDelay,"AB.M_AB"))
+				# pipsStr += ",".join((tileLoc, "EF", tileLoc, "M_EF",sDelay,"EF.M_EF"))
+				# pipsStr += ",".join((tileLoc, "S0", tileLoc, "sCD",sDelay,"S0.sCD"))
+				# pipsStr += ",".join((tileLoc, "S1", tileLoc, "sCD",sDelay,"S1.sCD"))
+				# pipsStr += ",".join((tileLoc, "S0", tileLoc, "sEF",sDelay,"S0.sEF"))
+				# pipsStr += ",".join((tileLoc, "S2", tileLoc, "sEF",sDelay,"S2.sEF"))
+				# pipsStr += ",".join((tileLoc, "sEF", tileLoc, "sGH",sDelay,"sEF.sGH"))
+				# pipsStr += ",".join((tileLoc, "sEH", tileLoc, "sGH",sDelay,"sEH.sGH"))
+				# pipsStr += ",".join((tileLoc, "S1", tileLoc, "sEH",sDelay,"S1.sEH"))
+				# pipsStr += ",".join((tileLoc, "S3", tileLoc, "sEH",sDelay,"S3.sEH"))
+				# pipsStr += ",".join((tileLoc, "AD", tileLoc, "M_AD",sDelay,"AD.M_AD"))
+				# pipsStr += ",".join((tileLoc, "CD", tileLoc, "M_AD",sDelay,"CD.M_AD"))
+				# pipsStr += ",".join((tileLoc, "AH", tileLoc, "M_AH",sDelay,"AH.M_AH"))
+				# pipsStr += ",".join((tileLoc, "EH_GH", tileLoc, "M_AH",sDelay,"EH_GH.M_AH"))
 
 
 
@@ -317,14 +306,15 @@ def genNextpnrModel(archObject: Fabric):
 				#belsStr += tileLoc + "," + ",".join(tile.genTileLoc(True))+"\n" #Add BELs
 				if bel == "MUX8_frame_config":
 					#TODO: remove when techmapping to MUX8s is complete.
-					belStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)), let, "MUXF7", "A,B,S0,AB")) + "\n"
-					belStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)), let, "MUXF7", "C,D,sCD,CD")) + "\n"
-					belStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)), let, "MUXF7", "E,F,sEF,EF")) + "\n"
-					belStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)), let, "MUXF7", "G,H,SGH,GH")) + "\n"
-					belStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)), let, "MUXF8", "AB,CD,S1,AD")) + "\n"
-					belStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)), let, "MUXF8", "EF,GH,sEH,EH")) + "\n"
-					belStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)), let, "MUXF8", "AD,EH,S3,EH_GH")) + "\n"
-					continue
+					# belStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)), let, "MUXF7", "A,B,S0,AB")) + "\n"
+					# belStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)), let, "MUXF7", "C,D,sCD,CD")) + "\n"
+					# belStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)), let, "MUXF7", "E,F,sEF,EF")) + "\n"
+					# belStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)), let, "MUXF7", "G,H,SGH,GH")) + "\n"
+					# belStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)), let, "MUXF8", "AB,CD,S1,AD")) + "\n"
+					# belStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)), let, "MUXF8", "EF,GH,sEH,EH")) + "\n"
+					# belStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)), let, "MUXF8", "AD,EH,S3,EH_GH")) + "\n"
+					# continue
+					pass 
 				if bel == "LUT4c_frame_config":
 					cType = "LUT4"
 				elif bel == "IO_1_bidirectional_frame_config_pass":

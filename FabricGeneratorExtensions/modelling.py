@@ -43,7 +43,7 @@ class Fabric:
 letters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K"] #For LUT labelling
 
 
-#This function gets a relevant instance of a tile for a given type - this just saves adding more object attributes, though not the most efficient. Maybe rewrite this later.
+#This function gets a relevant instance of a tile for a given type - this just saves adding more object attributes
 def getTileByType(fabricObject: Fabric, cellType: str):
 	for line in fabricObject.tiles:
 		for tile in line:
@@ -111,21 +111,19 @@ def genFabricObject(fabric: list):
 			cTile.wires = wires
 			cTile.x = j
 			cTile.y = archFabric.height - i -1
-			#Clean up belList later maybe - it wouldn't work like you'd expect it to and this worked so I'm using it for now
 			cTile.bels = belList
 			row.append(cTile)
 		archFabric.tiles.append(row)
-			#print(tile)
-			#print(wires)
+
 	archFabric.cellTypes = GetCellTypes(fabric)
 	return archFabric
 
 
 def genVPRModel(fabricObject: Fabric):
+	raise Exception("VPR Model generation is not yet functional")
 	modelStr = "<architecture>\n"
 
 	modelStr += "<models>\n"
-	#may need to convert vhdl -> verilog -> blif for this
 	for type in fabricObject.cellTypes:
 		if type == "LUT4AB":
 			continue
@@ -165,7 +163,7 @@ def genVPRModel(fabricObject: Fabric):
 	switchBlocksStr = "" #This string will hold switchblock details to be added later
 
 	modelStr += "<device>\n"
-	#this string is from the example as a filler until I understand what it means lol
+	#this string is from the example as a filler
 	modelStr += """<sizing R_minW_nmos="6065.520020" R_minW_pmos="18138.500000"/>
     <area grid_logic_tile_area="14813.392"/>
     <!--area is for soft logic only-->
@@ -177,7 +175,7 @@ def genVPRModel(fabricObject: Fabric):
     <connection_block input_switch_name="ipin_cblock"/>"""
 	modelStr += "</device>\n"
 
-	#also a filler because this is a lot of numbers that I don't rlly get (although several of them are 0 which I've heard of)
+	#also a filler 
 	modelStr += "<switchlist>\n"
 	modelStr += """<switch type="mux" name="0" R="0.000000" Cin="0.000000e+00" Cout="0.000000e+00" Tdel="6.837e-11" mux_trans_size="2.630740" buf_size="27.645901"/>
     <!--switch ipin_cblock resistance set to yeild for 4x minimum drive strength buffer-->
@@ -200,7 +198,6 @@ def genVPRModel(fabricObject: Fabric):
 	modelStr += "<complexblocklist>\n"
 	for cellType in fabricObject.cellTypes: #Define cell types
 		modelStr += f"<pb_type name=\"{cellType}\" "
-		#Add this in a sub pb_type I think?
 		#if cellType == "LUT4AB":
 		#	modelStr += "blif_model=\".name\""
 		#else:
@@ -229,7 +226,7 @@ def genVPRModel(fabricObject: Fabric):
 
 def genNextpnrModel(archObject: Fabric):
 	pipsStr = "" 
-	belsStr = f"# BEL descriptions: bottom left corner Tile_X0Y0, top right {archObject.tiles[0][archObject.width - 1].genTileLoc()}\n" #Add a handy comment
+	belsStr = f"# BEL descriptions: bottom left corner Tile_X0Y0, top right {archObject.tiles[0][archObject.width - 1].genTileLoc()}\n" 
 
 	for line in archObject.tiles:
 		for tile in line:
@@ -243,35 +240,24 @@ def genNextpnrModel(archObject: Fabric):
 				pipsStr += ",".join((tileLoc, pip[0], tileLoc, pip[1],sDelay,".".join((pip[0], pip[1])))) #Add the pips (also delay should be done here later, the 80 is a filler)
 				pipsStr += "\n"
 
-			#Remove this later, it's just here as a lazy mux - it's not any more but will still probably need changes
-			if tile.tileType == "LUT4AB":
-				pipsStr += "#Less lazy mux here:" + "\n"
-				# for i in range(8):
-				# 	pipsStr += ",".join((tileLoc, letters[i], tileLoc, "M_AH",sDelay,".".join((letters[i], "M_AH"))))
-				# 	pipsStr += "\n"
-				# for i in range(4):
-				# 	pipsStr += ",".join((tileLoc, letters[i], tileLoc, "M_AD",sDelay,".".join((letters[i], "M_AD"))))
-				# 	pipsStr += "\n"
-				# for i in range(2):
-				# 	pipsStr += ",".join((tileLoc, letters[i], tileLoc, "M_AB",sDelay,".".join((letters[i], "M_AB"))))
-				# 	pipsStr += "\n"
-				# for i in range(4,6):
-				# 	pipsStr += ",".join((tileLoc, letters[i], tileLoc, "M_EF",sDelay,".".join((letters[i], "M_EF"))))
-				# 	pipsStr += "\n"
-				pipsStr += ",".join((tileLoc, "AB", tileLoc, "M_AB",sDelay,"AB.M_AB"))
-				pipsStr += ",".join((tileLoc, "EF", tileLoc, "M_EF",sDelay,"EF.M_EF"))
-				pipsStr += ",".join((tileLoc, "S0", tileLoc, "sCD",sDelay,"S0.sCD"))
-				pipsStr += ",".join((tileLoc, "S1", tileLoc, "sCD",sDelay,"S1.sCD"))
-				pipsStr += ",".join((tileLoc, "S0", tileLoc, "sEF",sDelay,"S0.sEF"))
-				pipsStr += ",".join((tileLoc, "S2", tileLoc, "sEF",sDelay,"S2.sEF"))
-				pipsStr += ",".join((tileLoc, "sEF", tileLoc, "sGH",sDelay,"sEF.sGH"))
-				pipsStr += ",".join((tileLoc, "sEH", tileLoc, "sGH",sDelay,"sEH.sGH"))
-				pipsStr += ",".join((tileLoc, "S1", tileLoc, "sEH",sDelay,"S1.sEH"))
-				pipsStr += ",".join((tileLoc, "S3", tileLoc, "sEH",sDelay,"S3.sEH"))
-				pipsStr += ",".join((tileLoc, "AD", tileLoc, "M_AD",sDelay,"AD.M_AD"))
-				pipsStr += ",".join((tileLoc, "CD", tileLoc, "M_AD",sDelay,"CD.M_AD"))
-				pipsStr += ",".join((tileLoc, "AH", tileLoc, "M_AH",sDelay,"AH.M_AH"))
-				pipsStr += ",".join((tileLoc, "EH_GH", tileLoc, "M_AH",sDelay,"EH_GH.M_AH"))
+			#TODO: fix this when able to techmap to MUX8 tiles.
+			# if tile.tileType == "LUT4AB":
+			# 	pipsStr += "Temporary mux filler:" + "\n"
+
+				# pipsStr += ",".join((tileLoc, "AB", tileLoc, "M_AB",sDelay,"AB.M_AB"))
+				# pipsStr += ",".join((tileLoc, "EF", tileLoc, "M_EF",sDelay,"EF.M_EF"))
+				# pipsStr += ",".join((tileLoc, "S0", tileLoc, "sCD",sDelay,"S0.sCD"))
+				# pipsStr += ",".join((tileLoc, "S1", tileLoc, "sCD",sDelay,"S1.sCD"))
+				# pipsStr += ",".join((tileLoc, "S0", tileLoc, "sEF",sDelay,"S0.sEF"))
+				# pipsStr += ",".join((tileLoc, "S2", tileLoc, "sEF",sDelay,"S2.sEF"))
+				# pipsStr += ",".join((tileLoc, "sEF", tileLoc, "sGH",sDelay,"sEF.sGH"))
+				# pipsStr += ",".join((tileLoc, "sEH", tileLoc, "sGH",sDelay,"sEH.sGH"))
+				# pipsStr += ",".join((tileLoc, "S1", tileLoc, "sEH",sDelay,"S1.sEH"))
+				# pipsStr += ",".join((tileLoc, "S3", tileLoc, "sEH",sDelay,"S3.sEH"))
+				# pipsStr += ",".join((tileLoc, "AD", tileLoc, "M_AD",sDelay,"AD.M_AD"))
+				# pipsStr += ",".join((tileLoc, "CD", tileLoc, "M_AD",sDelay,"CD.M_AD"))
+				# pipsStr += ",".join((tileLoc, "AH", tileLoc, "M_AH",sDelay,"AH.M_AH"))
+				# pipsStr += ",".join((tileLoc, "EH_GH", tileLoc, "M_AH",sDelay,"EH_GH.M_AH"))
 
 
 
@@ -319,22 +305,22 @@ def genNextpnrModel(archObject: Fabric):
 					nports.append(prefix + port)
 				#belsStr += tileLoc + "," + ",".join(tile.genTileLoc(True))+"\n" #Add BELs
 				if bel == "MUX8_frame_config":
-					#lots of bels to do here lol
-					belStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)), let, "MUXF7", "A,B,S0,AB")) + "\n"
-					belStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)), let, "MUXF7", "C,D,sCD,CD")) + "\n"
-					belStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)), let, "MUXF7", "E,F,sEF,EF")) + "\n"
-					belStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)), let, "MUXF7", "G,H,SGH,GH")) + "\n"
-					belStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)), let, "MUXF8", "AB,CD,S1,AD")) + "\n"
-					belStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)), let, "MUXF8", "EF,GH,sEH,EH")) + "\n"
-					belStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)), let, "MUXF8", "AD,EH,S3,EH_GH")) + "\n"
-					continue
+					#TODO: remove when techmapping to MUX8s is complete.
+					# belStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)), let, "MUXF7", "A,B,S0,AB")) + "\n"
+					# belStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)), let, "MUXF7", "C,D,sCD,CD")) + "\n"
+					# belStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)), let, "MUXF7", "E,F,sEF,EF")) + "\n"
+					# belStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)), let, "MUXF7", "G,H,SGH,GH")) + "\n"
+					# belStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)), let, "MUXF8", "AB,CD,S1,AD")) + "\n"
+					# belStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)), let, "MUXF8", "EF,GH,sEH,EH")) + "\n"
+					# belStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)), let, "MUXF8", "AD,EH,S3,EH_GH")) + "\n"
+					# continue
+					pass 
 				if bel == "LUT4c_frame_config":
 					cType = "LUT4"
 				elif bel == "IO_1_bidirectional_frame_config_pass":
 					cType = "IOBUF"
 				else:
 					cType = bel
-				#Modify the below - the last value should be the output I think?
 				belsStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)), let, cType, ",".join(nports))) + "\n"
 
 			
@@ -343,7 +329,6 @@ def genNextpnrModel(archObject: Fabric):
 
 
 def genBitstreamSpec(archObject: Fabric):
-	##plan for layout: {"TileMap": {Tile: Type}, "TileSpecs":{TileType:{"Feature":("Bit index","Value")}}}
 	specData = {"TileMap":{}, "TileSpecs":{}, "FrameMap":{}, "ArchSpecs":{"MaxFramesPerCol":0, "FrameBitsPerRow":0}}
 	BelMap = {}
 	for line in archObject.tiles:
@@ -433,7 +418,7 @@ def genBitstreamSpec(archObject: Fabric):
 				curTileMap[name + "." +featureKey] = {BelMap[belType][featureKey] + curBitOffset: "1"}
 				tempOffset += 1
 			curBitOffset += tempOffset
-		csvFile = [i.strip('\n').split(',') for i in open(curTile.matrixFileName)] #Adjust this to use fabric.csv matrix attribute
+		csvFile = [i.strip('\n').split(',') for i in open(curTile.matrixFileName)] 
 		pipCounts = [int(row[-1]) for row in csvFile[1::]]
 		csvFile = RemoveComments(csvFile)
 		sinks = [line[0] for line in csvFile]

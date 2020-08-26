@@ -18,6 +18,9 @@ class Tile:
 	wires = []
 	pips = []
 	matrixFileName = ""
+	pipMuxes_MapSourceToSinks= []
+	pipMuxes_MapSinkToSources= []
+
 	x = -1 #Init with negative values to ease debugging
 	y = -1
 	
@@ -29,6 +32,7 @@ class Tile:
 			return("X" + str(self.x), "Y" + str(self.y))
 		return "X" + str(self.x) + "Y" + str(self.y)
 
+
 #This class represents the fabric as a whole
 class Fabric:
 	tiles = []
@@ -36,11 +40,26 @@ class Fabric:
 	width = 0
 	cellTypes = []
 
+
 	def __init__(self, inHeight, inWidth):
 		self.width = inWidth
 		self.height = inHeight
 
-letters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K"] #For LUT labelling
+	def getTileByCoords(self, x: int, y: int):
+		for row in self.tiles:
+			for tile in row:
+				if tile.x == x and tile.y == y:
+					return tile
+		return None
+
+	def getTileByLoc(self, loc: str):
+		for row in self.tiles:
+			for tile in row:
+				if tile.genTileLoc == loc:
+					return tile
+		return None
+
+letters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W"] #For LUT labelling
 
 
 #This function gets a relevant instance of a tile for a given type - this just saves adding more object attributes
@@ -53,7 +72,7 @@ def getTileByType(fabricObject: Fabric, cellType: str):
 
 #This function parses the contents of a CSV with comments removed to get where potential interconnects are
 #The current implementation has two potential outputs: pips is a list of pairings (designed for single PIPs), whereas pipsdict maps each source to all possible sinks (designed with multiplexers in mind)
-def findPipList(csvFile: list, returnDict: bool = False):
+def findPipList(csvFile: list, returnDict: bool = False, mapSourceToSinks: bool = False):
 	sinks = [line[0] for line in csvFile]
 	sources = csvFile[0]
 	pips = []
@@ -66,10 +85,16 @@ def findPipList(csvFile: list, returnDict: bool = False):
 			#Remember that x and y are offset 
 			if value == "1":
 				pips.append([sources[x+1], sinks[y+1]])
-				if sources[x+1] in pipsdict.keys():
-					pipsdict[sources[x+1]].append(sinks[y+1])
+				if mapSourceToSinks:
+					if sources[x+1] in pipsdict.keys():
+						pipsdict[sources[x+1]].append(sinks[y+1])
+					else:
+						pipsdict[sources[x+1]]= [sinks[y+1]]					
 				else:
-					pipsdict[sources[x+1]]= [sinks[y+1]]
+					if sinks[y+1] in pipsdict.keys():
+						pipsdict[sinks[y+1]].append(sources[x+1])
+					else:
+						pipsdict[sinks[y+1]]= [sources[x+1]]
 	#return ""
 	if returnDict:
 		return pipsdict
@@ -83,13 +108,29 @@ def genFabricObject(fabric: list):
 	#The following iterates through the tile designations on the fabric
 	archFabric = Fabric(len(fabric), len(fabric[0]))
 
+	portMap = {}
+	wireMap = {}
+	# for i, line in enumerate(fabric):
+	# 	for j, tile in enumerate(line):
+	# 		tileList = GetTileFromFile(FabricFile, tile)
+	# 		portList = []
+	# 		for wire in tileList:
+	# 			if wire[0] in ["NORTH", "SOUTH", "EAST", "WEST"]:
+	# 				if wire[1] != "NULL":
+	# 					portList.append(wire[1])
+	# 				if wire[4] != "NULL":
+	# 					portList.append(wire[4])
+	# 		portMap["I" + str(i) + "J" + str(j)] = portList
+
 	for i, line in enumerate(fabric):
 		row = []
-		for j, tile in enumerate(line):
+		for j, tile in enumerate(line): 
 			cTile = Tile(tile)
 			wires = []
 			belList = []
 			tileList = GetTileFromFile(FabricFile, tile)
+			portList = []
+			wireTextList = []
 			for wire in tileList:
 				if wire[0] == "MATRIX":
 					vhdlLoc = wire[1]
@@ -98,23 +139,58 @@ def genFabricObject(fabric: list):
 					try:
 						csvFile = RemoveComments([i.strip('\n').split(',') for i in open(csvLoc)])
 						cTile.pips = findPipList(csvFile) 
+						cTile.pipMuxes_MapSourceToSinks = findPipList(csvFile, returnDict = True, mapSourceToSinks = True)
+						cTile.pipMuxes_MapSinkToSources = findPipList(csvFile, returnDict = True, mapSourceToSinks = False)
 
 					except:
 						print("CSV File not found.") #Throw error here later
+
 				if wire[0] == "BEL":
 					if len(wire) > 2:
 						belList.append([wire[1][0:-5:], wire[2]])
 					else:
 						belList.append([wire[1][0:-5:], ""])
-				elif wire[0] in ["NORTH", "SOUTH", "EAST", "WEST", "JUMP"]: 
-					wires.append({"direction": wire[0], "source": wire[1], "xoffset": wire[2], "yoffset": wire[3], "destination": wire[4], "wire-count": wire[5]}) #Dicts may not be the most efficient way to do this but I'll stick with it for now for readability and because mutability may be handy later
+				elif wire[0] in ["NORTH", "SOUTH", "EAST", "WEST"]: 
+					#Wires are added in next pass - this pass generates port lists to be used for wire generation
+					if wire[1] != "NULL":
+						portList.append(wire[1])
+					if wire[4] != "NULL":
+						portList.append(wire[4])
+					wireTextList.append({"direction": wire[0], "source": wire[1], "xoffset": wire[2], "yoffset": wire[3], "destination": wire[4], "wire-count": wire[5]}) 
+				elif wire[0] == "JUMP":
+					if "NULL" not in wire:
+						wires.append({"direction": wire[0], "source": wire[1], "xoffset": wire[2], "yoffset": wire[3], "destination": wire[4], "wire-count": wire[5]}) 
 			cTile.wires = wires
 			cTile.x = j
 			cTile.y = archFabric.height - i -1
 			cTile.bels = belList
 			row.append(cTile)
+			portMap[cTile] = portList
+			wireMap[cTile] = wireTextList
 		archFabric.tiles.append(row)
 
+
+		#Add wires to model
+		for row in archFabric.tiles:
+			for tile in row:
+				wires = []
+				wireTextList = wireMap[tile]
+
+				#Wires from tile
+				for wire in wireTextList:
+					destinationTile = archFabric.getTileByCoords(tile.x + int(wire["xoffset"]), tile.y + int(wire["yoffset"]))
+					if (destinationTile == None) or ("NULL" in wire.values()) or (wire["destination"] not in portMap[destinationTile]):
+						continue
+					wires.append(wire)
+					portMap[destinationTile].remove(wire["destination"])
+
+				#Wires to tile
+					sourceTile = archFabric.getTileByCoords(tile.x - int(wire["xoffset"]), tile.y - int(wire["yoffset"]))
+					if (sourceTile == None) or ("NULL" in wire.values()) or (wire["source"] not in portMap[sourceTile]):
+						continue
+					sourceTile.wires.append(wire)
+					portMap[sourceTile].remove(wire["source"])
+				tile.wires.extend(wires)
 	archFabric.cellTypes = GetCellTypes(fabric)
 	return archFabric
 
@@ -227,7 +303,7 @@ def genVPRModel(fabricObject: Fabric):
 def genNextpnrModel(archObject: Fabric):
 	pipsStr = "" 
 	belsStr = f"# BEL descriptions: bottom left corner Tile_X0Y0, top right {archObject.tiles[0][archObject.width - 1].genTileLoc()}\n" 
-
+	pairStr = ""
 	for line in archObject.tiles:
 		for tile in line:
 
@@ -240,7 +316,7 @@ def genNextpnrModel(archObject: Fabric):
 				pipsStr += ",".join((tileLoc, pip[0], tileLoc, pip[1],sDelay,".".join((pip[0], pip[1])))) #Add the pips (also delay should be done here later, the 80 is a filler)
 				pipsStr += "\n"
 
-			#TODO: fix this when able to techmap to MUX8 tiles.
+			#TODO: fix this when able to techmap to MUX8 bels.
 			# if tile.tileType == "LUT4AB":
 			# 	pipsStr += "Temporary mux filler:" + "\n"
 
@@ -272,7 +348,7 @@ def genNextpnrModel(archObject: Fabric):
 				#else:
 				desty = tile.y + int(wire["yoffset"])
 
-				destx = tile.x + int(wire["xoffset"]) #No formula as there are no W/E terms
+				destx = tile.x + int(wire["xoffset"])
 				desttileLoc = f"X{destx}Y{desty}"
 				for i in range(int(wire["wire-count"])):
 					pipsStr += ",".join((tileLoc, wire["source"]+str(i), desttileLoc, wire["destination"]+str(i), sDelay, ".".join((wire["source"]+str(i), wire["destination"]+str(i)))))
@@ -302,7 +378,7 @@ def genNextpnrModel(archObject: Fabric):
 				for port in ports[0]:
 					nports.append(prefix + re.sub(" *\(.*\) *", "", str(port)))
 				for port in ports[1]:
-					nports.append(prefix + port)
+					nports.append(prefix + re.sub(" *\(.*\) *", "", str(port)))
 				#belsStr += tileLoc + "," + ",".join(tile.genTileLoc(True))+"\n" #Add BELs
 				if bel == "MUX8_frame_config":
 					#TODO: remove when techmapping to MUX8s is complete.
@@ -323,9 +399,32 @@ def genNextpnrModel(archObject: Fabric):
 					cType = bel
 				belsStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)), let, cType, ",".join(nports))) + "\n"
 
-			
+				#Generate wire beginning to wire beginning pairs for timing analysis
+				pairStr += "#" + tileLoc + "\n"
+				for wire in tile.wires:
+					for i in range(int(wire["wire-count"])):
+						desty = tile.y + int(wire["yoffset"])
 
-	return (pipsStr, belsStr)
+						destx = tile.x + int(wire["xoffset"]) 
+						destTile = archObject.getTileByCoords(destx, desty)
+
+						desttileLoc = f"X{destx}Y{desty}"
+						#print(wire["source"] + str(i))
+						#print(tile.pipMuxes.keys())
+						if (wire["destination"] + str(i)) not in destTile.pipMuxes_MapSourceToSinks.keys():
+							#print("Not Found")
+							continue
+						#print("Found")
+						for pipSink in destTile.pipMuxes_MapSourceToSinks[wire["destination"] + str(i)]:
+							if len(destTile.pipMuxes_MapSinkToSources[pipSink]) > 1:
+								pairStr += ",".join((".".join((tileLoc, wire["source"] + str(i))), ".".join((desttileLoc, pipSink)))) + "\n"
+							# else:
+							# 	finalDestination = ".".join((desttileLoc, pipSink))
+							# 	foundPhysicalPair = False
+							# 	while (not foundPhysicalPair):
+							# 		for wire in 
+
+	return (pipsStr, belsStr, pairStr)
 
 
 def genBitstreamSpec(archObject: Fabric):
@@ -480,7 +579,7 @@ def genBitstreamSpec(archObject: Fabric):
 			specData["ArchSpecs"]["FrameBitsPerRow"] = int(line[2])
 
 		configCSV.close()
-	print(specData)
+	#print(specData)
 	return specData
 	
 
@@ -524,6 +623,7 @@ fabric = GetFabric(FabricFile)  #filter = 'Fabric' is default to get the definit
 fabricObject = genFabricObject(fabric)
 pipFile = open("npnroutput/pips.txt","w")
 belFile = open("npnroutput/bel.txt", "w")
+pairFile = open("npnroutput/wirePairs.csv", "w")
 bitstreamSpecFile = open("bitstreamspec.txt", "wb")
 
 npnrModel = genNextpnrModel(fabricObject)
@@ -536,6 +636,7 @@ pickle.dump(specObject, bitstreamSpecFile)
 
 pipFile.write(npnrModel[0])
 belFile.write(npnrModel[1])
+pairFile.write(npnrModel[2])
 
 bitstreamSpecFile.close()
 pipFile.close()

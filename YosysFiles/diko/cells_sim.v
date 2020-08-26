@@ -59,10 +59,37 @@ module MUXF8(output O, input I0, I1, S);
 endmodule
 
 
+module LUTFF(input D, output Q);
+always @ ($global_clock) begin
+	Q <= D;
+end
+endmodule
+
 (*blackbox*)
+module MUX8LUT_frame_config(
+input A, B, C, D, E, F, G, H, S0, S1, S2, S3,
+output M_AB, M_AD, M_AH, M_EF
+);
+
+parameter [1:0] c0 = 0;
+parameter [1:0] c1 = 0;
+
+endmodule
+
+
 module MULADD (input [7:0]  A, B,
 		input [19:0] C,
 		output [19:0] Q);
+
+  parameter [1:0] A_reg = 0;
+  parameter [1:0] B_reg = 0;
+  parameter [1:0] C_reg = 0;
+
+  parameter [1:0] ACC = 0;
+
+  parameter [1:0] signExtension = 0;
+
+  parameter [1:0] ACCout = 0;
 
 	assign Q = A * B;
 endmodule

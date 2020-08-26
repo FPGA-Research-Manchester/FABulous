@@ -49,33 +49,21 @@ static void pack_lut_lutffs(Context *ctx)
             if (ctx->verbose)
                 log_info("packed cell %s into %s\n", ci->name.c_str(ctx), packed->name.c_str(ctx));
             // See if we can pack into a DFF
-            bool packed_dff = false;
+            bool has_dff = false;
             if (get_net_or_empty(ci, ctx->id("O"))) {
                 NetInfo *o = ci->ports.at(ctx->id("O")).net;
                 CellInfo *dff = net_only_drives(ctx, o, is_ff, ctx->id("D"), true);
-                auto lut_bel = ci->attrs.find(ctx->id("BEL"));
+                //auto lut_bel = ci->attrs.find(ctx->id("BEL"));
                 if (dff) {
                     if (ctx->verbose)
                         log_info("found attached dff %s\n", dff->name.c_str(ctx));
-                    auto dff_bel = dff->attrs.find(ctx->id("BEL"));
-                    if (lut_bel != ci->attrs.end() && dff_bel != dff->attrs.end() && lut_bel->second != dff_bel->second) {
-                        // Locations don't match, can't pack
-                    } else {
-                        lut_to_lc(ctx, ci, packed.get(), false);
-                        dff_to_lc(ctx, dff, packed.get(), false);
-                        ctx->nets.erase(o->name);
-                        if (dff_bel != dff->attrs.end())
-                            packed->attrs[ctx->id("BEL")] = dff_bel->second;
-                        packed_cells.insert(dff->name);
-                        if (ctx->verbose)
-                            log_info("packed cell %s into %s\n", dff->name.c_str(ctx), packed->name.c_str(ctx));
-                        packed_dff = true;
-                    }
+                    has_dff = true;
                 }
             }
-            if (!packed_dff) {
                 lut_to_lc(ctx, ci, packed.get(), true);
-            }
+                if (has_dff){
+                    packed->params[ctx->id("FF")] = 1;
+                }
 
 
 
@@ -143,6 +131,7 @@ static void pack_DSP(Context *ctx)
     std::unordered_set<IdString> packed_cells;
     std::vector<std::unique_ptr<CellInfo>> new_cells;
     for (auto cell : sorted(ctx->cells)) {
+
         CellInfo *ci = cell.second;
 //        if (ctx->verbose)
 //            log_info("cell '%s' is of type '%s'\n", ci->name.c_str(ctx), ci->type.c_str(ctx));

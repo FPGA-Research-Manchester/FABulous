@@ -1,0 +1,12 @@
+#-----------------------------------------------------------
+# Vivado v2016.3 (64-bit)
+# SW Build 1682563 on Mon Oct 10 19:07:27 MDT 2016
+# IP Build 1681267 on Mon Oct 10 21:28:31 MDT 2016
+# Start of session at: Sun May 26 20:34:50 2019
+# Process ID: 33060
+# Current directory: R:/work/FORTE/FPGA/fabric/vivado/test_fabric.runs/impl_1
+# Command line: vivado.exe -log eFPGA.vdi -applog -product Vivado -messageDb vivado.pb -mode batch -source eFPGA.tcl -notrace
+# Log file: R:/work/FORTE/FPGA/fabric/vivado/test_fabric.runs/impl_1/eFPGA.vdi
+# Journal file: R:/work/FORTE/FPGA/fabric/vivado/test_fabric.runs/impl_1\vivado.jou
+#-----------------------------------------------------------
+source eFPGA.tcl -notrace

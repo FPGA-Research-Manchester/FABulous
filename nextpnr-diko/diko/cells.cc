@@ -96,6 +96,10 @@ std::unique_ptr<CellInfo> create_diko_cell(Context *ctx, IdString type, std::str
         add_port(ctx, new_cell.get(), "I0", PORT_IN);
         add_port(ctx, new_cell.get(), "O", PORT_OUT);
     } else if (type == ctx->id("diko_MULADD")){
+    	new_cell->params[ctx->id("A_reg")] = "0";
+        new_cell->params[ctx->id("B_reg")] = "0";
+        new_cell->params[ctx->id("C_reg")] = "0";
+
         add_port(ctx, new_cell.get(), "A[0]", PORT_IN);
         add_port(ctx, new_cell.get(), "A[1]", PORT_IN);
         add_port(ctx, new_cell.get(), "A[2]", PORT_IN);

@@ -1,5 +1,11 @@
 
 `ifndef NO_LUT
+
+module  \$_FF__ (input D, output Q); 
+LUTFF #() _TECHMAP_REPLACE_ (.D(D), .Q(Q)); 
+endmodule
+
+
 module \$lut (A, Y);
   parameter WIDTH = 0;
   parameter LUT = 0;

@@ -1,0 +1,12 @@
+#-----------------------------------------------------------
+# Vivado v2016.3 (64-bit)
+# SW Build 1682563 on Mon Oct 10 19:07:27 MDT 2016
+# IP Build 1681267 on Mon Oct 10 21:28:31 MDT 2016
+# Start of session at: Wed Jun 26 21:49:42 2019
+# Process ID: 266504
+# Current directory: R:/work/FORTE/FPGA/fabric/vivado/test_fabric.runs/synth_1
+# Command line: vivado.exe -log LUT4AB.vds -product Vivado -mode batch -messageDb vivado.pb -notrace -source LUT4AB.tcl
+# Log file: R:/work/FORTE/FPGA/fabric/vivado/test_fabric.runs/synth_1/LUT4AB.vds
+# Journal file: R:/work/FORTE/FPGA/fabric/vivado/test_fabric.runs/synth_1\vivado.jou
+#-----------------------------------------------------------
+source LUT4AB.tcl -notrace

@@ -11,12 +11,17 @@ from gen import *
 import pickle
 
 sDelay = "8"
+GNDRE = re.compile("GND(\d*)")
+VCCRE = re.compile("VCC(\d*)")
+BracketAddingRE = re.compile("(.*)(\d+)")
+
 #This class represents individual tiles in the architecture
 class Tile:
 	tileType = ""
 	bels = []
 	wires = []
 	pips = []
+	belPorts = set()
 	matrixFileName = ""
 	pipMuxes_MapSourceToSinks= []
 	pipMuxes_MapSinkToSources= []
@@ -58,6 +63,25 @@ class Fabric:
 				if tile.genTileLoc == loc:
 					return tile
 		return None
+
+	def getTileAndWireByWireDest(self, loc: str, dest: str, jumps: bool = True):
+		for row in self.tiles:
+			for tile in row:
+				for wire in tile.wires:
+					if not jumps:
+						if wire["direction"] == "JUMP":
+							continue
+					for i in range(int(wire["wire-count"])):
+						desty = tile.y + int(wire["yoffset"])
+						destx = tile.x + int(wire["xoffset"])
+						desttileLoc = f"X{destx}Y{desty}"
+
+						if (desttileLoc == loc) and (wire["destination"] + str(i) == dest):
+							return (tile, wire, i)
+
+		return None
+
+
 
 letters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W"] #For LUT labelling
 
@@ -139,6 +163,7 @@ def genFabricObject(fabric: list):
 					try:
 						csvFile = RemoveComments([i.strip('\n').split(',') for i in open(csvLoc)])
 						cTile.pips = findPipList(csvFile) 
+
 						cTile.pipMuxes_MapSourceToSinks = findPipList(csvFile, returnDict = True, mapSourceToSinks = True)
 						cTile.pipMuxes_MapSinkToSources = findPipList(csvFile, returnDict = True, mapSourceToSinks = False)
 
@@ -146,10 +171,26 @@ def genFabricObject(fabric: list):
 						print("CSV File not found.") #Throw error here later
 
 				if wire[0] == "BEL":
+					try:
+						ports = GetComponentPortsFromFile(wire[1])
+					except:
+						raise Exception(f"{wire[1]} file for BEL not found")
+
 					if len(wire) > 2:
-						belList.append([wire[1][0:-5:], wire[2]])
+						prefix = wire[2]
 					else:
-						belList.append([wire[1][0:-5:], ""])
+						prefix = ""
+					nports = []
+
+
+					for port in ports[0]:
+						nports.append(prefix + re.sub(" *\(.*\) *", "", str(port)))
+					for port in ports[1]:
+						nports.append(prefix + re.sub(" *\(.*\) *", "", str(port)))
+					cTile.belPorts.update(nports)
+
+					belList.append([wire[1][0:-5:], prefix, nports])
+
 				elif wire[0] in ["NORTH", "SOUTH", "EAST", "WEST"]: 
 					#Wires are added in next pass - this pass generates port lists to be used for wire generation
 					if wire[1] != "NULL":
@@ -175,17 +216,17 @@ def genFabricObject(fabric: list):
 			for tile in row:
 				wires = []
 				wireTextList = wireMap[tile]
-
 				#Wires from tile
 				for wire in wireTextList:
 					destinationTile = archFabric.getTileByCoords(tile.x + int(wire["xoffset"]), tile.y + int(wire["yoffset"]))
-					if (destinationTile == None) or ("NULL" in wire.values()) or (wire["destination"] not in portMap[destinationTile]):
-						continue
-					wires.append(wire)
-					portMap[destinationTile].remove(wire["destination"])
-					portMap[tile].remove(wire["source"])
+					if not ((destinationTile == None) or ("NULL" in wire.values()) or (wire["destination"] not in portMap[destinationTile])):
+						wires.append(wire)
+						portMap[destinationTile].remove(wire["destination"])
+						portMap[tile].remove(wire["source"])
 
 				#Wires to tile
+
+
 					sourceTile = archFabric.getTileByCoords(tile.x - int(wire["xoffset"]), tile.y - int(wire["yoffset"]))
 					if (sourceTile == None) or ("NULL" in wire.values()) or (wire["source"] not in portMap[sourceTile]):
 						continue
@@ -307,6 +348,7 @@ def genNextpnrModel(archObject: Fabric):
 	pipsStr = "" 
 	belsStr = f"# BEL descriptions: bottom left corner Tile_X0Y0, top right {archObject.tiles[0][archObject.width - 1].genTileLoc()}\n" 
 	pairStr = ""
+
 	for line in archObject.tiles:
 		for tile in line:
 
@@ -362,11 +404,11 @@ def genNextpnrModel(archObject: Fabric):
 			#Add BELs 
 			belsStr += "#Tile_" + tileLoc + "\n" #Tile declaration as a comment
 
+
 			for num, belpair in enumerate(tile.bels):
 				bel = belpair[0]
-				ports = GetComponentPortsFromFile(bel + ".vhdl")
+
 				let = letters[num]
-				nports = []
 				# if bel == "LUT4c_frame_config":
 				# 	cType = "LUT4"
 				# 	prefix = "L" + let + "_"
@@ -377,11 +419,9 @@ def genNextpnrModel(archObject: Fabric):
 				# 	prefix = ""
 
 				prefix = belpair[1]
+				nports = belpair[2]
 
-				for port in ports[0]:
-					nports.append(prefix + re.sub(" *\(.*\) *", "", str(port)))
-				for port in ports[1]:
-					nports.append(prefix + re.sub(" *\(.*\) *", "", str(port)))
+
 				#belsStr += tileLoc + "," + ",".join(tile.genTileLoc(True))+"\n" #Add BELs
 				if bel == "MUX8_frame_config":
 					#TODO: remove when techmapping to MUX8s is complete.
@@ -402,30 +442,83 @@ def genNextpnrModel(archObject: Fabric):
 					cType = bel
 				belsStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)), let, cType, ",".join(nports))) + "\n"
 
-				#Generate wire beginning to wire beginning pairs for timing analysis
-				pairStr += "#" + tileLoc + "\n"
-				for wire in tile.wires:
-					for i in range(int(wire["wire-count"])):
-						desty = tile.y + int(wire["yoffset"])
+			#Generate wire beginning to wire beginning pairs for timing analysis
+			print(tile.genTileLoc())
+			pairStr += "#" + tileLoc + "\n"
+			for wire in tile.wires:
+				for i in range(int(wire["wire-count"])):
+					desty = tile.y + int(wire["yoffset"])
 
-						destx = tile.x + int(wire["xoffset"]) 
-						destTile = archObject.getTileByCoords(destx, desty)
+					destx = tile.x + int(wire["xoffset"]) 
+					destTile = archObject.getTileByCoords(destx, desty)
 
-						desttileLoc = f"X{destx}Y{desty}"
-						#print(wire["source"] + str(i))
-						#print(tile.pipMuxes.keys())
-						if (wire["destination"] + str(i)) not in destTile.pipMuxes_MapSourceToSinks.keys():
-							#print("Not Found")
-							continue
-						#print("Found")
-						for pipSink in destTile.pipMuxes_MapSourceToSinks[wire["destination"] + str(i)]:
-							if len(destTile.pipMuxes_MapSinkToSources[pipSink]) > 1:
-								pairStr += ",".join((".".join((tileLoc, wire["source"] + str(i))), ".".join((desttileLoc, pipSink)))) + "\n"
-							# else:
-							# 	finalDestination = ".".join((desttileLoc, pipSink))
-							# 	foundPhysicalPair = False
-							# 	while (not foundPhysicalPair):
-							# 		for wire in 
+					desttileLoc = f"X{destx}Y{desty}"
+					#print(wire["source"] + str(i))
+					#print(tile.pipMuxes.keys())
+					if (wire["destination"] + str(i)) not in destTile.pipMuxes_MapSourceToSinks.keys():
+						#print("Not Found")
+						continue
+					#print("Found")
+					for pipSink in destTile.pipMuxes_MapSourceToSinks[wire["destination"] + str(i)]:
+						if len(destTile.pipMuxes_MapSinkToSources[pipSink]) > 1:
+							pipSinkRE = BracketAddingRE.match(pipSink)
+
+							if pipSinkRE and pipSink not in destTile.belPorts:
+								outSink = pipSinkRE.group(1) + "[" + pipSinkRE.group(2) + "]"
+							else:
+								outSink = pipSink
+							pairStr += ",".join((".".join((tileLoc, wire["source"] + f"[{str(i)}]")), ".".join((desttileLoc, outSink)))) + "\n" #TODO: add square brackets to end
+							#print("Simple")
+							#print(",".join((".".join((tileLoc, wire["source"] + f"[{str(i)}]")), ".".join((desttileLoc, pipSink)))) + "\n")
+						else:
+							finalDestination = ".".join((desttileLoc, outSink))
+							foundPhysicalPairs = False
+							curWireTuple = (tile, wire, i)
+							potentialStarts = []
+							stopOffs = []
+							while (not foundPhysicalPairs):
+								#For each wire we're leading into, find out if the pip input is a multiplexer
+								#print(curWireTuple)
+								cTile = curWireTuple[0]
+								#print(cTile.tileType)
+								cWire = curWireTuple[1]
+								cIndex = curWireTuple[2]
+								#print(cWire["source"] + str(cIndex))
+								#print((cTile.pipMuxes_MapSinkToSources[cWire["source"] + str(cIndex)]))
+
+								if len(cTile.pipMuxes_MapSinkToSources[cWire["source"] + str(cIndex)]) > 1:
+									for wireEnd in cTile.pipMuxes_MapSinkToSources[cWire["source"]  + str(cIndex)]:
+										#print(wireEnd)
+										if wireEnd in cTile.belPorts:
+											continue
+										cPair = archObject.getTileAndWireByWireDest(cTile.genTileLoc(), wireEnd)
+										if cPair == None:
+											#print(cWire["source"]  + str(cIndex))
+											#print(cTile.genTileLoc(), wireEnd)
+											continue
+										#	continue #This means that there are no wires connected to this port, so it must be a bel output port
+										potentialStarts.append(cPair[0].genTileLoc() + "." + cPair[1]["source"] + str(cPair[2]))
+									foundPhysicalPairs = True
+								else:
+									destPort = cTile.pipMuxes_MapSinkToSources[cWire["source"] + str(cIndex)][0]
+									destLoc = cTile.genTileLoc()
+									if destPort in cTile.belPorts:
+										foundPhysicalPairs = True #This means it's connected to a BEL
+										continue
+									if GNDRE.match(destPort) or VCCRE.match(destPort):
+										foundPhysicalPairs = True
+										continue
+									stopOffs.append(destLoc + "." + destPort)
+									curWireTuple = archObject.getTileAndWireByWireDest(destLoc, destPort)
+									if curWireTuple == None:
+										print(cWire["source"] + str(cIndex))
+										print(destPort, destLoc)
+							pairStr += "#Propagated route for " + finalDestination + "\n"
+							for index, start in enumerate(potentialStarts):
+								pairStr += start + "," + finalDestination + "\n"
+							pairStr += "#Stopoffs: " + ",".join(stopOffs) + "\n"
+
+
 
 	return (pipsStr, belsStr, pairStr)
 

@@ -494,7 +494,7 @@ def genNextpnrModel(archObject: Fabric):
 											#print(cTile.genTileLoc(), wireEnd)
 											continue
 										#	continue #This means that there are no wires connected to this port, so it must be a bel output port
-										potentialStarts.append(cPair[0].genTileLoc() + "." + cPair[1]["source"] + str(cPair[2]))
+										potentialStarts.append(cPair[0].genTileLoc() + "." + cPair[1]["source"] + "[" + str(cPair[2]) + "]")
 									foundPhysicalPairs = True
 								else:
 									destPort = cTile.pipMuxes_MapSinkToSources[cWire["source"] + str(cIndex)][0]
@@ -507,9 +507,9 @@ def genNextpnrModel(archObject: Fabric):
 										continue
 									stopOffs.append(destLoc + "." + destPort)
 									curWireTuple = archObject.getTileAndWireByWireDest(destLoc, destPort)
-									if curWireTuple == None:
-										print(cWire["source"] + str(cIndex))
-										print(destPort, destLoc)
+									# if curWireTuple == None:
+									# 	print(cWire["source"] + str(cIndex))
+									# 	print(destPort, destLoc)
 							pairStr += "#Propagated route for " + finalDestination + "\n"
 							for index, start in enumerate(potentialStarts):
 								pairStr += start + "," + finalDestination + "\n"

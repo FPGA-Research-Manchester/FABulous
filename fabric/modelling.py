@@ -183,6 +183,7 @@ def genFabricObject(fabric: list):
 						continue
 					wires.append(wire)
 					portMap[destinationTile].remove(wire["destination"])
+					portMap[tile].remove(wire["source"])
 
 				#Wires to tile
 					sourceTile = archFabric.getTileByCoords(tile.x - int(wire["xoffset"]), tile.y - int(wire["yoffset"]))
@@ -190,6 +191,8 @@ def genFabricObject(fabric: list):
 						continue
 					sourceTile.wires.append(wire)
 					portMap[sourceTile].remove(wire["source"])
+					portMap[tile].remove(wire["destination"])
+
 				tile.wires.extend(wires)
 	archFabric.cellTypes = GetCellTypes(fabric)
 	return archFabric

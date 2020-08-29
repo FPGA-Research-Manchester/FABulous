@@ -62,8 +62,8 @@ void write_fasm(const Context *ctx, std::ostream &out)
         } else if (cell.second->type == id_IOBUF){
 		out << "#IO Buffer" << std::endl;
         }
-        else
-            log_error("Unsupported cell type '%s'.\n", cell.second->type.c_str(ctx));
+        //else
+        //    log_error("Unsupported cell type '%s'.\n", cell.second->type.c_str(ctx));
     for (auto &param: cell.second->params){
         auto paramName = param.first.str(ctx);
         if (param.second == "1"  && paramName != "INIT"){

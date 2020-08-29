@@ -143,7 +143,7 @@ struct Timing
                     output_ports.push_back(&port.second);
                 else{
                     input_ports.push_back(port.first);
-                    //log(port.first.c_str(ctx));
+                    log(port.first.c_str(ctx));
                     
                 }
             }

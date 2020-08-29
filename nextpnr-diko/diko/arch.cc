@@ -73,7 +73,7 @@ ChipInfo::ChipInfo(BaseCtx *ctx) : num_bels(0), num_wires(0), num_pips(0)
         //myfile.close();
         auto type = ctx->id(i);
         bel_to_type.push_back(type);
-        if (type == id_LUT4 || type == id_IOBUF || type == ctx->id("InPass4_frame_config") || type == ctx->id("OutPass4_frame_config"))
+        if (type == id_LUT4 || type == id_IOBUF || type == ctx->id("InPass4_frame_config") || type == ctx->id("OutPass4_frame_config") || type == ctx->id("IO_1_bidirectional_frame_config_pass"))
             loc.z = (0) + name.back() - 'A';
         else
             loc.z = 0;
@@ -231,7 +231,7 @@ BelId Arch::getBelByName(IdString name) const
     if (it != chip_info->bel_by_name.end())
         ret.index = it->second;
     else 
-        log_error("Not Found");
+        log_error("Bel Not Found");
 
     return ret;
 }
@@ -365,10 +365,13 @@ WireId Arch::getBelPinWire(BelId bel, IdString pin) const
     	//log_info("Leaving O");
         //if (pin == id_OQ) return chip_info->bel_to_pin_wire[bel.index].at(id("L" + std::string(1,'A'+z) + "_O"));
 
-    } else if (bel_type == id_IOBUF){
+    } else if (bel_type == id_IOBUF || bel_type == this->id("IO_1_bidirectional_frame_config_pass")){
         auto z = chip_info->bel_to_loc[bel.index].z;
+        std::cout << std::string(1,'A'+z) + "_O" << std::endl;
         if (pin == id_I) return chip_info->bel_to_pin_wire[bel.index].at(id(std::string(1,'A'+z) + "_O"));
         if (pin == id_O) return chip_info->bel_to_pin_wire[bel.index].at(id(std::string(1,'A'+z) + "_I"));
+        if (pin == this->id("T")) return chip_info->bel_to_pin_wire[bel.index].at(id(std::string(1,'A'+z) + "_T"));
+        if (pin == this->id("Q")) return chip_info->bel_to_pin_wire[bel.index].at(id(std::string(1,'A'+z) + "_Q"));
     } else if (bel_type == this->id("IBUF") || bel_type == this->id("InPass4_frame_config")){
     	auto z = chip_info->bel_to_loc[bel.index].z;
         if (pin == this->id("O[0]")) return chip_info->bel_to_pin_wire[bel.index].at(id("OP" + std::string(1,'A'+z) + "_O0"));
@@ -381,6 +384,68 @@ WireId Arch::getBelPinWire(BelId bel, IdString pin) const
         if (pin == this->id("I[1]")) return chip_info->bel_to_pin_wire[bel.index].at(id("RES" + std::string(1,'1'+z) + "_I1"));
         if (pin == this->id("I[2]")) return chip_info->bel_to_pin_wire[bel.index].at(id("RES" + std::string(1,'1'+z) + "_I2"));
         if (pin == this->id("I[3]")) return chip_info->bel_to_pin_wire[bel.index].at(id("RES" + std::string(1,'1'+z) + "_I3"));
+    } else if (bel_type == this->id("MULADD")){
+        if (pin == this->id("A[0]")) return chip_info->bel_to_pin_wire[bel.index].at(id("A0"));
+        if (pin == this->id("A[1]")) return chip_info->bel_to_pin_wire[bel.index].at(id("A1"));
+        if (pin == this->id("A[2]")) return chip_info->bel_to_pin_wire[bel.index].at(id("A2"));
+        if (pin == this->id("A[3]")) return chip_info->bel_to_pin_wire[bel.index].at(id("A3"));
+        if (pin == this->id("A[4]")) return chip_info->bel_to_pin_wire[bel.index].at(id("A4"));
+        if (pin == this->id("A[5]")) return chip_info->bel_to_pin_wire[bel.index].at(id("A5"));
+        if (pin == this->id("A[6]")) return chip_info->bel_to_pin_wire[bel.index].at(id("A6"));
+        if (pin == this->id("A[7]")) return chip_info->bel_to_pin_wire[bel.index].at(id("A7"));
+
+        if (pin == this->id("B[0]")) return chip_info->bel_to_pin_wire[bel.index].at(id("B0"));
+        if (pin == this->id("B[1]")) return chip_info->bel_to_pin_wire[bel.index].at(id("B1"));
+        if (pin == this->id("B[2]")) return chip_info->bel_to_pin_wire[bel.index].at(id("B2"));
+        if (pin == this->id("B[3]")) return chip_info->bel_to_pin_wire[bel.index].at(id("B3"));
+        if (pin == this->id("B[4]")) return chip_info->bel_to_pin_wire[bel.index].at(id("B4"));
+        if (pin == this->id("B[5]")) return chip_info->bel_to_pin_wire[bel.index].at(id("B5"));
+        if (pin == this->id("B[6]")) return chip_info->bel_to_pin_wire[bel.index].at(id("B6"));
+        if (pin == this->id("B[7]")) return chip_info->bel_to_pin_wire[bel.index].at(id("B7"));
+
+        if (pin == this->id("Q[0]")) return chip_info->bel_to_pin_wire[bel.index].at(id("Q0"));
+        if (pin == this->id("Q[1]")) return chip_info->bel_to_pin_wire[bel.index].at(id("Q1"));
+        if (pin == this->id("Q[2]")) return chip_info->bel_to_pin_wire[bel.index].at(id("Q2"));
+        if (pin == this->id("Q[3]")) return chip_info->bel_to_pin_wire[bel.index].at(id("Q3"));
+        if (pin == this->id("Q[4]")) return chip_info->bel_to_pin_wire[bel.index].at(id("Q4"));
+        if (pin == this->id("Q[5]")) return chip_info->bel_to_pin_wire[bel.index].at(id("Q5"));
+        if (pin == this->id("Q[6]")) return chip_info->bel_to_pin_wire[bel.index].at(id("Q6"));
+        if (pin == this->id("Q[7]")) return chip_info->bel_to_pin_wire[bel.index].at(id("Q7"));
+        if (pin == this->id("Q[8]")) return chip_info->bel_to_pin_wire[bel.index].at(id("Q8"));
+        if (pin == this->id("Q[9]")) return chip_info->bel_to_pin_wire[bel.index].at(id("Q9"));
+        if (pin == this->id("Q[10]")) return chip_info->bel_to_pin_wire[bel.index].at(id("Q10"));
+        if (pin == this->id("Q[11]")) return chip_info->bel_to_pin_wire[bel.index].at(id("Q11"));
+        if (pin == this->id("Q[12]")) return chip_info->bel_to_pin_wire[bel.index].at(id("Q12"));
+        if (pin == this->id("Q[13]")) return chip_info->bel_to_pin_wire[bel.index].at(id("Q13"));
+        if (pin == this->id("Q[14]")) return chip_info->bel_to_pin_wire[bel.index].at(id("Q14"));
+        if (pin == this->id("Q[15]")) return chip_info->bel_to_pin_wire[bel.index].at(id("Q15"));
+        if (pin == this->id("Q[16]")) return chip_info->bel_to_pin_wire[bel.index].at(id("Q16"));
+        if (pin == this->id("Q[17]")) return chip_info->bel_to_pin_wire[bel.index].at(id("Q17"));
+        if (pin == this->id("Q[18]")) return chip_info->bel_to_pin_wire[bel.index].at(id("Q18"));
+        if (pin == this->id("Q[19]")) return chip_info->bel_to_pin_wire[bel.index].at(id("Q19"));
+
+        if (pin == this->id("C[0]")) return chip_info->bel_to_pin_wire[bel.index].at(id("C0"));
+        if (pin == this->id("C[1]")) return chip_info->bel_to_pin_wire[bel.index].at(id("C1"));
+        if (pin == this->id("C[2]")) return chip_info->bel_to_pin_wire[bel.index].at(id("C2"));
+        if (pin == this->id("C[3]")) return chip_info->bel_to_pin_wire[bel.index].at(id("C3"));
+        if (pin == this->id("C[4]")) return chip_info->bel_to_pin_wire[bel.index].at(id("C4"));
+        if (pin == this->id("C[5]")) return chip_info->bel_to_pin_wire[bel.index].at(id("C5"));
+        if (pin == this->id("C[6]")) return chip_info->bel_to_pin_wire[bel.index].at(id("C6"));
+        if (pin == this->id("C[7]")) return chip_info->bel_to_pin_wire[bel.index].at(id("C7"));
+        if (pin == this->id("C[8]")) return chip_info->bel_to_pin_wire[bel.index].at(id("C8"));
+        if (pin == this->id("C[9]")) return chip_info->bel_to_pin_wire[bel.index].at(id("C9"));
+        if (pin == this->id("C[10]")) return chip_info->bel_to_pin_wire[bel.index].at(id("C10"));
+        if (pin == this->id("C[11]")) return chip_info->bel_to_pin_wire[bel.index].at(id("C11"));
+        if (pin == this->id("C[12]")) return chip_info->bel_to_pin_wire[bel.index].at(id("C12"));
+        if (pin == this->id("C[13]")) return chip_info->bel_to_pin_wire[bel.index].at(id("C13"));
+        if (pin == this->id("C[14]")) return chip_info->bel_to_pin_wire[bel.index].at(id("C14"));
+        if (pin == this->id("C[15]")) return chip_info->bel_to_pin_wire[bel.index].at(id("C15"));
+        if (pin == this->id("C[16]")) return chip_info->bel_to_pin_wire[bel.index].at(id("C16"));
+        if (pin == this->id("C[17]")) return chip_info->bel_to_pin_wire[bel.index].at(id("C17"));
+        if (pin == this->id("C[18]")) return chip_info->bel_to_pin_wire[bel.index].at(id("C18"));
+        if (pin == this->id("C[19]")) return chip_info->bel_to_pin_wire[bel.index].at(id("C19"));
+        if (pin == this->id("clr")) return chip_info->bel_to_pin_wire[bel.index].at(id("clr"));
+
     }
 
     return WireId{};
@@ -634,7 +699,12 @@ bool Arch::getCellDelay(const CellInfo *cell, IdString fromPort, IdString toPort
         }
     } else if (cell->type == id_BUFGCTRL) {
         return true;
+    } else if (cell->type == this->id("MULADD")){
+        if (toPort.c_str(this)[0] == 'Q' && fromPort.c_str(this)[0] != 'Q'){
+            return true;
+        }
     }
+    log(cell->type.c_str(this));
     return false;
 }
 
@@ -664,10 +734,10 @@ TimingPortClass Arch::getPortTimingClass(const CellInfo *cell, IdString port, in
         }
         // TODO
         // if (port == id_OMUX)
-    } else if (cell->type == id_IOB33 || cell->type == id_IOB18 || cell->type==id_IOBUF) {
-        if (port == id_I)
+    } else if (cell->type == id_IOB33 || cell->type == id_IOB18 || cell->type==id_IOBUF || cell->type==this->id("IO_1_bidirectional_frame_config_pass")) {
+        if (port == id_I or port == this->id("T"))
             return TMG_STARTPOINT;
-        else if (port == id_O)
+        else if (port == id_O or port == this->id("Q"))
             return TMG_ENDPOINT;
     } else if (cell->type == id_BUFGCTRL) {
         if (port == id_O)
@@ -684,7 +754,7 @@ TimingPortClass Arch::getPortTimingClass(const CellInfo *cell, IdString port, in
     	} else {
     		return TMG_COMB_INPUT;
     	}
-    } else if (cell->type == id("diko_MULADD")){
+    } else if (cell->type == id("MULADD")){
         if (port.c_str(this)[0] == 'Q') {
             return TMG_COMB_OUTPUT;
         } else {

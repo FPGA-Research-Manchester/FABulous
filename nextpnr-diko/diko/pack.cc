@@ -268,6 +268,7 @@ static void pack_DSP(Context *ctx)
             replace_port(ci, ctx->id("B[6]"), packed.get(), ctx->id("B[6]"));
             replace_port(ci, ctx->id("B[7]"), packed.get(), ctx->id("B[7]"));
 
+            replace_port(ci, ctx->id("clr"), packed.get(), ctx->id("clr"));
             log_info("packed cell %s into %s\n", ci->name.c_str(ctx), packed->name.c_str(ctx));
             new_cells.push_back(std::move(packed));
 
@@ -592,7 +593,7 @@ static void pack_io(Context *ctx)
                 // std::unique_ptr<CellInfo> diko_cell;
                 // Create a IOBUF buffer
                 // if (ci->type == ctx->id("$nextpnr_iobuf")){
-                    std::unique_ptr<CellInfo> diko_cell = create_diko_cell(ctx, ctx->id("IOBUF"), ci->name.str(ctx));
+                    std::unique_ptr<CellInfo> diko_cell = create_diko_cell(ctx, ctx->id("IO_1_bidirectional_frame_config_pass"), ci->name.str(ctx));
                     nxio_to_sb(ctx, ci, diko_cell.get());
                 // } else if (ci->type == ctx->id("$nextpnr_ibuf")){
                     // std::unique_ptr<CellInfo> diko_cell = create_diko_cell(ctx, ctx->id("InPass4_frame_config"), ci->name.str(ctx));
@@ -606,6 +607,13 @@ static void pack_io(Context *ctx)
             }
             packed_cells.insert(ci->name);
             std::copy(ci->attrs.begin(), ci->attrs.end(), std::inserter(sb->attrs, sb->attrs.begin()));
+        }
+        if (ci->type == ctx->id("OutPass4_frame_config")){
+                std::unique_ptr<CellInfo> packed = create_diko_cell(ctx, ctx->id("IO_1_bidirectional_frame_config_pass"), ci->name.str(ctx));// + "_mul");
+                replace_port(ci, ctx->id("I"), packed.get(), ctx->id("I"));
+                replace_port(ci, ctx->id("O"), packed.get(), ctx->id("O"));
+                replace_port(ci, ctx->id("T"), packed.get(), ctx->id("T"));
+                replace_port(ci, ctx->id("Q"), packed.get(), ctx->id("Q"));
         }
     }
     for (auto pcell : packed_cells) {
@@ -635,13 +643,30 @@ static void pack_monodir_io(Context *ctx)
 //        if (ctx->verbose)
 //            log_info("cell '%s' is of type '%s'\n", ci->name.c_str(ctx), ci->type.c_str(ctx));
         if (is_monodir_iob(ctx, ci)) {
-            std::unique_ptr<CellInfo> packed = create_diko_cell(ctx, (ci->type == ctx->id("IBUF")) ? ctx->id("InPass4_frame_config") : ctx->id("OutPass4_frame_config"), ci->name.str(ctx));// + "_mul");
+            std::unique_ptr<CellInfo> packed;
+            if (ci->type == ctx->id("InPass4_frame_config")){
+                packed = create_diko_cell(ctx, ctx->id("InPass4_frame_config"), ci->name.str(ctx));// + "_mul");
+                replace_port(ci, ctx->id("O1"), packed.get(), ctx->id("O1"));
+                replace_port(ci, ctx->id("O2"), packed.get(), ctx->id("O2"));
+                replace_port(ci, ctx->id("O3"), packed.get(), ctx->id("O3"));
+                replace_port(ci, ctx->id("O3"), packed.get(), ctx->id("O3"));
+            } else {
+                packed = create_diko_cell(ctx, ctx->id("OutPass4_frame_config"), ci->name.str(ctx));// + "_mul");
+                replace_port(ci, ctx->id("I1"), packed.get(), ctx->id("I1"));
+                replace_port(ci, ctx->id("I2"), packed.get(), ctx->id("I2"));
+                replace_port(ci, ctx->id("I3"), packed.get(), ctx->id("I3"));
+                replace_port(ci, ctx->id("I3"), packed.get(), ctx->id("I3"));
+            }
             std::copy(ci->attrs.begin(), ci->attrs.end(), std::inserter(packed->attrs, packed->attrs.begin()));
             packed_cells.insert(ci->name);
             if (ctx->verbose)
                 log_info("packed cell %s into %s\n", ci->name.c_str(ctx), packed->name.c_str(ctx));
             new_cells.push_back(std::move(packed));
+
+
         }
+
+
     }
     for (auto pcell : packed_cells) {
         ctx->cells.erase(pcell);

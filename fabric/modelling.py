@@ -433,8 +433,8 @@ def genNextpnrModel(archObject: Fabric):
 
 				if bel == "LUT4c_frame_config":
 					cType = "LUT4"
-				elif bel == "IO_1_bidirectional_frame_config_pass":
-					cType = "IOBUF"
+				#elif bel == "IO_1_bidirectional_frame_config_pass":
+				#	cType = "IOBUF"
 				else:
 					cType = bel
 				belsStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)), let, cType, ",".join(nports))) + "\n"

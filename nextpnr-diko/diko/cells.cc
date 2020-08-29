@@ -72,14 +72,16 @@ std::unique_ptr<CellInfo> create_diko_cell(Context *ctx, IdString type, std::str
         add_port(ctx, new_cell.get(), "I0", PORT_IN);
         add_port(ctx, new_cell.get(), "I1", PORT_IN);
         add_port(ctx, new_cell.get(), "S", PORT_IN);
-    } else if (type == ctx->id("IOBUF")) {
+    } else if (type == ctx->id("IO_1_bidirectional_frame_config_pass")) {
 	    //if (ctx->args.type == ArchArgs::Z020)
 		//    new_cell->type = id_IOB33;
 	    //else
 		 //   new_cell->type = id_IOB18;
-        new_cell->type = ctx->id("IOBUF");
+        new_cell->type = ctx->id("IO_1_bidirectional_frame_config_pass");
         add_port(ctx, new_cell.get(), "I", PORT_OUT);
+        add_port(ctx, new_cell.get(), "Q", PORT_OUT);
         add_port(ctx, new_cell.get(), "O", PORT_IN);
+        add_port(ctx, new_cell.get(), "T", PORT_IN);
     } else if (type == ctx->id("InPass4_frame_config")) {
         new_cell->type = ctx->id("InPass4_frame_config");
         add_port(ctx, new_cell.get(), "O[0]", PORT_OUT);
@@ -96,10 +98,10 @@ std::unique_ptr<CellInfo> create_diko_cell(Context *ctx, IdString type, std::str
         add_port(ctx, new_cell.get(), "I0", PORT_IN);
         add_port(ctx, new_cell.get(), "O", PORT_OUT);
     } else if (type == ctx->id("diko_MULADD")){
-    	new_cell->params[ctx->id("A_reg")] = "0";
-        new_cell->params[ctx->id("B_reg")] = "0";
-        new_cell->params[ctx->id("C_reg")] = "0";
-
+    	// new_cell->params[ctx->id("A_reg")] = "0";
+     //    new_cell->params[ctx->id("B_reg")] = "0";
+     //    new_cell->params[ctx->id("C_reg")] = "0";
+        new_cell->type = ctx->id("MULADD");
         add_port(ctx, new_cell.get(), "A[0]", PORT_IN);
         add_port(ctx, new_cell.get(), "A[1]", PORT_IN);
         add_port(ctx, new_cell.get(), "A[2]", PORT_IN);
@@ -138,6 +140,7 @@ std::unique_ptr<CellInfo> create_diko_cell(Context *ctx, IdString type, std::str
         add_port(ctx, new_cell.get(), "Q[17]", PORT_OUT);
         add_port(ctx, new_cell.get(), "Q[18]", PORT_OUT);
         add_port(ctx, new_cell.get(), "Q[19]", PORT_OUT);
+
         add_port(ctx, new_cell.get(), "clr", PORT_IN);
 
         add_port(ctx, new_cell.get(), "C[0]", PORT_IN);

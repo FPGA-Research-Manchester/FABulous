@@ -8,5 +8,6 @@
 #PIN "clki_pin" = BEL "clki.PAD" PINNAME PAD;
 #PIN "clki_pin" CLOCK_DEDICATED_ROUTE = FALSE;
 set_io wow X0Y2.A
+set_io mully_out X9Y8.A
 #set_io wow[1] X0Y2.B
 #set_io wow[2] X0Y1.A

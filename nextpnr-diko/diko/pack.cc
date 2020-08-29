@@ -42,6 +42,49 @@ static void pack_lut_lutffs(Context *ctx)
         CellInfo *ci = cell.second;
         if (ctx->verbose)
             log_info("cell '%s' is of type '%s'\n", ci->name.c_str(ctx), ci->type.c_str(ctx));
+        
+        // if (is_lut(ctx, ci)) {
+        //     std::unique_ptr<CellInfo> packed = create_diko_cell(ctx, ctx->id("diko_LC"), ci->name.str(ctx) + "_LC");
+        //     std::copy(ci->attrs.begin(), ci->attrs.end(), std::inserter(packed->attrs, packed->attrs.begin()));
+        //     packed_cells.insert(ci->name);
+        //     if (ctx->verbose)
+        //         log_info("packed cell %s into %s\n", ci->name.c_str(ctx), packed->name.c_str(ctx));
+        //     // See if we can pack into a DFF
+        //     bool packed_dff = false;
+        //     if (get_net_or_empty(ci, ctx->id("O"))) {
+        //         NetInfo *o = ci->ports.at(ctx->id("O")).net;
+        //         CellInfo *dff = net_only_drives(ctx, o, is_ff, ctx->id("D"), true);
+        //         auto lut_bel = ci->attrs.find(ctx->id("BEL"));
+        //         if (dff) {
+        //             if (ctx->verbose)
+        //                 log_info("found attached dff %s\n", dff->name.c_str(ctx));
+        //             auto dff_bel = dff->attrs.find(ctx->id("BEL"));
+        //             if (lut_bel != ci->attrs.end() && dff_bel != dff->attrs.end() && lut_bel->second != dff_bel->second) {
+        //                 // Locations don't match, can't pack
+        //             } else {
+        //                 lut_to_lc(ctx, ci, packed.get(), false);
+        //                 dff_to_lc(ctx, dff, packed.get(), false);
+        //                 packed->params[ctx->id("FF")] = 1;
+        //                 log(o->name.c_str(ctx));
+        //                 ctx->nets.erase(o->name);
+        //                 //replace_port(ci, ctx->id("O"), dff, ctx->id("O"));
+        //                 if (dff_bel != dff->attrs.end())
+        //                     packed->attrs[ctx->id("BEL")] = dff_bel->second;
+        //                 packed_cells.insert(dff->name);
+        //                 if (ctx->verbose)
+        //                     log_info("packed cell %s into %s\n", dff->name.c_str(ctx), packed->name.c_str(ctx));
+        //                 packed_dff = true;
+        //             }
+        //         }
+        //     }
+        //     if (!packed_dff) {
+        //         lut_to_lc(ctx, ci, packed.get(), true);
+        //     }
+        //     new_cells.push_back(std::move(packed));
+        // }
+
+
+
         if (is_lut(ctx, ci)) {
             std::unique_ptr<CellInfo> packed = create_diko_cell(ctx, ctx->id("diko_LC"), ci->name.str(ctx) + "_LC");
             std::copy(ci->attrs.begin(), ci->attrs.end(), std::inserter(packed->attrs, packed->attrs.begin()));
@@ -50,21 +93,39 @@ static void pack_lut_lutffs(Context *ctx)
                 log_info("packed cell %s into %s\n", ci->name.c_str(ctx), packed->name.c_str(ctx));
             // See if we can pack into a DFF
             bool has_dff = false;
+
             if (get_net_or_empty(ci, ctx->id("O"))) {
                 NetInfo *o = ci->ports.at(ctx->id("O")).net;
                 CellInfo *dff = net_only_drives(ctx, o, is_ff, ctx->id("D"), true);
+                //std::cout << "DFF:" << dff << std::endl;
                 //auto lut_bel = ci->attrs.find(ctx->id("BEL"));
                 if (dff) {
                     if (ctx->verbose)
                         log_info("found attached dff %s\n", dff->name.c_str(ctx));
+                    //disconnect_port(ctx, ci, ctx->id("O"));
+                    replace_port(ci, ctx->id("O"), dff, ctx->id("O"));
+
+                    ctx->nets.erase(o->name);
+
+                    //Rearrange nets
+
+                    for (auto &n: ctx->nets){
+                        auto ni = n.second.get();
+                        if (ni->driver.cell == dff){
+                            ni->driver.cell = packed.get();
+                            ni->driver.cell->ports.at(ni->driver.port).net = ni;
+                            //n.first = packed->name;
+                        }
+                    }
+
+                    packed_cells.insert(dff->name);
                     has_dff = true;
                 }
             }
                 lut_to_lc(ctx, ci, packed.get(), true);
                 if (has_dff){
-                    packed->params[ctx->id("FF")] = 1;
+                    packed->params[ctx->id("FF")] = "1";
                 }
-
 
 
             // log("IO");
@@ -232,6 +293,7 @@ static void pack_nonlut_ffs(Context *ctx)
     for (auto cell : sorted(ctx->cells)) {
         CellInfo *ci = cell.second;
         if (is_ff(ctx, ci)) {
+            log_error("FF not attached to a LUT found. This cannot be packed, as all flip-flops in generated architectures are connected to LUTs. This may be due to assignment to IO pins in sequential logic - please do this with combinatorial logic.");
             std::unique_ptr<CellInfo> packed = create_diko_cell(ctx, ctx->id("diko_LC"), ci->name.str(ctx) + "_DFFLC");
             std::copy(ci->attrs.begin(), ci->attrs.end(), std::inserter(packed->attrs, packed->attrs.begin()));
             if (ctx->verbose)
@@ -1040,6 +1102,7 @@ bool Arch::pack()
         constrain_chains(ctx);
         ctx->assignArchInfo();
         log_info("Checksum: 0x%08x\n", ctx->checksum());
+
         return true;
     } catch (log_execution_error_exception) {
         return false;

@@ -373,9 +373,20 @@ void Context::check() const
             }
         }
         if (ni->driver.cell != nullptr){
-            //log("port:");
-            //log(ni->driver.port.c_str(this));
-            //log(ni->driver.cell->name.c_str(this));
+            // log("net:");
+            // log(ni->name.c_str(this));
+            // log("port:");
+            // log(ni->driver.port.c_str(this));
+            // log("\n");
+            // log(ni->driver.cell->name.c_str(this));
+            // log("\n");
+
+            // for (auto &port: ni->driver.cell->ports){
+            //     log("Port: ");
+            //     log(port.first.c_str(this));
+            //     log("\n");
+            // }
+            // log("\n");
             NPNR_ASSERT(ni->driver.cell->ports.at(ni->driver.port).net == ni);}
         for (auto user : ni->users) {
             NPNR_ASSERT(user.cell->ports.at(user.port).net == ni);

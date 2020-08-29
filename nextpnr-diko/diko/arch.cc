@@ -694,6 +694,12 @@ TimingPortClass Arch::getPortTimingClass(const CellInfo *cell, IdString port, in
     	return TMG_STARTPOINT;
     } else if (cell->type == this->id("OutPass4_frame_config")){
     	return TMG_ENDPOINT;
+    } else if (cell->type == this->id("LUTFF")) {
+        if (port == this->id("Q")){
+            return TMG_REGISTER_OUTPUT; 
+        } else{
+            return TMG_REGISTER_INPUT;             
+        }
     } else 
     log_error("no timing info for port '%s' of cell type '%s', with cell name '%s'\n", port.c_str(this), cell->type.c_str(this), cell->name.c_str(this));
 }

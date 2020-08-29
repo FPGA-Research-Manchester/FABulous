@@ -41,7 +41,7 @@ void write_fasm(const Context *ctx, std::ostream &out)
                 out << "# Cell: " << it->second << std::endl;
             else
                 out << "# Cell: " << cell.second->name.str(ctx) << std::endl;
-            if (cell.second->lcInfo.inputCount <= 5) { //that number was 5 before
+            if (cell.second->lcInfo.inputCount <= 5) { 
                 auto num_bits = (1 << cell.second->lcInfo.inputCount);
                 auto init_as_uint = boost::lexical_cast<uint32_t>(init);
                 out << ctx->getBelName(cell.second->bel).str(ctx) << ".INIT";
@@ -57,14 +57,21 @@ void write_fasm(const Context *ctx, std::ostream &out)
                 out << ctx->getBelName(cell.second->bel).str(ctx) << ".INIT[15:8]=";
                 out << "32'b" << boost::adaptors::reverse(init.substr(8,32)) << std::endl;
             }
-            if (cell.second->lcInfo.dffEnable)
-                out << ctx->getBelName(cell.second->bel).str(ctx) << ".#FF" <<std::endl;
+            //if (cell.second->lcInfo.dffEnable)
+            //    out << ctx->getBelName(cell.second->bel).str(ctx) << ".#FF" <<std::endl;
         } else if (cell.second->type == id_IOBUF){
 		out << "#IO Buffer" << std::endl;
         }
         else
             log_error("Unsupported cell type '%s'.\n", cell.second->type.c_str(ctx));
+    for (auto &param: cell.second->params){
+        auto paramName = param.first.str(ctx);
+        if (param.second == "1"  && paramName != "INIT"){
+            out << ctx->getBelName(cell.second->bel).str(ctx) << "." << paramName << std::endl;
+        }
     }
+    }
+
 
     for (const auto &net : ctx->nets) {
         out << "# Net: " << net.second->name.str(ctx) << std::endl;

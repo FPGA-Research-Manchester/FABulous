@@ -45,11 +45,11 @@ std::unique_ptr<CellInfo> create_diko_cell(Context *ctx, IdString type, std::str
     if (type == ctx->id("diko_LC")) {
         new_cell->type = id_LUT4;
         new_cell->params[ctx->id("INIT")] = "0";
-        new_cell->params[ctx->id("NEG_CLK")] = "0";
-        new_cell->params[ctx->id("CARRY_ENABLE")] = "0";
-        new_cell->params[ctx->id("DFF_ENABLE")] = "0";
-        new_cell->params[ctx->id("CIN_CONST")] = "0";
-        new_cell->params[ctx->id("CIN_SET")] = "0";
+        // new_cell->params[ctx->id("NEG_CLK")] = "0";
+        // new_cell->params[ctx->id("CARRY_ENABLE")] = "0";
+        // new_cell->params[ctx->id("DFF_ENABLE")] = "0";
+        // new_cell->params[ctx->id("CIN_CONST")] = "0";
+        // new_cell->params[ctx->id("CIN_SET")] = "0";
 
         add_port(ctx, new_cell.get(), "I0", PORT_IN);
         add_port(ctx, new_cell.get(), "I1", PORT_IN);
@@ -191,78 +191,78 @@ void lut_to_lc(const Context *ctx, CellInfo *lut, CellInfo *lc, bool no_dff)
     if (no_dff) {
         if (get_net_or_empty(lut, id_O))
             replace_port(lut, id_O, lc, id_O);
-        lc->params[ctx->id("DFF_ENABLE")] = "0";
+        //lc->params[ctx->id("DFF_ENABLE")] = "0";
     }
-    lc->params[ctx->id("LUT_NAME")] = lut->name.str(ctx);
+    //lc->params[ctx->id("LUT_NAME")] = lut->name.str(ctx);
 }
 
 void dff_to_lc(const Context *ctx, CellInfo *dff, CellInfo *lc, bool pass_thru_lut)
 {
-    lc->params[ctx->id("DFF_ENABLE")] = "1";
+    //lc->params[ctx->id("DFF_ENABLE")] = "1";
     std::string config = dff->type.str(ctx).substr(2);
     auto citer = config.begin();
     //replace_port(dff, ctx->id("C"), lc, id_CLK);
     if (get_net_or_empty(dff, ctx->id("C")))
             disconnect_port(ctx, dff, ctx->id("C"));
 
-    if (citer != config.end()) {
-        auto gnd_net = ctx->nets.at(ctx->id("$PACKER_GND_NET")).get();
+    // if (citer != config.end()) {
+    //     auto gnd_net = ctx->nets.at(ctx->id("$PACKER_GND_NET")).get();
 
-        if (*citer == 'S') {
-            citer++;
-            if (get_net_or_empty(dff, id_S) != gnd_net) {
-                lc->params[id_SR] = "SRHIGH";
-                //replace_port(dff, id_S, lc, id_SR);
-                disconnect_port(ctx, dff, id_S);
-            }
-            else
-                disconnect_port(ctx, dff, id_S);
-            lc->params[ctx->id("SYNC_ATTR")] = "SYNC";
-        } else if (*citer == 'R') {
-            citer++;
-            if (get_net_or_empty(dff, id_R) != gnd_net) {
-                lc->params[id_SR] = "SRLOW";
-                //replace_port(dff, id_R, lc, id_SR);
-                disconnect_port(ctx, dff, id_R);
-            }
-            else
-                disconnect_port(ctx, dff, id_R);
-            lc->params[ctx->id("SYNC_ATTR")] = "SYNC";
-        } else if (*citer == 'C') {
-            citer++;
-            if (get_net_or_empty(dff, id_CLR) != gnd_net) {
-                lc->params[id_SR] = "SRLOW";
-                //replace_port(dff, id_CLR, lc, id_SR);
-                disconnect_port(ctx, dff, id_CLR);
-            }
-            else
-                disconnect_port(ctx, dff, id_CLR);
-            lc->params[ctx->id("SYNC_ATTR")] = "ASYNC";
-        } else {
-            NPNR_ASSERT(*citer == 'P');
-            citer++;
-            if (get_net_or_empty(dff, id_PRE) != gnd_net) {
-                lc->params[id_SR] = "SRHIGH";
-                //replace_port(dff, id_PRE, lc, id_SR);
-                disconnect_port(ctx, dff, id_PRE);
-            }
-            else
-                disconnect_port(ctx, dff, id_PRE);
-            lc->params[ctx->id("SYNC_ATTR")] = "ASYNC";
-        }
-    }
+    //     if (*citer == 'S') {
+    //         citer++;
+    //         if (get_net_or_empty(dff, id_S) != gnd_net) {
+    //             lc->params[id_SR] = "SRHIGH";
+    //             //replace_port(dff, id_S, lc, id_SR);
+    //             disconnect_port(ctx, dff, id_S);
+    //         }
+    //         else
+    //             disconnect_port(ctx, dff, id_S);
+    //         lc->params[ctx->id("SYNC_ATTR")] = "SYNC";
+    //     } else if (*citer == 'R') {
+    //         citer++;
+    //         if (get_net_or_empty(dff, id_R) != gnd_net) {
+    //             lc->params[id_SR] = "SRLOW";
+    //             //replace_port(dff, id_R, lc, id_SR);
+    //             disconnect_port(ctx, dff, id_R);
+    //         }
+    //         else
+    //             disconnect_port(ctx, dff, id_R);
+    //         lc->params[ctx->id("SYNC_ATTR")] = "SYNC";
+    //     } else if (*citer == 'C') {
+    //         citer++;
+    //         if (get_net_or_empty(dff, id_CLR) != gnd_net) {
+    //             lc->params[id_SR] = "SRLOW";
+    //             //replace_port(dff, id_CLR, lc, id_SR);
+    //             disconnect_port(ctx, dff, id_CLR);
+    //         }
+    //         else
+    //             disconnect_port(ctx, dff, id_CLR);
+    //         lc->params[ctx->id("SYNC_ATTR")] = "ASYNC";
+    //     } else {
+    //         //NPNR_ASSERT(*citer == 'P');
+    //         citer++;
+    //         if (get_net_or_empty(dff, id_PRE) != gnd_net) {
+    //             lc->params[id_SR] = "SRHIGH";
+    //             //replace_port(dff, id_PRE, lc, id_SR);
+    //             disconnect_port(ctx, dff, id_PRE);
+    //         }
+    //         else
+    //             disconnect_port(ctx, dff, id_PRE);
+    //         lc->params[ctx->id("SYNC_ATTR")] = "ASYNC";
+    //     }
+    // }
 
-    if (citer != config.end() && *citer == 'E') {
-        //auto vcc_net = ctx->nets.at(ctx->id("$PACKER_VCC_NET")).get();
+    // if (citer != config.end() && *citer == 'E') {
+    //     //auto vcc_net = ctx->nets.at(ctx->id("$PACKER_VCC_NET")).get();
 
-        ++citer;
-        //if (get_net_or_empty(dff, ctx->id("CE")) != vcc_net)
-        //    replace_port(dff, ctx->id("CE"), lc, ctx->id("CE"));
-        //else
-            disconnect_port(ctx, dff, ctx->id("CE"));
-    }
+    //     ++citer;
+    //     //if (get_net_or_empty(dff, ctx->id("CE")) != vcc_net)
+    //     //    replace_port(dff, ctx->id("CE"), lc, ctx->id("CE"));
+    //     //else
+    //         disconnect_port(ctx, dff, ctx->id("CE"));
+    // }
 
-    NPNR_ASSERT(citer == config.end());
+    //NPNR_ASSERT(citer == config.end());
 
     if (pass_thru_lut) {
         lc->params[ctx->id("INIT")] = "2";
@@ -279,17 +279,17 @@ void dff_to_lc(const Context *ctx, CellInfo *dff, CellInfo *lc, bool pass_thru_l
 void nxio_to_sb(Context *ctx, CellInfo *nxio, CellInfo *sbio)
 {
     if (nxio->type == ctx->id("$nextpnr_ibuf")) {
-        sbio->params[ctx->id("PIN_TYPE")] = "1";
+        //sbio->params[ctx->id("PIN_TYPE")] = "1";
         auto pu_attr = nxio->attrs.find(ctx->id("PULLUP"));
         if (pu_attr != nxio->attrs.end())
             sbio->params[ctx->id("PULLUP")] = pu_attr->second;
         replace_port(nxio, id_O, sbio, id_I);
     } else if (nxio->type == ctx->id("$nextpnr_obuf")) {
-        sbio->params[ctx->id("PIN_TYPE")] = "25";
+        //sbio->params[ctx->id("PIN_TYPE")] = "25";
         replace_port(nxio, id_I, sbio, id_O);
     } else if (nxio->type == ctx->id("$nextpnr_iobuf")) {
         // N.B. tristate will be dealt with below
-        sbio->params[ctx->id("PIN_TYPE")] = "25";
+        //sbio->params[ctx->id("PIN_TYPE")] = "25";
         replace_port(nxio, id_I, sbio, id_O);
         replace_port(nxio, id_O, sbio, id_I);
     } else {
@@ -300,7 +300,7 @@ void nxio_to_sb(Context *ctx, CellInfo *nxio, CellInfo *sbio)
             ctx, donet, [](const Context *ctx, const CellInfo *cell) { return cell->type == ctx->id("$_TBUF_"); },
             ctx->id("Y"));
     if (tbuf) {
-        sbio->params[ctx->id("PIN_TYPE")] = "41";
+        //sbio->params[ctx->id("PIN_TYPE")] = "41";
         replace_port(tbuf, ctx->id("A"), sbio, id_O);
         replace_port(tbuf, ctx->id("E"), sbio, ctx->id("OUTPUT_ENABLE"));
         ctx->nets.erase(donet->name);

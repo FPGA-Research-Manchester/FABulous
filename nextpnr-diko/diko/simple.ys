@@ -30,9 +30,11 @@ fine:
     opt -fast -full
     memory_map
     dffsr2dff
+    clk2fflogic
+    #dff2ff
 #    dff2dffe
     opt -full
-    techmap -map +/techmap.v # -map +/diko/dsp_map.v #-map +/diko/arith_map.v
+    techmap -map +/techmap.v   -map +/diko/dsp_map.v #-map +/diko/arith_map.v
 #    techmap -map +/diko/dsp_map.v
     opt -fast
 

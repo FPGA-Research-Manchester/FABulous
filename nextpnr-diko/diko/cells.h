@@ -39,7 +39,7 @@ inline bool is_lut(const BaseCtx *ctx, const CellInfo *cell)
 // Return true if a cell is a flipflop
 inline bool is_ff(const BaseCtx *ctx, const CellInfo *cell)
 {
-    return cell->type == id_FDRE || cell->type == id_FDSE || cell->type == id_FDCE || cell->type == id_FDPE;
+    return cell->type == id_FDRE || cell->type == id_FDSE || cell->type == id_FDCE || cell->type == id_FDPE || cell->type == ctx->id("LUTFF");
 }
 
 inline bool is_carry(const BaseCtx *ctx, const CellInfo *cell) { return cell->type == ctx->id("SB_CARRY"); }

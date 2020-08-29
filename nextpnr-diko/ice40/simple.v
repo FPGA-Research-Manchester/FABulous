@@ -4,7 +4,8 @@ module blinky (
 //    output led1,
 //    output led2,
 //    output led3
-inout  wow
+inout  wow,
+	input s1, s2, s3, led0, led3, clk
 //input mully
 //output [3:0] lump
 //parameter bufwidth = 4
@@ -12,23 +13,6 @@ inout  wow
 //input lemonin
 );
  
-	parameter bufwidth = 4; 
-	wire clk, multand, s1, s2, s3, s4;
-    (* keep *) LUT1 clk_out(.O(clk)); 
-    (* keep *) LUT1 multand_out(.O(multand));
-    (* keep *) LUT1 s1_out(.O(s1));
-    (* keep *) LUT1 s2_out(.O(s2));
-    (* keep *) LUT1 s3_out(.O(s3));
-    (* keep *) LUT1 s4_out(.O(s4));
-    //(* keep *) InPass4_frame_config  mully_out (.O(mully));
-  
-
-
-    wire led0, led1, led2, led3;
-    (* keep *) LUT1 led0_in(.I0(led0));
-    (* keep *) LUT1 led1_in(.I0(led1));
-    (* keep *) LUT1 led2_in(.I0(led2));
-    (* keep *) LUT1 led3_in(.I0(led3));
 
 //assign led0 = mully;
 
@@ -50,11 +34,9 @@ inout  wow
 reg  lemon1;
 reg  lemon2;
 
-assign {led0, led1, led3, led2} = {s1, s2, clk} * {s3, s4, multand} + {clk, s2, multand};
 
 
-
-always @($global_clock) begin
+always @(clk) begin
 	lemon1 <= s1;
 	lemon2 <= s2;
 	if (led0 == led3) begin

@@ -24,6 +24,10 @@ module $mul (A, B, Y);
 	input [B_WIDTH-1:0] B;
 	output [Y_WIDTH-1:0] Y;
 
-	MULADD #() _TECHMAP_REPLACE_ (.Q(Y), .A(A), .B(B), .C(0)); 
+	if (A_SIGNED || B_SIGNED) begin
+		wire _TECHMAP_FAIL_ = 1;
+	end
+
+	MULADD #() _TECHMAP_REPLACE_ (.Q(Y), .A(A), .B(B), .C(0), .clr(0)); 
 
 endmodule

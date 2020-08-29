@@ -59,9 +59,9 @@ module MUXF8(output O, input I0, I1, S);
 endmodule
 
 
-module LUTFF(input D, output Q);
+module LUTFF(input D, output O);
 always @ ($global_clock) begin
-	Q <= D;
+	O <= D;
 end
 endmodule
 
@@ -79,7 +79,8 @@ endmodule
 
 module MULADD (input [7:0]  A, B,
 		input [19:0] C,
-		output [19:0] Q);
+		output [19:0] Q,
+		input clr);
 
   parameter [1:0] A_reg = 0;
   parameter [1:0] B_reg = 0;
@@ -109,6 +110,10 @@ endmodule
 (* blackbox *)
 module OutPass4_frame_config (input [3:0] I);
 
+endmodule
+
+(* blackbox *)
+module IO_1_bidirectional_frame_config_pass (input T, I, output Q, O);
 endmodule
 
 module SB_CARRY (output CO, input I0, I1, CI);

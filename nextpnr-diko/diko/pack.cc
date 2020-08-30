@@ -112,7 +112,7 @@ static void pack_lut_lutffs(Context *ctx)
                     for (auto &n: ctx->nets){
                         auto ni = n.second.get();
                         if (ni->driver.cell == dff){
-                            ni->driver.cell = packed.get();
+                            ni->driver.cell = ci;
                             ni->driver.cell->ports.at(ni->driver.port).net = ni;
                             //n.first = packed->name;
                         }
@@ -540,7 +540,6 @@ static bool is_nextpnr_iob(Context *ctx, CellInfo *cell)
 {
 //    return cell->type == ctx->id("$nextpnr_ibuf") || cell->type == ctx->id("$nextpnr_obuf") ||
 //           cell->type == ctx->id("$nextpnr_iobuf") || cell->type == ctx->id("IOB18") || cell->type == ctx->id("IOB33");
-
     return cell->type == ctx->id("$nextpnr_iobuf");
 
 }
@@ -565,6 +564,7 @@ static void pack_io(Context *ctx)
     for (auto cell : sorted(ctx->cells)) {
         CellInfo *ci = cell.second;
         if (is_nextpnr_iob(ctx, ci)) {
+            log("WOO");
             CellInfo *sb = nullptr;
             if (ci->type == ctx->id("$nextpnr_ibuf") || ci->type == ctx->id("$nextpnr_iobuf")) {
                 sb = net_only_drives(ctx, ci->ports.at(ctx->id("O")).net, is_sb_io, ctx->id("PACKAGE_PIN"), true, ci);
@@ -608,12 +608,18 @@ static void pack_io(Context *ctx)
             packed_cells.insert(ci->name);
             std::copy(ci->attrs.begin(), ci->attrs.end(), std::inserter(sb->attrs, sb->attrs.begin()));
         }
-        if (ci->type == ctx->id("OutPass4_frame_config")){
+        if (ci->type == ctx->id("IO_1_bidirectional_frame_config_pass")){
+                log("starting");
                 std::unique_ptr<CellInfo> packed = create_diko_cell(ctx, ctx->id("IO_1_bidirectional_frame_config_pass"), ci->name.str(ctx));// + "_mul");
-                replace_port(ci, ctx->id("I"), packed.get(), ctx->id("I"));
-                replace_port(ci, ctx->id("O"), packed.get(), ctx->id("O"));
-                replace_port(ci, ctx->id("T"), packed.get(), ctx->id("T"));
-                replace_port(ci, ctx->id("Q"), packed.get(), ctx->id("Q"));
+
+                // log("I");
+                // //replace_port(ci, ctx->id("I"), packed.get(), ctx->id("I"));
+                // log("O");
+                // //replace_port(ci, ctx->id("O"), packed.get(), ctx->id("O"));
+                // log("T");
+                // //replace_port(ci, ctx->id("T"), packed.get(), ctx->id("T"));
+                // log("Q");
+                //replace_port(ci, ctx->id("Q"), packed.get(), ctx->id("Q"));
         }
     }
     for (auto pcell : packed_cells) {

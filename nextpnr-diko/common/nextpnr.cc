@@ -385,7 +385,10 @@ void Context::check() const
             //     log("Port: ");
             //     log(port.first.c_str(this));
             //     log("\n");
-            // }
+            // // }
+
+            // log(ni->driver.cell->ports.at(ni->driver.port).net->name.c_str(this));
+
             // log("\n");
             NPNR_ASSERT(ni->driver.cell->ports.at(ni->driver.port).net == ni);}
         for (auto user : ni->users) {

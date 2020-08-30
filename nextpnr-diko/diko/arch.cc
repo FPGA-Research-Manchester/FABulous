@@ -279,6 +279,7 @@ WireId Arch::getBelPinWire(BelId bel, IdString pin) const
 {
     auto pin_name = pin.str(this);
     auto bel_type = getBelType(bel);
+    //log(bel_type.c_str(this));
     if (bel_type == id_SLICE_LUT6) {
     	//std::cout << pin_name;
         // For all LUT based inputs and outputs (I1-I6,O,OQ,OMUX) then change the I/O into the LUT
@@ -367,23 +368,25 @@ WireId Arch::getBelPinWire(BelId bel, IdString pin) const
 
     } else if (bel_type == id_IOBUF || bel_type == this->id("IO_1_bidirectional_frame_config_pass")){
         auto z = chip_info->bel_to_loc[bel.index].z;
-        std::cout << std::string(1,'A'+z) + "_O" << std::endl;
-        if (pin == id_I) return chip_info->bel_to_pin_wire[bel.index].at(id(std::string(1,'A'+z) + "_O"));
-        if (pin == id_O) return chip_info->bel_to_pin_wire[bel.index].at(id(std::string(1,'A'+z) + "_I"));
+        //std::cout << std::string(1,'A'+z) + "_O" << std::endl;
+        if (pin == id_I) return chip_info->bel_to_pin_wire[bel.index].at(id(std::string(1,'A'+z) + "_I"));
+        if (pin == id_O) return chip_info->bel_to_pin_wire[bel.index].at(id(std::string(1,'A'+z) + "_O"));
         if (pin == this->id("T")) return chip_info->bel_to_pin_wire[bel.index].at(id(std::string(1,'A'+z) + "_T"));
         if (pin == this->id("Q")) return chip_info->bel_to_pin_wire[bel.index].at(id(std::string(1,'A'+z) + "_Q"));
     } else if (bel_type == this->id("IBUF") || bel_type == this->id("InPass4_frame_config")){
     	auto z = chip_info->bel_to_loc[bel.index].z;
-        if (pin == this->id("O[0]")) return chip_info->bel_to_pin_wire[bel.index].at(id("OP" + std::string(1,'A'+z) + "_O0"));
-        if (pin == this->id("O[1]")) return chip_info->bel_to_pin_wire[bel.index].at(id("OP" + std::string(1,'A'+z) + "_O1"));
-        if (pin == this->id("O[2]")) return chip_info->bel_to_pin_wire[bel.index].at(id("OP" + std::string(1,'A'+z) + "_O2"));
-        if (pin == this->id("O[3]")) return chip_info->bel_to_pin_wire[bel.index].at(id("OP" + std::string(1,'A'+z) + "_O3"));
+        if (pin == this->id("O0")) return chip_info->bel_to_pin_wire[bel.index].at(id("OP" + std::string(1,'A'+z) + "_O0"));
+        if (pin == this->id("O1")) return chip_info->bel_to_pin_wire[bel.index].at(id("OP" + std::string(1,'A'+z) + "_O1"));
+        if (pin == this->id("O2")) return chip_info->bel_to_pin_wire[bel.index].at(id("OP" + std::string(1,'A'+z) + "_O2"));
+        if (pin == this->id("O3")) return chip_info->bel_to_pin_wire[bel.index].at(id("OP" + std::string(1,'A'+z) + "_O3"));
     } else if (bel_type == this->id("OBUF") || bel_type == this->id("OutPass4_frame_config")){
     	auto z = chip_info->bel_to_loc[bel.index].z;
-        if (pin == this->id("I[0]")) return chip_info->bel_to_pin_wire[bel.index].at(id("RES" + std::string(1,'1'+z) + "_I0"));
-        if (pin == this->id("I[1]")) return chip_info->bel_to_pin_wire[bel.index].at(id("RES" + std::string(1,'1'+z) + "_I1"));
-        if (pin == this->id("I[2]")) return chip_info->bel_to_pin_wire[bel.index].at(id("RES" + std::string(1,'1'+z) + "_I2"));
-        if (pin == this->id("I[3]")) return chip_info->bel_to_pin_wire[bel.index].at(id("RES" + std::string(1,'1'+z) + "_I3"));
+        //log(pin.c_str(this));
+        //std::cout << "RES" + std::string(1,'1'+z-2) + "_" << pin.str(this) << std::endl;
+        if (pin == this->id("I0")) return chip_info->bel_to_pin_wire[bel.index].at(id("RES" + std::string(1,'1'+z-3) + "_I0"));
+        if (pin == this->id("I1")) return chip_info->bel_to_pin_wire[bel.index].at(id("RES" + std::string(1,'1'+z-3) + "_I1"));
+        if (pin == this->id("I2")) return chip_info->bel_to_pin_wire[bel.index].at(id("RES" + std::string(1,'1'+z-3) + "_I2"));
+        if (pin == this->id("I3")) return chip_info->bel_to_pin_wire[bel.index].at(id("RES" + std::string(1,'1'+z-3) + "_I3"));
     } else if (bel_type == this->id("MULADD")){
         if (pin == this->id("A[0]")) return chip_info->bel_to_pin_wire[bel.index].at(id("A0"));
         if (pin == this->id("A[1]")) return chip_info->bel_to_pin_wire[bel.index].at(id("A1"));
@@ -736,9 +739,9 @@ TimingPortClass Arch::getPortTimingClass(const CellInfo *cell, IdString port, in
         // if (port == id_OMUX)
     } else if (cell->type == id_IOB33 || cell->type == id_IOB18 || cell->type==id_IOBUF || cell->type==this->id("IO_1_bidirectional_frame_config_pass")) {
         if (port == id_I or port == this->id("T"))
-            return TMG_STARTPOINT;
-        else if (port == id_O or port == this->id("Q"))
             return TMG_ENDPOINT;
+        else if (port == id_O or port == this->id("Q"))
+            return TMG_STARTPOINT;
     } else if (cell->type == id_BUFGCTRL) {
         if (port == id_O)
             return TMG_COMB_OUTPUT;
@@ -765,7 +768,7 @@ TimingPortClass Arch::getPortTimingClass(const CellInfo *cell, IdString port, in
     } else if (cell->type == this->id("OutPass4_frame_config")){
     	return TMG_ENDPOINT;
     } else if (cell->type == this->id("LUTFF")) {
-        if (port == this->id("Q")){
+        if (port == this->id("O")){
             return TMG_REGISTER_OUTPUT; 
         } else{
             return TMG_REGISTER_INPUT;             

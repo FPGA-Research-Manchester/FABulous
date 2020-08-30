@@ -20,7 +20,7 @@ inout  wow //inout wow2
     (* keep *) LUT1 s2_out(.O(s2));
     (* keep *) LUT1 s3_out(.O(s3));
     (* keep *) LUT1 s4_out(.O(s4));
-    (* keep *) InPass4_frame_config  mully_out (.O(mully));
+    //(* keep *) InPass4_frame_config  mully_out (.O(mully));
     //(* keep *) IO_1_bidirectional_frame_config_pass iocell1 (.I(s1));
     //(* keep *) MULADD mully_block (.A({s1, s2, s3}), .B({s2, s1, s3}), .Q({wow2}), .clr(0), .C(0));
   
@@ -52,7 +52,7 @@ inout  wow //inout wow2
 reg  lemon1;
 reg  lemon2;
 
-assign {led0, led1, led3, led2} = {s1, s2, clk, mully} * {s3, s4, multand} + {clk, s2, multand};
+assign {led1, led3, led2} = {s1, s2, clk, mully} * {s3, s4, multand} + {clk, s2, multand};
 
 
 

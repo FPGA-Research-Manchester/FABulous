@@ -352,10 +352,12 @@ def genVPRModel(fabricObject: Fabric):
 	return modelStr
 
 
-def genNextpnrModel(archObject: Fabric):
+def genNextpnrModel(archObject: Fabric, generatePairs = True):
 	pipsStr = "" 
 	belsStr = f"# BEL descriptions: bottom left corner Tile_X0Y0, top right {archObject.tiles[0][archObject.width - 1].genTileLoc()}\n" 
 	pairStr = ""
+	templateStr = "module template ();\n"
+	constraintStr = ""
 
 	for line in archObject.tiles:
 		for tile in line:
@@ -439,184 +441,234 @@ def genNextpnrModel(archObject: Fabric):
 					cType = bel
 				belsStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)), let, cType, ",".join(nports))) + "\n"
 
-			#Generate wire beginning to wire beginning pairs for timing analysis
-			print("Generating pairs for: " + tile.genTileLoc())
-			pairStr += "#" + tileLoc + "\n"
-			for wire in tile.wires:
-				for i in range(int(wire["wire-count"])):
-					desty = tile.y + int(wire["yoffset"])
-
-					destx = tile.x + int(wire["xoffset"]) 
-					destTile = archObject.getTileByCoords(destx, desty)
-
-					desttileLoc = f"X{destx}Y{desty}"
-					#print(wire["source"] + str(i))
-					#print(tile.pipMuxes.keys())
-					if (wire["destination"] + str(i)) not in destTile.pipMuxes_MapSourceToSinks.keys():
-						#print("Not Found")
-						continue
-					#print("Found")
-					for pipSink in destTile.pipMuxes_MapSourceToSinks[wire["destination"] + str(i)]:
-						if len(destTile.pipMuxes_MapSinkToSources[pipSink]) > 1:
-							# pipSinkRE = BracketAddingRE.match(pipSink)
-
-							# if pipSinkRE and pipSink not in destTile.belPorts:
-							# 	outSink = pipSinkRE.group(1) + "[" + pipSinkRE.group(2) + "]"
-							# else:
-							# 	outSink = pipSink
-							pairStr += ",".join((".".join((tileLoc, wire["source"] + f"[{str(i)}]")), ".".join((desttileLoc, addBrackets(pipSink, tile))))) + "\n" #TODO: add square brackets to end
-							#print("Simple")
-							#print(",".join((".".join((tileLoc, wire["source"] + f"[{str(i)}]")), ".".join((desttileLoc, pipSink)))) + "\n")
+				#Add template:
+				if bel == "IO_1_bidirectional_frame_config_pass":
+					templateStr += f"wire "
+					for i, port in enumerate(nports):
+						templateStr += f"Tile_{tileLoc}_{port}"
+						if i < len(nports) - 1:
+							templateStr += ", "
 						else:
-							finalDestination = ".".join((desttileLoc, addBrackets(pipSink, tile)))
-							foundPhysicalPairs = False
-							curWireTuple = (tile, wire, i)
-							potentialStarts = []
-							stopOffs = []
-							while (not foundPhysicalPairs):
-								#For each wire we're leading into, find out if the pip input is a multiplexer
-								#print(curWireTuple)
-								cTile = curWireTuple[0]
-								#print(cTile.tileType)
-								cWire = curWireTuple[1]
-								cIndex = curWireTuple[2]
-								#print(cWire["source"] + str(cIndex))
-								#print((cTile.pipMuxes_MapSinkToSources[cWire["source"] + str(cIndex)]))
+							templateStr += ";\n"
 
-								if len(cTile.pipMuxes_MapSinkToSources[cWire["source"] + str(cIndex)]) > 1:
-									for wireEnd in cTile.pipMuxes_MapSinkToSources[cWire["source"]  + str(cIndex)]:
-										#print(wireEnd)
-										if wireEnd in cTile.belPorts:
-											continue
-										cPair = archObject.getTileAndWireByWireDest(cTile.genTileLoc(), wireEnd)
-										if cPair == None:
-											#print(cWire["source"]  + str(cIndex))
-											#print(cTile.genTileLoc(), wireEnd)
-											continue
-										#	continue #This means that there are no wires connected to this port, so it must be a bel output port
-										potentialStarts.append(cPair[0].genTileLoc() + "." + cPair[1]["source"] + "[" + str(cPair[2]) + "]")
-									foundPhysicalPairs = True
-								else:
-									destPort = cTile.pipMuxes_MapSinkToSources[cWire["source"] + str(cIndex)][0]
-									destLoc = cTile.genTileLoc()
-									if destPort in cTile.belPorts:
-										foundPhysicalPairs = True #This means it's connected to a BEL
-										continue
-									if GNDRE.match(destPort) or VCCRE.match(destPort):
+					belName = f"Tile_{tileLoc}_{let}"
+
+					templateStr += f"(* keep *) IO_1_bidirectional_frame_config_pass {belName} (.O(Tile_{tileLoc}_{prefix}O), .Q(Tile_{tileLoc}_{prefix}Q), .I(Tile_{tileLoc}_{prefix}I), .T(Tile_{tileLoc}_{prefix}T));\n\n"
+
+					constraintStr += f"set_io {belName} {tileLoc}.{let}\n"
+
+				if bel == "InPass4_frame_config":
+					templateStr += f"wire "
+					for i, port in enumerate(nports):
+						templateStr += f"Tile_{tileLoc}_{port}"
+						if i < len(nports) - 1:
+							templateStr += ", "
+						else:
+							templateStr += ";\n"
+
+					belName = f"Tile_{tileLoc}_{let}"
+
+					templateStr += f"(* keep *) InPass4_frame_config {belName} (.O0(Tile_{tileLoc}_{prefix}O0), .O1(Tile_{tileLoc}_{prefix}O1), .O2(Tile_{tileLoc}_{prefix}O2), .O3(Tile_{tileLoc}_{prefix}O3));\n\n"
+
+					constraintStr += f"set_io {belName} {tileLoc}.{let}\n"
+
+				if bel == "OutPass4_frame_config":
+					templateStr += f"wire "
+					for i, port in enumerate(nports):
+						templateStr += f"Tile_{tileLoc}_{port}"
+						if i < len(nports) - 1:
+							templateStr += ", "
+						else:
+							templateStr += ";\n"
+
+					belName = f"Tile_{tileLoc}_{let}"
+
+					templateStr += f"(* keep *) OutPass4_frame_config {belName} (.I0(Tile_{tileLoc}_{prefix}I0), .I1(Tile_{tileLoc}_{prefix}I1), .I2(Tile_{tileLoc}_{prefix}I2), .I3(Tile_{tileLoc}_{prefix}I3));\n\n"
+					constraintStr += f"set_io {belName} {tileLoc}.{let}\n"				
+
+			if generatePairs:
+				#Generate wire beginning to wire beginning pairs for timing analysis
+				print("Generating pairs for: " + tile.genTileLoc())
+				pairStr += "#" + tileLoc + "\n"
+				for wire in tile.wires:
+					for i in range(int(wire["wire-count"])):
+						desty = tile.y + int(wire["yoffset"])
+
+						destx = tile.x + int(wire["xoffset"]) 
+						destTile = archObject.getTileByCoords(destx, desty)
+
+						desttileLoc = f"X{destx}Y{desty}"
+						#print(wire["source"] + str(i))
+						#print(tile.pipMuxes.keys())
+						if (wire["destination"] + str(i)) not in destTile.pipMuxes_MapSourceToSinks.keys():
+							#print("Not Found")
+							continue
+						#print("Found")
+						for pipSink in destTile.pipMuxes_MapSourceToSinks[wire["destination"] + str(i)]:
+							if len(destTile.pipMuxes_MapSinkToSources[pipSink]) > 1:
+								# pipSinkRE = BracketAddingRE.match(pipSink)
+
+								# if pipSinkRE and pipSink not in destTile.belPorts:
+								# 	outSink = pipSinkRE.group(1) + "[" + pipSinkRE.group(2) + "]"
+								# else:
+								# 	outSink = pipSink
+								pairStr += ",".join((".".join((tileLoc, wire["source"] + f"[{str(i)}]")), ".".join((desttileLoc, addBrackets(pipSink, tile))))) + "\n" #TODO: add square brackets to end
+								#print("Simple")
+								#print(",".join((".".join((tileLoc, wire["source"] + f"[{str(i)}]")), ".".join((desttileLoc, pipSink)))) + "\n")
+							else:
+								finalDestination = ".".join((desttileLoc, addBrackets(pipSink, tile)))
+								foundPhysicalPairs = False
+								curWireTuple = (tile, wire, i)
+								potentialStarts = []
+								stopOffs = []
+								while (not foundPhysicalPairs):
+									#For each wire we're leading into, find out if the pip input is a multiplexer
+									#print(curWireTuple)
+									cTile = curWireTuple[0]
+									#print(cTile.tileType)
+									cWire = curWireTuple[1]
+									cIndex = curWireTuple[2]
+									#print(cWire["source"] + str(cIndex))
+									#print((cTile.pipMuxes_MapSinkToSources[cWire["source"] + str(cIndex)]))
+
+									if len(cTile.pipMuxes_MapSinkToSources[cWire["source"] + str(cIndex)]) > 1:
+										for wireEnd in cTile.pipMuxes_MapSinkToSources[cWire["source"]  + str(cIndex)]:
+											#print(wireEnd)
+											if wireEnd in cTile.belPorts:
+												continue
+											cPair = archObject.getTileAndWireByWireDest(cTile.genTileLoc(), wireEnd)
+											if cPair == None:
+												#print(cWire["source"]  + str(cIndex))
+												#print(cTile.genTileLoc(), wireEnd)
+												continue
+											#	continue #This means that there are no wires connected to this port, so it must be a bel output port
+											potentialStarts.append(cPair[0].genTileLoc() + "." + cPair[1]["source"] + "[" + str(cPair[2]) + "]")
 										foundPhysicalPairs = True
-										continue
-									stopOffs.append(destLoc + "." + destPort)
-									curWireTuple = archObject.getTileAndWireByWireDest(destLoc, destPort)
-									# if curWireTuple == None:
-									# 	print(cWire["source"] + str(cIndex))
-									# 	print(destPort, destLoc)
-							pairStr += "#Propagated route for " + finalDestination + "\n"
-							for index, start in enumerate(potentialStarts):
-								pairStr += start + "," + finalDestination + "\n"
-							pairStr += "#Stopoffs: " + ",".join(stopOffs) + "\n"
+									else:
+										destPort = cTile.pipMuxes_MapSinkToSources[cWire["source"] + str(cIndex)][0]
+										destLoc = cTile.genTileLoc()
+										if destPort in cTile.belPorts:
+											foundPhysicalPairs = True #This means it's connected to a BEL
+											continue
+										if GNDRE.match(destPort) or VCCRE.match(destPort):
+											foundPhysicalPairs = True
+											continue
+										stopOffs.append(destLoc + "." + destPort)
+										curWireTuple = archObject.getTileAndWireByWireDest(destLoc, destPort)
+										# if curWireTuple == None:
+										# 	print(cWire["source"] + str(cIndex))
+										# 	print(destPort, destLoc)
+								pairStr += "#Propagated route for " + finalDestination + "\n"
+								for index, start in enumerate(potentialStarts):
+									pairStr += start + "," + finalDestination + "\n"
+								pairStr += "#Stopoffs: " + ",".join(stopOffs) + "\n"
 
-			#Generate pairs for bels:
-			for num, belpair in enumerate(tile.bels):
-				pairStr += "#Bel pairs" + "\n"
-				bel = belpair[0]
-				let = letters[num]
-				prefix = belpair[1]
-				nports = belpair[2]
+				#Generate pairs for bels:
+				for num, belpair in enumerate(tile.bels):
+					pairStr += "#Bel pairs" + "\n"
+					bel = belpair[0]
+					let = letters[num]
+					prefix = belpair[1]
+					nports = belpair[2]
 
-				if bel == "LUT4c_frame_config":
-					for i in range(4):
-						pairStr += tileLoc + "." + prefix + f"D[{i}]," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
-					for outPip in tile.pipMuxes_MapSourceToSinks[prefix + "O"]:
+					if bel == "LUT4c_frame_config":
 						for i in range(4):
-							pairStr += tileLoc + "." + prefix + f"I[{i}]," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
-							pairStr += tileLoc + "." + prefix + f"Q[{i}]," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+							pairStr += tileLoc + "." + prefix + f"D[{i}]," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+						for outPip in tile.pipMuxes_MapSourceToSinks[prefix + "O"]:
+							for i in range(4):
+								pairStr += tileLoc + "." + prefix + f"I[{i}]," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+								pairStr += tileLoc + "." + prefix + f"Q[{i}]," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
 
-							#print(tileLoc + "." + prefix + f"I[{i}]," + tileLoc + "." + addBrackets(outPip, tile))
-
-
-					#Add ffs here later
-
-				elif bel == "MUX8LUT_frame_config":
-					for outPip in tile.pipMuxes_MapSourceToSinks["M_AB"]:
-							pairStr += tileLoc + ".A," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
-							pairStr += tileLoc + ".B," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
-							pairStr += tileLoc + ".S0," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
-
-					for outPip in tile.pipMuxes_MapSourceToSinks["M_AD"]:
-							pairStr += tileLoc + ".A," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
-							pairStr += tileLoc + ".B," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
-							pairStr += tileLoc + ".C," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
-							pairStr += tileLoc + ".D," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
-							pairStr += tileLoc + ".S0," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
-							pairStr += tileLoc + ".S1," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+								#print(tileLoc + "." + prefix + f"I[{i}]," + tileLoc + "." + addBrackets(outPip, tile))
 
 
-					for outPip in tile.pipMuxes_MapSourceToSinks["M_AH"]:
-							pairStr += tileLoc + ".A," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
-							pairStr += tileLoc + ".B," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
-							pairStr += tileLoc + ".C," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
-							pairStr += tileLoc + ".D," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
-							pairStr += tileLoc + ".E," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
-							pairStr += tileLoc + ".F," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
-							pairStr += tileLoc + ".G," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
-							pairStr += tileLoc + ".H," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
-							pairStr += tileLoc + ".S0," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
-							pairStr += tileLoc + ".S1," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
-							pairStr += tileLoc + ".S2," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
-							pairStr += tileLoc + ".S3," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+						#Add ffs here later
 
-					for outPip in tile.pipMuxes_MapSourceToSinks["M_EF"]:
-							pairStr += tileLoc + ".E," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
-							pairStr += tileLoc + ".F," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
-							pairStr += tileLoc + ".S0," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
-							pairStr += tileLoc + ".S2," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
-				elif bel == "MULADD":
-					for i in range(20):
-						for outPip in tile.pipMuxes_MapSourceToSinks[f"Q{i}"]:
-							for i in range(8):
-								pairStr += tileLoc + f".A[{i}]," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
-							for i in range(8):
-								pairStr += tileLoc + f".B[{i}]," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
-							for i in range(20):
-								pairStr += tileLoc + f".C[{i}]," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+					elif bel == "MUX8LUT_frame_config":
+						for outPip in tile.pipMuxes_MapSourceToSinks["M_AB"]:
+								pairStr += tileLoc + ".A," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+								pairStr += tileLoc + ".B," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+								pairStr += tileLoc + ".S0," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
 
-				elif bel == "RegFile_32x4":
-					for i in range(4):
-						for outPip in tile.pipMuxes_MapSourceToSinks[f"AD{i}"]:
-								pairStr += tileLoc + ".W_en," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
-								for j in range(4):
-									pairStr += tileLoc + f".D[{j}]," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
-									pairStr += tileLoc + f".W_ADR[{j}]," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
-									pairStr += tileLoc + f".A_ADR[{j}]," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+						for outPip in tile.pipMuxes_MapSourceToSinks["M_AD"]:
+								pairStr += tileLoc + ".A," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+								pairStr += tileLoc + ".B," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+								pairStr += tileLoc + ".C," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+								pairStr += tileLoc + ".D," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+								pairStr += tileLoc + ".S0," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+								pairStr += tileLoc + ".S1," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
 
-						for outPip in tile.pipMuxes_MapSourceToSinks[f"BD{i}"]:
-								pairStr += tileLoc + ".W_en," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
-								for j in range(4):
-									pairStr += tileLoc + f".D[{j}]," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
-									pairStr += tileLoc + f".W_ADR[{j}]," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
-									pairStr += tileLoc + f".B_ADR[{j}]," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
-				elif bel == "IO_1_bidirectional_frame_config":
-					#inPorts go into the fabric, outPorts go out
-					for inPort in ("O", "Q"):
-						for outPip in tile.pipMuxes_MapSourceToSinks[prefix + inPort]:
-							pairStr += tileLoc + "." + prefix + inPort + "," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
 
-					#Outputs are covered by the wire code, as pips will link to them
-					# for outPort in ("I", "T"):
-					# 	for inPip in tile.pipMuxes_MapSinkToSources[prefix + outPort]:
-					# 		#pairStr += tileLoc + "." + prefix + inPort + tileLoc + "." + addBrackets(outPip, tile) + "\n"
-					# 		pairStr += tileLoc + "." + addBrackets(inPip, tile)  + "," + tileLoc + "." + prefix + inPort + "\n"
+						for outPip in tile.pipMuxes_MapSourceToSinks["M_AH"]:
+								pairStr += tileLoc + ".A," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+								pairStr += tileLoc + ".B," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+								pairStr += tileLoc + ".C," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+								pairStr += tileLoc + ".D," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+								pairStr += tileLoc + ".E," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+								pairStr += tileLoc + ".F," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+								pairStr += tileLoc + ".G," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+								pairStr += tileLoc + ".H," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+								pairStr += tileLoc + ".S0," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+								pairStr += tileLoc + ".S1," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+								pairStr += tileLoc + ".S2," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+								pairStr += tileLoc + ".S3," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
 
-				elif bel == "InPass4_frame_config":
-					for i in range(4):
-						for outPip in tile.pipMuxes_MapSourceToSinks[prefix + "O" + str(i)]:
-							pairStr += tileLoc + "." + prefix + f"O{i}" + "," + tileLoc + "." + addBrackets(outPip, tile) + "\n"						
+						for outPip in tile.pipMuxes_MapSourceToSinks["M_EF"]:
+								pairStr += tileLoc + ".E," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+								pairStr += tileLoc + ".F," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+								pairStr += tileLoc + ".S0," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+								pairStr += tileLoc + ".S2," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+					elif bel == "MULADD":
+						for i in range(20):
+							for outPip in tile.pipMuxes_MapSourceToSinks[f"Q{i}"]:
+								for i in range(8):
+									pairStr += tileLoc + f".A[{i}]," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+								for i in range(8):
+									pairStr += tileLoc + f".B[{i}]," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+								for i in range(20):
+									pairStr += tileLoc + f".C[{i}]," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+
+					elif bel == "RegFile_32x4":
+						for i in range(4):
+							for outPip in tile.pipMuxes_MapSourceToSinks[f"AD{i}"]:
+									pairStr += tileLoc + ".W_en," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+									for j in range(4):
+										pairStr += tileLoc + f".D[{j}]," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+										pairStr += tileLoc + f".W_ADR[{j}]," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+										pairStr += tileLoc + f".A_ADR[{j}]," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+
+							for outPip in tile.pipMuxes_MapSourceToSinks[f"BD{i}"]:
+									pairStr += tileLoc + ".W_en," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+									for j in range(4):
+										pairStr += tileLoc + f".D[{j}]," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+										pairStr += tileLoc + f".W_ADR[{j}]," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+										pairStr += tileLoc + f".B_ADR[{j}]," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+					elif bel == "IO_1_bidirectional_frame_config_pass":
+						#inPorts go into the fabric, outPorts go out
+						for inPort in ("O", "Q"):
+							for outPip in tile.pipMuxes_MapSourceToSinks[prefix + inPort]:
+								pairStr += tileLoc + "." + prefix + inPort + "," + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+
+						#Outputs are covered by the wire code, as pips will link to them
+						# for outPort in ("I", "T"):
+						# 	for inPip in tile.pipMuxes_MapSinkToSources[prefix + outPort]:
+						# 		#pairStr += tileLoc + "." + prefix + inPort + tileLoc + "." + addBrackets(outPip, tile) + "\n"
+						# 		pairStr += tileLoc + "." + addBrackets(inPip, tile)  + "," + tileLoc + "." + prefix + inPort + "\n"
+
+					elif bel == "InPass4_frame_config":
+						for i in range(4):
+							for outPip in tile.pipMuxes_MapSourceToSinks[prefix + "O" + str(i)]:
+								pairStr += tileLoc + "." + prefix + f"O{i}" + "," + tileLoc + "." + addBrackets(outPip, tile) + "\n"						
 
 				# elif bel == "OutPass4_frame_config":
 				# 	for i in range(4):
 				# 		for inPip in tile.pipMuxes_MapSinkToSources[prefix + "I" + str(i)]:
 				# 			pairStr += tileLoc + "." + addBrackets(inPip, tile)  + "," + tileLoc + "." + prefix + f"I{i}" + "\n"						
-	return (pipsStr, belsStr, pairStr)
+	templateStr += "endmodule"
+	if generatePairs:
+		return (pipsStr, belsStr, templateStr, constraintStr, pairStr)
+	else:
+		return (pipsStr, belsStr, templateStr, constraintStr)
 
 
 def genBitstreamSpec(archObject: Fabric):
@@ -816,9 +868,12 @@ fabricObject = genFabricObject(fabric)
 pipFile = open("npnroutput/pips.txt","w")
 belFile = open("npnroutput/bel.txt", "w")
 pairFile = open("npnroutput/wirePairs.csv", "w")
-bitstreamSpecFile = open("bitstreamspec.txt", "wb")
+templateFile = open("npnroutput/template.v", "w")
+constraintFile = open("npnroutput/template.pcf", "w")
 
-npnrModel = genNextpnrModel(fabricObject)
+bitstreamSpecFile = open("npnroutput/bitstreamspec.txt", "wb")
+
+npnrModel = genNextpnrModel(fabricObject, False)
 
 specObject = genBitstreamSpec(fabricObject)
 
@@ -828,7 +883,9 @@ pickle.dump(specObject, bitstreamSpecFile)
 
 pipFile.write(npnrModel[0])
 belFile.write(npnrModel[1])
-pairFile.write(npnrModel[2])
+templateFile.write(npnrModel[2])
+constraintFile.write(npnrModel[3])
+#pairFile.write(npnrModel[2])
 
 bitstreamSpecFile.close()
 pipFile.close()

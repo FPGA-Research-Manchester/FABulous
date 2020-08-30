@@ -78,22 +78,22 @@ std::unique_ptr<CellInfo> create_diko_cell(Context *ctx, IdString type, std::str
 	    //else
 		 //   new_cell->type = id_IOB18;
         new_cell->type = ctx->id("IO_1_bidirectional_frame_config_pass");
-        add_port(ctx, new_cell.get(), "I", PORT_OUT);
+        add_port(ctx, new_cell.get(), "I", PORT_IN);
         add_port(ctx, new_cell.get(), "Q", PORT_OUT);
-        add_port(ctx, new_cell.get(), "O", PORT_IN);
+        add_port(ctx, new_cell.get(), "O", PORT_OUT);
         add_port(ctx, new_cell.get(), "T", PORT_IN);
     } else if (type == ctx->id("InPass4_frame_config")) {
         new_cell->type = ctx->id("InPass4_frame_config");
-        add_port(ctx, new_cell.get(), "O[0]", PORT_OUT);
-        add_port(ctx, new_cell.get(), "O[1]", PORT_OUT);
-        add_port(ctx, new_cell.get(), "O[2]", PORT_OUT);
-        add_port(ctx, new_cell.get(), "O[3]", PORT_OUT);
+        add_port(ctx, new_cell.get(), "O0", PORT_OUT);
+        add_port(ctx, new_cell.get(), "O1", PORT_OUT);
+        add_port(ctx, new_cell.get(), "O2", PORT_OUT);
+        add_port(ctx, new_cell.get(), "O3", PORT_OUT);
     } else if (type == ctx->id("OutPass4_frame_config")) {
         new_cell->type = ctx->id("OutPass4_frame_config");
-        add_port(ctx, new_cell.get(), "I[0]", PORT_IN);
-        add_port(ctx, new_cell.get(), "I[1]", PORT_IN);
-        add_port(ctx, new_cell.get(), "I[2]", PORT_IN);
-        add_port(ctx, new_cell.get(), "I[3]", PORT_IN);
+        add_port(ctx, new_cell.get(), "I0", PORT_IN);
+        add_port(ctx, new_cell.get(), "I1", PORT_IN);
+        add_port(ctx, new_cell.get(), "I2", PORT_IN);
+        add_port(ctx, new_cell.get(), "I3", PORT_IN);
     } else if (type == id_BUFGCTRL) {
         add_port(ctx, new_cell.get(), "I0", PORT_IN);
         add_port(ctx, new_cell.get(), "O", PORT_OUT);
@@ -286,15 +286,15 @@ void nxio_to_sb(Context *ctx, CellInfo *nxio, CellInfo *sbio)
         auto pu_attr = nxio->attrs.find(ctx->id("PULLUP"));
         if (pu_attr != nxio->attrs.end())
             sbio->params[ctx->id("PULLUP")] = pu_attr->second;
-        replace_port(nxio, id_O, sbio, id_I);
+        replace_port(nxio, id_I, sbio, id_I);
     } else if (nxio->type == ctx->id("$nextpnr_obuf")) {
         //sbio->params[ctx->id("PIN_TYPE")] = "25";
-        replace_port(nxio, id_I, sbio, id_O);
+        replace_port(nxio, id_O, sbio, id_O);
     } else if (nxio->type == ctx->id("$nextpnr_iobuf")) {
         // N.B. tristate will be dealt with below
         //sbio->params[ctx->id("PIN_TYPE")] = "25";
-        replace_port(nxio, id_I, sbio, id_O);
-        replace_port(nxio, id_O, sbio, id_I);
+        replace_port(nxio, id_I, sbio, id_I);
+        replace_port(nxio, id_O, sbio, id_O);
     } else {
         NPNR_ASSERT(false);
     }

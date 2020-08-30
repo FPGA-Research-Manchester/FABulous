@@ -4,7 +4,7 @@ module blinky (
 //    output led1,
 //    output led2,
 //    output led3
-inout  wow //inout wow2
+inout  wow, inout wow2
 //input mully
 //output [3:0] lump
 //parameter bufwidth = 4
@@ -32,6 +32,7 @@ inout  wow //inout wow2
     (* keep *) LUT1 led2_in(.I0(led2));
     (* keep *) LUT1 led3_in(.I0(led3));
 
+    assign wow = wow2 * wow2 + s1;
 //assign led0 = mully;
 
 //    localparam BITS = 4;
@@ -49,23 +50,23 @@ inout  wow //inout wow2
 //assign lump = {s1, s2, s3, s4};
 //
 
-reg  lemon1;
-reg  lemon2;
+//reg  lemon1;
+//reg  lemon2;
 
-assign {led1, led3, led2} = {s1, s2, clk, mully} * {s3, s4, multand} + {clk, s2, multand};
+//assign {led1, led3, led2} = {s1, s2, clk, mully} * {wow, s4, multand} + {clk, s2, multand};
 
 
 
-always @($global_clock) begin
-	lemon1 <= s1;
-	lemon2 <= s2;
-	if (led0 == led3) begin
-		lemon1 <= lemon2;
-		lemon2 <= s3;
-	end
-end
+//always @($global_clock) begin
+//	lemon1 <= s1;
+//	lemon2 <= s2;
+//	if (led0 == led3) begin
+//		lemon1 <= lemon2;
+//		lemon2 <= s3;
+//	end
+//end
 
-assign wow = lemon1;
+//assign wow = lemon1;
 //assign lemon = s1;
 
 //assign lemonout = lemon & s4;

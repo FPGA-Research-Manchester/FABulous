@@ -707,7 +707,7 @@ bool Arch::getCellDelay(const CellInfo *cell, IdString fromPort, IdString toPort
             return true;
         }
     }
-    log(cell->type.c_str(this));
+    //log(cell->type.c_str(this));
     return false;
 }
 

@@ -102,13 +102,13 @@ endmodule
 //endmodule
 
 (* blackbox *)
-module InPass4_frame_config (output [3:0] O);
+module InPass4_frame_config (output O0, O1, O2, O3);
 
 endmodule
 
 
 (* blackbox *)
-module OutPass4_frame_config (input [3:0] I);
+module OutPass4_frame_config (input I0, I1, I2, I3);
 
 endmodule
 

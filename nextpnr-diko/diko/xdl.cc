@@ -79,7 +79,7 @@ void write_fasm(const Context *ctx, std::ostream &out)
                 const auto &pip_map = i.second;
                 if (pip_map.pip == PipId())
                     continue;
-                out << chip_info->tile_to_name[chip_info->wire_to_tile[ctx->getPipDstWire(pip_map.pip).index]].str(ctx) << ".";
+                out << chip_info->tile_to_name[chip_info->wire_to_tile[ctx->getPipSrcWire(pip_map.pip).index]].str(ctx) << ".";
                 out << chip_info->pip_to_txt.at(pip_map.pip.index) << std::endl;
         }
     }

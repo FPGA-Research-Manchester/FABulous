@@ -13,6 +13,7 @@ cp ../fabric/OutPassRES2.vhdl ./
 cp ../fabric/OutPass4_frame_config.vhdl ./
 cp ../fabric/RegFile_32x4.vhdl ./
 cp ../fabric/MULADD.vhdl ./
+cp ../fabric/my_lib.vhdl ./
 cp ../fabric/*.list ./
 cp ../fabric/CPU_IO_ConfigMem.csv ./
 cp ../fabric/DSP_bot_ConfigMem.csv ./

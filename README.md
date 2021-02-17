@@ -28,7 +28,7 @@ Then using the following command to build the entire FPGA fabric in both VHDL an
 ```
 ./run_gen_flow.sh
 ```
-You are now ready to emulate or synthesis with the netlists in ```/vhdl``` or ```/verilog```.
+You are now ready to emulate or synthesis with the netlists in ```/vhdl_files``` or ```/verilog_files```.
 
 <img src="https://www.dropbox.com/s/frnugxm1kjvv947/FABulous_flow2.png?raw=1" width="500"/>
 

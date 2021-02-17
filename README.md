@@ -13,9 +13,14 @@ The following packages need to be installed for generating fabric HDLs
 
 ## Getting started
 
-Fabric generator flow is run with bash script under ```/scripts```, using the following commands to build the entire FPGA fabric in both VHDL and Verilog:
+Fabric generator flow is run with bash script under ```/scripts```.
+In the first time before you run the flow, you must generate the basic files by following commands:
 ```
 cd scripts
+./create_basic_files
+```
+Then using the following command to build the entire FPGA fabric in both VHDL and Verilog:
+```
 ./run_gen_flow.sh
 ```
 <img src="https://www.dropbox.com/s/frnugxm1kjvv947/FABulous_flow2.png?raw=1" width="500"/>

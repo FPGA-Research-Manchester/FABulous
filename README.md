@@ -3,6 +3,11 @@
 ## Introdution
 FABulous is designed to fulfill the objectives of ease of use, maximum portability to different process nodes, good control for customization, and delivering good area, power, and performance characteristics of the generated FPGA fabrics. The framework provides templates for logic, arithmetic, memory, and I/O blocks that can be easily stitched together, whilst enabling users to add their own fully customized blocks and primitives.
 
+The FABulous ecosystem generates the embedded FPGA fabric for chip fabrication, integrates Yosys, ABC, VPR and nextpnr as FPGA CAD tools, deals with the bitstream generation and after fabrication tests. Additionally, we will provide an emulation path for system development.
+
+<img src="https://www.dropbox.com/s/g6wrtom681nr7tb/fabulous_ecosystem.png?raw=1" width="500"/>
+
+
 ## How to cite
 ...
 ...
@@ -23,7 +28,10 @@ Then using the following command to build the entire FPGA fabric in both VHDL an
 ```
 ./run_gen_flow.sh
 ```
+You are now ready to emulate or synthesis with the netlists in ```/vhdl``` or ```/verilog```.
+
 <img src="https://www.dropbox.com/s/frnugxm1kjvv947/FABulous_flow2.png?raw=1" width="500"/>
+
 
 The user can run the flow step by step as well (see below for instructions on building HDLs):
 

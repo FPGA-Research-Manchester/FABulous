@@ -35,12 +35,12 @@ You are now ready to emulate or synthesis with the netlists in ```/vhdl``` or ``
 
 The user can run the flow step by step as well (see below for instructions on building HDLs):
 
-### Generate the switch matrix as an empty CSV file containing the adjacency matrix
+### 1. Generate the switch matrix as an empty CSV file containing the adjacency matrix
 ```
 python3 gen.py -GenTileSwitchMatrixCSV
 ```
 
-### Populate the switch matrix (adjacency matrix) entries
+### 2. Populate the switch matrix (adjacency matrix) entries
 We do this for each tile individually in order to have some control what gets updated
 ```
 python3 gen.py -AddList2CSV LUT4AB_switch_matrix.list LUT4AB_switch_matrix.csv
@@ -55,7 +55,7 @@ python3 gen.py -AddList2CSV DSP_top_switch_matrix.list DSP_top_switch_matrix.csv
 python3 gen.py -AddList2CSV DSP_bot_switch_matrix.list DSP_bot_switch_matrix.csv
 ```
 
-### Generate the tile switch matrices (RTL)
+### 3. Generate the tile switch matrices (RTL)
 ```
 python3 gen.py -GenTileSwitchMatrixVHDL
 ```
@@ -64,7 +64,7 @@ or
 python3 gen.py -GenTileSwitchMatrixVerilog
 ```
 
-### Generate the configuration storage (RTL)
+### 4. Generate the configuration storage (RTL)
 ```
 python3 gen.py -GenTileConfigMemVHDL
 ```
@@ -73,7 +73,7 @@ or
 python3 gen.py -GenTileConfigMemVerilog
 ```
 
-### Generate the actual tiles (RTL)
+### 5. Generate the actual tiles (RTL)
 ```
 python3 gen.py -GenTileHDL
 ```
@@ -82,7 +82,7 @@ or
 python3 gen.py -GenTileVerilog
 ```
 
-### Generate the entire fabric (RTL)
+### 6. Generate the entire fabric (RTL)
 ```
 python3 gen.py -GenFabricHDL
 ```

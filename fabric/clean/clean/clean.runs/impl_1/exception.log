@@ -1,4 +1,0 @@
-ERROR: Exception caught trying to open file R:\work\FORTE\FPGA\fabric\clean\clean\clean.runs\impl_1/runme.log
-	Exception name: Error
-	Exception error code: 70
-	Exception message: Permission denied

@@ -16,7 +16,7 @@ Dirk Koch, Nguyen Dao, Bea Healy, Jing Yu, and Andrew Attwood. 2021. FABulous: A
 
 [link of paper]
 
-[link of paper]:https://www.researchgate.net/profile/Nguyen_Dao2/publication/347435888_FABulous_an_Embedded_FPGA_Framework/links/5fdb4795a6fdccdcb8d1e03b/FABulous-an-Embedded-FPGA-Framework.pdf
+[link of paper]:https://dl.acm.org/doi/pdf/10.1145/3431920.3439302
 
 ## Prerequisites
 The following packages need to be installed for generating fabric HDLs

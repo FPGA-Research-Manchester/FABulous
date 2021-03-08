@@ -1,9 +1,3 @@
-`timescale 1ps/1ps
-`include "InPass4_frame_config.v"
-`include "OutPass4_frame_config.v"
-`include "CPU_IO_switch_matrix.v"
-`include "CPU_IO_ConfigMem.v"
-
 module CPU_IO (E1END, E2MID, E2END, E6END, W1BEG, W2BEG, W2BEGb, W6BEG, OPA_I0, OPA_I1, OPA_I2, OPA_I3, UserCLK, OPB_I0, OPB_I1, OPB_I2, OPB_I3, RES0_O0, RES0_O1, RES0_O2, RES0_O3, RES1_O0, RES1_O1, RES1_O2, RES1_O3, RES2_O0, RES2_O1, RES2_O2, RES2_O3, FrameData, FrameStrobe);
 	parameter MaxFramesPerCol = 20;
 	parameter FrameBitsPerRow = 32;
@@ -71,7 +65,6 @@ module CPU_IO (E1END, E2MID, E2END, E6END, W1BEG, W2BEG, W2BEGb, W6BEG, OPA_I0, 
 	wire OPB_O3;
 //jump wires
 //internal configuration data signal to daisy-chain all BELs (if any and in the order they are listed in the fabric.csv)
-	wire [5:0] conf_data;
 	wire [NoConfigBits-1:0] ConfigBits;
 
 // Cascading of routing for wires spanning more than one tile

@@ -1,5 +1,3 @@
-`include "models_pack.v"
-
 module InPass4_frame_config (I0, I1, I2, I3, O0, O1, O2, O3, UserCLK, ConfigBits);
 	parameter NoConfigBits = 4;
 	// Pin0

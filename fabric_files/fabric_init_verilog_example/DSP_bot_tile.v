@@ -1,8 +1,3 @@
-`timescale 1ps/1ps
-`include "MULADD.v"
-`include "DSP_bot_switch_matrix.v"
-`include "DSP_bot_ConfigMem.v"
-
 module DSP_bot (N1BEG, N2BEG, N2BEGb, N4BEG, bot2top, N1END, N2MID, N2END, N4END, E1BEG, E2BEG, E2BEGb, E6BEG, E1END, E2MID, E2END, E6END, S1BEG, S2BEG, S2BEGb, S4BEG, S1END, S2MID, S2END, S4END, top2bot, W1BEG, W2BEG, W2BEGb, W6BEG, W1END, W2MID, W2END, W6END, UserCLK, FrameData, FrameStrobe);
 	parameter MaxFramesPerCol = 20;
 	parameter FrameBitsPerRow = 32;
@@ -112,28 +107,27 @@ module DSP_bot (N1BEG, N2BEG, N2BEGb, N4BEG, bot2top, N1END, N2MID, N2END, N4END
 	wire Q1;
 	wire Q0;
 //jump wires
-	wire [4:0] J2MID_ABa_BEG;
-	wire [4:0] J2MID_CDa_BEG;
-	wire [4:0] J2MID_EFa_BEG;
-	wire [4:0] J2MID_GHa_BEG;
-	wire [4:0] J2MID_ABb_BEG;
-	wire [4:0] J2MID_CDb_BEG;
-	wire [4:0] J2MID_EFb_BEG;
-	wire [4:0] J2MID_GHb_BEG;
-	wire [4:0] J2END_AB_BEG;
-	wire [4:0] J2END_CD_BEG;
-	wire [4:0] J2END_EF_BEG;
-	wire [4:0] J2END_GH_BEG;
-	wire [8:0] JN2BEG;
-	wire [8:0] JE2BEG;
-	wire [8:0] JS2BEG;
-	wire [8:0] JW2BEG;
-	wire [4:0] J_l_AB_BEG;
-	wire [4:0] J_l_CD_BEG;
-	wire [4:0] J_l_EF_BEG;
-	wire [4:0] J_l_GH_BEG;
+	wire [4-1:0] J2MID_ABa_BEG;
+	wire [4-1:0] J2MID_CDa_BEG;
+	wire [4-1:0] J2MID_EFa_BEG;
+	wire [4-1:0] J2MID_GHa_BEG;
+	wire [4-1:0] J2MID_ABb_BEG;
+	wire [4-1:0] J2MID_CDb_BEG;
+	wire [4-1:0] J2MID_EFb_BEG;
+	wire [4-1:0] J2MID_GHb_BEG;
+	wire [4-1:0] J2END_AB_BEG;
+	wire [4-1:0] J2END_CD_BEG;
+	wire [4-1:0] J2END_EF_BEG;
+	wire [4-1:0] J2END_GH_BEG;
+	wire [8-1:0] JN2BEG;
+	wire [8-1:0] JE2BEG;
+	wire [8-1:0] JS2BEG;
+	wire [8-1:0] JW2BEG;
+	wire [4-1:0] J_l_AB_BEG;
+	wire [4-1:0] J_l_CD_BEG;
+	wire [4-1:0] J_l_EF_BEG;
+	wire [4-1:0] J_l_GH_BEG;
 //internal configuration data signal to daisy-chain all BELs (if any and in the order they are listed in the fabric.csv)
-	wire [2:0] conf_data;
 	wire [NoConfigBits-1:0] ConfigBits;
 
 // Cascading of routing for wires spanning more than one tile

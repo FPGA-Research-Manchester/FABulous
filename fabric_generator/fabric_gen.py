@@ -2004,7 +2004,8 @@ def GenTileSwitchMatrixVerilog( tile, CSV_FileName, file ):
         # this is the case for a configurable switch matrix multiplexer
         if mux_size >= 2:
             if int(GenerateDelayInSwitchMatrix) > 0:
-                print('\tassign #'+str(GenerateDelayInSwitchMatrix)+' '+line[0]+'_input'+' = ', end='', file=file)
+                #print('\tassign #'+str(GenerateDelayInSwitchMatrix)+' '+line[0]+'_input'+' = {', end='', file=file)
+                print('\tassign '+line[0]+'_input'+' = {', end='', file=file)
             else:
                 print('\tassign '+line[0]+'_input'+' = {', end='', file=file)
             port_index = 0
@@ -2391,7 +2392,7 @@ def GenerateTileVerilog( tile_description, module, file ):
                 raise ValueError('Either source or destination port for JUMP wire missing in function GenerateTileVHDL')
             # we don't add ports or a corresponding signal name, if we have a NULL driver (which we use as an exception for GND and VCC (VCC0 GND0)    
             if not re.search('NULL', line[source_name], flags=re.IGNORECASE):
-                print('\twire ['+str(line[wires])+':0] '+line[source_name]+';', file=file)
+                print('\twire ['+str(line[wires])+'-1:0] '+line[source_name]+';', file=file)
             # we need the jump wires for the switch matrix component instantiation..
                 for k in range(int(line[wires])):
                     AllJumpWireList.append(str(line[source_name]+'('+str(k)+')'))
@@ -2410,7 +2411,8 @@ def GenerateTileVerilog( tile_description, module, file ):
     # however, we leave it and just use this signal as conf_data(0 downto 0) for simply touting through CONFin to CONFout
     # maybe even useful if we want to add a buffer here
     # if (Bel_Counter + NuberOfSwitchMatricesWithConfigPort) > 0
-    print('\twire ['+str(BEL_counter+NuberOfSwitchMatricesWithConfigPort)+':0] conf_data;', file=file)
+    
+    #print('\twire ['+str(BEL_counter+NuberOfSwitchMatricesWithConfigPort)+':0] conf_data;', file=file)
     if GlobalConfigBitsCounter > 0:
         print('\twire [NoConfigBits-1:0] ConfigBits;', file=file)
 
@@ -2917,14 +2919,14 @@ def GenerateFabricVerilog( FabricFile, file, module = 'eFPGA' ):
 
 def GenerateVerilog_Header(module_header_ports, file, module, package='' , NoConfigBits='0', MaxFramesPerCol='NULL', FrameBitsPerRow='NULL', module_header_files=[]):
     #   timescale
-    print('`timescale 1ps/1ps', file=file)
+    #print('`timescale 1ps/1ps', file=file)
     #   library template
-    if package != '':
-        package = '`include "models_pack.v"'
-        print(package, file=file)
-    for hfile in module_header_files:
-        print('`include "'+hfile+'"', file=file)
-    print('', file=file)
+    #if package != '':
+        #package = '`include "models_pack.v"'
+        #print(package, file=file)
+    #for hfile in module_header_files:
+        #print('`include "'+hfile+'"', file=file)
+    #print('', file=file)
     #   module
     print('module '+module+' ('+module_header_ports +');', file=file)
     if MaxFramesPerCol != 'NULL':
@@ -3275,5 +3277,6 @@ CLB = GetTileFromFile(FabricFile,'CLB')
 # print('fabric: \n')
 # for item in fabric:
     # print(item,'\n')
+
 
 

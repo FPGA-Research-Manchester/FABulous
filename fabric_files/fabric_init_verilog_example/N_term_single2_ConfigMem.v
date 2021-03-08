@@ -1,5 +1,3 @@
-`timescale 1ps/1ps
-
 module N_term_single2_ConfigMem (FrameData, FrameStrobe, ConfigBits);
 	parameter MaxFramesPerCol = 20;
 	parameter FrameBitsPerRow = 32;

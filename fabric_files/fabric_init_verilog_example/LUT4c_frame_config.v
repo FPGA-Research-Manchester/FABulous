@@ -1,5 +1,3 @@
-`include "models_pack.v"
-
 module LUT4c_frame_config (I0, I1, I2, I3, O, Ci, Co, UserCLK, ConfigBits);
 	parameter NoConfigBits = 18 ; // has to be adjusted manually (we don't use an arithmetic parser for the value)
 	// IMPORTANT: this has to be in a dedicated line

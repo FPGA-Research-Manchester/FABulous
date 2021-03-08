@@ -1,6 +1,3 @@
-`timescale 1ps/1ps
-`include "S_term_single2_switch_matrix.v"
-
 module S_term_single2 (N1BEG, N2BEG, N2BEGb, N4BEG, S1END, S2MID, S2END, S4END);
 	parameter MaxFramesPerCol = 20;
 	parameter FrameBitsPerRow = 32;
@@ -24,7 +21,6 @@ module S_term_single2 (N1BEG, N2BEG, N2BEGb, N4BEG, S1END, S2MID, S2END, S4END);
 //BEL ports (e.g., slices)
 //jump wires
 //internal configuration data signal to daisy-chain all BELs (if any and in the order they are listed in the fabric.csv)
-	wire [0:0] conf_data;
 
 // Cascading of routing for wires spanning more than one tile
 

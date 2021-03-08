@@ -1,5 +1,3 @@
-`include "models_pack.v"
-
 module MUX8LUT_latch_config (A, B, C, D, E, F, G, H, S0, S1, S2, S3, M_AB, M_AD, M_AH, M_EF, MODE, CONFin, CONFout, CLK);
     // Generic (LUT_SIZE : integer := 4);	
    // IMPORTANT: this has to be in a dedicated line

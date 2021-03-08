@@ -1,8 +1,3 @@
-`timescale 1ps/1ps
-`include "IO_1_bidirectional_frame_config_pass.v"
-`include "W_IO_switch_matrix.v"
-`include "W_IO_ConfigMem.v"
-
 module W_IO (E1BEG, E2BEG, E2BEGb, E6BEG, W1END, W2MID, W2END, W6END, A_I_top, A_T_top, A_O_top, UserCLK, B_I_top, B_T_top, B_O_top, FrameData, FrameStrobe);
 	parameter MaxFramesPerCol = 20;
 	parameter FrameBitsPerRow = 32;
@@ -44,7 +39,6 @@ module W_IO (E1BEG, E2BEG, E2BEGb, E6BEG, W1END, W2MID, W2END, W6END, A_I_top, A
 	wire B_Q;
 //jump wires
 //internal configuration data signal to daisy-chain all BELs (if any and in the order they are listed in the fabric.csv)
-	wire [3:0] conf_data;
 	wire [NoConfigBits-1:0] ConfigBits;
 
 // Cascading of routing for wires spanning more than one tile

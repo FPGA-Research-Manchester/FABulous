@@ -1,5 +1,3 @@
-`include "models_pack.v"
-
 module LUT4c_latch_config (I0, I1, I2, I3, O, Ci, Co, UserCLK, MODE, CONFin, CONFout, CLK);
 	// parameter LUT_SIZE = 4);
 	// IMPORTANT: this has to be in a dedicated line

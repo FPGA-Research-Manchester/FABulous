@@ -10,7 +10,7 @@ The FABulous ecosystem generates the embedded FPGA fabric for chip fabrication, 
 
 ## How to cite
 
-The following paper can be used as citation for Fabulous: 
+The following paper can be used as citation for Fabulous:
 
 Dirk Koch, Nguyen Dao, Bea Healy, Jing Yu, and Andrew Attwood. 2021. FABulous: An Embedded FPGA Framework. In <i>The 2021 ACM/SIGDA International Symposium on Field-Programmable Gate Arrays</i> (<i>FPGA '21</i>). Association for Computing Machinery, New York, NY, USA, 45–56. DOI:https://doi.org/10.1145/3431920.3439302
 
@@ -22,6 +22,10 @@ Dirk Koch, Nguyen Dao, Bea Healy, Jing Yu, and Andrew Attwood. 2021. FABulous: A
 The following packages need to be installed for generating fabric HDLs
  - Python 3.5 or later
 
+Install python dependancies
+```
+pip3 install -r requirements.txt
+```
 ## Getting started
 
 Fabric generator flow is run with bash script. (Examples are provided under ```/fabric_files```.)

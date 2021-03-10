@@ -26,35 +26,14 @@ python3 fabric_gen.py -GenFabricHDL
 python3 fabric_gen.py -GenFabricVerilog
 #GOTO END
 
-if [ -d "./verilog_files" ]; then
-  # Take action if $DIR exists. #
-  mv -f *.v ./verilog_output
-else
-  mkdir verilog_output
-  mv -f *.v ./verilog_output
-fi
+mkdir -p verilog_output
+mv -f *.v ./verilog_output
 
-if [ -d "./vhdl_files" ]; then
-  # Take action if $DIR exists. #
-  mv -f *.vhdl ./vhdl_output
-else
-  mkdir vhdl_output
-  mv -f *.vhdl ./vhdl_output
-fi
+mkdir -p vhdl_output
+mv -f *.vhdl ./vhdl_output
 
-if [ -d "./list_files" ]; then
-  # Take action if $DIR exists. #
-  mv -f *.list ./list_files
-else
-  mkdir list_files
-  mv -f *.list ./list_files
-fi
+mkdir -p list_files
+mv -f *.list ./list_files
 
-
-if [ -d "./csv_files" ]; then
-  # Take action if $DIR exists. #
-  mv -f *.csv ./csv_output
-else
-  mkdir csv_output
-  mv -f *.csv ./csv_output
-fi
+mkdir -p csv_output
+mv -f *.csv ./csv_output

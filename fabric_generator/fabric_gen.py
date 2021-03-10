@@ -1,4 +1,4 @@
-# Python 3
+#!/bin/env python3
 from array import array
 import re
 import sys

@@ -29,7 +29,7 @@ Fabric generator flow is run with bash script. (Examples are provided under ```/
 In the first time before you run the flow, you must generate the basic files by following commands:
 ```
 cd fabric_generator
-./create_basic_files
+./create_basic_files.sh
 ```
 Then using the following command to build the entire FPGA fabric in both VHDL and Verilog:
 ```

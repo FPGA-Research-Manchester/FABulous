@@ -24,6 +24,9 @@ python3 fabric_gen.py -GenTileVerilog
 #REM STEP 6 : generate the entire fabric (RTL)
 python3 fabric_gen.py -GenFabricHDL
 python3 fabric_gen.py -GenFabricVerilog
+#REM STEP 6 : generate the nextpnr model
+python3 fabric_gen.py -GenNextpnrModel
+python3 fabric_gen.py -GenBitstreamSpec npnroutput/meta_data.txt
 #GOTO END
 
 mkdir -p verilog_output

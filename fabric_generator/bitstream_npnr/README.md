@@ -135,9 +135,9 @@ Future versions of FABulous will use the bitstream mapping feature for optimizin
 ## Bitstream assembly and configuration frame addressing
 
 Configuration frames are composed by concatenating the same configuration frame index for an entire resource column. For instance, in our example, we are considering an FPGA fabric with 8 rows and 10 columns. This corresponds to resource columns with 8 CLBs, 8 RegFiles or 4 DSPs (DSPs take two vertically aligned tiles).
-Each configuration frame is masked by a frame_address_mask in 32 bits. ```frame_address_mask[31:27]``` acts as binary index to indicate the column index. ```frame_address_mask[19:0]``` acts as one-hot data code to index the frame address. 
+Each configuration frame is masked by a frame_address_mask in 32 bits. ```frame_address_mask[31:27]``` performs as binary index to indicate the column index. ```frame_address_mask[19:0]``` performs as one-hot data code to index the frame address. 
 
-In the following example, the first line is the frame_address_mask, ```frame_address_mask[31:27] = 00100``` indicates the 8th column (X7), ```frame_address_mask[19:0] = 0000_0000_0000_0000_0010``` indicates 2nd frame (frame1). The rest 8 lines binary bits will be masked to all LUT4ABs' frame1 at column X7.
+In the following example, the first line is the frame_address_mask, ```frame_address_mask[31:27] = 00100``` presents the 8th column (X7), ```frame_address_mask[19:0] = 0000_0000_0000_0000_0010``` presents 2nd frame (frame1). The rest 8 lines binary bits will be masked to all LUT4ABs' frame1 at column X7.
 
 ```
 20 00 00 02 

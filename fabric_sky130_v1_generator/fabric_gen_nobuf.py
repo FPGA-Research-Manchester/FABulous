@@ -2450,75 +2450,18 @@ def GenerateTileVerilog( tile_description, module, file ):
     # Cascading of routing for wires spanning more than one tile
     print('\n// Cascading of routing for wires spanning more than one tile', file=file)
     
-    print('\twire [FrameBitsPerRow-1:0] FrameData_i;', file=file)
-    print('\twire [FrameBitsPerRow-1:0] FrameData_O_i;', file=file)
+    print('\tassign FrameData_O = FrameData;', file=file)
+    print('\tassign FrameStrobe_O = FrameStrobe;', file=file)
     
-    print('\tassign FrameData_O_i = FrameData_i;\n', file=file)
-    
-    for m in range(FrameBitsPerRow):
-        print('\tmy_buf data_inbuf_'+str(m)+' (', file=file)
-        print('\t.A(FrameData['+str(m)+']),', file=file)
-        print('\t.X(FrameData_i['+str(m)+'])', file=file)
-        print('\t);\n', file=file)
-    
-    for m in range(FrameBitsPerRow):
-        #print('\tgenvar m;', file=file)
-        #print('\tfor (m=0; m<FrameBitsPerRow; m=m+1) begin: data_buf', file=file)
-        print('\tmy_buf data_outbuf_'+str(m)+' (', file=file)
-        print('\t.A(FrameData_O_i['+str(m)+']),', file=file)
-        print('\t.X(FrameData_O['+str(m)+'])', file=file)
-        print('\t);\n', file=file)
-        #print('\tend\n', file=file)
-    
-    print('\twire [MaxFramesPerCol-1:0] FrameStrobe_i;', file=file)
-    print('\twire [MaxFramesPerCol-1:0] FrameStrobe_O_i;', file=file)
-    
-    print('\tassign FrameStrobe_O_i = FrameStrobe_i;\n', file=file)
-    
-    for n in range(MaxFramesPerCol):
-        print('\tmy_buf strobe_inbuf_'+str(n)+' (', file=file)
-        print('\t.A(FrameStrobe['+str(n)+']),', file=file)
-        print('\t.X(FrameStrobe_i['+str(n)+'])', file=file)
-        print('\t)\n;', file=file)
-    
-    for n in range(MaxFramesPerCol):
-        #print('\tgenvar n;', file=file)
-        #print('\tfor (n=0; n<MaxFramesPerCol; n=n+1) begin: strobe_buf', file=file)
-        print('\tmy_buf strobe_outbuf_'+str(n)+' (', file=file)
-        print('\t.A(FrameStrobe_O_i['+str(n)+']),', file=file)
-        print('\t.X(FrameStrobe_O['+str(n)+'])', file=file)
-        print('\t)\n;', file=file)
-        #print('\tend\n', file=file)
-    
+
     for line in tile_description:
         if line[0] in ['NORTH','EAST','SOUTH','WEST']:
             span=abs(int(line[X_offset]))+abs(int(line[Y_offset]))
             # in case a signal spans 2 ore more tiles in any direction
             if (span >= 2) and (line[source_name]!='NULL') and (line[destination_name]!='NULL'):
                 high_bound_index = (span*int(line[wires]))-1
-                print('\twire ['+str(high_bound_index)+':0] '+line[destination_name]+'_i;', file=file)
-                print('\twire ['+str(high_bound_index-int(line[wires]))+':0] '+line[source_name]+'_i;', file=file)
-                
-                print('\tassign '+line[source_name]+'_i['+str(high_bound_index)+'-'+str(line[wires])+':0]',end='', file=file)
-                print(' = '+line[destination_name]+'_i['+str(high_bound_index)+':'+str(line[wires])+'];\n', file=file)
-                
-                for i in range(int(high_bound_index)-int(line[wires])+1):
-                #print('\tgenvar '+line[0][0]+'_index;', file=file)
-                #print('\tfor ('+line[0][0]+'_index=0; '+line[0][0]+'_index<='+str(high_bound_index)+'-'+str(line[wires])+'; '+line[0][0]+'_index='+line[0][0]+'_index+1) begin: '+line[0][0]+'_buf', file=file)
-                    print('\tmy_buf '+line[0][0]+'_inbuf_'+str(i)+' (', file=file)
-                    print('\t.A('+line[destination_name]+'['+str(i+int(line[wires]))+']),', file=file)
-                    print('\t.X('+line[destination_name]+'_i['+str(i+int(line[wires]))+'])', file=file)
-                    print('\t);\n', file=file)
-                #print('\tend\n', file=file)
-                
-                for j in range(int(high_bound_index)-int(line[wires])+1):
-                #print('\tgenvar '+line[0][0]+'_index;', file=file)
-                #print('\tfor ('+line[0][0]+'_index=0; '+line[0][0]+'_index<='+str(high_bound_index)+'-'+str(line[wires])+'; '+line[0][0]+'_index='+line[0][0]+'_index+1) begin: '+line[0][0]+'_buf', file=file)
-                    print('\tmy_buf '+line[0][0]+'_outbuf_'+str(j)+' (', file=file)
-                    print('\t.A('+line[source_name]+'_i['+str(j)+']),', file=file)
-                    print('\t.X('+line[source_name]+'['+str(j)+'])', file=file)
-                    print('\t);\n', file=file)
-                #print('\tend\n', file=file)
+                print('\tassign '+line[source_name]+'['+str(high_bound_index)+'-'+str(line[wires])+':0]',end='', file=file)
+                print(' = '+line[destination_name]+'['+str(high_bound_index)+':'+str(line[wires])+'];', file=file)
 
 
     # top configuration data daisy chaining

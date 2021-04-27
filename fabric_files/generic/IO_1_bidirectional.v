@@ -12,9 +12,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License. */
 
-//Library UNISIM;
-//use UNISIM.vcomponents.all;
-
 module IO_1_bidirectional (I, T, O, Q, PAD, UserCLK, MODE, CONFin, CONFout, CLK);
 	// parameter LUT_SIZE = 4;	
 	// Pin0

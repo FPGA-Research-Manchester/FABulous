@@ -30,6 +30,7 @@ pip3 install -r requirements.txt
 
 The following packages need to be installed for CAD toolchain
  - [Yosys 0.9](http://www.clifford.at/yosys/download.html)
+   - copy the contents of the YosysFiles directory to `/usr/share/yosys` or `/usr/local/share/yosys`
  - nextpnr-fabulous
  
 

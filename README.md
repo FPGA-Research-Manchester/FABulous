@@ -27,6 +27,12 @@ Install python dependancies
 ```
 pip3 install -r requirements.txt
 ```
+
+The following packages need to be installed for CAD toolchain
+ - [Yosys 0.9]:http://www.clifford.at/yosys/download.html
+ - Nextpnr-xc7 branch
+ 
+
 ## Getting started
 
 Fabric generator flow is run with bash script. (Examples are provided under ```/fabric_files```.)

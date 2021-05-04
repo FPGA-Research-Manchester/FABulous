@@ -192,7 +192,8 @@ JW2BEG[7|7|7|7|7|7|7|7],[bot2top9|N2END0|E2END0|S2END0|N1END0|E1END0|S1END0|W1EN
 # the "normal routing" is using a JUMP stop-over in order to allow this multiplexer to drive the E2BEG wire and to serve as a source for other inputs
 W2BEG[1|2|5|6],JW2END[1|2|5|6]	
 # the other wires, "operand routing", get just extended; this is like the routing used for a ReCoBus
-W2BEG[0|3|4|7],W2END[0|3|4|7]
+# W2BEG[0|3|4|7],W2END[0|3|4|7]
+W2BEG[0|3|4|7],JW2END[0|3|4|7]
 # The operand (uses 4 double west wires) hard-wired routing:
 # important: while it is normally a good idea to twist wire indexes to prevent linear combinations (and increase graph entropy) we don't want this for the operands.
 # this allows it to relocate modules because in each slot, we will find the same operands bits.

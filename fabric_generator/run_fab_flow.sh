@@ -40,3 +40,5 @@ mv -f *.list ./list_files
 
 mkdir -p csv_output
 mv -f *.csv ./csv_output
+
+cp ./npnroutput/{bel.txt,pips.txt,template.pcf,template.v} ../nextpnr-fabulous/fabulous

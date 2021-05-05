@@ -58,3 +58,9 @@ or
 ```
 python3 fabric_gen.py -GenFabricVerilog
 ```
+
+### 7. generate the nextpnr model
+```
+python3 fabric_gen.py -GenNextpnrModel
+python3 spec_gen.py -GenBitstreamSpec npnroutput/meta_data.txt
+```

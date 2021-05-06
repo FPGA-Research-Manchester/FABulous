@@ -49,7 +49,10 @@ Then using the following command to build the entire FPGA fabric in both VHDL an
 ```
 You are now ready to emulate or synthesis with the netlists in ```/vhdl_output``` or ```/verilog_output```.
 
-A simple example that runs to generate bitstream can be found in nextpnr-fabulous/fabulous/template.*. Usage example:
+A simple example that runs to generate bitstream can be found in nextpnr-fabulous/fabulous/template.*
+
+Usage example:
+
 ```
 cd nextpnr-fabulous/fabulous/
 ./template.sh

@@ -61,3 +61,4 @@ cd nextpnr-fabulous/fabulous/
 ./template.sh
 python3 bit_gen.py -genBitstream template.fasm meta_data.txt template_output.bin
 ```
+More details on instruction of bitstream generation can check [here](https://github.com/FPGA-Research-Manchester/FABulous/tree/master/fabric_generator/bitstream_npnr)

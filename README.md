@@ -35,6 +35,9 @@ The following packages need to be installed for CAD toolchain
  
 
 ## Getting started
+```
+git clone --recurse-submodules https://github.com/FPGA-Research-Manchester/FABulous
+```
 
 Fabric generator flow is run with bash script. (Examples are provided under ```/fabric_files```.)
 

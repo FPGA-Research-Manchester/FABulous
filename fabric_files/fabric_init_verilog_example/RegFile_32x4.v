@@ -38,7 +38,7 @@ module RegFile_32x4 (D0, D1, D2, D3, W_ADR0, W_ADR1, W_ADR2, W_ADR3, W_ADR4, W_e
 
 	//type memtype is array (31 downto 0) of std_logic_vector(3 downto 0); // 32 entries of 4 bit
 	//signal mem : memtype := (others => (others => '0'));
-	reg [31:0] mem [3:0];
+	reg [3:0] mem [31:0];
 
 	wire [4:0] W_ADR;// write address
 	wire [4:0] A_ADR;// port A read address

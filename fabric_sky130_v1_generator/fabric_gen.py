@@ -3995,6 +3995,29 @@ if ('-GenNextpnrModel'.lower() in str(sys.argv).lower()) :
     fabricObject = genFabricObject(fabric)
     pipFile = open("npnroutput/pips.txt","w")
     belFile = open("npnroutput/bel.txt", "w")
+    #pairFile = open("npnroutput/wirePairs.csv", "w")
+    templateFile = open("npnroutput/template.v", "w")
+    constraintFile = open("npnroutput/template.pcf", "w")
+
+    npnrModel = genNextpnrModel(fabricObject, False)
+
+    pipFile.write(npnrModel[0])
+    belFile.write(npnrModel[1])
+    templateFile.write(npnrModel[2])
+    constraintFile.write(npnrModel[3])
+    #pairFile.write(npnrModel[4])
+
+    pipFile.close()
+    belFile.close()
+    templateFile.close()
+    constraintFile.close()
+    #pairFile.close()
+
+if ('-GenNextpnrModel_pair'.lower() in str(sys.argv).lower()) :
+    arguments = re.split(' ',str(sys.argv))
+    fabricObject = genFabricObject(fabric)
+    pipFile = open("npnroutput/pips.txt","w")
+    belFile = open("npnroutput/bel.txt", "w")
     pairFile = open("npnroutput/wirePairs.csv", "w")
     templateFile = open("npnroutput/template.v", "w")
     constraintFile = open("npnroutput/template.pcf", "w")
@@ -4050,6 +4073,7 @@ if ('-help'.lower() in str(sys.argv).lower()) or ('-h' in str(sys.argv).lower())
     print('  -AddList2CSV in.list out.csv  - adds connctions from a list (beg_port,end_port) to a switch matrix adjacency matrix')
     print('  -PrintCSV_FileInfo foo.csv - prints input and oputput ports in csv switch matrix files')
     print('  -genNextpnrModel - generates a model for nextpnr in the npnroutput directory')
+    print('  -genNextpnrModel_pair - generates a model for nextpnr in the npnroutput directory and wirePairs')
     print('  -genBitstreamSpec meta_data.txt - generates a bitstream spec for fasm parsing ')
     print('  -genBitstream template.fasm meta_data.txt bitstream.txt - generates a bitstream - the first file is the fasm file, the second is the bitstream spec and the third is the fasm file to write to')
 

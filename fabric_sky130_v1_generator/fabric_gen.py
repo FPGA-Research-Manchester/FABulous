@@ -12,6 +12,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
 
 from array import array
 import re
@@ -2061,32 +2063,61 @@ def GenTileSwitchMatrixVerilog( tile, CSV_FileName, file ):
     # CUSTOM Multiplexers for switch matrix
     # CUSTOM Multiplexers for switch matrix
     # CUSTOM Multiplexers for switch matrix
-            if (MultiplexerStyle == 'custom') and (mux_size == 4):
-                MuxComponentName = 'MUX4PTv4'
-            if (MultiplexerStyle == 'custom') and (mux_size == 16):
-                MuxComponentName = 'MUX16PTv2'
-            if (MultiplexerStyle == 'custom') and (mux_size == 4 or mux_size == 16):
-                # inst_MUX4PTv4_J_l_AB_BEG1 : MUX4PTv4
+
+            num_gnd = 0
+
+            if (MultiplexerStyle == 'custom') and (mux_size > 2 and mux_size <= 4):
+                MuxComponentName = 'cus_mux41_buf'
+                num_gnd = 4-mux_size
+            if (MultiplexerStyle == 'custom') and (mux_size > 8 and mux_size <= 16):
+                MuxComponentName = 'cus_mux161_buf'
+                num_gnd = 16-mux_size
+            if (MultiplexerStyle == 'custom') and (mux_size > 4 and mux_size <= 8):
+                MuxComponentName = 'cus_mux81_buf'
+                num_gnd = 8-mux_size
+            if (MultiplexerStyle == 'custom') and (mux_size == 2):
+                MuxComponentName = 'sky130_fd_sc_hd__mux2_1'
+            if (MultiplexerStyle == 'custom') and (mux_size == 4 or mux_size == 16 or mux_size == 8):
+                # cus_mux41
                 print('\t'+MuxComponentName+' inst_'+MuxComponentName+'_'+line[0]+' ('+'\n',end='', file=file)
                 # Port Map(
                 # IN1  => J_l_AB_BEG1_input(0),
                 # IN2  => J_l_AB_BEG1_input(1), ...
                 for k in range(0,mux_size):
-                    print('\t'+'.IN'+str(k+1)+' ('+line[0]+'_input['+str(k)+']),\n',end='', file=file)
+                    print('\t'+'.A'+str(k)+' ('+line[0]+'_input['+str(k)+']),\n',end='', file=file)
                 # S1   => ConfigBits(low_362),
                 # S2   => ConfigBits(low_362 + 1, ...
                 for k in range(0,(math.ceil(math.log2(mux_size)))):
-                    print('\t'+'.S'+str(k+1)+' (ConfigBits['+str(old_ConfigBitstreamPosition)+'+'+str(k)+']),\n',end='', file=file)
-                print('\t'+'.O ('+line[0]+')\n',end='', file=file)
+                    print('\t'+'.S'+str(k)+' (ConfigBits['+str(old_ConfigBitstreamPosition)+'+'+str(k)+']),\n',end='', file=file)
+                    print('\t'+'.S'+str(k)+'N (~ConfigBits['+str(old_ConfigBitstreamPosition)+'+'+str(k)+']),\n',end='', file=file)
+                print('\t'+'.X ('+line[0]+')\n',end='', file=file)
+                print('\t);\n', file=file)
+            elif (MultiplexerStyle == 'custom') and (mux_size == 2):
+                # inst_MUX4PTv4_J_l_AB_BEG1 : MUX4PTv4
+                print('\t'+MuxComponentName+' inst_'+MuxComponentName+'_'+line[0]+' ('+'\n',end='', file=file)
+                for k in range(0,mux_size):
+                    print('\t'+'.A'+str(k)+' ('+line[0]+'_input['+str(k)+']),\n',end='', file=file)
+                print('\t'+'.S (ConfigBits['+str(old_ConfigBitstreamPosition)+'+'+str(k)+']),\n',end='', file=file)
+                print('\t'+'.X ('+line[0]+')\n',end='', file=file)
                 print('\t);\n', file=file)
             else:        # generic multiplexer
                 if MultiplexerStyle == 'custom':
                     print('HINT: creating a MUX-'+str(mux_size)+' for port '+line[0]+' in switch matrix for tile '+CSVFile[0][0])
-                # Verilog example arbitrary mux
-                # J_l_AB_BEG1    <= J_l_AB_BEG1_input(TO_INTEGER(ConfigBits(363 downto 362)));
-                print('\tassign '+line[0]+' = '+line[0]+'_input[',end='', file=file)
-                print('ConfigBits['+str(ConfigBitstreamPosition-1)+':'+str(old_ConfigBitstreamPosition)+']];', file=file)
-                print(' ', file=file)
+
+                    print('\t'+MuxComponentName+' inst_'+MuxComponentName+'_'+line[0]+' ('+'\n',end='', file=file)
+                    for k in range(0,mux_size):
+                        print('\t'+'.A'+str(k)+' ('+line[0]+'_input['+str(k)+']),\n',end='', file=file)
+                    for k in range(num_gnd):
+                        print('\t'+'.A'+str(k+mux_size)+' (GND0),\n',end='', file=file)
+                    for k in range(0,(math.ceil(math.log2(mux_size)))):
+                        print('\t'+'.S'+str(k)+' (ConfigBits['+str(old_ConfigBitstreamPosition)+'+'+str(k)+']),\n',end='', file=file)
+                        print('\t'+'.S'+str(k)+'N (~ConfigBits['+str(old_ConfigBitstreamPosition)+'+'+str(k)+']),\n',end='', file=file)
+                    print('\t'+'.X ('+line[0]+')\n',end='', file=file)
+                    print('\t);\n', file=file)
+                else:
+                    print('\tassign '+line[0]+' = '+line[0]+'_input[',end='', file=file)
+                    print('ConfigBits['+str(ConfigBitstreamPosition-1)+':'+str(old_ConfigBitstreamPosition)+']];', file=file)
+                    print(' ', file=file)
 
     ### SwitchMatrixDebugSignals ### SwitchMatrixDebugSignals ###
     ### SwitchMatrixDebugSignals ### SwitchMatrixDebugSignals ###
@@ -3242,7 +3273,7 @@ class Fabric:
                         if wire["direction"] == "JUMP":
                             continue
                     for i in range(int(wire["wire-count"])):
-                        desty = tile.y + int(wire["yoffset"])
+                        desty = tile.y - int(wire["yoffset"])
                         destx = tile.x + int(wire["xoffset"])
                         desttileLoc = f"X{destx}Y{desty}"
                         if (desttileLoc == loc) and (wire["destination"] + str(i) == dest):
@@ -3368,7 +3399,8 @@ def genFabricObject(fabric: list):
                         wires.append({"direction": wire[0], "source": wire[1], "xoffset": wire[2], "yoffset": wire[3], "destination": wire[4], "wire-count": wire[5]}) 
             cTile.wires = wires
             cTile.x = j
-            cTile.y = archFabric.height - i -1
+            #cTile.y = archFabric.height - i -1
+            cTile.y = i
             cTile.bels = belList
             row.append(cTile)
             portMap[cTile] = portList
@@ -3383,9 +3415,11 @@ def genFabricObject(fabric: list):
             tempAtomicWires = []
             #Wires from tile
             for wire in wireTextList:
-                destinationTile = archFabric.getTileByCoords(tile.x + int(wire["xoffset"]), tile.y + int(wire["yoffset"]))
+                destinationTile = archFabric.getTileByCoords(tile.x + int(wire["xoffset"]), tile.y - int(wire["yoffset"]))
+                if(tile.x==1 and tile.y==18):
+                     print(wire)
                 if not ((destinationTile == None) or ("NULL" in wire.values()) or (wire["destination"] not in portMap[destinationTile])):
-                    wires.append(wire)
+                    wires.append(wire)                 
                     portMap[destinationTile].remove(wire["destination"])
                     portMap[tile].remove(wire["source"])
                 elif destinationTile == None and not ("NULL" in wire.values()): #If the wire goes off the fabric then we account for cascading by finding the last tile the wire goes through
@@ -3399,7 +3433,7 @@ def genFabricObject(fabric: list):
                         cTile = destinationTile    #Initialise to current dest tile
                         while cTile == None: #Exit when we're back on the fabric
                             walkbackCount += offsetWalkback    #Step back another place
-                            cTile = archFabric.getTileByCoords(tile.x + int(wire["xoffset"]) + walkbackCount, tile.y + int(wire["yoffset"]))    #Check our current tile
+                            cTile = archFabric.getTileByCoords(tile.x + int(wire["xoffset"]) + walkbackCount, tile.y - int(wire["yoffset"]))    #Check our current tile
 
                         totalOffset = int(wire["xoffset"]) + walkbackCount
 
@@ -3407,7 +3441,7 @@ def genFabricObject(fabric: list):
 
                         for i in range(int(wire["wire-count"])):
                             tempAtomicWires.append({"direction": wire["direction"], "source": wire["source"] + str(i), "xoffset": wire["xoffset"], "yoffset": wire["yoffset"], "destination": wire["destination"] + str(i + cascadedBottom), "sourceTile": tile.genTileLoc(), "destTile": cTile.genTileLoc()}) #Add atomic wire names
-                    elif int(wire["yoffset"]) != 0:    #If we're moving in the x axis
+                    elif int(wire["yoffset"]) != 0:    #If we're moving in the y axis
                         if int(wire["yoffset"]) > 0:
                             offsetWalkback = -1        #Note we want to walk opposite to wire direction as we're trying to get back onto the fabric
                         elif int(wire["yoffset"]) < 0:
@@ -3416,13 +3450,13 @@ def genFabricObject(fabric: list):
                         cTile = destinationTile    #Initialise to current dest tile
                         while cTile == None: #Exit when we're back on the fabric
                             walkbackCount += offsetWalkback    #Step back another place
-                            cTile = archFabric.getTileByCoords(tile.x + int(wire["xoffset"]), tile.y + int(wire["yoffset"]) + walkbackCount)    #Check our current tile
+                            cTile = archFabric.getTileByCoords(tile.x + int(wire["xoffset"]), tile.y - (int(wire["yoffset"]) + walkbackCount))   #Check our current tile
                         totalOffset = int(wire["yoffset"]) + walkbackCount
                         cascadedBottom = (abs((int(wire["yoffset"]))) - (abs(totalOffset))) * int(wire["wire-count"])
                         for i in range(int(wire["wire-count"])):
                             tempAtomicWires.append({"direction": wire["direction"], "source": wire["source"] + str(i), "xoffset": wire["xoffset"], "yoffset": wire["yoffset"], "destination": wire["destination"] + str(i + cascadedBottom), "sourceTile": tile.genTileLoc(), "destTile": cTile.genTileLoc()}) #Add atomic wire names
             #Wires to tile
-                sourceTile = archFabric.getTileByCoords(tile.x - int(wire["xoffset"]), tile.y - int(wire["yoffset"]))
+                sourceTile = archFabric.getTileByCoords(tile.x - int(wire["xoffset"]), tile.y + int(wire["yoffset"]))
                 if (sourceTile == None) or ("NULL" in wire.values()) or (wire["source"] not in portMap[sourceTile]):
                     continue
                 sourceTile.wires.append(wire)
@@ -3453,7 +3487,9 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
             #Wires between tiles
             pipsStr += f"#Tile-external pips on tile {tileLoc}:\n"
             for wire in tile.wires:
-                desty = tile.y + int(wire["yoffset"])
+                desty = tile.y - int(wire["yoffset"])
+                #print(wire)
+                #print(str(tile.y)+', '+str(desty))
                 destx = tile.x + int(wire["xoffset"])
                 desttileLoc = f"X{destx}Y{desty}"
                 for i in range(int(wire["wire-count"])):
@@ -3525,7 +3561,7 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
                 pairStr += "#" + tileLoc + "\n"
                 for wire in tile.wires:
                     for i in range(int(wire["wire-count"])):
-                        desty = tile.y + int(wire["yoffset"])
+                        desty = tile.y - int(wire["yoffset"])
                         destx = tile.x + int(wire["xoffset"]) 
                         destTile = archObject.getTileByCoords(destx, desty)
                         desttileLoc = f"X{destx}Y{desty}"

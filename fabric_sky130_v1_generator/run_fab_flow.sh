@@ -25,8 +25,8 @@ python3 fabric_gen.py -GenTileVerilog
 #python3 fabric_gen.py -GenFabricHDL
 python3 fabric_gen.py -GenFabricVerilog
 #REM STEP 7 : generate the nextpnr model
-#python3 fabric_gen.py -GenNextpnrModel
-#python3 fabric_gen.py -GenBitstreamSpec npnroutput/meta_data.txt
+python3 fabric_gen.py -GenNextpnrModel
+python3 fabric_gen.py -GenBitstreamSpec npnroutput/meta_data.txt
 #GOTO END
 
 mkdir -p verilog_output
@@ -40,3 +40,6 @@ mv -f *.list ./list_files
 
 mkdir -p csv_output
 mv -f *.csv ./csv_output
+
+cp ./npnroutput/{bel.txt,pips.txt,template.pcf,template.v,meta_data.txt} ../nextpnr-fabulous/fabulous
+cp csv_output/fabric.csv ../nextpnr-fabulous/fabulous/

@@ -1,18 +1,20 @@
-#Copyright 2021 University of Manchester
-#
-#Licensed under the Apache License, Version 2.0 (the "License");
-#you may not use this file except in compliance with the License.
-#You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-#Unless required by applicable law or agreed to in writing, software
-#distributed under the License is distributed on an "AS IS" BASIS,
-#WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#See the License for the specific language governing permissions and
-#limitations under the License.
-
 #!/bin/env python3
+# Copyright 2021 University of Manchester
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 from array import array
 import re
 import sys
@@ -2061,32 +2063,61 @@ def GenTileSwitchMatrixVerilog( tile, CSV_FileName, file ):
     # CUSTOM Multiplexers for switch matrix
     # CUSTOM Multiplexers for switch matrix
     # CUSTOM Multiplexers for switch matrix
-            if (MultiplexerStyle == 'custom') and (mux_size == 4):
-                MuxComponentName = 'MUX4PTv4'
-            if (MultiplexerStyle == 'custom') and (mux_size == 16):
-                MuxComponentName = 'MUX16PTv2'
-            if (MultiplexerStyle == 'custom') and (mux_size == 4 or mux_size == 16):
-                # inst_MUX4PTv4_J_l_AB_BEG1 : MUX4PTv4
+
+            num_gnd = 0
+
+            if (MultiplexerStyle == 'custom') and (mux_size > 2 and mux_size <= 4):
+                MuxComponentName = 'cus_mux41_buf'
+                num_gnd = 4-mux_size
+            if (MultiplexerStyle == 'custom') and (mux_size > 8 and mux_size <= 16):
+                MuxComponentName = 'cus_mux161_buf'
+                num_gnd = 16-mux_size
+            if (MultiplexerStyle == 'custom') and (mux_size > 4 and mux_size <= 8):
+                MuxComponentName = 'cus_mux81_buf'
+                num_gnd = 8-mux_size
+            if (MultiplexerStyle == 'custom') and (mux_size == 2):
+                MuxComponentName = 'sky130_fd_sc_hd__mux2_1'
+            if (MultiplexerStyle == 'custom') and (mux_size == 4 or mux_size == 16 or mux_size == 8):
+                # cus_mux41
                 print('\t'+MuxComponentName+' inst_'+MuxComponentName+'_'+line[0]+' ('+'\n',end='', file=file)
                 # Port Map(
                 # IN1  => J_l_AB_BEG1_input(0),
                 # IN2  => J_l_AB_BEG1_input(1), ...
                 for k in range(0,mux_size):
-                    print('\t'+'.IN'+str(k+1)+' ('+line[0]+'_input['+str(k)+']),\n',end='', file=file)
+                    print('\t'+'.A'+str(k)+' ('+line[0]+'_input['+str(k)+']),\n',end='', file=file)
                 # S1   => ConfigBits(low_362),
                 # S2   => ConfigBits(low_362 + 1, ...
                 for k in range(0,(math.ceil(math.log2(mux_size)))):
-                    print('\t'+'.S'+str(k+1)+' (ConfigBits['+str(old_ConfigBitstreamPosition)+'+'+str(k)+']),\n',end='', file=file)
-                print('\t'+'.O ('+line[0]+')\n',end='', file=file)
+                    print('\t'+'.S'+str(k)+' (ConfigBits['+str(old_ConfigBitstreamPosition)+'+'+str(k)+']),\n',end='', file=file)
+                    print('\t'+'.S'+str(k)+'N (~ConfigBits['+str(old_ConfigBitstreamPosition)+'+'+str(k)+']),\n',end='', file=file)
+                print('\t'+'.X ('+line[0]+')\n',end='', file=file)
+                print('\t);\n', file=file)
+            elif (MultiplexerStyle == 'custom') and (mux_size == 2):
+                # inst_MUX4PTv4_J_l_AB_BEG1 : MUX4PTv4
+                print('\t'+MuxComponentName+' inst_'+MuxComponentName+'_'+line[0]+' ('+'\n',end='', file=file)
+                for k in range(0,mux_size):
+                    print('\t'+'.A'+str(k)+' ('+line[0]+'_input['+str(k)+']),\n',end='', file=file)
+                print('\t'+'.S (ConfigBits['+str(old_ConfigBitstreamPosition)+'+'+str(k)+']),\n',end='', file=file)
+                print('\t'+'.X ('+line[0]+')\n',end='', file=file)
                 print('\t);\n', file=file)
             else:        # generic multiplexer
                 if MultiplexerStyle == 'custom':
                     print('HINT: creating a MUX-'+str(mux_size)+' for port '+line[0]+' in switch matrix for tile '+CSVFile[0][0])
-                # Verilog example arbitrary mux
-                # J_l_AB_BEG1    <= J_l_AB_BEG1_input(TO_INTEGER(ConfigBits(363 downto 362)));
-                print('\tassign '+line[0]+' = '+line[0]+'_input[',end='', file=file)
-                print('ConfigBits['+str(ConfigBitstreamPosition-1)+':'+str(old_ConfigBitstreamPosition)+']];', file=file)
-                print(' ', file=file)
+
+                    print('\t'+MuxComponentName+' inst_'+MuxComponentName+'_'+line[0]+' ('+'\n',end='', file=file)
+                    for k in range(0,mux_size):
+                        print('\t'+'.A'+str(k)+' ('+line[0]+'_input['+str(k)+']),\n',end='', file=file)
+                    for k in range(num_gnd):
+                        print('\t'+'.A'+str(k+mux_size)+' (GND0),\n',end='', file=file)
+                    for k in range(0,(math.ceil(math.log2(mux_size)))):
+                        print('\t'+'.S'+str(k)+' (ConfigBits['+str(old_ConfigBitstreamPosition)+'+'+str(k)+']),\n',end='', file=file)
+                        print('\t'+'.S'+str(k)+'N (~ConfigBits['+str(old_ConfigBitstreamPosition)+'+'+str(k)+']),\n',end='', file=file)
+                    print('\t'+'.X ('+line[0]+')\n',end='', file=file)
+                    print('\t);\n', file=file)
+                else:
+                    print('\tassign '+line[0]+' = '+line[0]+'_input[',end='', file=file)
+                    print('ConfigBits['+str(ConfigBitstreamPosition-1)+':'+str(old_ConfigBitstreamPosition)+']];', file=file)
+                    print(' ', file=file)
 
     ### SwitchMatrixDebugSignals ### SwitchMatrixDebugSignals ###
     ### SwitchMatrixDebugSignals ### SwitchMatrixDebugSignals ###
@@ -2303,7 +2334,10 @@ def GenerateTileVerilog( tile_description, module, file ):
                     module_header_ports += ', '+bel_port[0]
     if ConfigBitMode == 'frame_based':
         if GlobalConfigBitsCounter > 0:
-            module_header_ports += ', FrameData, FrameStrobe'
+            #module_header_ports += ', FrameData, FrameStrobe'
+            module_header_ports += ', FrameData, FrameData_O, FrameStrobe, FrameStrobe_O'
+        else :
+            module_header_ports += ', FrameData, FrameData_O, FrameStrobe, FrameStrobe_O'
     else:
         if ConfigBitMode == 'FlipFlopChain':
             module_header_ports += ', MODE, CONFin, CONFout, CLK'
@@ -2388,8 +2422,18 @@ def GenerateTileVerilog( tile_description, module, file ):
     # the rest is a shared text block
     if ConfigBitMode == 'frame_based':
         if GlobalConfigBitsCounter > 0:
+            #print('\tinput [FrameBitsPerRow-1:0] FrameData; //CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register', file=file)
+            #print('\tinput [MaxFramesPerCol-1:0] FrameStrobe; //CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register ', file=file)
             print('\tinput [FrameBitsPerRow-1:0] FrameData; //CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register', file=file)
-            print('\tinput [MaxFramesPerCol-1:0] FrameStrobe; //CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register ', file=file)
+            print('\toutput [FrameBitsPerRow-1:0] FrameData_O;', file=file)
+            print('\tinput [MaxFramesPerCol-1:0] FrameStrobe; //CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register', file=file)
+            print('\toutput [MaxFramesPerCol-1:0] FrameStrobe_O;', file=file)
+        else :
+            print('\tinput [FrameBitsPerRow-1:0] FrameData; //CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register', file=file)
+            print('\toutput [FrameBitsPerRow-1:0] FrameData_O;', file=file)
+            print('\tinput [MaxFramesPerCol-1:0] FrameStrobe; //CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register', file=file)
+            print('\toutput [MaxFramesPerCol-1:0] FrameStrobe_O;', file=file)
+
         GenerateVerilog_PortsFooter(file, module, ConfigPort=False)
     else:
         GenerateVerilog_PortsFooter(file, module)
@@ -2436,14 +2480,77 @@ def GenerateTileVerilog( tile_description, module, file ):
 
     # Cascading of routing for wires spanning more than one tile
     print('\n// Cascading of routing for wires spanning more than one tile', file=file)
+    
+    print('\twire [FrameBitsPerRow-1:0] FrameData_i;', file=file)
+    print('\twire [FrameBitsPerRow-1:0] FrameData_O_i;', file=file)
+    
+    print('\tassign FrameData_O_i = FrameData_i;\n', file=file)
+    
+    for m in range(FrameBitsPerRow):
+        print('\tmy_buf data_inbuf_'+str(m)+' (', file=file)
+        print('\t.A(FrameData['+str(m)+']),', file=file)
+        print('\t.X(FrameData_i['+str(m)+'])', file=file)
+        print('\t);\n', file=file)
+    
+    for m in range(FrameBitsPerRow):
+        #print('\tgenvar m;', file=file)
+        #print('\tfor (m=0; m<FrameBitsPerRow; m=m+1) begin: data_buf', file=file)
+        print('\tmy_buf data_outbuf_'+str(m)+' (', file=file)
+        print('\t.A(FrameData_O_i['+str(m)+']),', file=file)
+        print('\t.X(FrameData_O['+str(m)+'])', file=file)
+        print('\t);\n', file=file)
+        #print('\tend\n', file=file)
+    
+    print('\twire [MaxFramesPerCol-1:0] FrameStrobe_i;', file=file)
+    print('\twire [MaxFramesPerCol-1:0] FrameStrobe_O_i;', file=file)
+    
+    print('\tassign FrameStrobe_O_i = FrameStrobe_i;\n', file=file)
+    
+    for n in range(MaxFramesPerCol):
+        print('\tmy_buf strobe_inbuf_'+str(n)+' (', file=file)
+        print('\t.A(FrameStrobe['+str(n)+']),', file=file)
+        print('\t.X(FrameStrobe_i['+str(n)+'])', file=file)
+        print('\t)\n;', file=file)
+    
+    for n in range(MaxFramesPerCol):
+        #print('\tgenvar n;', file=file)
+        #print('\tfor (n=0; n<MaxFramesPerCol; n=n+1) begin: strobe_buf', file=file)
+        print('\tmy_buf strobe_outbuf_'+str(n)+' (', file=file)
+        print('\t.A(FrameStrobe_O_i['+str(n)+']),', file=file)
+        print('\t.X(FrameStrobe_O['+str(n)+'])', file=file)
+        print('\t)\n;', file=file)
+        #print('\tend\n', file=file)
+    
     for line in tile_description:
         if line[0] in ['NORTH','EAST','SOUTH','WEST']:
             span=abs(int(line[X_offset]))+abs(int(line[Y_offset]))
             # in case a signal spans 2 ore more tiles in any direction
             if (span >= 2) and (line[source_name]!='NULL') and (line[destination_name]!='NULL'):
                 high_bound_index = (span*int(line[wires]))-1
-                print('\tassign '+line[source_name]+'['+str(high_bound_index)+'-'+str(line[wires])+':0]',end='', file=file)
-                print(' = '+line[destination_name]+'['+str(high_bound_index)+':'+str(line[wires])+'];', file=file)
+                print('\twire ['+str(high_bound_index)+':0] '+line[destination_name]+'_i;', file=file)
+                print('\twire ['+str(high_bound_index-int(line[wires]))+':0] '+line[source_name]+'_i;', file=file)
+                
+                print('\tassign '+line[source_name]+'_i['+str(high_bound_index)+'-'+str(line[wires])+':0]',end='', file=file)
+                print(' = '+line[destination_name]+'_i['+str(high_bound_index)+':'+str(line[wires])+'];\n', file=file)
+                
+                for i in range(int(high_bound_index)-int(line[wires])+1):
+                #print('\tgenvar '+line[0][0]+'_index;', file=file)
+                #print('\tfor ('+line[0][0]+'_index=0; '+line[0][0]+'_index<='+str(high_bound_index)+'-'+str(line[wires])+'; '+line[0][0]+'_index='+line[0][0]+'_index+1) begin: '+line[0][0]+'_buf', file=file)
+                    print('\tmy_buf '+line[0][0]+'_inbuf_'+str(i)+' (', file=file)
+                    print('\t.A('+line[destination_name]+'['+str(i+int(line[wires]))+']),', file=file)
+                    print('\t.X('+line[destination_name]+'_i['+str(i+int(line[wires]))+'])', file=file)
+                    print('\t);\n', file=file)
+                #print('\tend\n', file=file)
+                
+                for j in range(int(high_bound_index)-int(line[wires])+1):
+                #print('\tgenvar '+line[0][0]+'_index;', file=file)
+                #print('\tfor ('+line[0][0]+'_index=0; '+line[0][0]+'_index<='+str(high_bound_index)+'-'+str(line[wires])+'; '+line[0][0]+'_index='+line[0][0]+'_index+1) begin: '+line[0][0]+'_buf', file=file)
+                    print('\tmy_buf '+line[0][0]+'_outbuf_'+str(j)+' (', file=file)
+                    print('\t.A('+line[source_name]+'_i['+str(j)+']),', file=file)
+                    print('\t.X('+line[source_name]+'['+str(j)+'])', file=file)
+                    print('\t);\n', file=file)
+                #print('\tend\n', file=file)
+
 
     # top configuration data daisy chaining
     if ConfigBitMode == 'FlipFlopChain':
@@ -2516,6 +2623,16 @@ def GenerateTileVerilog( tile_description, module, file ):
                 if BEL_ConfigBits != 'NULL':
                     if int(BEL_ConfigBits) == 0:
                         #print('\t.ConfigBits(0)', file=file)
+                        last_pos = file.tell()
+                        for k in range(20):
+                            file.seek(last_pos -k)                # scan character by character backwards and look for ','
+                            my_char = file.read(1)
+                            if my_char == ',':
+                                file.seek(last_pos -k)            # place seek pointer to last ',' position and overwrite with a space
+                                print(' ', end='', file=file)
+                                break                            # stop scan
+
+                        file.seek(0, os.SEEK_END)          # go back to usual...
                         print('\t);\n', file=file)
                     else:
                         print('\t.ConfigBits(ConfigBits['+str(BEL_ConfigBitsCounter + int(BEL_ConfigBits))+'-1:'+str(BEL_ConfigBitsCounter)+'])', file=file)
@@ -2598,6 +2715,7 @@ def GenerateFabricVerilog( FabricFile, file, module = 'eFPGA' ):
     y_tiles=len(fabric)      # get the number of tiles in vertical direction
     x_tiles=len(fabric[0])   # get the number of tiles in horizontal direction
     TileTypes = GetCellTypes(fabric)
+    
     print('### Found the following tile types:\n',TileTypes)
 
     # VHDL header
@@ -2648,6 +2766,7 @@ def GenerateFabricVerilog( FabricFile, file, module = 'eFPGA' ):
                             ExternalPorts.append(PortName)
                         else:
                             module_header_ports_list.append('Tile_X'+str(x)+'Y'+str(y)+'_'+PortName)
+                            
                             if 'in' in PortDefinition:
                                 PortDefinition = PortDefinition.replace('in','')
                                 port_list.append('\tinput '+'Tile_X'+str(x)+'Y'+str(y)+'_'+PortName+';'+PortDefinition)
@@ -2658,6 +2777,7 @@ def GenerateFabricVerilog( FabricFile, file, module = 'eFPGA' ):
                             # we are maintaining the here used Tile_XxYy prefix as a sanity check
                             # ExternalPorts = ExternalPorts + 'Tile_X'+str(x)+'Y'+str(y)+'_'+str(PortName)
                             ExternalPorts.append('Tile_X'+str(x)+'Y'+str(y)+'_'+PortName)
+    
     module_header_ports = ', '.join(module_header_ports_list)
     if ConfigBitMode == 'frame_based':
         module_header_ports += ', FrameData, FrameStrobe'
@@ -2704,6 +2824,13 @@ def GenerateFabricVerilog( FabricFile, file, module = 'eFPGA' ):
             print('\twire [FrameBitsPerRow-1:0] Tile_Y'+str(y)+'_FrameData;', file=file)
         for x in range(x_tiles):
             print('\twire [MaxFramesPerCol-1:0] Tile_X'+str(x)+'_FrameStrobe;', file=file)
+            
+        for y in range(y_tiles):
+            for x in range(x_tiles):
+                print('\twire [FrameBitsPerRow-1:0] Tile_X'+str(x)+'Y'+str(y)+'_FrameData_O;', file=file)
+        for y in range(y_tiles):
+            for x in range(x_tiles):
+                print('\twire [MaxFramesPerCol-1:0] Tile_X'+str(x)+'Y'+str(y)+'_FrameStrobe_O;', file=file)
 
     print('\n//tile-to-tile signal declarations\n', file=file)
     for y in range(y_tiles):
@@ -2914,21 +3041,59 @@ def GenerateFabricVerilog( FabricFile, file, module = 'eFPGA' ):
 
                             # the next one is fixing the fact the the last port assignment in vhdl is not allowed to have a ','
                             # this is a bit ugly, but well, vhdl is ugly too...
-                                last_pos = file.tell()
-                                for k in range(20):
-                                    file.seek(last_pos -k)                # scan character by character backwards and look for ','
-                                    my_char = file.read(1)
-                                    if my_char == ',':
-                                        file.seek(last_pos -k)            # place seek pointer to last ',' position and overwrite with a space
-                                        print(' ', end='', file=file)
-                                        break                            # stop scan
+                                #last_pos = file.tell()
+                                #for k in range(20):
+                                #    file.seek(last_pos -k)                # scan character by character backwards and look for ','
+                                #    my_char = file.read(1)
+                                #    if my_char == ',':
+                                #        file.seek(last_pos -k)            # place seek pointer to last ',' position and overwrite with a space
+                                #        print(' ', end='', file=file)
+                                #        break                            # stop scan
 
-                                file.seek(0, os.SEEK_END)          # go back to usual...
+                                #file.seek(0, os.SEEK_END)          # go back to usual...
 
-                                print('\t);\n', file=file)
+                                #print('\t);\n', file=file)
+                                if x == 1 and y == y_tiles-1:
+                                    print('\t.FrameData('+'Tile_Y'+str(y)+'_FrameData), ' , file=file)
+                                    print('\t.FrameData_O('+'Tile_X'+str(x)+'Y'+str(y)+'_FrameData_O), ' , file=file)
+                                    print('\t.FrameStrobe('+'Tile_X'+str(x)+'_FrameStrobe),' , file=file)
+                                    print('\t.FrameStrobe_O('+'Tile_X'+str(x)+'Y'+str(y)+'_FrameStrobe_O)\n\t);\n' , file=file)
+                                elif x != 1 and y == y_tiles-1:
+                                    print('\t.FrameData('+'Tile_X'+str(x-1)+'Y'+str(y)+'_FrameData_O), ' , file=file)
+                                    print('\t.FrameData_O('+'Tile_X'+str(x)+'Y'+str(y)+'_FrameData_O), ' , file=file)
+                                    print('\t.FrameStrobe('+'Tile_X'+str(x)+'_FrameStrobe),' , file=file)
+                                    print('\t.FrameStrobe_O('+'Tile_X'+str(x)+'Y'+str(y)+'_FrameStrobe_O)\n\t);\n' , file=file)
+                                elif x == 1 and y != y_tiles-1:
+                                    print('\t.FrameData('+'Tile_Y'+str(y)+'_FrameData), ' , file=file)
+                                    print('\t.FrameData_O('+'Tile_X'+str(x)+'Y'+str(y)+'_FrameData_O), ' , file=file)
+                                    print('\t.FrameStrobe('+'Tile_X'+str(x)+'Y'+str(y+1)+'_FrameStrobe_O),' , file=file)
+                                    print('\t.FrameStrobe_O('+'Tile_X'+str(x)+'Y'+str(y)+'_FrameStrobe_O)\n\t);\n' , file=file)
+                                else:
+                                    print('\t.FrameData('+'Tile_X'+str(x-1)+'Y'+str(y)+'_FrameData_O), ' , file=file)
+                                    print('\t.FrameData_O('+'Tile_X'+str(x)+'Y'+str(y)+'_FrameData_O), ' , file=file)
+                                    print('\t.FrameStrobe('+'Tile_X'+str(x)+'Y'+str(y+1)+'_FrameStrobe_O),' , file=file)
+                                    print('\t.FrameStrobe_O('+'Tile_X'+str(x)+'Y'+str(y)+'_FrameStrobe_O)\n\t);\n' , file=file)
                             else:
-                                print('\t.FrameData('+'Tile_Y'+str(y)+'_FrameData), ' , file=file)
-                                print('\t.FrameStrobe('+'Tile_X'+str(x)+'_FrameStrobe)\n\t);\n' , file=file)
+                                if x == 0 and y != y_tiles-2:
+                                    print('\t.FrameData('+'Tile_Y'+str(y)+'_FrameData), ' , file=file)
+                                    print('\t.FrameData_O('+'Tile_X'+str(x)+'Y'+str(y)+'_FrameData_O), ' , file=file)
+                                    print('\t.FrameStrobe('+'Tile_X'+str(x)+'Y'+str(y+1)+'_FrameStrobe_O),' , file=file)
+                                    print('\t.FrameStrobe_O('+'Tile_X'+str(x)+'Y'+str(y)+'_FrameStrobe_O)\n\t);\n' , file=file)
+                                elif x == 0 and y == y_tiles-2:
+                                    print('\t.FrameData('+'Tile_Y'+str(y)+'_FrameData), ' , file=file)
+                                    print('\t.FrameData_O('+'Tile_X'+str(x)+'Y'+str(y)+'_FrameData_O), ' , file=file)
+                                    print('\t.FrameStrobe('+'Tile_X'+str(x)+'_FrameStrobe),' , file=file)
+                                    print('\t.FrameStrobe_O('+'Tile_X'+str(x)+'Y'+str(y)+'_FrameStrobe_O)\n\t);\n' , file=file)
+                                elif x == x_tiles-1 and y == y_tiles-2:
+                                    print('\t.FrameData('+'Tile_X'+str(x-1)+'Y'+str(y)+'_FrameData_O), ' , file=file)
+                                    print('\t.FrameData_O('+'Tile_X'+str(x)+'Y'+str(y)+'_FrameData_O), ' , file=file)
+                                    print('\t.FrameStrobe('+'Tile_X'+str(x)+'_FrameStrobe),' , file=file)
+                                    print('\t.FrameStrobe_O('+'Tile_X'+str(x)+'Y'+str(y)+'_FrameStrobe_O)\n\t);\n' , file=file)
+                                else :
+                                    print('\t.FrameData('+'Tile_X'+str(x-1)+'Y'+str(y)+'_FrameData_O), ' , file=file)
+                                    print('\t.FrameData_O('+'Tile_X'+str(x)+'Y'+str(y)+'_FrameData_O), ' , file=file)
+                                    print('\t.FrameStrobe('+'Tile_X'+str(x)+'Y'+str(y+1)+'_FrameStrobe_O),' , file=file)
+                                    print('\t.FrameStrobe_O('+'Tile_X'+str(x)+'Y'+str(y)+'_FrameStrobe_O)\n\t);\n' , file=file)
                                 #print('\t\t ConfigBits => ConfigBits ( '+str(TileConfigBits)+' -1 downto '+str(0)+' ) );\n', file=file)
                                 ### BEL_ConfigBitsCounter = BEL_ConfigBitsCounter + int(BEL_ConfigBits)
                 tile_counter += 1
@@ -3108,7 +3273,7 @@ class Fabric:
                         if wire["direction"] == "JUMP":
                             continue
                     for i in range(int(wire["wire-count"])):
-                        desty = tile.y + int(wire["yoffset"])
+                        desty = tile.y - int(wire["yoffset"])
                         destx = tile.x + int(wire["xoffset"])
                         desttileLoc = f"X{destx}Y{desty}"
                         if (desttileLoc == loc) and (wire["destination"] + str(i) == dest):
@@ -3234,7 +3399,8 @@ def genFabricObject(fabric: list):
                         wires.append({"direction": wire[0], "source": wire[1], "xoffset": wire[2], "yoffset": wire[3], "destination": wire[4], "wire-count": wire[5]}) 
             cTile.wires = wires
             cTile.x = j
-            cTile.y = archFabric.height - i -1
+            #cTile.y = archFabric.height - i -1
+            cTile.y = i
             cTile.bels = belList
             row.append(cTile)
             portMap[cTile] = portList
@@ -3249,9 +3415,11 @@ def genFabricObject(fabric: list):
             tempAtomicWires = []
             #Wires from tile
             for wire in wireTextList:
-                destinationTile = archFabric.getTileByCoords(tile.x + int(wire["xoffset"]), tile.y + int(wire["yoffset"]))
+                destinationTile = archFabric.getTileByCoords(tile.x + int(wire["xoffset"]), tile.y - int(wire["yoffset"]))
+                if(tile.x==1 and tile.y==18):
+                     print(wire)
                 if not ((destinationTile == None) or ("NULL" in wire.values()) or (wire["destination"] not in portMap[destinationTile])):
-                    wires.append(wire)
+                    wires.append(wire)                 
                     portMap[destinationTile].remove(wire["destination"])
                     portMap[tile].remove(wire["source"])
                 elif destinationTile == None and not ("NULL" in wire.values()): #If the wire goes off the fabric then we account for cascading by finding the last tile the wire goes through
@@ -3265,7 +3433,7 @@ def genFabricObject(fabric: list):
                         cTile = destinationTile    #Initialise to current dest tile
                         while cTile == None: #Exit when we're back on the fabric
                             walkbackCount += offsetWalkback    #Step back another place
-                            cTile = archFabric.getTileByCoords(tile.x + int(wire["xoffset"]) + walkbackCount, tile.y + int(wire["yoffset"]))    #Check our current tile
+                            cTile = archFabric.getTileByCoords(tile.x + int(wire["xoffset"]) + walkbackCount, tile.y - int(wire["yoffset"]))    #Check our current tile
 
                         totalOffset = int(wire["xoffset"]) + walkbackCount
 
@@ -3273,7 +3441,7 @@ def genFabricObject(fabric: list):
 
                         for i in range(int(wire["wire-count"])):
                             tempAtomicWires.append({"direction": wire["direction"], "source": wire["source"] + str(i), "xoffset": wire["xoffset"], "yoffset": wire["yoffset"], "destination": wire["destination"] + str(i + cascadedBottom), "sourceTile": tile.genTileLoc(), "destTile": cTile.genTileLoc()}) #Add atomic wire names
-                    elif int(wire["yoffset"]) != 0:    #If we're moving in the x axis
+                    elif int(wire["yoffset"]) != 0:    #If we're moving in the y axis
                         if int(wire["yoffset"]) > 0:
                             offsetWalkback = -1        #Note we want to walk opposite to wire direction as we're trying to get back onto the fabric
                         elif int(wire["yoffset"]) < 0:
@@ -3282,13 +3450,13 @@ def genFabricObject(fabric: list):
                         cTile = destinationTile    #Initialise to current dest tile
                         while cTile == None: #Exit when we're back on the fabric
                             walkbackCount += offsetWalkback    #Step back another place
-                            cTile = archFabric.getTileByCoords(tile.x + int(wire["xoffset"]), tile.y + int(wire["yoffset"]) + walkbackCount)    #Check our current tile
+                            cTile = archFabric.getTileByCoords(tile.x + int(wire["xoffset"]), tile.y - (int(wire["yoffset"]) + walkbackCount))   #Check our current tile
                         totalOffset = int(wire["yoffset"]) + walkbackCount
                         cascadedBottom = (abs((int(wire["yoffset"]))) - (abs(totalOffset))) * int(wire["wire-count"])
                         for i in range(int(wire["wire-count"])):
                             tempAtomicWires.append({"direction": wire["direction"], "source": wire["source"] + str(i), "xoffset": wire["xoffset"], "yoffset": wire["yoffset"], "destination": wire["destination"] + str(i + cascadedBottom), "sourceTile": tile.genTileLoc(), "destTile": cTile.genTileLoc()}) #Add atomic wire names
             #Wires to tile
-                sourceTile = archFabric.getTileByCoords(tile.x - int(wire["xoffset"]), tile.y - int(wire["yoffset"]))
+                sourceTile = archFabric.getTileByCoords(tile.x - int(wire["xoffset"]), tile.y + int(wire["yoffset"]))
                 if (sourceTile == None) or ("NULL" in wire.values()) or (wire["source"] not in portMap[sourceTile]):
                     continue
                 sourceTile.wires.append(wire)
@@ -3319,7 +3487,9 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
             #Wires between tiles
             pipsStr += f"#Tile-external pips on tile {tileLoc}:\n"
             for wire in tile.wires:
-                desty = tile.y + int(wire["yoffset"])
+                desty = tile.y - int(wire["yoffset"])
+                #print(wire)
+                #print(str(tile.y)+', '+str(desty))
                 destx = tile.x + int(wire["xoffset"])
                 desttileLoc = f"X{destx}Y{desty}"
                 for i in range(int(wire["wire-count"])):
@@ -3391,7 +3561,7 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
                 pairStr += "#" + tileLoc + "\n"
                 for wire in tile.wires:
                     for i in range(int(wire["wire-count"])):
-                        desty = tile.y + int(wire["yoffset"])
+                        desty = tile.y - int(wire["yoffset"])
                         destx = tile.x + int(wire["xoffset"]) 
                         destTile = archObject.getTileByCoords(destx, desty)
                         desttileLoc = f"X{destx}Y{desty}"
@@ -3809,8 +3979,11 @@ if ('-GenFabricHDL'.lower() in str(sys.argv).lower()) or ('-run_all'.lower() in 
 if ('-GenFabricVerilog'.lower() in str(sys.argv).lower()) or ('-run_all'.lower() in str(sys.argv).lower()):
     print('### Generate the Fabric Verilog descriptions')
     FileHandler = open('fabric.v','w+')
-    GenerateFabricVerilog(FabricFile,FileHandler)
+    fabric_top = GenerateFabricVerilog(FabricFile,FileHandler)
     FileHandler.close()
+    #w = open('eFPGA_top.v', "w+")
+    #w.write(fabric_top)
+    #w.close()
 
 if ('-CSV2list'.lower() in str(sys.argv).lower()) or ('-AddList2CSV'.lower() in str(sys.argv).lower()):
     arguments = re.split(' ',str(sys.argv))

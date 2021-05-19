@@ -124,7 +124,7 @@ module MULADD (A7, A6, A5, A4, A3, A2, A1, A0, B7, B6, B5, B4, B3, B2, B1, B0, C
 		if (clr == 1'b1) begin
 			ACC <= 20'b00000000000000000000;
 		end else begin
-			ACC <= std_logic_vector(sum);
+			ACC <= sum;
 		end
 	end
 

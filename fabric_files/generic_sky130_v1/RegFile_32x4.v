@@ -75,7 +75,7 @@ module RegFile_32x4 (D0, D1, D2, D3, W_ADR0, W_ADR1, W_ADR2, W_ADR3, W_ADR4, W_e
 	
 	initial begin
 		for (i=0; i<32; i=i+1) begin
-			mem[i] <= 4'b0000;
+			mem[i] = 4'b0000;
 		end
 	end
 

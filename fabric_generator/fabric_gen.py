@@ -3757,7 +3757,7 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
 
         pb_typesString += f"</pb_type>\n"
 
-    print(pb_typesString)
+    #print(pb_typesString)
 
     layoutString = f"<fixed_layout name=\"FABulous\" width=\"{archObject.width}\" height=\"{archObject.height}\">\n"
 
@@ -3769,7 +3769,25 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
 
     layoutString += "</fixed_layout>\n"
 
-    print(layoutString)
+    #print(layoutString)
+
+    outputString = f"""<architecture>
+
+    <device>
+    {deviceString}
+    </device>
+
+    <layout>
+    {layoutString}
+    </layout>
+
+    <complexblocklist>
+    {pb_typesString}
+    </complexblocklist>
+
+</architecture>""" #Format output string - indentation is not a priority right now but needs work
+
+    print(outputString)
 
 
 def genBitstreamSpec(archObject: Fabric):

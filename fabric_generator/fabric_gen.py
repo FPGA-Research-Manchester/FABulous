@@ -3708,9 +3708,9 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
         return (pipsStr, belsStr, templateStr, constraintStr)
 
 def genVPRModel(archObject: Fabric, generatePairs = True):
-    print("RUNNING")
+
     pb_typesString = "" #String to store all the different kinds of pb_types needed
- 
+
 
     #TODO: handle indentation for readability
     for cellType in archObject.cellTypes:
@@ -3744,12 +3744,19 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
 
         pb_typesString += f"</pb_type>\n"
 
-    print("OK")
     print(pb_typesString)
+
+    layoutStr = f"<fixed_layout name=\"FABulous\" width=\"{archObject.width}\" height=\"{archObject.height}\">\n"
+
+    #Tile locations are specified using <single> tags - while the typical fabric will be made up of larger blocks of tiles, this allows the most flexibility
 
     for line in archObject.tiles:
         for tile in line:
-            pass
+            layoutStr += f" <single type=\"{tile.tileType}\" priority=\"1\" x=\"{tile.x}\" y=\"{tile.y}\">\n" #Add single tag for each tile
+
+    layoutStr += "</fixed_layout>\n"
+
+    print(layoutStr)
 
 def genBitstreamSpec(archObject: Fabric):
     specData = {"TileMap":{}, "TileSpecs":{}, "FrameMap":{}, "ArchSpecs":{"MaxFramesPerCol":MaxFramesPerCol, "FrameBitsPerRow":FrameBitsPerRow}}

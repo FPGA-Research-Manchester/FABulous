@@ -3349,7 +3349,7 @@ def genFabricObject(fabric: list):
             cTile = Tile(tile)
             wires = []
             belList = []
-            belList_with_io = []
+            belListWithIO = []
             tileList = GetTileFromFile(FabricFile, tile)
             portList = []
             wireTextList = []
@@ -3707,8 +3707,49 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
     else:
         return (pipsStr, belsStr, templateStr, constraintStr)
 
-def genVPRModel():
-    pass
+def genVPRModel(archObject: Fabric, generatePairs = True):
+    print("RUNNING")
+    pb_typesString = "" #String to store all the different kinds of pb_types needed
+ 
+
+    #TODO: handle indentation for readability
+    for cellType in archObject.cellTypes:
+        cTile = getTileByType(archObject, cellType)
+        pb_typesString += f"<pb_type name=\"{cellType}\">\n" #Top layer block
+        doneBels = []
+
+        for bel in cTile.belsWithIO: #Create second layer (leaf) blocks for each bel
+            if bel[0] in doneBels:
+                continue
+
+            count = 0
+            for innerBel in cTile.belsWithIO:
+                if innerBel[0] == bel[0]:
+                    count += 1
+
+
+
+            pb_typesString += f"    <pb_type name=\"{bel[0]}\" num_pb=\"{count}\">\n" #Add inner pb_type tag opener
+
+            for cInput in bel[2]:
+                pb_typesString += f"        <input name=\"{cInput}\" num_pins=\"1\"/>\n" #Add input and outputs
+
+            for cOutput in bel[2]:
+                pb_typesString += f"        <output name=\"{cOutput}\" num_pins=\"1\"/>\n"
+
+            #TODO: Add name metadata 
+            pb_typesString += f"    </pb_type>\n" #Close inner tag
+
+            doneBels.append(bel[0]) #Make sure we don't repeat similar BELs
+
+        pb_typesString += f"</pb_type>\n"
+
+    print("OK")
+    print(pb_typesString)
+
+    for line in archObject.tiles:
+        for tile in line:
+            pass
 
 def genBitstreamSpec(archObject: Fabric):
     specData = {"TileMap":{}, "TileSpecs":{}, "FrameMap":{}, "ArchSpecs":{"MaxFramesPerCol":MaxFramesPerCol, "FrameBitsPerRow":FrameBitsPerRow}}
@@ -4084,6 +4125,14 @@ if ('-GenNextpnrModel_pair'.lower() in str(sys.argv).lower()) :
     templateFile.close()
     constraintFile.close()
     pairFile.close()
+
+if ('-GenVPRModel'.lower() in str(sys.argv).lower()) :
+    arguments = re.split(' ',str(sys.argv))
+
+    fabricObject = genFabricObject(fabric)
+
+    genVPRModel(fabricObject, False)
+
 
 if ('-GenBitstreamSpec'.lower() in str(sys.argv).lower()) :
 	arguments = re.split(' ',str(sys.argv))

@@ -3226,6 +3226,7 @@ letters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N",
 class Tile:
     tileType = ""
     bels = []
+    belsWithIO = [] #Currently the plan is to deprecate bels and replace it with this. However, this would require nextpnr model generation changes, so I won't do that until the VPR foundations are established
     wires = [] 
     atomicWires = [] #For storing single wires (to handle cascading and termination)
     pips = []
@@ -3348,6 +3349,7 @@ def genFabricObject(fabric: list):
             cTile = Tile(tile)
             wires = []
             belList = []
+            belList_with_io = []
             tileList = GetTileFromFile(FabricFile, tile)
             portList = []
             wireTextList = []
@@ -3378,13 +3380,19 @@ def genFabricObject(fabric: list):
                     else:
                         prefix = ""
                     nports = []
+                    inputPorts = []
+                    outputPorts = []
+
 
                     for port in ports[0]:
                         nports.append(prefix + re.sub(" *\(.*\) *", "", str(port)))
+                        inputPorts.append(prefix + re.sub(" *\(.*\) *", "", str(port))) #Also add to distinct input/output lists
                     for port in ports[1]:
                         nports.append(prefix + re.sub(" *\(.*\) *", "", str(port)))
+                        inputPorts.append(prefix + re.sub(" *\(.*\) *", "", str(port)))
                     cTile.belPorts.update(nports)
 
+                    belListWithIO.append([wire[1][0:-5:], prefix, inputPorts, outputPorts])
                     belList.append([wire[1][0:-5:], prefix, nports])
 
                 elif wire[0] in ["NORTH", "SOUTH", "EAST", "WEST"]: 
@@ -3401,7 +3409,9 @@ def genFabricObject(fabric: list):
             cTile.x = j
             #cTile.y = archFabric.height - i -1
             cTile.y = i
+
             cTile.bels = belList
+            cTile.belsWithIO = belListWithIO
             row.append(cTile)
             portMap[cTile] = portList
             wireMap[cTile] = wireTextList

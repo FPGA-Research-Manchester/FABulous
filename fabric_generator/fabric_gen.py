@@ -3709,6 +3709,19 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
 
 def genVPRModel(archObject: Fabric, generatePairs = True):
 
+
+    deviceString = """
+<sizing R_minW_nmos="6065.520020" R_minW_pmos="18138.500000"/>
+<area grid_logic_tile_area="14813.392"/>
+<chan_width_distr>
+ <x distr="uniform" peak="1.000000"/>
+ <y distr="uniform" peak="1.000000"/>
+</chan_width_distr>
+<switch_block type="custom"/>
+<connection_block input_switch_name="ipin_cblock"/>
+""" #Several of these values are fillers, as they are outside the current scope of the FABulous project
+    #TODO: Set connection block switch type once switchlist is established
+
     pb_typesString = "" #String to store all the different kinds of pb_types needed
 
 
@@ -3746,17 +3759,18 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
 
     print(pb_typesString)
 
-    layoutStr = f"<fixed_layout name=\"FABulous\" width=\"{archObject.width}\" height=\"{archObject.height}\">\n"
+    layoutString = f"<fixed_layout name=\"FABulous\" width=\"{archObject.width}\" height=\"{archObject.height}\">\n"
 
     #Tile locations are specified using <single> tags - while the typical fabric will be made up of larger blocks of tiles, this allows the most flexibility
 
     for line in archObject.tiles:
         for tile in line:
-            layoutStr += f" <single type=\"{tile.tileType}\" priority=\"1\" x=\"{tile.x}\" y=\"{tile.y}\">\n" #Add single tag for each tile
+            layoutString += f" <single type=\"{tile.tileType}\" priority=\"1\" x=\"{tile.x}\" y=\"{tile.y}\">\n" #Add single tag for each tile
 
-    layoutStr += "</fixed_layout>\n"
+    layoutString += "</fixed_layout>\n"
 
-    print(layoutStr)
+    print(layoutString)
+
 
 def genBitstreamSpec(archObject: Fabric):
     specData = {"TileMap":{}, "TileSpecs":{}, "FrameMap":{}, "ArchSpecs":{"MaxFramesPerCol":MaxFramesPerCol, "FrameBitsPerRow":FrameBitsPerRow}}

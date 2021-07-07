@@ -3697,6 +3697,9 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
     else:
         return (pipsStr, belsStr, templateStr, constraintStr)
 
+def genVPRModel():
+    pass
+
 def genBitstreamSpec(archObject: Fabric):
     specData = {"TileMap":{}, "TileSpecs":{}, "FrameMap":{}, "ArchSpecs":{"MaxFramesPerCol":MaxFramesPerCol, "FrameBitsPerRow":FrameBitsPerRow}}
     BelMap = {}

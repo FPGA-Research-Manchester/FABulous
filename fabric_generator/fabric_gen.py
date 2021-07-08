@@ -3712,17 +3712,17 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
     ### DEVICE INFO
 
     deviceString = """
-<sizing R_minW_nmos="6065.520020" R_minW_pmos="18138.500000"/>
-<area grid_logic_tile_area="14813.392"/>
-<chan_width_distr>
- <x distr="uniform" peak="1.000000"/>
- <y distr="uniform" peak="1.000000"/>
-</chan_width_distr>
-<switch_block type="custom"/>
-<connection_block input_switch_name="ipin_cblock"/>
+  <sizing R_minW_nmos="6065.520020" R_minW_pmos="18138.500000"/>
+  <area grid_logic_tile_area="14813.392"/>
+  <chan_width_distr>
+   <x distr="uniform" peak="1.000000"/>
+   <y distr="uniform" peak="1.000000"/>
+  </chan_width_distr>
+  <switch_block type="custom"/>
+  <connection_block input_switch_name="ipin_cblock"/>
 """ #Several of these values are fillers, as they are outside the current scope of the FABulous project
 
-    #TODO: handle indentation for readability
+    #NOTE: Currently indentation is handled manually, but it's probably worth introducing a library/external function to handle this at some point
 
  
 
@@ -3737,7 +3737,7 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
     
     for cellType in archObject.cellTypes:
         cTile = getTileByType(archObject, cellType)
-        pb_typesString += f"<pb_type name=\"{cellType}\">\n" #Top layer block
+        pb_typesString += f"  <pb_type name=\"{cellType}\">\n" #Top layer block
         doneBels = []
 
         for bel in cTile.belsWithIO: #Create second layer (leaf) blocks for each bel
@@ -3755,43 +3755,43 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
 
 
 
-            pb_typesString += f"    <pb_type name=\"{bel[0]}\" num_pb=\"{count}\">\n" #Add inner pb_type tag opener
+            pb_typesString += f"   <pb_type name=\"{bel[0]}\" num_pb=\"{count}\">\n" #Add inner pb_type tag opener
 
-            modelsString += f"      <model name=\"{bel[0]}\">\n" #Add model tag
+            modelsString += f"  <model name=\"{bel[0]}\">\n" #Add model tag
 
-            modelsString += f"          <input_ports>\n" #open tag for input ports in model list
+            modelsString += f"   <input_ports>\n" #open tag for input ports in model list
 
             for cInput in bel[2]:
-                pb_typesString += f"        <input name=\"{cInput}\" num_pins=\"1\"/>\n" #Add input and outputs
-                modelsString += f"          <port name=\"{cInput}\"/>\n"
+                pb_typesString += f"    <input name=\"{cInput}\" num_pins=\"1\"/>\n" #Add input and outputs
+                modelsString += f"    <port name=\"{cInput}\"/>\n"
 
-            modelsString += f"          </input_ports>\n" #close input ports tag
+            modelsString += f"   </input_ports>\n" #close input ports tag
 
-            modelsString += f"          <output_ports>\n" #open output ports tag
+            modelsString += f"   <output_ports>\n" #open output ports tag
 
 
             for cOutput in bel[2]:
-                pb_typesString += f"        <output name=\"{cOutput}\" num_pins=\"1\"/>\n"
-                modelsString += f"          <port name=\"{cOutput}\"/>\n"
+                pb_typesString += f"    <output name=\"{cOutput}\" num_pins=\"1\"/>\n"
+                modelsString += f"    <port name=\"{cOutput}\"/>\n"
 
 
 
-            modelsString += f"          </output_ports>\n" #close output ports tag
+            modelsString += f"   </output_ports>\n" #close output ports tag
 
             #Add metadata using prefixes gathered earlier
             prefixStr = " ".join(prefixList) #Str instead of string used for variable name as it is not to be injected directly into output
 
             if prefixStr != "":
-                pb_typesString += "        <metadata>\n"
-                pb_typesString += f'         <meta name=\"fasm_prefix\">{prefixStr}</meta>\n'
-                pb_typesString += "        </metadata>\n"
+                pb_typesString += "     <metadata>\n"
+                pb_typesString += f'      <meta name=\"fasm_prefix\">{prefixStr}</meta>\n'
+                pb_typesString += "     </metadata>\n"
 
 
-            pb_typesString += f"    </pb_type>\n" #Close inner tag
+            pb_typesString += f"   </pb_type>\n" #Close inner tag
 
             doneBels.append(bel[0]) #Make sure we don't repeat similar BELs
 
-        pb_typesString += f"</pb_type>\n"
+        pb_typesString += f"  </pb_type>\n"
 
     #print(pb_typesString)
 
@@ -3800,47 +3800,47 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
 
     ### LAYOUT
 
-    layoutString = f"<fixed_layout name=\"FABulous\" width=\"{archObject.width}\" height=\"{archObject.height}\">\n"
+    layoutString = f"  <fixed_layout name=\"FABulous\" width=\"{archObject.width}\" height=\"{archObject.height}\">\n"
 
     #Tile locations are specified using <single> tags - while the typical fabric will be made up of larger blocks of tiles, this allows the most flexibility
 
     for line in archObject.tiles:
         for tile in line:
-            layoutString += f" <single type=\"{tile.tileType}\" priority=\"1\" x=\"{tile.x}\" y=\"{tile.y}\">\n" #Add single tag for each tile
+            layoutString += f"   <single type=\"{tile.tileType}\" priority=\"1\" x=\"{tile.x}\" y=\"{tile.y}\">\n" #Add single tag for each tile
 
-    layoutString += "</fixed_layout>\n"
+    layoutString += "  </fixed_layout>\n"
 
     #print(layoutString)
 
 
     ### SWITCHLIST
 
-    switchlistString = "<switch type=\"buffer\" name=\"ipin_cblock\" R=\"551\" Cin=\".77e-15\" Cout=\"4e-15\" Cinternal=\"5e-15\" Tdel=\"58e-12\" mux_trans_size=\"2.630740\" buf_size=\"27.645901\"/>" #Values are fillers from templates
+    switchlistString = "  <switch type=\"buffer\" name=\"ipin_cblock\" R=\"551\" Cin=\".77e-15\" Cout=\"4e-15\" Cinternal=\"5e-15\" Tdel=\"58e-12\" mux_trans_size=\"2.630740\" buf_size=\"27.645901\"/>" #Values are fillers from templates
 
 
     ### OUTPUT
 
     outputString = f"""<architecture>
 
-    <device>
-    {deviceString}
-    </device>
+ <device>
+{deviceString}
+ </device>
 
-    <layout>
-    {layoutString}
-    </layout>
+ <layout>
+{layoutString}
+ </layout>
 
-    <models>
-    {modelsString}
-    </models>
+ <models>
+{modelsString}
+ </models>
 
-    <complexblocklist>
-    {pb_typesString}
-    </complexblocklist>
+ <complexblocklist>
+{pb_typesString}
+ </complexblocklist>
 
-    <switchlist>
-    {switchlistString}
-    </switchlist>
+ <switchlist>
+{switchlistString}
+ </switchlist>
 
 
 </architecture>""" #Format output string - indentation is not a priority right now but needs work

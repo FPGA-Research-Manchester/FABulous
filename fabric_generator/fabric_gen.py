@@ -3732,13 +3732,17 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
         doneBels = []
 
         for bel in cTile.belsWithIO: #Create second layer (leaf) blocks for each bel
-            if bel[0] in doneBels:
+            if bel[0] in doneBels: #We only want one tag for each kind of bel so we track which ones we have already done
                 continue
 
             count = 0
+            prefixList = []
             for innerBel in cTile.belsWithIO:
-                if innerBel[0] == bel[0]:
+                if innerBel[0] == bel[0]: #Count how many of the current bel we have
                     count += 1
+                    prefixList.append(innerBel[1]) #Add the prefix of this bel to our list of prefixes
+
+
 
 
 
@@ -3750,7 +3754,15 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
             for cOutput in bel[2]:
                 pb_typesString += f"        <output name=\"{cOutput}\" num_pins=\"1\"/>\n"
 
-            #TODO: Add name metadata 
+            #Add metadata using prefixes gathered earlier
+            prefixStr = " ".join(prefixList) #Str instead of string used for variable name as it is not to be injected directly into output
+
+            if prefixStr != "":
+                pb_typesString += "        <metadata>\n"
+                pb_typesString += f'         <meta name=\"fasm_prefix\">{prefixStr}</meta>\n'
+                pb_typesString += "        </metadata>\n"
+
+
             pb_typesString += f"    </pb_type>\n" #Close inner tag
 
             doneBels.append(bel[0]) #Make sure we don't repeat similar BELs

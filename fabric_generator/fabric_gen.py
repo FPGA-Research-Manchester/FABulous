@@ -3788,6 +3788,10 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
     {pb_typesString}
     </complexblocklist>
 
+    <switchlist>
+    {switchlistString}
+    </switchlist>
+
 </architecture>""" #Format output string - indentation is not a priority right now but needs work
 
     print(outputString)

@@ -3727,18 +3727,28 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
  
 
 
-    ### COMPLEX BLOCKS & MODELS
+    ### COMPLEX BLOCKS, MODELS & TILES
 
 
     pb_typesString = "" #String to store all the different kinds of pb_types needed
 
-
     modelsString = "" #String to store different models
+
+    tilesString = "" #String to store tiles
     
     for cellType in archObject.cellTypes:
         cTile = getTileByType(archObject, cellType)
+
+        tilesString += f"  <tile name=\"{cellType}\">" #Add tiles and appropriate equivalent site
+        tilesString += f"   <equivalent_sites>"
+        tilesString += f"    <site pb_type=\"{cellType}\">"
+        tilesString += f"   </equivalent_sites>"
+        tilesString += f"  </tile>"
+
+
         pb_typesString += f"  <pb_type name=\"{cellType}\">\n" #Top layer block
         doneBels = []
+
 
         for bel in cTile.belsWithIO: #Create second layer (leaf) blocks for each bel
             if bel[0] in doneBels: #We only want one tag for each kind of bel so we track which ones we have already done

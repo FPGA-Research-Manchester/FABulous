@@ -3741,12 +3741,12 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
 
         tilesString += f"  <tile name=\"{cellType}\">\n" #Add tiles and appropriate equivalent site
         tilesString += f"   <equivalent_sites>\n"
-        tilesString += f"    <site pb_type=\"{cellType}\">\n"
+        tilesString += f"    <site pb_type=\"{cellType}_site\">\n"
         tilesString += f"   </equivalent_sites>\n"
         tilesString += f"  </tile>\n"
 
 
-        pb_typesString += f"  <pb_type name=\"{cellType}\">\n" #Top layer block
+        pb_typesString += f"  <pb_type name=\"{cellType}_site\">\n" #Top layer block
         doneBels = []
 
 

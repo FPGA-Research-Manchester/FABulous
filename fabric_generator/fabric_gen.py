@@ -3709,6 +3709,7 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
 
 def genVPRModel(archObject: Fabric, generatePairs = True):
 
+    ### DEVICE INFO
 
     deviceString = """
 <sizing R_minW_nmos="6065.520020" R_minW_pmos="18138.500000"/>
@@ -3721,6 +3722,10 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
 <connection_block input_switch_name="ipin_cblock"/>
 """ #Several of these values are fillers, as they are outside the current scope of the FABulous project
     #TODO: Set connection block switch type once switchlist is established
+
+
+    ### COMPLEX BLOCKS 
+
 
     pb_typesString = "" #String to store all the different kinds of pb_types needed
 
@@ -3771,6 +3776,11 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
 
     #print(pb_typesString)
 
+
+
+
+    ### LAYOUT
+
     layoutString = f"<fixed_layout name=\"FABulous\" width=\"{archObject.width}\" height=\"{archObject.height}\">\n"
 
     #Tile locations are specified using <single> tags - while the typical fabric will be made up of larger blocks of tiles, this allows the most flexibility
@@ -3784,7 +3794,12 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
     #print(layoutString)
 
 
+    ### SWITCHLIST
+
     switchlistString = "<switch type=\"buffer\" name=\"ipin_cblock\" R=\"551\" Cin=\".77e-15\" Cout=\"4e-15\" Cinternal=\"5e-15\" Tdel=\"58e-12\" mux_trans_size=\"2.630740\" buf_size=\"27.645901\"/>" #Values are fillers from templates
+
+
+    ### OUTPUT
 
     outputString = f"""<architecture>
 

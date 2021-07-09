@@ -3741,7 +3741,7 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
 
         tilesString += f"  <tile name=\"{cellType}\">\n" #Add tiles and appropriate equivalent site
         tilesString += f"   <equivalent_sites>\n"
-        tilesString += f"    <site pb_type=\"{cellType}_site\">\n"
+        tilesString += f"    <site pb_type=\"{cellType}_site\" pin_mapping=\"direct\">\n"
         tilesString += f"   </equivalent_sites>\n"
         tilesString += f"  </tile>\n"
 

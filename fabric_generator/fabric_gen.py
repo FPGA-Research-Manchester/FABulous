@@ -3709,6 +3709,10 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
 
 def genVPRModel(archObject: Fabric, generatePairs = True):
 
+    ### STYLE NOTE: As this function uses f-strings so regularly, as a standard these f-strings should be denoted with single quotes ('...') instead of double quotes ("...")
+    ### This is because the XML being generated uses double quotes to denote values, so every attribute set introduces a pair of quotes to escape
+    ### This is doable but frustrating and leaves room for error, so as standard single quotes are recommended. 
+
     ### DEVICE INFO
 
     deviceString = """
@@ -3739,15 +3743,15 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
     for cellType in archObject.cellTypes:
         cTile = getTileByType(archObject, cellType)
 
-        tilesString += f"  <tile name=\"{cellType}\">\n" #Add tiles and appropriate equivalent site
-        tilesString += f"   <equivalent_sites>\n"
-        tilesString += f"    <site pb_type=\"{cellType}_site\" pin_mapping=\"direct\">\n"
-        tilesString += f"   </equivalent_sites>\n"
-        #tilesString += f"   <switchblock_locations pattern=\"internal\">\n"
-        tilesString += f"  </tile>\n"
+        tilesString += f'  <tile name="{cellType}">\n' #Add tiles and appropriate equivalent site
+        tilesString += f'   <equivalent_sites>\n'
+        tilesString += f'    <site pb_type="{cellType}_site" pin_mapping="direct">\n'
+        tilesString += f'   </equivalent_sites>\n'
+        #tilesString += f'   <switchblock_locations pattern="internal">\n'
+        tilesString += f'  </tile>\n'
 
 
-        pb_typesString += f"  <pb_type name=\"{cellType}_site\">\n" #Top layer block
+        pb_typesString += f'  <pb_type name="{cellType}_site">\n' #Top layer block
         doneBels = []
 
 
@@ -3766,43 +3770,43 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
 
 
 
-            pb_typesString += f"   <pb_type name=\"{bel[0]}\" num_pb=\"{count}\" blif_model=\".subckt {bel[0]}\">\n" #Add inner pb_type tag opener
+            pb_typesString += f'   <pb_type name="{bel[0]}" num_pb="{count}" blif_model=".subckt {bel[0]}">\n' #Add inner pb_type tag opener
 
-            modelsString += f"  <model name=\"{bel[0]}\">\n" #Add model tag
+            modelsString += f'  <model name="{bel[0]}">\n' #Add model tag
 
-            modelsString += f"   <input_ports>\n" #open tag for input ports in model list
+            modelsString += f'   <input_ports>\n' #open tag for input ports in model list
 
             for cInput in bel[2]:
-                pb_typesString += f"    <input name=\"{cInput}\" num_pins=\"1\"/>\n" #Add input and outputs
-                modelsString += f"    <port name=\"{cInput}\"/>\n"
+                pb_typesString += f'    <input name="{cInput}" num_pins="1"/>\n' #Add input and outputs
+                modelsString += f'    <port name="{cInput}"/>\n'
 
-            modelsString += f"   </input_ports>\n" #close input ports tag
+            modelsString += f'   </input_ports>\n' #close input ports tag
 
-            modelsString += f"   <output_ports>\n" #open output ports tag
+            modelsString += f'   <output_ports>\n' #open output ports tag
 
 
             for cOutput in bel[3]:
-                pb_typesString += f"    <output name=\"{cOutput}\" num_pins=\"1\"/>\n"
-                modelsString += f"    <port name=\"{cOutput}\"/>\n"
+                pb_typesString += f'    <output name="{cOutput}" num_pins="1"/>\n'
+                modelsString += f'    <port name="{cOutput}"/>\n'
 
 
 
-            modelsString += f"   </output_ports>\n" #close output ports tag
+            modelsString += f'   </output_ports>\n' #close output ports tag
 
             #Add metadata using prefixes gathered earlier
             prefixStr = " ".join(prefixList) #Str instead of string used for variable name as it is not to be injected directly into output
 
             if prefixStr != "": 
-                pb_typesString += "     <metadata>\n"
-                pb_typesString += f'      <meta name=\"fasm_prefix\">{prefixStr}</meta>\n'
-                pb_typesString += "     </metadata>\n"
+                pb_typesString += '     <metadata>\n'
+                pb_typesString += f'      <meta name="fasm_prefix">{prefixStr}</meta>\n'
+                pb_typesString += '     </metadata>\n'
 
 
-            pb_typesString += f"   </pb_type>\n" #Close inner tag
+            pb_typesString += f'   </pb_type>\n' #Close inner tag
 
             doneBels.append(bel[0]) #Make sure we don't repeat similar BELs
 
-        pb_typesString += f"  </pb_type>\n"
+        pb_typesString += f'  </pb_type>\n'
 
     #print(pb_typesString)
 
@@ -3811,27 +3815,27 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
 
     ### LAYOUT
 
-    layoutString = f"  <fixed_layout name=\"FABulous\" width=\"{archObject.width}\" height=\"{archObject.height}\">\n"
+    layoutString = f'  <fixed_layout name="FABulous" width="{archObject.width}" height="{archObject.height}">\n'
 
     #Tile locations are specified using <single> tags - while the typical fabric will be made up of larger blocks of tiles, this allows the most flexibility
 
     for line in archObject.tiles:
         for tile in line:
-            layoutString += f"   <single type=\"{tile.tileType}\" priority=\"1\" x=\"{tile.x}\" y=\"{tile.y}\">\n" #Add single tag for each tile
+            layoutString += f'   <single type="{tile.tileType}" priority="1" x="{tile.x}" y="{tile.y}">\n' #Add single tag for each tile
 
-    layoutString += "  </fixed_layout>\n"
+    layoutString += '  </fixed_layout>\n'
 
     #print(layoutString)
 
 
     ### SWITCHLIST
 
-    switchlistString = "  <switch type=\"buffer\" name=\"ipin_cblock\" R=\"551\" Cin=\".77e-15\" Cout=\"4e-15\" Cinternal=\"5e-15\" Tdel=\"58e-12\" mux_trans_size=\"2.630740\" buf_size=\"27.645901\"/>" #Values are fillers from templates
+    switchlistString = '  <switch type="buffer" name="ipin_cblock" R="551" Cin=".77e-15" Cout="4e-15" Cinternal="5e-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>' #Values are fillers from templates
 
 
     ### OUTPUT
 
-    outputString = f"""<architecture>
+    outputString = f'''<architecture>
 
  <device>
 {deviceString}
@@ -3858,7 +3862,7 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
  </switchlist>
 
 
-</architecture>""" #Format output string - indentation is not a priority right now but needs work
+</architecture>''' #Format output string - indentation is not a priority right now but needs work
 
     print(outputString)
 

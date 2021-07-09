@@ -3389,7 +3389,7 @@ def genFabricObject(fabric: list):
                         inputPorts.append(prefix + re.sub(" *\(.*\) *", "", str(port))) #Also add to distinct input/output lists
                     for port in ports[1]:
                         nports.append(prefix + re.sub(" *\(.*\) *", "", str(port)))
-                        inputPorts.append(prefix + re.sub(" *\(.*\) *", "", str(port)))
+                        outputPorts.append(prefix + re.sub(" *\(.*\) *", "", str(port)))
                     cTile.belPorts.update(nports)
 
                     belListWithIO.append([wire[1][0:-5:], prefix, inputPorts, outputPorts])
@@ -3743,6 +3743,7 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
         tilesString += f"   <equivalent_sites>\n"
         tilesString += f"    <site pb_type=\"{cellType}_site\" pin_mapping=\"direct\">\n"
         tilesString += f"   </equivalent_sites>\n"
+        #tilesString += f"   <switchblock_locations pattern=\"internal\">\n"
         tilesString += f"  </tile>\n"
 
 
@@ -3780,7 +3781,7 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
             modelsString += f"   <output_ports>\n" #open output ports tag
 
 
-            for cOutput in bel[2]:
+            for cOutput in bel[3]:
                 pb_typesString += f"    <output name=\"{cOutput}\" num_pins=\"1\"/>\n"
                 modelsString += f"    <port name=\"{cOutput}\"/>\n"
 

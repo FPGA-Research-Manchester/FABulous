@@ -3766,7 +3766,7 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
 
 
 
-            pb_typesString += f"   <pb_type name=\"{bel[0]}\" num_pb=\"{count}\">\n" #Add inner pb_type tag opener
+            pb_typesString += f"   <pb_type name=\"{bel[0]}\" num_pb=\"{count}\" blif_model=\".subckt {bel[0]}\">\n" #Add inner pb_type tag opener
 
             modelsString += f"  <model name=\"{bel[0]}\">\n" #Add model tag
 
@@ -3792,7 +3792,7 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
             #Add metadata using prefixes gathered earlier
             prefixStr = " ".join(prefixList) #Str instead of string used for variable name as it is not to be injected directly into output
 
-            if prefixStr != "":
+            if prefixStr != "": 
                 pb_typesString += "     <metadata>\n"
                 pb_typesString += f'      <meta name=\"fasm_prefix\">{prefixStr}</meta>\n'
                 pb_typesString += "     </metadata>\n"

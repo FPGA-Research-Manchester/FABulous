@@ -3715,7 +3715,12 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
 
     ### A variable name of the form fooString means that it is a string which will be substituted directly into the output string - otherwise fooStr is used 
 
+    ### I've structured this with two newlines after the end of a section, then the title after '###', then another two newlines. I think this looks nice but it's a matter of taste
+    ### and obviously is not particularly important!
+
+
     ### DEVICE INFO
+
 
     deviceString = """
   <sizing R_minW_nmos="6065.520020" R_minW_pmos="18138.500000"/>
@@ -3811,9 +3816,7 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
         pb_typesString += f'  </pb_type>\n'
 
 
-
     ### LAYOUT
-
 
 
     layoutString = f'  <fixed_layout name="FABulous" width="{archObject.width}" height="{archObject.height}">\n'
@@ -3831,6 +3834,32 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
 
 
     switchlistString = '  <switch type="buffer" name="ipin_cblock" R="551" Cin=".77e-15" Cout="4e-15" Cinternal="5e-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>' #Values are fillers from templates
+
+
+    ### SEGMENTLIST
+
+    # This is experimental, to test whether a segment solution can work with selective switch matrix connections
+
+    segmentlistString = ""
+
+    for line in archObject.tiles:
+        for tile in line:
+            for wire in tile.wires:
+                if wire["yoffset"] != "0" and wire["xoffset"] != "0": #We want to find the length of the wire based on the x and y offset - either it's a jump, or in theory goes off in only one direction - let's find which
+                    print(wire["yoffset"], wire["xoffset"])
+                    raise Exception("Diagonal wires not currently supported for VPR model") #Stop if there are diagonal wires just in case they get put in a fabric
+                if wire["yoffset"] != 0: #Then we check which one isn't zero and take that as the length
+                    length = wire["yoffset"]
+                elif wire["xoffset"] != 0:
+                    length = wire["xoffset"]
+                else: #If we get to here then both offsets are zero and so this must be a jump wire
+                    length = 0 # TODO: Add JUMP handling here
+
+                # TODO: Cmetal, Rmetal and freq are filler values here from ice40 in the symbiflow-arch-defs repository - Cmetal and Rmetal are currently out of scope but freq may need changing.
+                segmentlistString += f'<segment name="{".".join([tile.genTileLoc(), wire["source"], wire["destination"]])}" length="{length}" freq="1.000000" type="unidir" Rmetal="1e-12" Cmetal="22.5e-15">\n'
+
+
+
 
 
     ### OUTPUT
@@ -3862,6 +3891,9 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
 {switchlistString}
  </switchlist>
 
+ <segmentlist>
+{segmentlistString}
+ </segmentlist>
 
 </architecture>'''
 

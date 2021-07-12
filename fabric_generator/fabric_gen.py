@@ -3713,6 +3713,8 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
     ### This is because the XML being generated uses double quotes to denote values, so every attribute set introduces a pair of quotes to escape
     ### This is doable but frustrating and leaves room for error, so as standard single quotes are recommended. 
 
+    ### A variable name of the form fooString means that it is a string which will be substituted directly into the output string - otherwise fooStr is used 
+
     ### DEVICE INFO
 
     deviceString = """
@@ -3727,7 +3729,6 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
 """ #Several of these values are fillers, as they are outside the current scope of the FABulous project
 
     #NOTE: Currently indentation is handled manually, but it's probably worth introducing a library/external function to handle this at some point
-
  
     ### COMPLEX BLOCKS, MODELS & TILES
 
@@ -3765,7 +3766,7 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
                     prefixList.append(innerBel[1]) #Add the prefix of this bel to our list of prefixes
 
 
-
+            tilePortLocStr = ''
 
 
             pb_typesString += f'   <pb_type name="{bel[0]}" num_pb="{count}" blif_model=".subckt {bel[0]}">\n' #Add inner pb_type tag opener
@@ -3777,6 +3778,7 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
             for cInput in bel[2]:
                 pb_typesString += f'    <input name="{cInput}" num_pins="1"/>\n' #Add input and outputs
                 modelsString += f'    <port name="{cInput}"/>\n'
+                tilePortLocStr += f'   <loc side="bottom"> {bel[0]}.{cInput} </loc>\n' #For simplicity, we'll currently constrain all ports to the bottom of the tile
 
             modelsString += f'   </input_ports>\n' #close input ports tag
 
@@ -3786,8 +3788,10 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
             for cOutput in bel[3]:
                 pb_typesString += f'    <output name="{cOutput}" num_pins="1"/>\n'
                 modelsString += f'    <port name="{cOutput}"/>\n'
+                tilePortLocStr += f'   <loc side="bottom"> {bel[0]}.{cOutput} </loc>\n'
 
 
+            tilesString += tilePortLocStr
 
             modelsString += f'   </output_ports>\n' #close output ports tag
 

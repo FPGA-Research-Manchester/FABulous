@@ -3729,8 +3729,6 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
     #NOTE: Currently indentation is handled manually, but it's probably worth introducing a library/external function to handle this at some point
 
  
-
-
     ### COMPLEX BLOCKS, MODELS & TILES
 
 
@@ -3808,12 +3806,11 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
 
         pb_typesString += f'  </pb_type>\n'
 
-    #print(pb_typesString)
-
-
 
 
     ### LAYOUT
+
+
 
     layoutString = f'  <fixed_layout name="FABulous" width="{archObject.width}" height="{archObject.height}">\n'
 
@@ -3825,15 +3822,15 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
 
     layoutString += '  </fixed_layout>\n'
 
-    #print(layoutString)
-
 
     ### SWITCHLIST
+
 
     switchlistString = '  <switch type="buffer" name="ipin_cblock" R="551" Cin=".77e-15" Cout="4e-15" Cinternal="5e-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>' #Values are fillers from templates
 
 
     ### OUTPUT
+
 
     outputString = f'''<architecture>
 
@@ -3862,7 +3859,7 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
  </switchlist>
 
 
-</architecture>''' #Format output string - indentation is not a priority right now but needs work
+</architecture>'''
 
     print(outputString)
 

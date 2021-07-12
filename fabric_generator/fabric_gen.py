@@ -3426,8 +3426,6 @@ def genFabricObject(fabric: list):
             #Wires from tile
             for wire in wireTextList:
                 destinationTile = archFabric.getTileByCoords(tile.x + int(wire["xoffset"]), tile.y - int(wire["yoffset"]))
-                if(tile.x==1 and tile.y==18):
-                     print(wire)
                 if not ((destinationTile == None) or ("NULL" in wire.values()) or (wire["destination"] not in portMap[destinationTile])):
                     wires.append(wire)                 
                     portMap[destinationTile].remove(wire["destination"])

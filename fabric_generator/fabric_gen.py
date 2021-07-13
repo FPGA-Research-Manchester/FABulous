@@ -3966,11 +3966,6 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 {nodesString}
  </rr_nodes>
 
- <block_types>
-{blocksString}
- </block_types>
-
-
 </rr_graph>
 ''' #Same point as in main XML generation applies here regarding outsourcing indentation
 

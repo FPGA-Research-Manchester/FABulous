@@ -3769,7 +3769,7 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
                     prefixList.append(innerBel[1]) #Add the prefix of this bel to our list of prefixes
 
 
-            tilePortLocStr = ''
+            tilePortLocStr = '   <pinlocations>\n'
 
 
             pb_typesString += f'   <pb_type name="{bel[0]}" num_pb="{count}" blif_model=".subckt {bel[0]}">\n' #Add inner pb_type tag opener
@@ -3781,7 +3781,7 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
             for cInput in bel[2]:
                 pb_typesString += f'    <input name="{cInput}" num_pins="1"/>\n' #Add input and outputs
                 modelsString += f'    <port name="{cInput}"/>\n'
-                tilePortLocStr += f'   <loc side="bottom"> {bel[0]}.{cInput} </loc>\n' #For simplicity, we'll currently constrain all ports to the bottom of the tile
+                tilePortLocStr += f'    <loc side="bottom"> {bel[0]}.{cInput} </loc>\n' #For simplicity, we'll currently constrain all ports to the bottom of the tile
 
             modelsString += f'   </input_ports>\n' #close input ports tag
 
@@ -3791,8 +3791,9 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
             for cOutput in bel[3]:
                 pb_typesString += f'    <output name="{cOutput}" num_pins="1"/>\n'
                 modelsString += f'    <port name="{cOutput}"/>\n'
-                tilePortLocStr += f'   <loc side="bottom"> {bel[0]}.{cOutput} </loc>\n'
+                tilePortLocStr += f'    <loc side="bottom"> {bel[0]}.{cOutput} </loc>\n'
 
+            tilePortLocStr += '   </pinlocations>\n'
 
             tilesString += tilePortLocStr
 
@@ -3835,6 +3836,7 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
 
 
     ### SEGMENTLIST
+
 
     # This is experimental, to test whether a segment solution can work with selective switch matrix connections
 

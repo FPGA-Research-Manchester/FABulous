@@ -3897,13 +3897,14 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
 def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
+
     ### NODES
 
 
     nodesString = ''
     curId = 0 #Start indexing nodes at 0 and increment each time a node is added
 
-    max_width = 1 #Initialise value to find maximum channel width for channels tag
+    max_width = 1 #Initialise value to find maximum channel width for channels tag - start as 1 as you can't have a thinner wire!
 
     for row in archObject.tiles:
         for tile in row:
@@ -3946,6 +3947,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
     ### CHANNELS
 
+
     #Use the max width generated before for this tag
     channelString = f'  <channel chan_width_max="{max_width}" x_min="0" y_min="0" x_max="{archObject.width - 1}" y_max="{archObject.height - 1}"/>\n'
 
@@ -3953,15 +3955,12 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
     ### BLOCKS
 
 
-    blocksString = ''
-
+    blocksString = '' #Initialise string for block types
     curId = 0 #Increment id from 0 as we work through
-
     blockIdMap = {} #Dictionary to record IDs for different tile types when generating grid
 
     for cellType in archObject.cellTypes:
-
-        blocksString += f'  <block_type id="{curId}" name={cellType} width="1" height="1">\n' #Generate block type tile for each type of tile - we assume 1x1 tiles here
+        blocksString += f'  <block_type id="{curId}" name="{cellType}" width="1" height="1">\n' #Generate block type tile for each type of tile - we assume 1x1 tiles here
         blocksString += '  </block_type>\n'
 
         blockIdMap[cellType] = curId #Populate our map of type name to ID as we need the ID for generating the grid
@@ -3981,6 +3980,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
 
     ### OUTPUT    
+
 
     outputString = f'''
 <rr_graph tool_name="vpr" tool_version="82a3c72" tool_comment="Based on FABulous output">

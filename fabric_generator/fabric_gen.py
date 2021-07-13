@@ -3941,12 +3941,27 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
     curId = 0
 
+    blockIdMap = {} #Dictionary to record IDs for different tile types when generating grid
+
     for cellType in archObject.cellTypes:
 
         blocksString += f'  <block_type id="{curId}" name={cellType} width="1" height="1">\n'
         blocksString += '  </block_type>\n'
 
+        blockIdMap[cellType] = curId 
         curId += 1
+
+
+    ### GRID
+
+
+    gridString = ''
+
+    for row in archObject.tiles:
+        for tile in row:
+            if tile.tileType == "NULL":
+                continue
+            gridString += f'  <grid_loc x="{tile.x}" y="{tile.y}" block_type_id="{blockIdMap[tile.tileType]}" width_offset="0" height_offset="0">\n'
 
 
     ### OUTPUT    
@@ -3961,6 +3976,10 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
  <block_types>
 {blocksString}
  </block_types>
+
+ <grid>
+{gridString}
+ </grid>
 
  <rr_nodes>
 {nodesString}

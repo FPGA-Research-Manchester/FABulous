@@ -3967,7 +3967,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
     ### OUTPUT    
 
     outputString = f'''
-<rr_graph>
+<rr_graph tool_name="vpr" tool_version="82a3c72" tool_comment="Based on FABulous output">
 
  <channel>
 {channelString}

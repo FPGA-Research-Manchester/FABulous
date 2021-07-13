@@ -3923,7 +3923,21 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                 nodesString += f'  <node id="{curId}" type="{nodeType}" capacity="{wire["wire-count"]}">\n' #Generate tag for each node
                 #NOTE: Currently generates wide nodes instead of individual nodes for each wire within the wire count - may need to change for switching and ports
 
-                nodesString += f'  </node>'
+                if nodeType == "CHANY":
+                    xlow = xhigh = tile.x
+                    yhigh = max(tile.y, tile.y - int(length))
+                    ylow = min(tile.y, tile.y - int(length))
+                elif nodeType == "CHANX":
+                    ylow = yhigh = tile.y
+                    xhigh = max(tile.x, tile.x + int(length))
+                    xlow = min(tile.x, tile.x + int(length))
+                else:
+                    pass #add JUMP handling here
+
+                nodesString += f'   <loc xlow="{xlow}" ylow="{ylow}" xhigh="{xhigh}" yhigh="{yhigh}" ptc="0">\n'
+                # TODO: Set ptc value here
+
+                nodesString += f'  </node>\n'
 
                 curId += 1 #Increment id so all nodes have different ids
 
@@ -3933,7 +3947,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
     ### CHANNELS
 
 
-    channelString = f'  <channel chan_width_max="{max_width}" x_min="0" y_min="0" x_max="{archObject.width - 1}" y_max="{archObject.height - 1}"/>'
+    channelString = f'  <channel chan_width_max="{max_width}" x_min="0" y_min="0" x_max="{archObject.width - 1}" y_max="{archObject.height - 1}"/>\n'
 
 
     ### BLOCKS

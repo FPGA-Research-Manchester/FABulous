@@ -3897,9 +3897,13 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
 def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
+    ### NODES
+
 
     nodesString = ''
     curId = 0 #Start indexing nodes at 0 and increment each time a node is added
+
+    max_width = 1 #Initialise value to find maximum channel width for channels tag
 
     for row in archObject.tiles:
         for tile in row:
@@ -3916,12 +3920,27 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                 else: #If we get to here then both offsets are zero and so this must be a jump wire
                     length = 0 # TODO: Add JUMP handling here
 
-                nodesString += f'  <node id="{curId}" type="{nodeType}" capacity="1">\n' #Generate tag for each node
+                nodesString += f'  <node id="{curId}" type="{nodeType}" capacity="{wire["wire-count"]}">\n' #Generate tag for each node
+                #NOTE: Currently generates wide nodes instead of individual nodes for each wire within the wire count - may need to change for switching and ports
 
                 curId += 1 #Increment id so all nodes have different ids
 
+                max_width = max(max_width, int(wire["wire-count"]))
+
+
+    ### CHANNELS
+
+
+    channelString = f'  <channel chan_width_max="{max_width}" x_min="0" y_min="0" x_max="{archObject.width - 1}" y_max="{archObject.height - 1}">'
+
+
+
     outputString = f'''
 <rr_graph>
+
+ <channel>
+{channelString}
+ </channel>
 
  <rr_nodes>
 {nodesString}

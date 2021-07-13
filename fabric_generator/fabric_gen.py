@@ -3923,6 +3923,8 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                 nodesString += f'  <node id="{curId}" type="{nodeType}" capacity="{wire["wire-count"]}">\n' #Generate tag for each node
                 #NOTE: Currently generates wide nodes instead of individual nodes for each wire within the wire count - may need to change for switching and ports
 
+                nodesString += f'  </node>'
+
                 curId += 1 #Increment id so all nodes have different ids
 
                 max_width = max(max_width, int(wire["wire-count"]))
@@ -3931,7 +3933,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
     ### CHANNELS
 
 
-    channelString = f'  <channel chan_width_max="{max_width}" x_min="0" y_min="0" x_max="{archObject.width - 1}" y_max="{archObject.height - 1}">'
+    channelString = f'  <channel chan_width_max="{max_width}" x_min="0" y_min="0" x_max="{archObject.width - 1}" y_max="{archObject.height - 1}"/>'
 
 
     ### BLOCKS
@@ -3961,7 +3963,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
         for tile in row:
             if tile.tileType == "NULL":
                 continue
-            gridString += f'  <grid_loc x="{tile.x}" y="{tile.y}" block_type_id="{blockIdMap[tile.tileType]}" width_offset="0" height_offset="0">\n'
+            gridString += f'  <grid_loc x="{tile.x}" y="{tile.y}" block_type_id="{blockIdMap[tile.tileType]}" width_offset="0" height_offset="0"/>\n'
 
 
     ### OUTPUT    

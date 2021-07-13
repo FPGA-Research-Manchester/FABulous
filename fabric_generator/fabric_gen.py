@@ -3923,30 +3923,30 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                 nodesString += f'  <node id="{curId}" type="{nodeType}" capacity="{wire["wire-count"]}">\n' #Generate tag for each node
                 #NOTE: Currently generates wide nodes instead of individual nodes for each wire within the wire count - may need to change for switching and ports
 
-                if nodeType == "CHANY":
-                    xlow = xhigh = tile.x
-                    yhigh = max(tile.y, tile.y - int(length))
-                    ylow = min(tile.y, tile.y - int(length))
+                if nodeType == "CHANY": 
+                    xlow = xhigh = tile.x #If the wire is vertical, then the x coordinate will be the same at both ends
+                    yhigh = max(tile.y, tile.y - int(length)) #Wire is vertical so we can get the destination coord by subtracting the 'length' (which we previously set to the y offset) 
+                    ylow = min(tile.y, tile.y - int(length)) #We use max and min to find the higher and lower values
                 elif nodeType == "CHANX":
-                    ylow = yhigh = tile.y
+                    ylow = yhigh = tile.y #Same logic as above
                     xhigh = max(tile.x, tile.x + int(length))
                     xlow = min(tile.x, tile.x + int(length))
                 else:
                     pass #add JUMP handling here
 
-                nodesString += f'   <loc xlow="{xlow}" ylow="{ylow}" xhigh="{xhigh}" yhigh="{yhigh}" ptc="0">\n'
+                nodesString += f'   <loc xlow="{xlow}" ylow="{ylow}" xhigh="{xhigh}" yhigh="{yhigh}" ptc="0">\n' #Add loc tag with the information we just calculated
                 # TODO: Set ptc value here
 
-                nodesString += f'  </node>\n'
+                nodesString += f'  </node>\n' #Close node tag
 
                 curId += 1 #Increment id so all nodes have different ids
 
-                max_width = max(max_width, int(wire["wire-count"]))
+                max_width = max(max_width, int(wire["wire-count"])) #If our current width is greater than the previous max, take the new one
 
 
     ### CHANNELS
 
-
+    #Use the max width generated before for this tag
     channelString = f'  <channel chan_width_max="{max_width}" x_min="0" y_min="0" x_max="{archObject.width - 1}" y_max="{archObject.height - 1}"/>\n'
 
 
@@ -3955,16 +3955,16 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
     blocksString = ''
 
-    curId = 0
+    curId = 0 #Increment id from 0 as we work through
 
     blockIdMap = {} #Dictionary to record IDs for different tile types when generating grid
 
     for cellType in archObject.cellTypes:
 
-        blocksString += f'  <block_type id="{curId}" name={cellType} width="1" height="1">\n'
+        blocksString += f'  <block_type id="{curId}" name={cellType} width="1" height="1">\n' #Generate block type tile for each type of tile - we assume 1x1 tiles here
         blocksString += '  </block_type>\n'
 
-        blockIdMap[cellType] = curId 
+        blockIdMap[cellType] = curId #Populate our map of type name to ID as we need the ID for generating the grid
         curId += 1
 
 
@@ -3975,7 +3975,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
     for row in archObject.tiles:
         for tile in row:
-            if tile.tileType == "NULL":
+            if tile.tileType == "NULL": #The method that generates cellTypes ignores NULL, so it was never in our map - there's nothing there anyway, so we'll ignore it
                 continue
             gridString += f'  <grid_loc x="{tile.x}" y="{tile.y}" block_type_id="{blockIdMap[tile.tileType]}" width_offset="0" height_offset="0"/>\n'
 

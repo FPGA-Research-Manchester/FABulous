@@ -3934,6 +3934,22 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
     channelString = f'  <channel chan_width_max="{max_width}" x_min="0" y_min="0" x_max="{archObject.width - 1}" y_max="{archObject.height - 1}">'
 
 
+    ### BLOCKS
+
+
+    blocksString = ''
+
+    curId = 0
+
+    for cellType in archObject.cellTypes:
+
+        blocksString += f'  <block_type id="{curId}" name={cellType} width="1" height="1">\n'
+        blocksString += '  </block_type>\n'
+
+        curId += 1
+
+
+    ### OUTPUT    
 
     outputString = f'''
 <rr_graph>
@@ -3942,9 +3958,18 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 {channelString}
  </channel>
 
+ <block_types>
+{blocksString}
+ </block_types>
+
  <rr_nodes>
 {nodesString}
  </rr_nodes>
+
+ <block_types>
+{blocksString}
+ </block_types>
+
 
 </rr_graph>
 ''' #Same point as in main XML generation applies here regarding outsourcing indentation

@@ -3705,7 +3705,7 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
     else:
         return (pipsStr, belsStr, templateStr, constraintStr)
 
-def genVPRModel(archObject: Fabric, generatePairs = True):
+def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
     ### STYLE NOTE: As this function uses f-strings so regularly, as a standard these f-strings should be denoted with single quotes ('...') instead of double quotes ("...")
     ### This is because the XML being generated uses double quotes to denote values, so every attribute set introduces a pair of quotes to escape
@@ -3835,28 +3835,28 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
     switchlistString = '  <switch type="buffer" name="ipin_cblock" R="551" Cin=".77e-15" Cout="4e-15" Cinternal="5e-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>' #Values are fillers from templates
 
 
-    ### SEGMENTLIST
+    ### SEGMENTLIST - currently not active as routing resource graph generation will handle this.
 
 
     # This is experimental, to test whether a segment solution can work with selective switch matrix connections
 
-    segmentlistString = ""
+    # segmentlistString = ""
 
-    for line in archObject.tiles:
-        for tile in line:
-            for wire in tile.wires:
-                if wire["yoffset"] != "0" and wire["xoffset"] != "0": #We want to find the length of the wire based on the x and y offset - either it's a jump, or in theory goes off in only one direction - let's find which
-                    print(wire["yoffset"], wire["xoffset"])
-                    raise Exception("Diagonal wires not currently supported for VPR model") #Stop if there are diagonal wires just in case they get put in a fabric
-                if wire["yoffset"] != 0: #Then we check which one isn't zero and take that as the length
-                    length = wire["yoffset"]
-                elif wire["xoffset"] != 0:
-                    length = wire["xoffset"]
-                else: #If we get to here then both offsets are zero and so this must be a jump wire
-                    length = 0 # TODO: Add JUMP handling here
+    # for line in archObject.tiles:
+    #     for tile in line:
+    #         for wire in tile.wires:
+    #             if wire["yoffset"] != "0" and wire["xoffset"] != "0": #We want to find the length of the wire based on the x and y offset - either it's a jump, or in theory goes off in only one direction - let's find which
+    #                 print(wire["yoffset"], wire["xoffset"])
+    #                 raise Exception("Diagonal wires not currently supported for VPR model") #Stop if there are diagonal wires just in case they get put in a fabric
+    #             if wire["yoffset"] != 0: #Then we check which one isn't zero and take that as the length
+    #                 length = wire["yoffset"]
+    #             elif wire["xoffset"] != 0:
+    #                 length = wire["xoffset"]
+    #             else: #If we get to here then both offsets are zero and so this must be a jump wire
+    #                 length = 0 # TODO: Add JUMP handling here
 
-                # TODO: Cmetal, Rmetal and freq are filler values here from ice40 in the symbiflow-arch-defs repository - Cmetal and Rmetal are currently out of scope but freq may need changing.
-                segmentlistString += f'<segment name="{".".join([tile.genTileLoc(), wire["source"], wire["destination"]])}" length="{length}" freq="1.000000" type="unidir" Rmetal="1e-12" Cmetal="22.5e-15">\n'
+    #             # TODO: Cmetal, Rmetal and freq are filler values here from ice40 in the symbiflow-arch-defs repository - Cmetal and Rmetal are currently out of scope but freq may need changing.
+    #             segmentlistString += f'<segment name="{".".join([tile.genTileLoc(), wire["source"], wire["destination"]])}" length="{length}" freq="1.000000" type="unidir" Rmetal="1e-12" Cmetal="22.5e-15">\n'
 
 
 
@@ -3891,13 +3891,12 @@ def genVPRModel(archObject: Fabric, generatePairs = True):
 {switchlistString}
  </switchlist>
 
- <segmentlist>
-{segmentlistString}
- </segmentlist>
-
 </architecture>'''
 
-    print(outputString)
+    return outputString
+
+def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
+    pass
 
 
 def genBitstreamSpec(archObject: Fabric):
@@ -4280,7 +4279,12 @@ if ('-GenVPRModel'.lower() in str(sys.argv).lower()) :
 
     fabricObject = genFabricObject(fabric)
 
-    genVPRModel(fabricObject, False)
+    xmlStr = genVPRModelXML(fabricObject, False)
+
+    rrGraphXML = genVPRModelRRGraph(fabricObject, False)
+
+    print(xmlStr)
+    print(rrGraphXML)
 
 
 if ('-GenBitstreamSpec'.lower() in str(sys.argv).lower()) :

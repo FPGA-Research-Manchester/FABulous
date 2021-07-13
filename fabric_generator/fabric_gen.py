@@ -3896,7 +3896,41 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
     return outputString
 
 def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
-    pass
+
+
+    nodesString = ''
+    curId = 0 #Start indexing nodes at 0 and increment each time a node is added
+
+    for row in archObject.tiles:
+        for tile in row:
+            for wire in tile.wires:
+                if wire["yoffset"] != "0" and wire["xoffset"] != "0": #We want to find the length of the wire based on the x and y offset - either it's a jump, or in theory goes off in only one direction - let's find which
+                    print(wire["yoffset"], wire["xoffset"])
+                    raise Exception("Diagonal wires not currently supported for VPR routing resource model") #Stop if there are diagonal wires just in case they get put in a fabric
+                if wire["yoffset"] != "0": #Then we check which one isn't zero and take that as the length
+                    length = wire["yoffset"]
+                    nodeType = "CHANY" #Set node type as vertical channel if wire is vertical
+                elif wire["xoffset"] != "0":
+                    nodeType = "CHANX" #Set as horizontal if moving along X
+                    length = wire["xoffset"]
+                else: #If we get to here then both offsets are zero and so this must be a jump wire
+                    length = 0 # TODO: Add JUMP handling here
+
+                nodesString += f'  <node id="{curId}" type="{nodeType}" capacity="1">\n' #Generate tag for each node
+
+                curId += 1 #Increment id so all nodes have different ids
+
+    outputString = f'''
+<rr_graph>
+
+ <rr_nodes>
+{nodesString}
+ </rr_nodes>
+
+</rr_graph>
+''' #Same point as in main XML generation applies here regarding outsourcing indentation
+
+    return outputString
 
 
 def genBitstreamSpec(archObject: Fabric):

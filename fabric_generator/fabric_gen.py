@@ -3304,11 +3304,8 @@ def findPipList(csvFile: list, returnDict: bool = False, mapSourceToSinks: bool 
     sources = csvFile[0]
     pips = []
     pipsdict = {}
-    #print(csvFile[1::])
     for y, row in enumerate(csvFile[1::]):
-        #print(row[1:-2:])
         for x, value in enumerate(row[1::]):
-            #print(value)
             #Remember that x and y are offset 
             if value == "1":
                 pips.append([sources[x+1], sinks[y+1]])
@@ -3322,7 +3319,6 @@ def findPipList(csvFile: list, returnDict: bool = False, mapSourceToSinks: bool 
                         pipsdict[sinks[y+1]].append(sources[x+1])
                     else:
                         pipsdict[sinks[y+1]]= [sources[x+1]]
-    #return ""
     if returnDict:
         return pipsdict
     return pips
@@ -3496,8 +3492,6 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
             pipsStr += f"#Tile-external pips on tile {tileLoc}:\n"
             for wire in tile.wires:
                 desty = tile.y - int(wire["yoffset"])
-                #print(wire)
-                #print(str(tile.y)+', '+str(desty))
                 destx = tile.x + int(wire["xoffset"])
                 desttileLoc = f"X{destx}Y{desty}"
                 for i in range(int(wire["wire-count"])):

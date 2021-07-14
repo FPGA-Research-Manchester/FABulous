@@ -3263,7 +3263,7 @@ class Fabric:
     def getTileByLoc(self, loc: str):
         for row in self.tiles:
             for tile in row:
-                if tile.genTileLoc == loc:
+                if tile.genTileLoc() == loc:
                     return tile
         return None
     def getTileAndWireByWireDest(self, loc: str, dest: str, jumps: bool = True):
@@ -3898,13 +3898,15 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
     nodesString = ''
     curId = 0 #Start indexing nodes at 0 and increment each time a node is added
 
+    sourceToWireIDMap = {} #Dictionary to map a wire source to the relevant wire ID
+    destToWireIDMap = {} #Dictionary to map a wire destination to the relevant wire ID
+
     max_width = 1 #Initialise value to find maximum channel width for channels tag - start as 1 as you can't have a thinner wire!
 
     for row in archObject.tiles:
         for tile in row:
             for wire in tile.wires:
                 if wire["yoffset"] != "0" and wire["xoffset"] != "0": #We want to find the length of the wire based on the x and y offset - either it's a jump, or in theory goes off in only one direction - let's find which
-                    print(wire["yoffset"], wire["xoffset"])
                     raise Exception("Diagonal wires not currently supported for VPR routing resource model") #Stop if there are diagonal wires just in case they get put in a fabric
                 if wire["yoffset"] != "0": #Then we check which one isn't zero and take that as the length
                     nodeType = "CHANY" #Set node type as vertical channel if wire is vertical
@@ -3923,7 +3925,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                     wireDest = desttileLoc + "." + wire["destination"]
 
 
-                    nodesString += f'  <!-- Wire: {wireSource + str(i)} -> {wireDest+str(i)} -->\n' #Comment destination for clarity
+                    nodesString += f'  <!-- Wire: {wireSource+str(i)} -> {wireDest+str(i)} -->\n' #Comment destination for clarity
                     nodesString += f'  <node id="{curId}" type="{nodeType}" capacity="1">\n' #Generate tag for each node
 
                     nodesString += f'   <loc xlow="{tile.x}" ylow="{tile.y}" xhigh="{destx}" yhigh="{desty}" ptc="0">\n' #Add loc tag with the information we just calculated
@@ -3931,11 +3933,59 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                     # Currently assuming low is source, high is destination
 
                     nodesString += f'  </node>\n' #Close node tag
-                    
+
+                    sourceToWireIDMap[wireSource+str(i)] = curId
+                    destToWireIDMap[wireDest+str(i)] = curId
+
                     curId += 1 #Increment id so all nodes have different ids
 
                 max_width = max(max_width, int(wire["wire-count"])) #If our current width is greater than the previous max, take the new one
 
+            for wire in tile.atomicWires:
+                if wire["yoffset"] != "0" and wire["xoffset"] != "0": #We want to find the length of the wire based on the x and y offset - either it's a jump, or in theory goes off in only one direction - let's find which
+                    print(wire["yoffset"], wire["xoffset"])
+                    raise Exception("Diagonal wires not currently supported for VPR routing resource model") #Stop if there are diagonal wires just in case they get put in a fabric
+                if wire["yoffset"] != "0": #Then we check which one isn't zero and take that as the length
+                    nodeType = "CHANY" #Set node type as vertical channel if wire is vertical
+                elif wire["xoffset"] != "0":
+                    nodeType = "CHANX" #Set as horizontal if moving along X
+
+                wireSource = wire["sourceTile"] + "." + wire["source"] #Generate location strings for the source and destination
+                wireDest = wire["destTile"] + "." + wire["destination"]
+
+                destTile = archObject.getTileByLoc(wire["destTile"])
+
+                nodesString += f'  <!-- Atomic Wire: {wireSource} -> {wireDest} -->\n' #Comment destination for clarity
+                nodesString += f'  <node id="{curId}" type="{nodeType}" capacity="1">\n' #Generate tag for each node
+
+                nodesString += f'   <loc xlow="{tile.x}" ylow="{tile.y}" xhigh="{destTile.x}" yhigh="{destTile.y}" ptc="0">\n' #Add loc tag with the information we just calculated
+                # TODO: Set ptc value here
+                # Currently assuming low is source, high is destination
+
+                nodesString += f'  </node>\n' #Close node tag
+
+                sourceToWireIDMap[wireSource] = curId
+                destToWireIDMap[wireDest] = curId
+
+                curId += 1 #Increment id so all nodes have different ids
+
+    ### EDGES
+
+
+    edgeStr = ''
+
+    for row in archObject.tiles:
+        for tile in row:
+            tileLoc = tile.genTileLoc()
+            for pip in tile.pips:
+                src_name = tileLoc + "." + pip[0]
+                sink_name = tileLoc + "." + pip[1]
+                try:
+                    edgeStr += f'  <edge src_node="{destToWireIDMap[src_name]}" sink_node="{sourceToWireIDMap[sink_name]}" switch_id="1"/>\n'
+                except Exception as e:
+                    print(src_name, sink_name, sep = ", ")
+                    print(e)
+                    #Printing these for now - they are BEL pins and cascaded wires moving inwards
 
     ### CHANNELS
 
@@ -3992,6 +4042,10 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
  <rr_nodes>
 {nodesString}
  </rr_nodes>
+
+ <rr_edges>
+{edgeStr}
+ </rr_edges>
 
 </rr_graph>
 ''' #Same point as in main XML generation applies here regarding outsourcing indentation

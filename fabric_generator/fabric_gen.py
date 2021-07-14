@@ -3931,10 +3931,8 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                     # Currently assuming low is source, high is destination
 
                     nodesString += f'  </node>\n' #Close node tag
-
-
-
-                curId += 1 #Increment id so all nodes have different ids
+                    
+                    curId += 1 #Increment id so all nodes have different ids
 
                 max_width = max(max_width, int(wire["wire-count"])) #If our current width is greater than the previous max, take the new one
 

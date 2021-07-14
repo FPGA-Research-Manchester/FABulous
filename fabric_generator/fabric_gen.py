@@ -3915,24 +3915,36 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                 else: #If we get to here then both offsets are zero and so this must be a jump wire
                     length = 0 # TODO: Add JUMP handling here
 
-                nodesString += f'  <node id="{curId}" type="{nodeType}" capacity="{wire["wire-count"]}">\n' #Generate tag for each node
-                #NOTE: Currently generates wide nodes instead of individual nodes for each wire within the wire count - may need to change for switching and ports
 
-                if nodeType == "CHANY": 
-                    xlow = xhigh = tile.x #If the wire is vertical, then the x coordinate will be the same at both ends
-                    yhigh = max(tile.y, tile.y - int(length)) #Wire is vertical so we can get the destination coord by subtracting the 'length' (which we previously set to the y offset) 
-                    ylow = min(tile.y, tile.y - int(length)) #We use max and min to find the higher and lower values
-                elif nodeType == "CHANX":
-                    ylow = yhigh = tile.y #Same logic as above
-                    xhigh = max(tile.x, tile.x + int(length))
-                    xlow = min(tile.x, tile.x + int(length))
-                else:
-                    pass #add JUMP handling here
+                desty = tile.y - int(wire["yoffset"]) #Calculate destination location of the wire at hand
+                destx = tile.x + int(wire["xoffset"])
+                desttileLoc = f"X{destx}Y{desty}"
 
-                nodesString += f'   <loc xlow="{xlow}" ylow="{ylow}" xhigh="{xhigh}" yhigh="{yhigh}" ptc="0">\n' #Add loc tag with the information we just calculated
-                # TODO: Set ptc value here
+                for i in range(int(wire["wire-count"])): #For every individual wire
+                    wireSource = tile.genTileLoc() + "." + wire["source"] #Generate location strings for the source and destination
+                    wireDest = desttileLoc + "." + wire["destination"]
 
-                nodesString += f'  </node>\n' #Close node tag
+
+                    nodesString += f'  <!-- Wire: {wireSource + str(i)} -> {wireDest+str(i)} -->\n' #Comment destination for clarity
+                    nodesString += f'  <node id="{curId}" type="{nodeType}" capacity="1">\n' #Generate tag for each node
+
+                    if nodeType == "CHANY": 
+                        xlow = xhigh = tile.x #If the wire is vertical, then the x coordinate will be the same at both ends
+                        yhigh = max(tile.y, tile.y - int(length)) #Wire is vertical so we can get the destination coord by subtracting the 'length' (which we previously set to the y offset) 
+                        ylow = min(tile.y, tile.y - int(length)) #We use max and min to find the higher and lower values
+                    elif nodeType == "CHANX":
+                        ylow = yhigh = tile.y #Same logic as above
+                        xhigh = max(tile.x, tile.x + int(length))
+                        xlow = min(tile.x, tile.x + int(length))
+                    else:
+                        pass #add JUMP handling here
+
+                    nodesString += f'   <loc xlow="{xlow}" ylow="{ylow}" xhigh="{xhigh}" yhigh="{yhigh}" ptc="0">\n' #Add loc tag with the information we just calculated
+                    # TODO: Set ptc value here
+
+                    nodesString += f'  </node>\n' #Close node tag
+
+
 
                 curId += 1 #Increment id so all nodes have different ids
 

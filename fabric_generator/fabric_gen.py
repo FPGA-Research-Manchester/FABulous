@@ -3905,6 +3905,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
     for row in archObject.tiles:
         for tile in row:
+            tileLoc = tile.genTileLoc()
             for wire in tile.wires:
                 if wire["yoffset"] != "0" and wire["xoffset"] != "0": #We want to find the length of the wire based on the x and y offset - either it's a jump, or in theory goes off in only one direction - let's find which
                     raise Exception("Diagonal wires not currently supported for VPR routing resource model") #Stop if there are diagonal wires just in case they get put in a fabric
@@ -3921,7 +3922,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                 desttileLoc = f"X{destx}Y{desty}"
 
                 for i in range(int(wire["wire-count"])): #For every individual wire
-                    wireSource = tile.genTileLoc() + "." + wire["source"] #Generate location strings for the source and destination
+                    wireSource = tileLoc + "." + wire["source"] #Generate location strings for the source and destination
                     wireDest = desttileLoc + "." + wire["destination"]
 
 
@@ -3941,6 +3942,8 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
                 max_width = max(max_width, int(wire["wire-count"])) #If our current width is greater than the previous max, take the new one
 
+
+            # Generate nodes for atomic wires
             for wire in tile.atomicWires:
                 if wire["yoffset"] != "0" and wire["xoffset"] != "0": #We want to find the length of the wire based on the x and y offset - either it's a jump, or in theory goes off in only one direction - let's find which
                     print(wire["yoffset"], wire["xoffset"])
@@ -3969,6 +3972,33 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
                 curId += 1 #Increment id so all nodes have different ids
 
+
+            # Generate nodes for bel ports
+            for bel in tile.belsWithIO: 
+                for cInput in bel[2]:
+                    nodesString += f'  <!-- BEL input: {cInput} -->\n'
+
+                    nodesString += f'  <node id="{curId}" type="IPIN" capacity="1">\n' #Generate tag for each node
+                    nodesString += f'   <loc xlow="{tile.x}" ylow="{tile.y}" xhigh="{tile.x}" yhigh="{tile.y}" ptc="0">\n' #Add loc tag - same high and low vals as no movement between tiles
+                    nodesString += f'  </node>\n' #Close node tag
+
+                    sourceToWireIDMap[tileLoc + "." + cInput] = curId #Add to source map as it is the equivalent of a wire source
+
+                    curId += 1 #Increment id so all nodes have different ids
+
+
+                for cOutput in bel[3]:
+                    nodesString += f'  <!-- BEL output: {cOutput} -->\n'
+
+                    nodesString += f'  <node id="{curId}" type="OPIN" capacity="1">\n' #Generate tag for each node
+                    nodesString += f'   <loc xlow="{tile.x}" ylow="{tile.y}" xhigh="{tile.x}" yhigh="{tile.y}" ptc="0">\n' #Add loc tag
+                    nodesString += f'  </node>\n' #Close node tag
+
+                    destToWireIDMap[tileLoc + "." + cOutput] = curId #Add to dest map as equivalent to a wire destination
+
+                    curId += 1 #Increment id so all nodes have different ids
+
+
     ### EDGES
 
 
@@ -3984,7 +4014,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                     edgeStr += f'  <edge src_node="{destToWireIDMap[src_name]}" sink_node="{sourceToWireIDMap[sink_name]}" switch_id="1"/>\n'
                 except Exception as e:
                     print(src_name, sink_name, sep = ", ")
-                    print(e)
+                    print(repr(e))
                     #Printing these for now - they are BEL pins and cascaded wires moving inwards
 
     ### CHANNELS

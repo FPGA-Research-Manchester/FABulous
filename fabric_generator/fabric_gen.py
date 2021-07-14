@@ -3907,13 +3907,11 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                     print(wire["yoffset"], wire["xoffset"])
                     raise Exception("Diagonal wires not currently supported for VPR routing resource model") #Stop if there are diagonal wires just in case they get put in a fabric
                 if wire["yoffset"] != "0": #Then we check which one isn't zero and take that as the length
-                    length = wire["yoffset"]
                     nodeType = "CHANY" #Set node type as vertical channel if wire is vertical
                 elif wire["xoffset"] != "0":
                     nodeType = "CHANX" #Set as horizontal if moving along X
-                    length = wire["xoffset"]
                 else: #If we get to here then both offsets are zero and so this must be a jump wire
-                    length = 0 # TODO: Add JUMP handling here
+                    pass # TODO: Add JUMP handling here
 
 
                 desty = tile.y - int(wire["yoffset"]) #Calculate destination location of the wire at hand

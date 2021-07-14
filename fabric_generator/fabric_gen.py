@@ -3928,19 +3928,9 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                     nodesString += f'  <!-- Wire: {wireSource + str(i)} -> {wireDest+str(i)} -->\n' #Comment destination for clarity
                     nodesString += f'  <node id="{curId}" type="{nodeType}" capacity="1">\n' #Generate tag for each node
 
-                    if nodeType == "CHANY": 
-                        xlow = xhigh = tile.x #If the wire is vertical, then the x coordinate will be the same at both ends
-                        yhigh = max(tile.y, tile.y - int(length)) #Wire is vertical so we can get the destination coord by subtracting the 'length' (which we previously set to the y offset) 
-                        ylow = min(tile.y, tile.y - int(length)) #We use max and min to find the higher and lower values
-                    elif nodeType == "CHANX":
-                        ylow = yhigh = tile.y #Same logic as above
-                        xhigh = max(tile.x, tile.x + int(length))
-                        xlow = min(tile.x, tile.x + int(length))
-                    else:
-                        pass #add JUMP handling here
-
-                    nodesString += f'   <loc xlow="{xlow}" ylow="{ylow}" xhigh="{xhigh}" yhigh="{yhigh}" ptc="0">\n' #Add loc tag with the information we just calculated
+                    nodesString += f'   <loc xlow="{tile.x}" ylow="{tile.y}" xhigh="{destx}" yhigh="{desty}" ptc="0">\n' #Add loc tag with the information we just calculated
                     # TODO: Set ptc value here
+                    # Currently assuming low is source, high is destination
 
                     nodesString += f'  </node>\n' #Close node tag
 

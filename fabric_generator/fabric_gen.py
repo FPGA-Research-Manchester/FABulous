@@ -3896,7 +3896,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
 
     nodesString = ''
-    curId = 0 #Start indexing nodes at 0 and increment each time a node is added
+    curNodeId = 0 #Start indexing nodes at 0 and increment each time a node is added
 
     sourceToWireIDMap = {} #Dictionary to map a wire source to the relevant wire ID
     destToWireIDMap = {} #Dictionary to map a wire destination to the relevant wire ID
@@ -3927,7 +3927,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
 
                     nodesString += f'  <!-- Wire: {wireSource+str(i)} -> {wireDest+str(i)} -->\n' #Comment destination for clarity
-                    nodesString += f'  <node id="{curId}" type="{nodeType}" capacity="1">\n' #Generate tag for each node
+                    nodesString += f'  <node id="{curNodeId}" type="{nodeType}" capacity="1">\n' #Generate tag for each node
 
                     nodesString += f'   <loc xlow="{tile.x}" ylow="{tile.y}" xhigh="{destx}" yhigh="{desty}" ptc="0">\n' #Add loc tag with the information we just calculated
                     # TODO: Set ptc value here
@@ -3935,10 +3935,10 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
                     nodesString += f'  </node>\n' #Close node tag
 
-                    sourceToWireIDMap[wireSource+str(i)] = curId
-                    destToWireIDMap[wireDest+str(i)] = curId
+                    sourceToWireIDMap[wireSource+str(i)] = curNodeId
+                    destToWireIDMap[wireDest+str(i)] = curNodeId
 
-                    curId += 1 #Increment id so all nodes have different ids
+                    curNodeId += 1 #Increment id so all nodes have different ids
 
                 max_width = max(max_width, int(wire["wire-count"])) #If our current width is greater than the previous max, take the new one
 
@@ -3959,7 +3959,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                 destTile = archObject.getTileByLoc(wire["destTile"])
 
                 nodesString += f'  <!-- Atomic Wire: {wireSource} -> {wireDest} -->\n' #Comment destination for clarity
-                nodesString += f'  <node id="{curId}" type="{nodeType}" capacity="1">\n' #Generate tag for each node
+                nodesString += f'  <node id="{curNodeId}" type="{nodeType}" capacity="1">\n' #Generate tag for each node
 
                 nodesString += f'   <loc xlow="{tile.x}" ylow="{tile.y}" xhigh="{destTile.x}" yhigh="{destTile.y}" ptc="0">\n' #Add loc tag with the information we just calculated
                 # TODO: Set ptc value here
@@ -3967,10 +3967,10 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
                 nodesString += f'  </node>\n' #Close node tag
 
-                sourceToWireIDMap[wireSource] = curId
-                destToWireIDMap[wireDest] = curId
+                sourceToWireIDMap[wireSource] = curNodeId
+                destToWireIDMap[wireDest] = curNodeId
 
-                curId += 1 #Increment id so all nodes have different ids
+                curNodeId += 1 #Increment id so all nodes have different ids
 
 
             # Generate nodes for bel ports
@@ -3978,25 +3978,25 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                 for cInput in bel[2]:
                     nodesString += f'  <!-- BEL input: {cInput} -->\n'
 
-                    nodesString += f'  <node id="{curId}" type="IPIN" capacity="1">\n' #Generate tag for each node
+                    nodesString += f'  <node id="{curNodeId}" type="IPIN" capacity="1">\n' #Generate tag for each node
                     nodesString += f'   <loc xlow="{tile.x}" ylow="{tile.y}" xhigh="{tile.x}" yhigh="{tile.y}" ptc="0">\n' #Add loc tag - same high and low vals as no movement between tiles
                     nodesString += f'  </node>\n' #Close node tag
 
-                    sourceToWireIDMap[tileLoc + "." + cInput] = curId #Add to source map as it is the equivalent of a wire source
+                    sourceToWireIDMap[tileLoc + "." + cInput] = curNodeId #Add to source map as it is the equivalent of a wire source
 
-                    curId += 1 #Increment id so all nodes have different ids
+                    curNodeId += 1 #Increment id so all nodes have different ids
 
 
                 for cOutput in bel[3]:
                     nodesString += f'  <!-- BEL output: {cOutput} -->\n'
 
-                    nodesString += f'  <node id="{curId}" type="OPIN" capacity="1">\n' #Generate tag for each node
+                    nodesString += f'  <node id="{curNodeId}" type="OPIN" capacity="1">\n' #Generate tag for each node
                     nodesString += f'   <loc xlow="{tile.x}" ylow="{tile.y}" xhigh="{tile.x}" yhigh="{tile.y}" ptc="0">\n' #Add loc tag
                     nodesString += f'  </node>\n' #Close node tag
 
-                    destToWireIDMap[tileLoc + "." + cOutput] = curId #Add to dest map as equivalent to a wire destination
+                    destToWireIDMap[tileLoc + "." + cOutput] = curNodeId #Add to dest map as equivalent to a wire destination
 
-                    curId += 1 #Increment id so all nodes have different ids
+                    curNodeId += 1 #Increment id so all nodes have different ids
 
 
     ### EDGES
@@ -4014,14 +4014,26 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                 #Check if the nodes this edge requires are in the map - if not then they're standalone pins that require a node, so we'll create one                  
 
                 if src_name not in destToWireIDMap.keys():
-                    print(src_name)
                     destToWireIDMap[src_name] = curNodeId
+                    nodesString += f'  <!-- Pin: {src_name} -->\n' #Comment destination for clarity
+                    nodesString += f'  <node id="{curNodeId}" type="OPIN" capacity="1">\n' #Generate tag for each node - this outputs into the switch matrix so is an output pin
+                    nodesString += f'   <loc xlow="{tile.x}" ylow="{tile.y}" xhigh="{tile.x}" yhigh="{tile.y}" ptc="0">\n' #Add loc tag
+                    nodesString += f'  </node>\n' #Close node tag  
+
                     curNodeId += 1
 
+
+
                 if sink_name not in sourceToWireIDMap.keys():
-                    print(sink_name)
                     sourceToWireIDMap[sink_name] = curNodeId
+                    nodesString += f'  <!-- Pin: {sink_name} -->\n' #Comment destination for clarity
+                    nodesString += f'  <node id="{curNodeId}" type="IPIN" capacity="1">\n' #Generate tag for each node - this is a switch matrix sink so must be an input pin
+                    nodesString += f'   <loc xlow="{tile.x}" ylow="{tile.y}" xhigh="{tile.x}" yhigh="{tile.y}" ptc="0">\n' #Add loc tag
+                    nodesString += f'  </node>\n' #Close node tag 
+
                     curNodeId += 1
+
+
 
                 #TODO: GENERATE NODE TAG FOR THIS ID
 

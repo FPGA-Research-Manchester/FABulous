@@ -3473,7 +3473,7 @@ def genFabricObject(fabric: list):
                 sourceTile = archFabric.getTileByCoords(tile.x - int(wire["xoffset"]), tile.y + int(wire["yoffset"]))
 
                 #Handle backrouted atomic wires - wires that are due to arrive at this tile but the source tile does not exist
-                if sourceTile == None:
+                if (sourceTile == None) and "NULL" not in wire.values():
                     if int(wire["xoffset"]) != 0:    #If we're moving in the x axis
                         if int(wire["xoffset"]) > 0:
                             offsetWalkback = 1        #Note we want to walk in the wire direction as we're trying to get back onto the fabric from its source

@@ -4010,12 +4010,23 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
             for pip in tile.pips:
                 src_name = tileLoc + "." + pip[0]
                 sink_name = tileLoc + "." + pip[1]
-                try:
-                    edgeStr += f'  <edge src_node="{destToWireIDMap[src_name]}" sink_node="{sourceToWireIDMap[sink_name]}" switch_id="1"/>\n'
-                except Exception as e:
-                    print(src_name, sink_name, sep = ", ")
-                    print(repr(e))
-                    #Printing these for now - they are BEL pins and cascaded wires moving inwards
+
+                #Check if the nodes this edge requires are in the map - if not then they're standalone pins that require a node, so we'll create one                  
+
+                if src_name not in destToWireIDMap.keys():
+                    print(src_name)
+                    destToWireIDMap[src_name] = curNodeId
+                    curNodeId += 1
+
+                if sink_name not in sourceToWireIDMap.keys():
+                    print(sink_name)
+                    sourceToWireIDMap[sink_name] = curNodeId
+                    curNodeId += 1
+
+                #TODO: GENERATE NODE TAG FOR THIS ID
+
+
+                edgeStr += f'  <edge src_node="{destToWireIDMap[src_name]}" sink_node="{sourceToWireIDMap[sink_name]}" switch_id="1"/>\n'
 
     ### CHANNELS
 

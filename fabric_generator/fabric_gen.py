@@ -3339,6 +3339,7 @@ def genFabricObject(fabric: list):
     #                 if wire[4] != "NULL":
     #                     portList.append(wire[4])
     #         portMap["I" + str(i) + "J" + str(j)] = portList
+
     for i, line in enumerate(fabric):
         row = []
         for j, tile in enumerate(line): 
@@ -3414,6 +3415,9 @@ def genFabricObject(fabric: list):
         archFabric.tiles.append(row)
 
         #Add wires to model
+
+    backroutedAtomicWires = [ [[] for _ in range(archFabric.width)] for _ in range(archFabric.height) ] 
+
     for row in archFabric.tiles:
         for tile in row:
             wires = []
@@ -3459,8 +3463,58 @@ def genFabricObject(fabric: list):
                         cascadedBottom = (abs((int(wire["yoffset"]))) - (abs(totalOffset))) * int(wire["wire-count"])
                         for i in range(int(wire["wire-count"])):
                             tempAtomicWires.append({"direction": wire["direction"], "source": wire["source"] + str(i), "xoffset": wire["xoffset"], "yoffset": wire["yoffset"], "destination": wire["destination"] + str(i + cascadedBottom), "sourceTile": tile.genTileLoc(), "destTile": cTile.genTileLoc()}) #Add atomic wire names
+            
+
+
             #Wires to tile
                 sourceTile = archFabric.getTileByCoords(tile.x - int(wire["xoffset"]), tile.y + int(wire["yoffset"]))
+
+                #Handle backrouted atomic wires - wires that are due to arrive at this tile but the source tile does not exist
+                if (sourceTile == None) and "NULL" not in wire.values():
+                    if int(wire["xoffset"]) != 0:    #If we're moving in the x axis
+                        if int(wire["xoffset"]) > 0:
+                            offsetWalkback = 1        #Note we want to walk in the wire direction as we're trying to get back onto the fabric from its source
+                        elif int(wire["xoffset"]) < 0:
+                            offsetWalkback = -1
+
+                        walkbackCount = 0
+                        cTile = sourceTile    #Initialise to current source tile
+
+                        while cTile == None: #Exit when we're back on the fabric
+
+                            walkbackCount += offsetWalkback    #Step back another place
+                            cTile = archFabric.getTileByCoords(tile.x - int(wire["xoffset"]) + walkbackCount, tile.y + int(wire["yoffset"]))    #Check our current tile
+
+                        totalOffset = int(wire["xoffset"]) - walkbackCount
+
+                        cascadedBottom = int(wire["wire-count"]) * abs(totalOffset) #We want to shunt all source numbers up by wc * the distance back they are
+
+                        for i in range(int(wire["wire-count"])):
+                            backroutedAtomicWires[cTile.y][cTile.x].append({"direction": wire["direction"], "source": wire["source"] + str(i + cascadedBottom), "xoffset": wire["xoffset"], "yoffset": wire["yoffset"], "destination": wire["destination"] + str(i), "sourceTile": cTile.genTileLoc(), "destTile": tile.genTileLoc()}) #Add atomic wire names                    
+
+
+
+                    elif int(wire["yoffset"]) != 0:    #If we're moving in the x axis
+                        if int(wire["yoffset"]) > 0:
+                            offsetWalkback = 1        #Note we want to walk in the wire direction as we're trying to get back onto the fabric from its source
+                        elif int(wire["yoffset"]) < 0:
+                            offsetWalkback = -1
+
+                        walkbackCount = 0
+                        cTile = sourceTile    #Initialise to current source tile
+
+                        while cTile == None: #Exit when we're back on the fabric
+                            walkbackCount += offsetWalkback    #Step back another place
+                            cTile = archFabric.getTileByCoords(tile.x - int(wire["xoffset"]), tile.y + int(wire["yoffset"]) - walkbackCount)    #Check our current tile
+
+                        totalOffset = int(wire["yoffset"]) - walkbackCount
+
+                        cascadedBottom = int(wire["wire-count"]) * abs(totalOffset) #We want to shunt all source numbers up by wc * the distance back they are
+
+                        for i in range(int(wire["wire-count"])):
+                            backroutedAtomicWires[cTile.y][cTile.x].append({"direction": wire["direction"], "source": wire["source"] + str(i + cascadedBottom), "xoffset": wire["xoffset"], "yoffset": wire["yoffset"], "destination": wire["destination"] + str(i), "sourceTile": cTile.genTileLoc(), "destTile": tile.genTileLoc()}) #Add atomic wire names    
+
+
                 if (sourceTile == None) or ("NULL" in wire.values()) or (wire["source"] not in portMap[sourceTile]):
                     continue
                 sourceTile.wires.append(wire)
@@ -3470,6 +3524,11 @@ def genFabricObject(fabric: list):
             tile.wires.extend(wires)
             tile.atomicWires = tempAtomicWires
     archFabric.cellTypes = GetCellTypes(fabric)
+
+    for line in archFabric.tiles:
+        for tile in line:
+            tile.atomicWires.extend(backroutedAtomicWires[tile.y][tile.x])
+
     return archFabric
 
 def genNextpnrModel(archObject: Fabric, generatePairs = True):

@@ -4099,7 +4099,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
                 edgeStr += f'  <edge src_node="{destToWireIDMap[src_name]}" sink_node="{sourceToWireIDMap[sink_name]}" switch_id="1">\n'
                 edgeStr += f'   <metadata>\n'
-                edgeStr += f'    <meta name="fasm_features"> {".".join([tileLoc, pip[0], pip[1]])} </meta>\n'
+                edgeStr += f'    <meta name="fasm_features">{".".join([tileLoc, pip[0], pip[1]])}</meta>\n'
                 edgeStr += f'   </metadata>\n'
                 edgeStr += f'  </edge>\n'
 

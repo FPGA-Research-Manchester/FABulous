@@ -1,6 +1,6 @@
 cp ../fabric_files/generic/*.* ./
 mkdir -p npnroutput
-
+mkdir -p vproutput
 
 #REM STEP 1 : Generate the switch matrix as an empty CSV file containing the adjacency matrix (gets populated in Step 2)
 python3 fabric_gen.py -GenTileSwitchMatrixCSV

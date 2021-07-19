@@ -1,1 +1,0 @@
-This directory is to contain output from the fabric generator representing a model of the fabric generated for VPR. This will come in the form of two files - architecture.xml, and routing\_resources.xml

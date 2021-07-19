@@ -4097,7 +4097,13 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                 #TODO: GENERATE NODE TAG FOR THIS ID
 
 
-                edgeStr += f'  <edge src_node="{destToWireIDMap[src_name]}" sink_node="{sourceToWireIDMap[sink_name]}" switch_id="1"/>\n'
+                edgeStr += f'  <edge src_node="{destToWireIDMap[src_name]}" sink_node="{sourceToWireIDMap[sink_name]}" switch_id="1">\n'
+                edgeStr += f'   <metadata>\n'
+                edgeStr += f'    <meta name="fasm_features"> {".".join([tileLoc, pip[0], pip[1]])} </meta>\n'
+                edgeStr += f'   </metadata>\n'
+                edgeStr += f'  </edge>\n'
+
+
 
     ### CHANNELS
 
@@ -4133,6 +4139,12 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
             gridString += f'  <grid_loc x="{tile.x}" y="{tile.y}" block_type_id="{blockIdMap[tile.tileType]}" width_offset="0" height_offset="0"/>\n'
 
 
+    ### SWITCHES
+
+
+    switchesString = '  <switch id="0" name="ipin_cblock" type="buffer">\n  </switch>'
+
+
     ### OUTPUT    
 
 
@@ -4142,6 +4154,10 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
  <channel>
 {channelString}
  </channel>
+
+ <switches>
+{switchesString}
+ </switches>
 
  <block_types>
 {blocksString}

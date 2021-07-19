@@ -3800,7 +3800,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
         tilesString += f'  <tile name="{cellType}">\n' #Add tiles and appropriate equivalent site
         tilesString += f'   <equivalent_sites>\n'
-        tilesString += f'    <site pb_type="{cellType}_site" pin_mapping="direct">\n'
+        tilesString += f'    <site pb_type="{cellType}_site" pin_mapping="direct"/>\n'
         tilesString += f'   </equivalent_sites>\n'
         #tilesString += f'   <switchblock_locations pattern="internal">\n'
         tilesString += f'  </tile>\n'
@@ -3851,6 +3851,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
             tilesString += tilePortLocStr
 
             modelsString += f'   </output_ports>\n' #close output ports tag
+            modelsString += '  </model>'
 
             #Add metadata using prefixes gathered earlier
             prefixStr = " ".join(prefixList) #Str instead of string used for variable name as it is not to be injected directly into output
@@ -3862,7 +3863,6 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
 
             pb_typesString += f'   </pb_type>\n' #Close inner tag
-
             doneBels.append(bel[0]) #Make sure we don't repeat similar BELs
 
         pb_typesString += f'  </pb_type>\n'

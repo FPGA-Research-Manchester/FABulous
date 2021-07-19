@@ -29,4 +29,4 @@
 #python3 fabric_gen.py -GenFabricHDL
 #python3 fabric_gen.py -GenFabricVerilog
 #REM STEP 7 : generate the nextpnr model
-python3 fabric_gen.py -GenVPRModel
+python3 fabric_gen.py -GenVPRModel -debug

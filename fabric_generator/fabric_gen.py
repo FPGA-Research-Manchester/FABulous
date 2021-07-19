@@ -4558,15 +4558,20 @@ if ('-GenNextpnrModel_pair'.lower() in str(sys.argv).lower()) :
 
 if ('-GenVPRModel'.lower() in str(sys.argv).lower()) :
     arguments = re.split(' ',str(sys.argv))
-
     fabricObject = genFabricObject(fabric)
 
-    xmlStr = genVPRModelXML(fabricObject, False)
+    archFile = open("vproutput/architecture.xml","w")
+    rrFile = open("vproutput/routing_resources.xml","w")
 
+    archXML = genVPRModelXML(fabricObject, False)
     rrGraphXML = genVPRModelRRGraph(fabricObject, False)
 
-    print(xmlStr)
-    print(rrGraphXML)
+    archFile.write(archXML)
+    rrFile.write(rrGraphXML)
+
+    if ('-debug'.lower() in str(sys.argv).lower()) : 
+        print(archXML)
+        print(rrGraphXML)
 
 
 if ('-GenBitstreamSpec'.lower() in str(sys.argv).lower()) :

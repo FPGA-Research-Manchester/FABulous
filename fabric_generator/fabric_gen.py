@@ -3828,7 +3828,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
             tilePortLocStr = '   <pinlocations>\n'
 
 
-            blifDict = {"InPass4_frame_config": ".input"} #Add to this to substitute subckt definitions for a pb_type with another name
+            blifDict = {} #Add to this to substitute subckt definitions for a pb_type with another name e.g. a standard name
 
             if bel[0] in blifDict:
                 blifName = blifDict[bel[0]]

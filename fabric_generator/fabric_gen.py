@@ -3782,6 +3782,8 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
   </chan_width_distr>
   <switch_block type="universal" fs="3"/>
   <connection_block input_switch_name="ipin_cblock"/>
+  <default_fc in_type="frac" in_val="0.1" out_type="abs" out_val="25"/>
+
 """ # Several of these values are fillers, as they are outside the current scope of the FABulous project
     # As we're feeding in a custom RR graph, the type of switch block shouldn't matter, so universal was just a filler - using 'custom' would require an extra tag
 
@@ -3863,9 +3865,14 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
                 pb_typesString += '     </metadata>\n'
 
 
+
             pb_typesString += f'   </pb_type>\n' #Close inner tag
             doneBels.append(bel[0]) #Make sure we don't repeat similar BELs
+        
+        pb_typesString += '<interconnect>'
 
+
+        pb_typesString += '</interconnect>'
         pb_typesString += f'  </pb_type>\n'
 
 

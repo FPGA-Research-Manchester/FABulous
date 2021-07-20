@@ -3780,9 +3780,10 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
    <x distr="uniform" peak="1.000000"/>
    <y distr="uniform" peak="1.000000"/>
   </chan_width_distr>
-  <switch_block type="custom"/>
+  <switch_block type="universal" fs="3"/>
   <connection_block input_switch_name="ipin_cblock"/>
-""" #Several of these values are fillers, as they are outside the current scope of the FABulous project
+""" # Several of these values are fillers, as they are outside the current scope of the FABulous project
+    # As we're feeding in a custom RR graph, the type of switch block shouldn't matter, so universal was just a filler - using 'custom' would require an extra tag
 
     #NOTE: Currently indentation is handled manually, but it's probably worth introducing a library/external function to handle this at some point
  
@@ -3886,7 +3887,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
 
     switchlistString = '  <switch type="buffer" name="ipin_cblock" R="551" Cin=".77e-15" Cout="4e-15" Tdel="58e-12" buf_size="27.645901"/>' #Values are fillers from templates
-    switchlistString += '  <switch type="mux"    name="buffer"  R="2e-12" Cin=".77e-15" Cout="4e-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>'
+    switchlistString += '  <switch type="mux" name="buffer"  R="2e-12" Cin=".77e-15" Cout="4e-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>'
 
 
     ### SEGMENTLIST - currently not active as routing resource graph generation will handle this.

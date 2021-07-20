@@ -3828,7 +3828,14 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
             tilePortLocStr = '   <pinlocations>\n'
 
 
-            pb_typesString += f'   <pb_type name="{bel[0]}" num_pb="{count}" blif_model=".subckt {bel[0]}">\n' #Add inner pb_type tag opener
+            blifDict = {"InPass4_frame_config": ".input"} #Add to this to substitute subckt definitions for a pb_type with another name
+
+            if bel[0] in blifDict:
+                blifName = blifDict[bel[0]]
+            else:
+                blifName = ".subckt " + bel[0]
+
+            pb_typesString += f'   <pb_type name="{bel[0]}" num_pb="{count}" blif_model="{blifName}">\n' #Add inner pb_type tag opener
 
             modelsString += f'  <model name="{bel[0]}">\n' #Add model tag
 

@@ -3799,6 +3799,8 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
     tilesString = "" #String to store tiles
     
     for cellType in archObject.cellTypes:
+        printToPB = True 
+        printToModel = True
         cTile = getTileByType(archObject, cellType)
 
         tilesString += f'  <tile name="{cellType}">\n' #Add tiles and appropriate equivalent site
@@ -3808,8 +3810,8 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
         #tilesString += f'   <switchblock_locations pattern="internal">\n'
         tilesString += f'  </tile>\n'
 
-
-        pb_typesString += f'  <pb_type name="{cellType}_site">\n' #Top layer block
+        if printToPB:
+            pb_typesString += f'  <pb_type name="{cellType}_site">\n' #Top layer block
         doneBels = []
 
 
@@ -3835,62 +3837,70 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
             else:
                 blifName = ".subckt " + bel[0]
 
-            pb_typesString += f'   <pb_type name="{bel[0]}" num_pb="{count}" blif_model="{blifName}">\n' #Add inner pb_type tag opener
+            if printToPB:
+                pb_typesString += f'   <pb_type name="{bel[0]}" num_pb="{count}" blif_model="{blifName}">\n' #Add inner pb_type tag opener
 
-            modelsString += f'  <model name="{bel[0]}">\n' #Add model tag
-
-            modelsString += f'   <input_ports>\n' #open tag for input ports in model list
+            if printToModel:
+                modelsString += f'  <model name="{bel[0]}">\n' #Add model tag
+                modelsString += f'   <input_ports>\n' #open tag for input ports in model list
 
             for cInput in bel[2]:
-                pb_typesString += f'    <input name="{cInput}" num_pins="1"/>\n' #Add input and outputs
-                modelsString += f'    <port name="{cInput}"/>\n'
+                if printToPB:
+                    pb_typesString += f'    <input name="{cInput}" num_pins="1"/>\n' #Add input and outputs
+                if printToModel:
+                    modelsString += f'    <port name="{cInput}"/>\n'
                 tilePortLocStr += f'    <loc side="bottom"> {bel[0]}.{cInput} </loc>\n' #For simplicity, we'll currently constrain all ports to the bottom of the tile
 
-            modelsString += f'   </input_ports>\n' #close input ports tag
-
-            modelsString += f'   <output_ports>\n' #open output ports tag
+            if printToModel:
+                modelsString += f'   </input_ports>\n' #close input ports tag
+                modelsString += f'   <output_ports>\n' #open output ports tag
 
 
             for cOutput in bel[3]:
-                pb_typesString += f'    <output name="{cOutput}" num_pins="1"/>\n'
-                modelsString += f'    <port name="{cOutput}"/>\n'
+                if printToPB:
+                    pb_typesString += f'    <output name="{cOutput}" num_pins="1"/>\n'
+                if printToModel:
+                    modelsString += f'    <port name="{cOutput}"/>\n'
                 tilePortLocStr += f'    <loc side="bottom"> {bel[0]}.{cOutput} </loc>\n'
 
             tilePortLocStr += '   </pinlocations>\n'
 
             tilesString += tilePortLocStr
 
-            modelsString += f'   </output_ports>\n' #close output ports tag
-            modelsString += '  </model>\n'
+            if printToModel:
+                modelsString += f'   </output_ports>\n' #close output ports tag
+                modelsString += '  </model>\n'
 
             #Add metadata using prefixes gathered earlier
             prefixStr = " ".join(prefixList) #Str instead of string used for variable name as it is not to be injected directly into output
 
             if prefixStr != "": 
-                pb_typesString += '     <metadata>\n'
-                pb_typesString += f'      <meta name="fasm_prefix">{prefixStr}</meta>\n'
-                pb_typesString += '     </metadata>\n'
+                if printToPB:
+                    pb_typesString += '     <metadata>\n'
+                    pb_typesString += f'      <meta name="fasm_prefix">{prefixStr}</meta>\n'
+                    pb_typesString += '     </metadata>\n'
 
 
-
-            pb_typesString += f'   </pb_type>\n' #Close inner tag
+            if printToPB:
+                pb_typesString += f'   </pb_type>\n' #Close inner tag
             doneBels.append(bel[0]) #Make sure we don't repeat similar BELs
         
-        pb_typesString += '   <interconnect>\n' #We now need interconnect to link every bel to the top pb_type
+        if printToPB:
+            pb_typesString += '   <interconnect>\n' #We now need interconnect to link every bel to the top pb_type
 
         for i, bel in enumerate(cTile.belsWithIO):
 
-            print(bel[2])
-            print(bel[3])
             for cInput in bel[2]:
-                pb_typesString += f'    <direct name="{cTile.tileType}_{cInput}_top_to_child" input="{cInput}" output="{bel[0]}[{i}].{cInput}"/>\n'
+                if printToPB:
+                    pb_typesString += f'    <direct name="{cTile.tileType}_{cInput}_top_to_child" input="{cInput}" output="{bel[0]}[{i}].{cInput}"/>\n'
 
             for cOutput in bel[3]:
-                pb_typesString += f'    <direct name="{cTile.tileType}_{cOutput}_child_to_top" input="{bel[0]}[{i}].{cOutput}" output="{cOutput}"/>\n'
+                if printToPB:
+                    pb_typesString += f'    <direct name="{cTile.tileType}_{cOutput}_child_to_top" input="{bel[0]}[{i}].{cOutput}" output="{cOutput}"/>\n'
 
-
-        pb_typesString += '   </interconnect>\n'
-        pb_typesString += f'  </pb_type>\n'
+        if printToPB:
+            pb_typesString += '   </interconnect>\n'
+            pb_typesString += f'  </pb_type>\n'
 
 
     ### LAYOUT

@@ -3904,9 +3904,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
     switchlistString += '  <switch type="mux" name="buffer"  R="2e-12" Cin=".77e-15" Cout="4e-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>'
 
 
-    ### SEGMENTLIST - currently not active as routing resource graph generation will handle this.
-
-    # This is experimental, to test whether a segment solution can work with selective switch matrix connections
+    ### SEGMENTLIST - contains only a filler as it is a necessity for Odin II to parse the architecture graph but we are reading a custom RR graph
 
     segmentlistString = """  <segment name="dummy" length="1" freq="1.000000" type="unidir" Rmetal="1e-12" Cmetal="22.5e-15">
    <sb type="pattern">0 0</sb>

@@ -3876,10 +3876,20 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
             pb_typesString += f'   </pb_type>\n' #Close inner tag
             doneBels.append(bel[0]) #Make sure we don't repeat similar BELs
         
-        pb_typesString += '<interconnect>'
+        pb_typesString += '   <interconnect>\n' #We now need interconnect to link every bel to the top pb_type
+
+        for i, bel in enumerate(cTile.belsWithIO):
+
+            print(bel[2])
+            print(bel[3])
+            for cInput in bel[2]:
+                pb_typesString += f'    <direct name="{cTile.tileType}_{cInput}_top_to_child" input="{cInput}" output="{bel[0]}[{i}].{cInput}"/>\n'
+
+            for cOutput in bel[3]:
+                pb_typesString += f'    <direct name="{cTile.tileType}_{cOutput}_child_to_top" input="{bel[0]}[{i}].{cOutput}" output="{cOutput}"/>\n'
 
 
-        pb_typesString += '</interconnect>'
+        pb_typesString += '   </interconnect>\n'
         pb_typesString += f'  </pb_type>\n'
 
 

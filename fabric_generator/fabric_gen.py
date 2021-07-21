@@ -3861,7 +3861,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
             tilesString += tilePortLocStr
 
             modelsString += f'   </output_ports>\n' #close output ports tag
-            modelsString += '  </model>'
+            modelsString += '  </model>\n'
 
             #Add metadata using prefixes gathered earlier
             prefixStr = " ".join(prefixList) #Str instead of string used for variable name as it is not to be injected directly into output

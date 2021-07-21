@@ -3758,6 +3758,37 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
     else:
         return (pipsStr, belsStr, templateStr, constraintStr)
 
+
+cpuIOStr = """  <pb_type name="CPU_IO_site">
+   <pb_type name="InPass4_frame_config" num_pb="2" blif_model=".input">
+    <output name="inpad" num_pins="1"/>
+     <metadata>
+      <meta name="fasm_prefix">OPA_</meta>
+     </metadata>
+   </pb_type>
+   <pb_type name="OutPass4_frame_config" num_pb="3" blif_model=".output">
+    <input name="outpad" num_pins="1"/>
+     <metadata>
+      <meta name="fasm_prefix"></meta>
+     </metadata>
+   </pb_type>
+   <interconnect>
+    <direct name="CPU_IO_OPA_O0_child_to_top" input="InPass4_frame_config[0].inpad" output="OPA_O0"/>
+
+    <direct name="CPU_IO_OPB_O0_child_to_top" input="InPass4_frame_config[1].inpad" output="OPB_O0"/>
+
+    <direct name="CPU_IO_RES0_I0_top_to_child" input="RES0_I0" output="OutPass4_frame_config[2].outpad"/>
+
+    <direct name="CPU_IO_RES1_I0_top_to_child" input="RES1_I0" output="OutPass4_frame_config[3].outpad"/>
+
+    <direct name="CPU_IO_RES2_I0_top_to_child" input="RES2_I0" output="OutPass4_frame_config[4].outpad"/>
+
+   </interconnect>
+  </pb_type>"""
+
+specialPBdict = {"CPU_IO": cpuIOStr}
+
+
 def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
     ### STYLE NOTE: As this function uses f-strings so regularly, as a standard these f-strings should be denoted with single quotes ('...') instead of double quotes ("...")
@@ -3801,6 +3832,13 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
     for cellType in archObject.cellTypes:
         printToPB = True 
         printToModel = True
+
+        if cellType in specialPBdict:
+            printToPB = False
+            printToModel = False 
+            pb_typesString += specialPBdict[cellType]
+
+            
         cTile = getTileByType(archObject, cellType)
 
         tilesString += f'  <tile name="{cellType}">\n' #Add tiles and appropriate equivalent site

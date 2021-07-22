@@ -4177,7 +4177,8 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
     for line in archObject.tiles:
         for tile in line:
-            layoutString += f'   <single type="{tile.tileType}" priority="1" x="{tile.x}" y="{tile.y}"/>\n' #Add single tag for each tile
+            if tile.tileType != "NULL": #We do not need to specify if the tile is empty as all tiles default to EMPTY in VPR
+                layoutString += f'   <single type="{tile.tileType}" priority="1" x="{tile.x}" y="{tile.y}"/>\n' #Add single tag for each tile
 
     layoutString += '  </fixed_layout>\n'
 

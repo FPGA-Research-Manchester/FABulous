@@ -3934,7 +3934,15 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
         if printToPB:
             pb_typesString += '   <interconnect>\n' #We now need interconnect to link every bel to the top pb_type
 
-        for i, bel in enumerate(cTile.belsWithIO):
+        belCountDict = {} #Use dict to track how many of each bel we have seen
+
+        for bel in cTile.belsWithIO:
+            if bel[0] in belCountDict: #If we've already seen one of the bel
+                i = belCountDict[bel[0]] #Then our index is the number we've already seen (indexing starts at 0)
+                belCountDict[bel[0]] = i + 1 #And we increment our seen count by 1
+            else:
+                i = 0
+                belCountDict[bel[0]] = 1 #Otherwise we set our seen count to 1 and set i to 0
 
             for cInput in bel[2]:
                 if printToPB:

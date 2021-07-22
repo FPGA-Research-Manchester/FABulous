@@ -3845,13 +3845,17 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
         tilesString += f'   <equivalent_sites>\n'
         tilesString += f'    <site pb_type="{cellType}_site" pin_mapping="direct"/>\n'
         tilesString += f'   </equivalent_sites>\n'
-        #tilesString += f'   <switchblock_locations pattern="internal">\n'
         tilesString += f'  </tile>\n'
 
         if printToPB:
             pb_typesString += f'  <pb_type name="{cellType}_site">\n' #Top layer block
         doneBels = []
 
+
+        blifDict = {} #Add to this to substitute subckt definitions for a pb_type with another name e.g. a standard name
+
+        tileInputs = [] #Track the tile's top level inputs and outputs for the top pb_type definition
+        tileOutputs = [] 
 
         for bel in cTile.belsWithIO: #Create second layer (leaf) blocks for each bel
             if bel[0] in doneBels: #We only want one tag for each kind of bel so we track which ones we have already done
@@ -3867,8 +3871,8 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
             tilePortLocStr = '   <pinlocations>\n'
 
-
-            blifDict = {} #Add to this to substitute subckt definitions for a pb_type with another name e.g. a standard name
+            tileInputs.extend(bel[2])
+            tileOutputs.extend(bel[3])
 
             if bel[0] in blifDict:
                 blifName = blifDict[bel[0]]
@@ -3886,8 +3890,9 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
                 if printToPB:
                     pb_typesString += f'    <input name="{cInput}" num_pins="1"/>\n' #Add input and outputs
                 if printToModel:
-                    modelsString += f'    <port name="{cInput}"/>\n'
+                    modelsString += f'    <port name="{cInput.removeprefix(bel[1])}"/>\n' #Remove prefix from model as it is generic
                 tilePortLocStr += f'    <loc side="bottom"> {bel[0]}.{cInput} </loc>\n' #For simplicity, we'll currently constrain all ports to the bottom of the tile
+
 
             if printToModel:
                 modelsString += f'   </input_ports>\n' #close input ports tag
@@ -3898,7 +3903,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
                 if printToPB:
                     pb_typesString += f'    <output name="{cOutput}" num_pins="1"/>\n'
                 if printToModel:
-                    modelsString += f'    <port name="{cOutput}"/>\n'
+                    modelsString += f'    <port name="{cOutput.removeprefix(bel[1])}"/>\n' #Remove prefix again
                 tilePortLocStr += f'    <loc side="bottom"> {bel[0]}.{cOutput} </loc>\n'
 
             tilePortLocStr += '   </pinlocations>\n'
@@ -3930,11 +3935,11 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
             for cInput in bel[2]:
                 if printToPB:
-                    pb_typesString += f'    <direct name="{cTile.tileType}_{cInput}_top_to_child" input="{cInput}" output="{bel[0]}[{i}].{cInput}"/>\n'
+                    pb_typesString += f'    <direct name="{cTile.tileType}_{cInput}_top_to_child" input="{cInput}" output="{bel[0]}[{i}].{cInput.removeprefix(bel[1])}"/>\n'
 
             for cOutput in bel[3]:
                 if printToPB:
-                    pb_typesString += f'    <direct name="{cTile.tileType}_{cOutput}_child_to_top" input="{bel[0]}[{i}].{cOutput}" output="{cOutput}"/>\n'
+                    pb_typesString += f'    <direct name="{cTile.tileType}_{cOutput}_child_to_top" input="{bel[0]}[{i}].{cOutput.removeprefix(bel[1])}" output="{cOutput}"/>\n'
 
         if printToPB:
             pb_typesString += '   </interconnect>\n'

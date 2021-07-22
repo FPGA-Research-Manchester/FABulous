@@ -3858,6 +3858,11 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
         tileOutputs = [] 
 
         for bel in cTile.belsWithIO: #Create second layer (leaf) blocks for each bel
+
+            tileInputs.extend(bel[2])
+            tileOutputs.extend(bel[3])
+
+        
             if bel[0] in doneBels: #We only want one tag for each kind of bel so we track which ones we have already done
                 continue
 
@@ -3871,8 +3876,6 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
             tilePortLocStr = '   <pinlocations>\n'
 
-            tileInputs.extend(bel[2])
-            tileOutputs.extend(bel[3])
 
             if bel[0] in blifDict:
                 blifName = blifDict[bel[0]]

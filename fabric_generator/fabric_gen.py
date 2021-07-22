@@ -3862,7 +3862,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
             tileInputs.extend(bel[2])
             tileOutputs.extend(bel[3])
 
-        
+
             if bel[0] in doneBels: #We only want one tag for each kind of bel so we track which ones we have already done
                 continue
 
@@ -3938,11 +3938,11 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
             for cInput in bel[2]:
                 if printToPB:
-                    pb_typesString += f'    <direct name="{cTile.tileType}_{cInput}_top_to_child" input="{cInput}" output="{bel[0]}[{i}].{cInput.removeprefix(bel[1])}"/>\n'
+                    pb_typesString += f'    <direct name="{cTile.tileType}_{cInput}_top_to_child" input="{cellType}_site.{cInput}" output="{bel[0]}[{i}].{cInput.removeprefix(bel[1])}"/>\n'
 
             for cOutput in bel[3]:
                 if printToPB:
-                    pb_typesString += f'    <direct name="{cTile.tileType}_{cOutput}_child_to_top" input="{bel[0]}[{i}].{cOutput.removeprefix(bel[1])}" output="{cOutput}"/>\n'
+                    pb_typesString += f'    <direct name="{cTile.tileType}_{cOutput}_child_to_top" input="{bel[0]}[{i}].{cOutput.removeprefix(bel[1])}" output="{cellType}_site.{cOutput}"/>\n'
 
         if printToPB:
             pb_typesString += '   </interconnect>\n'

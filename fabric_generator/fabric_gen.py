@@ -3773,21 +3773,40 @@ cpuIOStr = """  <pb_type name="CPU_IO_site">
      </metadata>
    </pb_type>
    <interconnect>
-    <direct name="CPU_IO_OPA_O0_child_to_top" input="InPass4_frame_config[0].inpad" output="OPA_O0"/>
+    <direct name="CPU_IO_OPA_O0_child_to_top" input="InPass4_frame_config[0].inpad" output="CPU_IO_site.OPA_O0"/>
 
-    <direct name="CPU_IO_OPB_O0_child_to_top" input="InPass4_frame_config[1].inpad" output="OPB_O0"/>
+    <direct name="CPU_IO_OPB_O0_child_to_top" input="InPass4_frame_config[1].inpad" output="CPU_IO_site.OPB_O0"/>
 
-    <direct name="CPU_IO_RES0_I0_top_to_child" input="RES0_I0" output="OutPass4_frame_config[2].outpad"/>
+    <direct name="CPU_IO_RES0_I0_top_to_child" input="CPU_IO_site.RES0_I0" output="OutPass4_frame_config[0].outpad"/>
 
-    <direct name="CPU_IO_RES1_I0_top_to_child" input="RES1_I0" output="OutPass4_frame_config[3].outpad"/>
+    <direct name="CPU_IO_RES1_I0_top_to_child" input="CPU_IO_site.RES1_I0" output="OutPass4_frame_config[1].outpad"/>
 
-    <direct name="CPU_IO_RES2_I0_top_to_child" input="RES2_I0" output="OutPass4_frame_config[4].outpad"/>
+    <direct name="CPU_IO_RES2_I0_top_to_child" input="CPU_IO_site.RES2_I0" output="OutPass4_frame_config[2].outpad"/>
 
    </interconnect>
+   <input name="RES0_I0" num_pins="1"/>
+   <input name="RES0_I1" num_pins="1"/>
+   <input name="RES0_I2" num_pins="1"/>
+   <input name="RES0_I3" num_pins="1"/>
+   <input name="RES1_I0" num_pins="1"/>
+   <input name="RES1_I1" num_pins="1"/>
+   <input name="RES1_I2" num_pins="1"/>
+   <input name="RES1_I3" num_pins="1"/>
+   <input name="RES2_I0" num_pins="1"/>
+   <input name="RES2_I1" num_pins="1"/>
+   <input name="RES2_I2" num_pins="1"/>
+   <input name="RES2_I3" num_pins="1"/>
+   <output name="OPA_O0" num_pins="1"/>
+   <output name="OPA_O1" num_pins="1"/>
+   <output name="OPA_O2" num_pins="1"/>
+   <output name="OPA_O3" num_pins="1"/>
+   <output name="OPB_O0" num_pins="1"/>
+   <output name="OPB_O1" num_pins="1"/>
+   <output name="OPB_O2" num_pins="1"/>
+   <output name="OPB_O3" num_pins="1"/>
   </pb_type>"""
 
 specialPBdict = {"CPU_IO": cpuIOStr}
-
 
 def genVPRModelXML(archObject: Fabric, generatePairs = True):
 

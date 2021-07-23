@@ -3323,6 +3323,12 @@ def findPipList(csvFile: list, returnDict: bool = False, mapSourceToSinks: bool 
         return pipsdict
     return pips
 
+def removeStringPrefix(mainStr: str, prefix: str):
+    if mainStr[0:len(prefix)] == prefix:
+        return mainStr[len(prefix):]
+    else:
+        return mainStr
+
 def genFabricObject(fabric: list):
     #The following iterates through the tile designations on the fabric
     archFabric = Fabric(len(fabric), len(fabric[0]))

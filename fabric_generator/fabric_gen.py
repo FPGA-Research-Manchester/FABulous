@@ -4146,7 +4146,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
             if printToPB:
                 for cInput in unprefixedInputs:
                     for cOutput in unprefixedOutputs:
-                        pb_typesString += f'    <delay_constant max="300e-12" in_port="{cInput}" out_port="{cOutput}"/>\n'
+                        pb_typesString += f'    <delay_constant max="300e-12" in_port="{bel[0]}.{cInput}" out_port="{bel[0]}.{cOutput}"/>\n'
 
 
 

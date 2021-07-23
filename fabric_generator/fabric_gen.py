@@ -4104,24 +4104,28 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
                 modelsString += f'  <model name="{bel[0]}">\n' #Add model tag
                 modelsString += f'   <input_ports>\n' #open tag for input ports in model list
 
-            allOutsStr = " ".join([removeStringPrefix(cOutput, bel[1]) for cOutput in bel[3]])
 
-            for cInput in bel[2]:
+            unprefixedInputs = [removeStringPrefix(cInput, bel[1]) for cInput in bel[2]] #Create lists of ports without prefixes for our generic modelling
+            unprefixedOutputs = [removeStringPrefix(cOutput, bel[1]) for cOutput in bel[3]]
+
+            allOutsStr = " ".join(unprefixedOutputs)
+
+            for cInput in unprefixedInputs:
                 if printToPB:
-                    pb_typesString += f'    <input name="{removeStringPrefix(cInput, bel[1])}" num_pins="1"/>\n' #Add input and outputs
+                    pb_typesString += f'    <input name="{cInput}" num_pins="1"/>\n' #Add input and outputs
                 if printToModel:
-                    modelsString += f'    <port name="{removeStringPrefix(cInput, bel[1])}" combinational_sink_ports="{allOutsStr}"/>\n' #Remove prefix from model as it is generic and for now add all outputs as combinational sinks
+                    modelsString += f'    <port name="{cInput}" combinational_sink_ports="{allOutsStr}"/>\n' #Add all outputs as combinational sinks
 
             if printToModel:
                 modelsString += f'   </input_ports>\n' #close input ports tag
                 modelsString += f'   <output_ports>\n' #open output ports tag
 
 
-            for cOutput in bel[3]:
+            for cOutput in unprefixedOutputs:
                 if printToPB:
-                    pb_typesString += f'    <output name="{removeStringPrefix(cOutput, bel[1])}" num_pins="1"/>\n'
+                    pb_typesString += f'    <output name="{cOutput}" num_pins="1"/>\n' #Add outputs to pb and model
                 if printToModel:
-                    modelsString += f'    <port name="{removeStringPrefix(cOutput, bel[1])}"/>\n' #Remove prefix again
+                    modelsString += f'    <port name="{cOutput}"/>\n'
 
             if printToModel:
                 modelsString += f'   </output_ports>\n' #close output ports tag
@@ -4140,9 +4144,9 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
             #Generate delay constants - for the time being, we will assume that all inputs are combinatorially connected to all outputs
 
             if printToPB:
-                for cInput in bel[2]:
-                    for cOutput in bel[3]:
-                        pb_typesString += f'    <delay_constant max="300e-12" in_port="{removeStringPrefix(cInput, bel[1])}" out_port="{removeStringPrefix(cOutput, bel[1])}"/>\n'
+                for cInput in unprefixedInputs:
+                    for cOutput in unprefixedOutputs:
+                        pb_typesString += f'    <delay_constant max="300e-12" in_port="{cInput}" out_port="{cOutput}"/>\n'
 
 
 

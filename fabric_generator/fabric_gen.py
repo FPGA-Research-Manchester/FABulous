@@ -3819,6 +3819,12 @@ lut4abStr = """  <pb_type name="LUT4AB">
      <metadata>
       <meta name="fasm_prefix">LA_ LB_ LC_ LD_ LE_ LF_ LG_ LH_</meta>
      </metadata>
+     <delay_matrix type="max" in_port="LUT4c_frame_config.in" out_port="LUT4c_frame_config.out">
+      2.690e-10
+      2.690e-10
+      2.690e-10
+      2.690e-10
+     </delay_matrix>
    </pb_type>
    <pb_type name="MUX8LUT_frame_config" num_pb="1" blif_model=".subckt MUX8LUT_frame_config">
     <input name="A" num_pins="1"/>
@@ -3968,7 +3974,8 @@ lut4abStr = """  <pb_type name="LUT4AB">
    <output name="M_AD" num_pins="1"/>
    <output name="M_AH" num_pins="1"/>
    <output name="M_EF" num_pins="1"/>
-  </pb_type>"""
+  </pb_type>
+"""
 
 specialPBdict = {"CPU_IO": cpuIOStr, "LUT4AB":lut4abStr}
 
@@ -4097,11 +4104,13 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
                 modelsString += f'  <model name="{bel[0]}">\n' #Add model tag
                 modelsString += f'   <input_ports>\n' #open tag for input ports in model list
 
+            allOutsStr = " ".join([removeStringPrefix(cOutput, bel[1]) for cOutput in bel[3]])
+
             for cInput in bel[2]:
                 if printToPB:
                     pb_typesString += f'    <input name="{removeStringPrefix(cInput, bel[1])}" num_pins="1"/>\n' #Add input and outputs
                 if printToModel:
-                    modelsString += f'    <port name="{removeStringPrefix(cInput, bel[1])}"/>\n' #Remove prefix from model as it is generic
+                    modelsString += f'    <port name="{removeStringPrefix(cInput, bel[1])}" combinational_sink_ports="{allOutsStr}"/>\n' #Remove prefix from model as it is generic and for now add all outputs as combinational sinks
 
             if printToModel:
                 modelsString += f'   </input_ports>\n' #close input ports tag
@@ -4126,6 +4135,15 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
                     pb_typesString += '     <metadata>\n'
                     pb_typesString += f'      <meta name="fasm_prefix">{prefixStr}</meta>\n'
                     pb_typesString += '     </metadata>\n'
+
+
+            #Generate delay constants - for the time being, we will assume that all inputs are combinatorially connected to all outputs
+
+            if printToPB:
+                for cInput in bel[2]:
+                    for cOutput in bel[3]:
+                        pb_typesString += f'    <delay_constant max="300e-12" in_port="{removeStringPrefix(cInput, bel[1])}" out_port="{removeStringPrefix(cOutput, bel[1])}"/>\n'
+
 
 
             if printToPB:

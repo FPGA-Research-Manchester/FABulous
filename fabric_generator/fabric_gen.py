@@ -3819,6 +3819,12 @@ lut4abStr = """  <pb_type name="LUT4AB">
      <pb_type name="lut4" blif_model=".names" num_pb="1">
       <input name="in" num_pins="4"/>
       <output name="out" num_pins="1"/>
+      <delay_matrix type="max" in_port="lut4.in" out_port="lut4.out">
+       2.690e-10
+       2.690e-10
+       2.690e-10
+       2.690e-10
+      </delay_matrix>
      </pb_type>
 
      <pb_type name="ff" blif_model=".latch" class="flipflop" num_pb="1">
@@ -3837,6 +3843,12 @@ lut4abStr = """  <pb_type name="LUT4AB">
      <pb_type name="lut4" blif_model=".names" num_pb="1">
       <input name="in" num_pins="4"/>
       <output name="out" num_pins="1"/>
+      <delay_matrix type="max" in_port="lut4.in" out_port="lut4.out">
+       2.690e-10
+       2.690e-10
+       2.690e-10
+       2.690e-10
+      </delay_matrix>
      </pb_type>
      <interconnect>
       <direct name="lut_to_out" input="lut4.out" output="LUT4c_frame_config.O"/>

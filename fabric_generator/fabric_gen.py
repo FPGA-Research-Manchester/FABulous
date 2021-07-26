@@ -4159,6 +4159,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
             pb_typesString += '   <interconnect>\n' #We now need interconnect to link every bel to the top pb_type
 
         belCountDict = {} #Use dict to track how many of each bel we have seen
+        belIndexList = [] #Shows what index the bel at the relevant index has
 
         for bel in cTile.belsWithIO:
             if bel[0] in belCountDict: #If we've already seen one of the bel
@@ -4167,6 +4168,8 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
             else:
                 i = 0
                 belCountDict[bel[0]] = 1 #Otherwise we set our seen count to 1 and set i to 0
+
+            belIndexList.append(i)
 
             for cInput in bel[2]:
                 if printToPB:
@@ -4184,7 +4187,17 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
             for pip in cTile.pips:
                 if (pip[0] in tileOutputs) and (pip[1] in tileInputs): #If we have a pip connecting a bel output to a bel input we add it as a direct connection
-                    pb_typesString += f'    <direct name="{pip[0]}_{pip[1]}_pip" input="{cellType}.{pip[0]}" output="{cellType}.{pip[1]}"/>\n'
+                    #sourceBelIndex = [cTile.belsWithIO[3]].index(pip[0])
+                    for i, bel in enumerate(cTile.belsWithIO):
+                        if pip[0] in bel[3]:
+                            sourceBel = bel
+                            sourceIndex = belIndexList[i]
+                        if pip[1] in bel[2]:
+                            sinkBel = bel
+                            sinkIndex = belIndexList[i]
+                    sourceStr = f'{sourceBel[0]}[{sourceIndex}].{removeStringPrefix(pip[0], sourceBel[1])}'
+                    sinkStr = f'{sinkBel[0]}[{sinkIndex}].{removeStringPrefix(pip[1], sinkBel[1])}'
+                    pb_typesString += f'    <direct name="{pip[0]}_{pip[1]}_pip" input="{sourceStr}" output="{sinkStr}"/>\n'
      
 
             pb_typesString += '   </interconnect>\n'

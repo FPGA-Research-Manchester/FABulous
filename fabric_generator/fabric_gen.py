@@ -3323,7 +3323,8 @@ def findPipList(csvFile: list, returnDict: bool = False, mapSourceToSinks: bool 
         return pipsdict
     return pips
 
-def removeStringPrefix(mainStr: str, prefix: str):
+#Method to remove a known prefix from a string if it is present at the start - this is provided as str.removeprefix in Python 3.9 but has been implemented for compatibility
+def removeStringPrefix(mainStr: str, prefix: str): 
     if mainStr[0:len(prefix)] == prefix:
         return mainStr[len(prefix):]
     else:
@@ -4171,11 +4172,21 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
                 if printToPB:
                     pb_typesString += f'    <direct name="{cTile.tileType}_{cInput}_top_to_child" input="{cellType}.{cInput}" output="{bel[0]}[{i}].{removeStringPrefix(cInput, bel[1])}"/>\n'
 
+
             for cOutput in bel[3]:
                 if printToPB:
                     pb_typesString += f'    <direct name="{cTile.tileType}_{cOutput}_child_to_top" input="{bel[0]}[{i}].{removeStringPrefix(cOutput, bel[1])}" output="{cellType}.{cOutput}"/>\n'
 
+
+
+
         if printToPB:
+
+            for pip in cTile.pips:
+                if (pip[0] in tileOutputs) and (pip[1] in tileInputs): #If we have a pip connecting a bel output to a bel input we add it as a direct connection
+                    pb_typesString += f'    <direct name="{pip[0]}_{pip[1]}_pip" input="{cellType}.{pip[0]}" output="{cellType}.{pip[1]}"/>\n'
+     
+
             pb_typesString += '   </interconnect>\n'
             for cInput in tileInputs:
                 pb_typesString += f'   <input name="{cInput}" num_pins="1"/>\n'

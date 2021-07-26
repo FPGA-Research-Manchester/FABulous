@@ -3814,18 +3814,50 @@ cpuIOStr = """  <pb_type name="CPU_IO">
   </pb_type>"""
 
 lut4abStr = """  <pb_type name="LUT4AB">
-   <pb_type name="LUT4c_frame_config" num_pb="8" blif_model=".names">
-    <input name="in" num_pins="4"/>
-    <output name="out" num_pins="1"/>
-     <metadata>
-      <meta name="fasm_prefix">LA_ LB_ LC_ LD_ LE_ LF_ LG_ LH_</meta>
-     </metadata>
-     <delay_matrix type="max" in_port="LUT4c_frame_config.in" out_port="LUT4c_frame_config.out">
-      2.690e-10
-      2.690e-10
-      2.690e-10
-      2.690e-10
-     </delay_matrix>
+   <pb_type name="LUT4c_frame_config" num_pb="8">
+    <mode name="ff_enabled" disable_packing="false">
+     <pb_type name="lut4" blif_model=".names" num_pb="1">
+      <input name="in" num_pins="4"/>
+      <output name="out" num_pins="1"/>
+     </pb_type>
+
+     <pb_type name="ff" blif_model=".latch" class="flipflop" num_pb="1">
+      <input name="D" num_pins="1" port_class="D"/>
+      <output name="Q" num_pins="1" port_class="Q"/>
+      <clock name="clk" num_pins="1" port_class="clock"/>
+      <T_setup value="2.448e-10" port="ff.D" clock="clk"/>
+      <T_clock_to_Q max="7.732e-11" port="ff.Q" clock="clk"/>                
+     </pb_type>
+     <interconnect>
+      <direct name="lut_to_ff" input="lut4.out" output="ff.D"/>
+      <direct name="ff_to_out" input="ff.Q" output="LUT4c_frame_config.O"/>
+     </interconnect>
+    </mode>
+    <mode name="ff_disabled" disable_packing="false">
+     <pb_type name="lut4" blif_model=".names" num_pb="1">
+      <input name="in" num_pins="4"/>
+      <output name="out" num_pins="1"/>
+     </pb_type>
+     <interconnect>
+      <direct name="lut_to_out" input="lut4.out" output="LUT4c_frame_config.O"/>
+     </interconnect>
+    </mode>
+    <input name="I0" num_pins="1"/>    
+    <input name="I1" num_pins="1"/>
+    <input name="I2" num_pins="1"/>
+    <input name="I3" num_pins="1"/>
+    <input name="Ci" num_pins="1"/>
+    <output name="O" num_pins="1"/>
+    <output name="Co" num_pins="1"/>
+    <metadata>
+     <meta name="fasm_prefix">LA_ LB_ LC_ LD_ LE_ LF_ LG_ LH_</meta>
+    </metadata>    
+    <interconnect>
+     <direct name="I0_to_LUT_in" input="LUT4c_frame_config.I0" output="lut4.in[0]"/>
+     <direct name="I1_to_LUT_in" input="LUT4c_frame_config.I1" output="lut4.in[1]"/>
+     <direct name="I2_to_LUT_in" input="LUT4c_frame_config.I2" output="lut4.in[2]"/>
+     <direct name="I3_to_LUT_in" input="LUT4c_frame_config.I3" output="lut4.in[3]"/>
+    </interconnect>    
    </pb_type>
    <pb_type name="MUX8LUT_frame_config" num_pb="1" blif_model=".subckt MUX8LUT_frame_config">
     <input name="A" num_pins="1"/>
@@ -3846,46 +3878,62 @@ lut4abStr = """  <pb_type name="LUT4AB">
     <output name="M_EF" num_pins="1"/>
    </pb_type>
    <interconnect>
-    <direct name="LUT4AB_LA_I0_top_to_child" input="LUT4AB.LA_I0" output="LUT4c_frame_config[0].in[0]"/>
-    <direct name="LUT4AB_LA_I1_top_to_child" input="LUT4AB.LA_I1" output="LUT4c_frame_config[0].in[1]"/>
-    <direct name="LUT4AB_LA_I2_top_to_child" input="LUT4AB.LA_I2" output="LUT4c_frame_config[0].in[2]"/>
-    <direct name="LUT4AB_LA_I3_top_to_child" input="LUT4AB.LA_I3" output="LUT4c_frame_config[0].in[3]"/>
-    <direct name="LUT4AB_LA_O_child_to_top" input="LUT4c_frame_config[0].out" output="LUT4AB.LA_O"/>
-    <direct name="LUT4AB_LB_I0_top_to_child" input="LUT4AB.LB_I0" output="LUT4c_frame_config[1].in[0]"/>
-    <direct name="LUT4AB_LB_I1_top_to_child" input="LUT4AB.LB_I1" output="LUT4c_frame_config[1].in[1]"/>
-    <direct name="LUT4AB_LB_I2_top_to_child" input="LUT4AB.LB_I2" output="LUT4c_frame_config[1].in[2]"/>
-    <direct name="LUT4AB_LB_I3_top_to_child" input="LUT4AB.LB_I3" output="LUT4c_frame_config[1].in[3]"/>
-    <direct name="LUT4AB_LB_O_child_to_top" input="LUT4c_frame_config[1].out" output="LUT4AB.LB_O"/>
-    <direct name="LUT4AB_LC_I0_top_to_child" input="LUT4AB.LC_I0" output="LUT4c_frame_config[2].in[0]"/>
-    <direct name="LUT4AB_LC_I1_top_to_child" input="LUT4AB.LC_I1" output="LUT4c_frame_config[2].in[1]"/>
-    <direct name="LUT4AB_LC_I2_top_to_child" input="LUT4AB.LC_I2" output="LUT4c_frame_config[2].in[2]"/>
-    <direct name="LUT4AB_LC_I3_top_to_child" input="LUT4AB.LC_I3" output="LUT4c_frame_config[2].in[3]"/>
-    <direct name="LUT4AB_LC_O_child_to_top" input="LUT4c_frame_config[2].out" output="LUT4AB.LC_O"/>
-    <direct name="LUT4AB_LD_I0_top_to_child" input="LUT4AB.LD_I0" output="LUT4c_frame_config[3].in[0]"/>
-    <direct name="LUT4AB_LD_I1_top_to_child" input="LUT4AB.LD_I1" output="LUT4c_frame_config[3].in[1]"/>
-    <direct name="LUT4AB_LD_I2_top_to_child" input="LUT4AB.LD_I2" output="LUT4c_frame_config[3].in[2]"/>
-    <direct name="LUT4AB_LD_I3_top_to_child" input="LUT4AB.LD_I3" output="LUT4c_frame_config[3].in[3]"/>
-    <direct name="LUT4AB_LD_O_child_to_top" input="LUT4c_frame_config[3].out" output="LUT4AB.LD_O"/>
-    <direct name="LUT4AB_LE_I0_top_to_child" input="LUT4AB.LE_I0" output="LUT4c_frame_config[4].in[0]"/>
-    <direct name="LUT4AB_LE_I1_top_to_child" input="LUT4AB.LE_I1" output="LUT4c_frame_config[4].in[1]"/>
-    <direct name="LUT4AB_LE_I2_top_to_child" input="LUT4AB.LE_I2" output="LUT4c_frame_config[4].in[2]"/>
-    <direct name="LUT4AB_LE_I3_top_to_child" input="LUT4AB.LE_I3" output="LUT4c_frame_config[4].in[3]"/>
-    <direct name="LUT4AB_LE_O_child_to_top" input="LUT4c_frame_config[4].out" output="LUT4AB.LE_O"/>
-    <direct name="LUT4AB_LF_I0_top_to_child" input="LUT4AB.LF_I0" output="LUT4c_frame_config[5].in[0]"/>
-    <direct name="LUT4AB_LF_I1_top_to_child" input="LUT4AB.LF_I1" output="LUT4c_frame_config[5].in[1]"/>
-    <direct name="LUT4AB_LF_I2_top_to_child" input="LUT4AB.LF_I2" output="LUT4c_frame_config[5].in[2]"/>
-    <direct name="LUT4AB_LF_I3_top_to_child" input="LUT4AB.LF_I3" output="LUT4c_frame_config[5].in[3]"/>
-    <direct name="LUT4AB_LF_O_child_to_top" input="LUT4c_frame_config[5].out" output="LUT4AB.LF_O"/>
-    <direct name="LUT4AB_LG_I0_top_to_child" input="LUT4AB.LG_I0" output="LUT4c_frame_config[6].in[0]"/>
-    <direct name="LUT4AB_LG_I1_top_to_child" input="LUT4AB.LG_I1" output="LUT4c_frame_config[6].in[1]"/>
-    <direct name="LUT4AB_LG_I2_top_to_child" input="LUT4AB.LG_I2" output="LUT4c_frame_config[6].in[2]"/>
-    <direct name="LUT4AB_LG_I3_top_to_child" input="LUT4AB.LG_I3" output="LUT4c_frame_config[6].in[3]"/>
-    <direct name="LUT4AB_LG_O_child_to_top" input="LUT4c_frame_config[6].out" output="LUT4AB.LG_O"/>
-    <direct name="LUT4AB_LH_I0_top_to_child" input="LUT4AB.LH_I0" output="LUT4c_frame_config[7].in[0]"/>
-    <direct name="LUT4AB_LH_I1_top_to_child" input="LUT4AB.LH_I1" output="LUT4c_frame_config[7].in[1]"/>
-    <direct name="LUT4AB_LH_I2_top_to_child" input="LUT4AB.LH_I2" output="LUT4c_frame_config[7].in[2]"/>
-    <direct name="LUT4AB_LH_I3_top_to_child" input="LUT4AB.LH_I3" output="LUT4c_frame_config[7].in[3]"/>
-    <direct name="LUT4AB_LH_O_child_to_top" input="LUT4c_frame_config[7].out" output="LUT4AB.LH_O"/>
+    <direct name="LUT4AB_LA_I0_top_to_child" input="LUT4AB.LA_I0" output="LUT4c_frame_config[0].I0"/>
+    <direct name="LUT4AB_LA_I1_top_to_child" input="LUT4AB.LA_I1" output="LUT4c_frame_config[0].I1"/>
+    <direct name="LUT4AB_LA_I2_top_to_child" input="LUT4AB.LA_I2" output="LUT4c_frame_config[0].I2"/>
+    <direct name="LUT4AB_LA_I3_top_to_child" input="LUT4AB.LA_I3" output="LUT4c_frame_config[0].I3"/>
+    <direct name="LUT4AB_LA_Ci_top_to_child" input="LUT4AB.LA_Ci" output="LUT4c_frame_config[0].Ci"/>
+    <direct name="LUT4AB_LA_O_child_to_top" input="LUT4c_frame_config[0].O" output="LUT4AB.LA_O"/>
+    <direct name="LUT4AB_LA_Co_child_to_top" input="LUT4c_frame_config[0].Co" output="LUT4AB.LA_Co"/>
+    <direct name="LUT4AB_LB_I0_top_to_child" input="LUT4AB.LB_I0" output="LUT4c_frame_config[1].I0"/>
+    <direct name="LUT4AB_LB_I1_top_to_child" input="LUT4AB.LB_I1" output="LUT4c_frame_config[1].I1"/>
+    <direct name="LUT4AB_LB_I2_top_to_child" input="LUT4AB.LB_I2" output="LUT4c_frame_config[1].I2"/>
+    <direct name="LUT4AB_LB_I3_top_to_child" input="LUT4AB.LB_I3" output="LUT4c_frame_config[1].I3"/>
+    <direct name="LUT4AB_LB_Ci_top_to_child" input="LUT4AB.LB_Ci" output="LUT4c_frame_config[1].Ci"/>
+    <direct name="LUT4AB_LB_O_child_to_top" input="LUT4c_frame_config[1].O" output="LUT4AB.LB_O"/>
+    <direct name="LUT4AB_LB_Co_child_to_top" input="LUT4c_frame_config[1].Co" output="LUT4AB.LB_Co"/>
+    <direct name="LUT4AB_LC_I0_top_to_child" input="LUT4AB.LC_I0" output="LUT4c_frame_config[2].I0"/>
+    <direct name="LUT4AB_LC_I1_top_to_child" input="LUT4AB.LC_I1" output="LUT4c_frame_config[2].I1"/>
+    <direct name="LUT4AB_LC_I2_top_to_child" input="LUT4AB.LC_I2" output="LUT4c_frame_config[2].I2"/>
+    <direct name="LUT4AB_LC_I3_top_to_child" input="LUT4AB.LC_I3" output="LUT4c_frame_config[2].I3"/>
+    <direct name="LUT4AB_LC_Ci_top_to_child" input="LUT4AB.LC_Ci" output="LUT4c_frame_config[2].Ci"/>
+    <direct name="LUT4AB_LC_O_child_to_top" input="LUT4c_frame_config[2].O" output="LUT4AB.LC_O"/>
+    <direct name="LUT4AB_LC_Co_child_to_top" input="LUT4c_frame_config[2].Co" output="LUT4AB.LC_Co"/>
+    <direct name="LUT4AB_LD_I0_top_to_child" input="LUT4AB.LD_I0" output="LUT4c_frame_config[3].I0"/>
+    <direct name="LUT4AB_LD_I1_top_to_child" input="LUT4AB.LD_I1" output="LUT4c_frame_config[3].I1"/>
+    <direct name="LUT4AB_LD_I2_top_to_child" input="LUT4AB.LD_I2" output="LUT4c_frame_config[3].I2"/>
+    <direct name="LUT4AB_LD_I3_top_to_child" input="LUT4AB.LD_I3" output="LUT4c_frame_config[3].I3"/>
+    <direct name="LUT4AB_LD_Ci_top_to_child" input="LUT4AB.LD_Ci" output="LUT4c_frame_config[3].Ci"/>
+    <direct name="LUT4AB_LD_O_child_to_top" input="LUT4c_frame_config[3].O" output="LUT4AB.LD_O"/>
+    <direct name="LUT4AB_LD_Co_child_to_top" input="LUT4c_frame_config[3].Co" output="LUT4AB.LD_Co"/>
+    <direct name="LUT4AB_LE_I0_top_to_child" input="LUT4AB.LE_I0" output="LUT4c_frame_config[4].I0"/>
+    <direct name="LUT4AB_LE_I1_top_to_child" input="LUT4AB.LE_I1" output="LUT4c_frame_config[4].I1"/>
+    <direct name="LUT4AB_LE_I2_top_to_child" input="LUT4AB.LE_I2" output="LUT4c_frame_config[4].I2"/>
+    <direct name="LUT4AB_LE_I3_top_to_child" input="LUT4AB.LE_I3" output="LUT4c_frame_config[4].I3"/>
+    <direct name="LUT4AB_LE_Ci_top_to_child" input="LUT4AB.LE_Ci" output="LUT4c_frame_config[4].Ci"/>
+    <direct name="LUT4AB_LE_O_child_to_top" input="LUT4c_frame_config[4].O" output="LUT4AB.LE_O"/>
+    <direct name="LUT4AB_LE_Co_child_to_top" input="LUT4c_frame_config[4].Co" output="LUT4AB.LE_Co"/>
+    <direct name="LUT4AB_LF_I0_top_to_child" input="LUT4AB.LF_I0" output="LUT4c_frame_config[5].I0"/>
+    <direct name="LUT4AB_LF_I1_top_to_child" input="LUT4AB.LF_I1" output="LUT4c_frame_config[5].I1"/>
+    <direct name="LUT4AB_LF_I2_top_to_child" input="LUT4AB.LF_I2" output="LUT4c_frame_config[5].I2"/>
+    <direct name="LUT4AB_LF_I3_top_to_child" input="LUT4AB.LF_I3" output="LUT4c_frame_config[5].I3"/>
+    <direct name="LUT4AB_LF_Ci_top_to_child" input="LUT4AB.LF_Ci" output="LUT4c_frame_config[5].Ci"/>
+    <direct name="LUT4AB_LF_O_child_to_top" input="LUT4c_frame_config[5].O" output="LUT4AB.LF_O"/>
+    <direct name="LUT4AB_LF_Co_child_to_top" input="LUT4c_frame_config[5].Co" output="LUT4AB.LF_Co"/>
+    <direct name="LUT4AB_LG_I0_top_to_child" input="LUT4AB.LG_I0" output="LUT4c_frame_config[6].I0"/>
+    <direct name="LUT4AB_LG_I1_top_to_child" input="LUT4AB.LG_I1" output="LUT4c_frame_config[6].I1"/>
+    <direct name="LUT4AB_LG_I2_top_to_child" input="LUT4AB.LG_I2" output="LUT4c_frame_config[6].I2"/>
+    <direct name="LUT4AB_LG_I3_top_to_child" input="LUT4AB.LG_I3" output="LUT4c_frame_config[6].I3"/>
+    <direct name="LUT4AB_LG_Ci_top_to_child" input="LUT4AB.LG_Ci" output="LUT4c_frame_config[6].Ci"/>
+    <direct name="LUT4AB_LG_O_child_to_top" input="LUT4c_frame_config[6].O" output="LUT4AB.LG_O"/>
+    <direct name="LUT4AB_LG_Co_child_to_top" input="LUT4c_frame_config[6].Co" output="LUT4AB.LG_Co"/>
+    <direct name="LUT4AB_LH_I0_top_to_child" input="LUT4AB.LH_I0" output="LUT4c_frame_config[7].I0"/>
+    <direct name="LUT4AB_LH_I1_top_to_child" input="LUT4AB.LH_I1" output="LUT4c_frame_config[7].I1"/>
+    <direct name="LUT4AB_LH_I2_top_to_child" input="LUT4AB.LH_I2" output="LUT4c_frame_config[7].I2"/>
+    <direct name="LUT4AB_LH_I3_top_to_child" input="LUT4AB.LH_I3" output="LUT4c_frame_config[7].I3"/>
+    <direct name="LUT4AB_LH_Ci_top_to_child" input="LUT4AB.LH_Ci" output="LUT4c_frame_config[7].Ci"/>
+    <direct name="LUT4AB_LH_O_child_to_top" input="LUT4c_frame_config[7].O" output="LUT4AB.LH_O"/>
+    <direct name="LUT4AB_LH_Co_child_to_top" input="LUT4c_frame_config[7].Co" output="LUT4AB.LH_Co"/>
     <direct name="LUT4AB_A_top_to_child" input="LUT4AB.A" output="MUX8LUT_frame_config[0].A"/>
     <direct name="LUT4AB_B_top_to_child" input="LUT4AB.B" output="MUX8LUT_frame_config[0].B"/>
     <direct name="LUT4AB_C_top_to_child" input="LUT4AB.C" output="MUX8LUT_frame_config[0].C"/>
@@ -3902,6 +3950,21 @@ lut4abStr = """  <pb_type name="LUT4AB">
     <direct name="LUT4AB_M_AD_child_to_top" input="MUX8LUT_frame_config[0].M_AD" output="LUT4AB.M_AD"/>
     <direct name="LUT4AB_M_AH_child_to_top" input="MUX8LUT_frame_config[0].M_AH" output="LUT4AB.M_AH"/>
     <direct name="LUT4AB_M_EF_child_to_top" input="MUX8LUT_frame_config[0].M_EF" output="LUT4AB.M_EF"/>
+    <direct name="LA_Co_LB_Ci_pip" input="LUT4c_frame_config[0].Co" output="LUT4c_frame_config[1].Ci"/>
+    <direct name="LB_Co_LC_Ci_pip" input="LUT4c_frame_config[1].Co" output="LUT4c_frame_config[2].Ci"/>
+    <direct name="LC_Co_LD_Ci_pip" input="LUT4c_frame_config[2].Co" output="LUT4c_frame_config[3].Ci"/>
+    <direct name="LD_Co_LE_Ci_pip" input="LUT4c_frame_config[3].Co" output="LUT4c_frame_config[4].Ci"/>
+    <direct name="LE_Co_LF_Ci_pip" input="LUT4c_frame_config[4].Co" output="LUT4c_frame_config[5].Ci"/>
+    <direct name="LF_Co_LG_Ci_pip" input="LUT4c_frame_config[5].Co" output="LUT4c_frame_config[6].Ci"/>
+    <direct name="LG_Co_LH_Ci_pip" input="LUT4c_frame_config[6].Co" output="LUT4c_frame_config[7].Ci"/>
+    <direct name="LA_O_A_pip" input="LUT4c_frame_config[0].O" output="MUX8LUT_frame_config[0].A"/>
+    <direct name="LB_O_B_pip" input="LUT4c_frame_config[1].O" output="MUX8LUT_frame_config[0].B"/>
+    <direct name="LC_O_C_pip" input="LUT4c_frame_config[2].O" output="MUX8LUT_frame_config[0].C"/>
+    <direct name="LD_O_D_pip" input="LUT4c_frame_config[3].O" output="MUX8LUT_frame_config[0].D"/>
+    <direct name="LE_O_E_pip" input="LUT4c_frame_config[4].O" output="MUX8LUT_frame_config[0].E"/>
+    <direct name="LF_O_F_pip" input="LUT4c_frame_config[5].O" output="MUX8LUT_frame_config[0].F"/>
+    <direct name="LG_O_G_pip" input="LUT4c_frame_config[6].O" output="MUX8LUT_frame_config[0].G"/>
+    <direct name="LH_O_H_pip" input="LUT4c_frame_config[7].O" output="MUX8LUT_frame_config[0].H"/>
    </interconnect>
    <input name="LA_I0" num_pins="1"/>
    <input name="LA_I1" num_pins="1"/>
@@ -3975,8 +4038,7 @@ lut4abStr = """  <pb_type name="LUT4AB">
    <output name="M_AD" num_pins="1"/>
    <output name="M_AH" num_pins="1"/>
    <output name="M_EF" num_pins="1"/>
-  </pb_type>
-"""
+  </pb_type>"""
 
 specialPBdict = {"CPU_IO": cpuIOStr, "LUT4AB":lut4abStr}
 
@@ -4137,9 +4199,9 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
             if prefixStr != "": 
                 if printToPB:
-                    pb_typesString += '     <metadata>\n'
-                    pb_typesString += f'      <meta name="fasm_prefix">{prefixStr}</meta>\n'
-                    pb_typesString += '     </metadata>\n'
+                    pb_typesString += '    <metadata>\n'
+                    pb_typesString += f'     <meta name="fasm_prefix">{prefixStr}</meta>\n'
+                    pb_typesString += '    </metadata>\n'
 
 
             #Generate delay constants - for the time being, we will assume that all inputs are combinatorially connected to all outputs

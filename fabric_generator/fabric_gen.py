@@ -4060,10 +4060,10 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
         cTile = getTileByType(archObject, cellType)
 
         tilesString += f'  <tile name="{cellType}">\n' #Add tiles and appropriate equivalent site
-        tilesString += f'   <equivalents>\n'
+        tilesString += '   <equivalents>\n'
         tilesString += f'    <site pb_type="{cellType}" pin_mapping="direct"/>\n'
-        tilesString += f'   </equivalents>\n'
-        tilesString += f'  </tile>\n'
+        tilesString += '   </equivalents>\n'
+        tilesString += '  </tile>\n'
 
         if printToPB:
             pb_typesString += f'  <pb_type name="{cellType}">\n' #Top layer block
@@ -4102,7 +4102,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
             if printToModel:
                 modelsString += f'  <model name="{bel[0]}">\n' #Add model tag
-                modelsString += f'   <input_ports>\n' #open tag for input ports in model list
+                modelsString += '   <input_ports>\n' #open tag for input ports in model list
 
 
             unprefixedInputs = [removeStringPrefix(cInput, bel[1]) for cInput in bel[2]] #Create lists of ports without prefixes for our generic modelling
@@ -4117,8 +4117,8 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
                     modelsString += f'    <port name="{cInput}" combinational_sink_ports="{allOutsStr}"/>\n' #Add all outputs as combinational sinks
 
             if printToModel:
-                modelsString += f'   </input_ports>\n' #close input ports tag
-                modelsString += f'   <output_ports>\n' #open output ports tag
+                modelsString += '   </input_ports>\n' #close input ports tag
+                modelsString += '   <output_ports>\n' #open output ports tag
 
 
             for cOutput in unprefixedOutputs:
@@ -4151,7 +4151,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
 
             if printToPB:
-                pb_typesString += f'   </pb_type>\n' #Close inner tag
+                pb_typesString += '   </pb_type>\n' #Close inner tag
             doneBels.append(bel[0]) #Make sure we don't repeat similar BELs
         
         if printToPB:
@@ -4318,7 +4318,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                     # TODO: Set ptc value here
                     # Currently assuming low is source, high is destination
 
-                    nodesString += f'  </node>\n' #Close node tag
+                    nodesString += '  </node>\n' #Close node tag
 
                     sourceToWireIDMap[wireSource+str(i)] = curNodeId
                     destToWireIDMap[wireDest+str(i)] = curNodeId
@@ -4365,7 +4365,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
                     nodesString += f'  <node id="{curNodeId}" type="IPIN" capacity="1">\n' #Generate tag for each node
                     nodesString += f'   <loc xlow="{tile.x}" ylow="{tile.y}" xhigh="{tile.x}" yhigh="{tile.y}" ptc="0">\n' #Add loc tag - same high and low vals as no movement between tiles
-                    nodesString += f'  </node>\n' #Close node tag
+                    nodesString += '  </node>\n' #Close node tag
 
                     sourceToWireIDMap[tileLoc + "." + cInput] = curNodeId #Add to source map as it is the equivalent of a wire source
 
@@ -4377,7 +4377,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
                     nodesString += f'  <node id="{curNodeId}" type="OPIN" capacity="1">\n' #Generate tag for each node
                     nodesString += f'   <loc xlow="{tile.x}" ylow="{tile.y}" xhigh="{tile.x}" yhigh="{tile.y}" ptc="0">\n' #Add loc tag
-                    nodesString += f'  </node>\n' #Close node tag
+                    nodesString += '  </node>\n' #Close node tag
 
                     destToWireIDMap[tileLoc + "." + cOutput] = curNodeId #Add to dest map as equivalent to a wire destination
 
@@ -4403,7 +4403,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                     nodesString += f'  <!-- Pin: {src_name} -->\n' #Comment destination for clarity
                     nodesString += f'  <node id="{curNodeId}" type="OPIN" capacity="1">\n' #Generate tag for each node - this outputs into the switch matrix so is an output pin
                     nodesString += f'   <loc xlow="{tile.x}" ylow="{tile.y}" xhigh="{tile.x}" yhigh="{tile.y}" ptc="0">\n' #Add loc tag
-                    nodesString += f'  </node>\n' #Close node tag  
+                    nodesString += '  </node>\n' #Close node tag  
 
                     curNodeId += 1
 
@@ -4412,9 +4412,9 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                 if sink_name not in sourceToWireIDMap.keys():
                     sourceToWireIDMap[sink_name] = curNodeId
                     nodesString += f'  <!-- Pin: {sink_name} -->\n' #Comment destination for clarity
-                    nodesString += f'  <node id="{curNodeId}" type="IPIN" capacity="1">\n' #Generate tag for each node - this is a switch matrix sink so must be an input pin
+                    nodesString += '  <node id="{curNodeId}" type="IPIN" capacity="1">\n' #Generate tag for each node - this is a switch matrix sink so must be an input pin
                     nodesString += f'   <loc xlow="{tile.x}" ylow="{tile.y}" xhigh="{tile.x}" yhigh="{tile.y}" ptc="0">\n' #Add loc tag
-                    nodesString += f'  </node>\n' #Close node tag 
+                    nodesString += '  </node>\n' #Close node tag 
 
                     curNodeId += 1
 
@@ -4424,10 +4424,10 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
 
                 edgeStr += f'  <edge src_node="{destToWireIDMap[src_name]}" sink_node="{sourceToWireIDMap[sink_name]}" switch_id="1">\n'
-                edgeStr += f'   <metadata>\n'
+                edgeStr += '   <metadata>\n'
                 edgeStr += f'    <meta name="fasm_features">{".".join([tileLoc, pip[0], pip[1]])}</meta>\n'
-                edgeStr += f'   </metadata>\n'
-                edgeStr += f'  </edge>\n'
+                edgeStr += '   </metadata>\n'
+                edgeStr += '  </edge>\n'
 
 
 

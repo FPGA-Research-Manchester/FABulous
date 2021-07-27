@@ -3815,9 +3815,9 @@ cpuIOStr = """  <pb_type name="CPU_IO">
 
 lut4abStr = """  <pb_type name="LUT4AB">
    <pb_type name="LUT4c_frame_config" num_pb="8">
-    <pb_type name="lut4" blif_model=".names" num_pb="1">
-     <input name="in" num_pins="4"/>
-     <output name="out" num_pins="1"/>
+    <pb_type name="lut4" blif_model=".names" num_pb="1" class="lut">
+     <input name="in" num_pins="4" port_class="lut_in"/>
+     <output name="out" num_pins="1" port_class="lut_out"/>
      <delay_matrix type="max" in_port="lut4.in" out_port="lut4.out">
       2.690e-10
       2.690e-10

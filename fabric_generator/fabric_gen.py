@@ -3815,45 +3815,25 @@ cpuIOStr = """  <pb_type name="CPU_IO">
 
 lut4abStr = """  <pb_type name="LUT4AB">
    <pb_type name="LUT4c_frame_config" num_pb="8">
-    <mode name="ff_enabled" disable_packing="false">
-     <pb_type name="lut4" blif_model=".names" num_pb="1">
-      <input name="in" num_pins="4"/>
-      <output name="out" num_pins="1"/>
-      <delay_matrix type="max" in_port="lut4.in" out_port="lut4.out">
-       2.690e-10
-       2.690e-10
-       2.690e-10
-       2.690e-10
-      </delay_matrix>
-     </pb_type>
+    <pb_type name="lut4" blif_model=".names" num_pb="1">
+     <input name="in" num_pins="4"/>
+     <output name="out" num_pins="1"/>
+     <delay_matrix type="max" in_port="lut4.in" out_port="lut4.out">
+      2.690e-10
+      2.690e-10
+      2.690e-10
+      2.690e-10
+     </delay_matrix>
+    </pb_type>
 
-     <pb_type name="ff" blif_model=".latch" class="flipflop" num_pb="1">
-      <input name="D" num_pins="1" port_class="D"/>
-      <output name="Q" num_pins="1" port_class="Q"/>
-      <clock name="clk" num_pins="1" port_class="clock"/>
-      <T_setup value="2.448e-10" port="ff.D" clock="clk"/>
-      <T_clock_to_Q max="7.732e-11" port="ff.Q" clock="clk"/>                
-     </pb_type>
-     <interconnect>
-      <direct name="lut_to_ff" input="lut4.out" output="ff.D"/>
-      <direct name="ff_to_out" input="ff.Q" output="LUT4c_frame_config.O"/>
-     </interconnect>
-    </mode>
-    <mode name="ff_disabled" disable_packing="false">
-     <pb_type name="lut4" blif_model=".names" num_pb="1">
-      <input name="in" num_pins="4"/>
-      <output name="out" num_pins="1"/>
-      <delay_matrix type="max" in_port="lut4.in" out_port="lut4.out">
-       2.690e-10
-       2.690e-10
-       2.690e-10
-       2.690e-10
-      </delay_matrix>
-     </pb_type>
-     <interconnect>
-      <direct name="lut_to_out" input="lut4.out" output="LUT4c_frame_config.O"/>
-     </interconnect>
-    </mode>
+    <pb_type name="ff" blif_model=".latch" class="flipflop" num_pb="1">
+     <input name="D" num_pins="1" port_class="D"/>
+     <output name="Q" num_pins="1" port_class="Q"/>
+     <clock name="clk" num_pins="1" port_class="clock"/>
+     <T_setup value="2.448e-10" port="ff.D" clock="clk"/>
+     <T_clock_to_Q max="7.732e-11" port="ff.Q" clock="clk"/>                
+    </pb_type>
+
     <input name="I0" num_pins="1"/>    
     <input name="I1" num_pins="1"/>
     <input name="I2" num_pins="1"/>
@@ -3861,15 +3841,21 @@ lut4abStr = """  <pb_type name="LUT4AB">
     <input name="Ci" num_pins="1"/>
     <output name="O" num_pins="1"/>
     <output name="Co" num_pins="1"/>
-    <metadata>
-     <meta name="fasm_prefix">LA_ LB_ LC_ LD_ LE_ LF_ LG_ LH_</meta>
-    </metadata>    
     <interconnect>
      <direct name="I0_to_LUT_in" input="LUT4c_frame_config.I0" output="lut4.in[0]"/>
      <direct name="I1_to_LUT_in" input="LUT4c_frame_config.I1" output="lut4.in[1]"/>
      <direct name="I2_to_LUT_in" input="LUT4c_frame_config.I2" output="lut4.in[2]"/>
      <direct name="I3_to_LUT_in" input="LUT4c_frame_config.I3" output="lut4.in[3]"/>
-    </interconnect>    
+     <direct name="LUT_out_to_ff" input="lut4.out" output="ff.D"/>
+
+     <mux name="lut4c_out_mux" input="ff.Q lut4.out" output="LUT4c_frame_config.O">
+      <delay_constant max="25e-12" in_port="lut4.out" out_port="LUT4c_frame_config.O"/>
+      <delay_constant max="45e-12" in_port="ff.Q" out_port="LUT4c_frame_config.O"/>
+     </mux>
+    </interconnect> 
+    <metadata>
+     <meta name="fasm_prefix">LA_ LB_ LC_ LD_ LE_ LF_ LG_ LH_</meta>
+    </metadata>       
    </pb_type>
    <pb_type name="MUX8LUT_frame_config" num_pb="1" blif_model=".subckt MUX8LUT_frame_config">
     <input name="A" num_pins="1"/>

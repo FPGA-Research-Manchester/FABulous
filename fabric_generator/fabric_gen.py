@@ -3846,7 +3846,9 @@ lut4abStr = """  <pb_type name="LUT4AB">
      <direct name="I1_to_LUT_in" input="LUT4c_frame_config.I1" output="lut4.in[1]"/>
      <direct name="I2_to_LUT_in" input="LUT4c_frame_config.I2" output="lut4.in[2]"/>
      <direct name="I3_to_LUT_in" input="LUT4c_frame_config.I3" output="lut4.in[3]"/>
-     <direct name="LUT_out_to_ff" input="lut4.out" output="ff.D"/>
+     <direct name="LUT_out_to_ff" input="lut4.out" output="ff.D">
+        <pack_pattern name="lut_with_ff" in_port="lut4.out" out_port="ff.D"/>
+     </direct>
 
      <mux name="lut4c_out_mux" input="ff.Q lut4.out" output="LUT4c_frame_config.O">
       <delay_constant max="25e-12" in_port="lut4.out" out_port="LUT4c_frame_config.O"/>

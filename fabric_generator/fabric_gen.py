@@ -3768,18 +3768,25 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
 wIOStr = """  <pb_type name="W_IO">
    <pb_type name="IO_1_bidirectional_frame_config_pass" num_pb="2">
 
-    <pb_type name="W_input" blif_model=".input" num_pb="1">
-     <output name="inpad" num_pins="1"/>
-    </pb_type>
 
-    <pb_type name="W_output" blif_model=".output" num_pb="1">
-     <input name="outpad" num_pins="1"/>
-    </pb_type>
 
-    <interconnect>
-     <direct name="input_interconnect" input="W_input.inpad" output="IO_1_bidirectional_frame_config_pass.O"/>
-     <direct name="output_interconnect" input="IO_1_bidirectional_frame_config_pass.I" output="W_output.outpad"/>
-    </interconnect>
+
+    <mode name="pad_is_input">
+     <pb_type name="W_input" blif_model=".input" num_pb="1">
+      <output name="inpad" num_pins="1"/>
+     </pb_type>
+     <interconnect>
+      <direct name="input_interconnect" input="W_input.inpad" output="IO_1_bidirectional_frame_config_pass.O"/>
+     </interconnect>
+    </mode> 
+    <mode name="pad_is_output">
+     <pb_type name="W_output" blif_model=".output" num_pb="1">
+      <input name="outpad" num_pins="1"/>
+     </pb_type>
+     <interconnect>
+      <direct name="output_interconnect" input="IO_1_bidirectional_frame_config_pass.I" output="W_output.outpad"/>
+     </interconnect>
+    </mode>
 
     <input name="I" num_pins="1"/>
     <input name="T" num_pins="1"/>

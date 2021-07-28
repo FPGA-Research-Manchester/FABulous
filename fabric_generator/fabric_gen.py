@@ -3765,52 +3765,49 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
     else:
         return (pipsStr, belsStr, templateStr, constraintStr)
 
+wIOStr = """  <pb_type name="W_IO">
+   <pb_type name="IO_1_bidirectional_frame_config_pass" num_pb="2">
 
-cpuIOStr = """  <pb_type name="CPU_IO">
-   <pb_type name="InPass4_frame_config" num_pb="2" blif_model=".input">
-    <output name="inpad" num_pins="1"/>
-     <metadata>
-      <meta name="fasm_prefix">OPA_</meta>
-     </metadata>
-   </pb_type>
-   <pb_type name="OutPass4_frame_config" num_pb="3" blif_model=".output">
-    <input name="outpad" num_pins="1"/>
-     <metadata>
-      <meta name="fasm_prefix"></meta>
-     </metadata>
+    <pb_type name="W_input" blif_model=".input" num_pb="1">
+     <output name="inpad" num_pins="1"/>
+    </pb_type>
+
+    <pb_type name="W_output" blif_model=".output" num_pb="1">
+     <input name="outpad" num_pins="1"/>
+    </pb_type>
+
+    <interconnect>
+     <direct name="input_interconnect" input="W_input.inpad" output="IO_1_bidirectional_frame_config_pass.O"/>
+     <direct name="output_interconnect" input="IO_1_bidirectional_frame_config_pass.I" output="W_output.outpad"/>
+    </interconnect>
+
+    <input name="I" num_pins="1"/>
+    <input name="T" num_pins="1"/>
+    <output name="O" num_pins="1"/>
+    <output name="Q" num_pins="1"/>
+    <metadata>
+     <meta name="fasm_prefix">A_ B_</meta>
+    </metadata>
    </pb_type>
    <interconnect>
-    <direct name="CPU_IO_OPA_O0_child_to_top" input="InPass4_frame_config[0].inpad" output="CPU_IO.OPA_O0"/>
-
-    <direct name="CPU_IO_OPB_O0_child_to_top" input="InPass4_frame_config[1].inpad" output="CPU_IO.OPB_O0"/>
-
-    <direct name="CPU_IO_RES0_I0_top_to_child" input="CPU_IO.RES0_I0" output="OutPass4_frame_config[0].outpad"/>
-
-    <direct name="CPU_IO_RES1_I0_top_to_child" input="CPU_IO.RES1_I0" output="OutPass4_frame_config[1].outpad"/>
-
-    <direct name="CPU_IO_RES2_I0_top_to_child" input="CPU_IO.RES2_I0" output="OutPass4_frame_config[2].outpad"/>
-
+    <direct name="W_IO_A_I_top_to_child" input="W_IO.A_I" output="IO_1_bidirectional_frame_config_pass[0].I"/>
+    <direct name="W_IO_A_T_top_to_child" input="W_IO.A_T" output="IO_1_bidirectional_frame_config_pass[0].T"/>
+    <direct name="W_IO_A_O_child_to_top" input="IO_1_bidirectional_frame_config_pass[0].O" output="W_IO.A_O"/>
+    <direct name="W_IO_A_Q_child_to_top" input="IO_1_bidirectional_frame_config_pass[0].Q" output="W_IO.A_Q"/>
+    <direct name="W_IO_B_I_top_to_child" input="W_IO.B_I" output="IO_1_bidirectional_frame_config_pass[1].I"/>
+    <direct name="W_IO_B_T_top_to_child" input="W_IO.B_T" output="IO_1_bidirectional_frame_config_pass[1].T"/>
+    <direct name="W_IO_B_O_child_to_top" input="IO_1_bidirectional_frame_config_pass[1].O" output="W_IO.B_O"/>
+    <direct name="W_IO_B_Q_child_to_top" input="IO_1_bidirectional_frame_config_pass[1].Q" output="W_IO.B_Q"/>
    </interconnect>
-   <input name="RES0_I0" num_pins="1"/>
-   <input name="RES0_I1" num_pins="1"/>
-   <input name="RES0_I2" num_pins="1"/>
-   <input name="RES0_I3" num_pins="1"/>
-   <input name="RES1_I0" num_pins="1"/>
-   <input name="RES1_I1" num_pins="1"/>
-   <input name="RES1_I2" num_pins="1"/>
-   <input name="RES1_I3" num_pins="1"/>
-   <input name="RES2_I0" num_pins="1"/>
-   <input name="RES2_I1" num_pins="1"/>
-   <input name="RES2_I2" num_pins="1"/>
-   <input name="RES2_I3" num_pins="1"/>
-   <output name="OPA_O0" num_pins="1"/>
-   <output name="OPA_O1" num_pins="1"/>
-   <output name="OPA_O2" num_pins="1"/>
-   <output name="OPA_O3" num_pins="1"/>
-   <output name="OPB_O0" num_pins="1"/>
-   <output name="OPB_O1" num_pins="1"/>
-   <output name="OPB_O2" num_pins="1"/>
-   <output name="OPB_O3" num_pins="1"/>
+   <input name="A_I" num_pins="1"/>
+   <input name="A_T" num_pins="1"/>
+   <input name="B_I" num_pins="1"/>
+   <input name="B_T" num_pins="1"/>
+   <output name="A_O" num_pins="1"/>
+   <output name="A_Q" num_pins="1"/>
+   <output name="B_O" num_pins="1"/>
+   <output name="B_Q" num_pins="1"/>
+
   </pb_type>"""
 
 lut4abStr = """  <pb_type name="LUT4AB">
@@ -3833,6 +3830,9 @@ lut4abStr = """  <pb_type name="LUT4AB">
      <T_setup value="2.448e-10" port="ff.D" clock="clk"/>
      <T_clock_to_Q max="7.732e-11" port="ff.Q" clock="clk"/>                
     </pb_type>
+
+
+
 
     <input name="I0" num_pins="1"/>    
     <input name="I1" num_pins="1"/>
@@ -4040,7 +4040,7 @@ lut4abStr = """  <pb_type name="LUT4AB">
    <output name="M_EF" num_pins="1"/>
   </pb_type>"""
 
-specialPBdict = {"CPU_IO": cpuIOStr, "LUT4AB":lut4abStr}
+specialPBdict = {"LUT4AB":lut4abStr, "W_IO":wIOStr}
 
 muxString = """  <model name="MUX8LUT_frame_config">
    <input_ports>

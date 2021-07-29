@@ -3860,6 +3860,12 @@ lut4abStr = """  <pb_type name="LUT4AB">
      <mux name="lut4c_out_mux" input="ff.Q lut4.out" output="LUT4c_frame_config.O">
       <delay_constant max="25e-12" in_port="lut4.out" out_port="LUT4c_frame_config.O"/>
       <delay_constant max="45e-12" in_port="ff.Q" out_port="LUT4c_frame_config.O"/>
+      <metadata>
+       <meta name="fasm_mux">
+        ff.Q: FF
+        lut4.out: NULL
+       </meta>
+      </metadata>
      </mux>
     </interconnect> 
     <metadata>

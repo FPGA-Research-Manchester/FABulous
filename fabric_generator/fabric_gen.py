@@ -4133,7 +4133,6 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
         tilesString += '   <equivalents>\n'
         tilesString += f'    <site pb_type="{cellType}" pin_mapping="direct"/>\n'
         tilesString += '   </equivalents>\n'
-        tilesString += '  </tile>\n'
 
         if printToPB:
             pb_typesString += f'  <pb_type name="{cellType}">\n' #Top layer block
@@ -4277,6 +4276,18 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
                 pb_typesString += f'   <output name="{cOutput}" num_pins="1"/>\n'
 
             pb_typesString += f'  </pb_type>\n'
+
+
+        #Now we add tile ports and close the tile tag
+        for cInput in tileInputs:
+            tilesString += f'   <input name="{cInput}" num_pins="1"/>\n'
+
+        for cOutput in tileOutputs:
+            tilesString += f'   <output name="{cOutput}" num_pins="1"/>\n'
+
+
+        tilesString += '  </tile>\n'
+
 
 
     ### LAYOUT

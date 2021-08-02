@@ -3638,7 +3638,7 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
                         for pipSink in destTile.pipMuxes_MapSourceToSinks[wire["destination"] + str(i)]:
                             #If there is a multiplexer here, then we can simply add this pair
                             if len(destTile.pipMuxes_MapSinkToSources[pipSink]) > 1:
-                                pairStr += ",".join((".".join((tileLoc, wire["source"] + f"[{str(i)}]")), ".".join((desttileLoc, addBrackets(pipSink, tile))))) + "\n" #TODO: add square brackets to end
+                                pairStr += ",".join((".".join((tileLoc, wire["source"] + f"[{str(i)}]")), ".".join((desttileLoc, addBrackets(pipSink, tile))))) + "\n"
                             #otherwise, there is no physical pair in the ASIC netlist, so we must propagate back until we hit a multiplexer
                             else:
                                 finalDestination = ".".join((desttileLoc, addBrackets(pipSink, tile)))
@@ -4152,7 +4152,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
         for bel in cTile.belsWithIO: #Create second layer (leaf) blocks for each bel
 
-            tileInputs.extend(bel[2])
+            tileInputs.extend(bel[2]) #Add the inputs and outputs of this BEL to the top level tile inputs/outputs list
             tileOutputs.extend(bel[3])
 
 
@@ -4167,11 +4167,11 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
                     prefixList.append(innerBel[1]) #Add the prefix of this bel to our list of prefixes
 
 
-            if bel[0] in blifDict:
+            if bel[0] in blifDict: #If we have another blif model to substitute for this name then sub it in
                 blifName = blifDict[bel[0]]
             else:
-                blifName = ".subckt " + bel[0]
-
+                blifName = ".subckt " + bel[0] #Otherwise treat it as a blackbox
+ 
             if printToPB:
                 pb_typesString += f'   <pb_type name="{bel[0]}" num_pb="{count}" blif_model="{blifName}">\n' #Add inner pb_type tag opener
 
@@ -4183,7 +4183,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
             unprefixedInputs = [removeStringPrefix(cInput, bel[1]) for cInput in bel[2]] #Create lists of ports without prefixes for our generic modelling
             unprefixedOutputs = [removeStringPrefix(cOutput, bel[1]) for cOutput in bel[3]]
 
-            allOutsStr = " ".join(unprefixedOutputs)
+            allOutsStr = " ".join(unprefixedOutputs) #Generate space-separated list of all outputs for combinational sink ports
 
             for cInput in unprefixedInputs:
                 if printToPB:
@@ -4211,7 +4211,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
             if prefixStr != "": 
                 if printToPB:
-                    pb_typesString += '    <metadata>\n'
+                    pb_typesString += '    <metadata>\n' #Add metadata tag to represent FASM prefix for genfasm tool
                     pb_typesString += f'     <meta name="fasm_prefix">{prefixStr}</meta>\n'
                     pb_typesString += '    </metadata>\n'
 
@@ -4220,7 +4220,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
             if printToPB:
                 for cInput in unprefixedInputs:
-                    for cOutput in unprefixedOutputs:
+                    for cOutput in unprefixedOutputs: #Add a constant delay between every pair of input and output ports (as currently we say they are all combinationally linked)
                         pb_typesString += f'    <delay_constant max="300e-12" in_port="{bel[0]}.{cInput}" out_port="{bel[0]}.{cOutput}"/>\n'
 
 
@@ -4243,15 +4243,15 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
                 i = 0
                 belCountDict[bel[0]] = 1 #Otherwise we set our seen count to 1 and set i to 0
 
-            belIndexList.append(i)
+            belIndexList.append(i) #Update list to map current bel to its index
 
             for cInput in bel[2]:
-                if printToPB:
+                if printToPB: #Add direct connections from top level tile to the corresponding child port
                     pb_typesString += f'    <direct name="{cTile.tileType}_{cInput}_top_to_child" input="{cellType}.{cInput}" output="{bel[0]}[{i}].{removeStringPrefix(cInput, bel[1])}"/>\n'
 
 
             for cOutput in bel[3]:
-                if printToPB:
+                if printToPB: #Add direct connections from child port to top level tile
                     pb_typesString += f'    <direct name="{cTile.tileType}_{cOutput}_child_to_top" input="{bel[0]}[{i}].{removeStringPrefix(cOutput, bel[1])}" output="{cellType}.{cOutput}"/>\n'
 
 
@@ -4259,24 +4259,23 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
         if printToPB:
 
-            for pip in cTile.pips:
+            for pip in cTile.pips: 
                 if (pip[0] in tileOutputs) and (pip[1] in tileInputs): #If we have a pip connecting a bel output to a bel input we add it as a direct connection
-                    #sourceBelIndex = [cTile.belsWithIO[3]].index(pip[0])
-                    for i, bel in enumerate(cTile.belsWithIO):
-                        if pip[0] in bel[3]:
-                            sourceBel = bel
-                            sourceIndex = belIndexList[i]
-                        if pip[1] in bel[2]:
-                            sinkBel = bel
+                    for i, bel in enumerate(cTile.belsWithIO): 
+                        if pip[0] in bel[3]: #If the pip's source is the same as the bel's output then we note it as the source of the pip
+                            sourceBel = bel #Note which bel it is
+                            sourceIndex = belIndexList[i] #And what index it has (in terms of its own type e.g. LUT4[2])
+                        if pip[1] in bel[2]: #And if the pip's sink is the same as the bel's input then we note it as the sink
+                            sinkBel = bel #Note the same again
                             sinkIndex = belIndexList[i]
-                    sourceStr = f'{sourceBel[0]}[{sourceIndex}].{removeStringPrefix(pip[0], sourceBel[1])}'
-                    sinkStr = f'{sinkBel[0]}[{sinkIndex}].{removeStringPrefix(pip[1], sinkBel[1])}'
-                    pb_typesString += f'    <direct name="{pip[0]}_{pip[1]}_pip" input="{sourceStr}" output="{sinkStr}"/>\n'
+                    sourceStr = f'{sourceBel[0]}[{sourceIndex}].{removeStringPrefix(pip[0], sourceBel[1])}' #Generate the source
+                    sinkStr = f'{sinkBel[0]}[{sinkIndex}].{removeStringPrefix(pip[1], sinkBel[1])}' #And sink port names
+                    pb_typesString += f'    <direct name="{pip[0]}_{pip[1]}_pip" input="{sourceStr}" output="{sinkStr}"/>\n' #And add the direct tag
      
 
             pb_typesString += '   </interconnect>\n'
             for cInput in tileInputs:
-                pb_typesString += f'   <input name="{cInput}" num_pins="1"/>\n'
+                pb_typesString += f'   <input name="{cInput}" num_pins="1"/>\n' #Add top level inputs and outputs
 
             for cOutput in tileOutputs:
                 pb_typesString += f'   <output name="{cOutput}" num_pins="1"/>\n'
@@ -4290,7 +4289,6 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
         for cOutput in tileOutputs:
             tilesString += f'   <output name="{cOutput}" num_pins="1"/>\n'
-
 
         tilesString += '  </tile>\n'
 
@@ -4320,30 +4318,12 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
     ### SEGMENTLIST - contains only a filler as it is a necessity for Odin II to parse the architecture graph but we are reading a custom RR graph
 
+
     segmentlistString = """  <segment name="dummy" length="1" freq="1.000000" type="unidir" Rmetal="1e-12" Cmetal="22.5e-15">
    <sb type="pattern">0 0</sb>
    <cb type="pattern">0</cb>
    <mux name="buffer"/>
   </segment>"""
-
-    # for line in archObject.tiles:
-    #     for tile in line:
-    #         for wire in tile.wires:
-    #             if wire["yoffset"] != "0" and wire["xoffset"] != "0": #We want to find the length of the wire based on the x and y offset - either it's a jump, or in theory goes off in only one direction - let's find which
-    #                 print(wire["yoffset"], wire["xoffset"])
-    #                 raise Exception("Diagonal wires not currently supported for VPR model") #Stop if there are diagonal wires just in case they get put in a fabric
-    #             if wire["yoffset"] != 0: #Then we check which one isn't zero and take that as the length
-    #                 length = wire["yoffset"]
-    #             elif wire["xoffset"] != 0:
-    #                 length = wire["xoffset"]
-    #             else: #If we get to here then both offsets are zero and so this must be a jump wire
-    #                 length = 0 # TODO: Add JUMP handling here
-
-    #             # TODO: Cmetal, Rmetal and freq are filler values here from ice40 in the symbiflow-arch-defs repository - Cmetal and Rmetal are currently out of scope but freq may need changing.
-    #             segmentlistString += f'<segment name="{".".join([tile.genTileLoc(), wire["source"], wire["destination"]])}" length="{length}" freq="1.000000" type="unidir" Rmetal="1e-12" Cmetal="22.5e-15">\n'
-
-
-
 
 
     ### OUTPUT
@@ -4529,12 +4509,8 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                     curNodeId += 1
 
 
-
-                #TODO: GENERATE NODE TAG FOR THIS ID
-
-
                 edgeStr += f'  <edge src_node="{destToWireIDMap[src_name]}" sink_node="{sourceToWireIDMap[sink_name]}" switch_id="1">\n'
-                edgeStr += '   <metadata>\n'
+                edgeStr += '   <metadata>\n' #Generate metadata tag that tells us which switch matrix connection to activate
                 edgeStr += f'    <meta name="fasm_features">{".".join([tileLoc, pip[0], pip[1]])}</meta>\n'
                 edgeStr += '   </metadata>\n'
                 edgeStr += '  </edge>\n'

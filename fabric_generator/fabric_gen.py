@@ -3900,9 +3900,6 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
         pb_typesString += f'  <pb_type name="{cellType}">\n' #Top layer block
         doneBels = []
 
-
-        blifDict = {} #Add to this to substitute subckt definitions for a pb_type with another name e.g. a standard name
-
         tileInputs = [] #Track the tile's top level inputs and outputs for the top pb_type definition
         tileOutputs = [] 
 
@@ -3929,12 +3926,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
                 if bel[0] in specialModelDict: #If it also has custom model XML
                     modelsString += specialModelDict[bel[0]] #Then add in this XML
 
-            else:
-                if bel[0] in blifDict: #If we have another blif model to substitute for this name then sub it in
-                    blifName = blifDict[bel[0]]
-                else:
-                    blifName = ".subckt " + bel[0] #Otherwise treat it as a blackbox
-     
+            else: #Otherwise we generate the pb_type and model text     
                 pb_typesString += f'   <pb_type name="{bel[0]}" num_pb="{count}" blif_model="{blifName}">\n' #Add inner pb_type tag opener
 
                 modelsString += f'  <model name="{bel[0]}">\n' #Add model tag

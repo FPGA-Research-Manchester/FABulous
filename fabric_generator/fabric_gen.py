@@ -3890,9 +3890,6 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
     tilesString = "" #String to store tiles
     
     for cellType in archObject.cellTypes: 
-        printToPB = True  #By default we assume we will be creating models and pb_types
-        printToModel = True
-
         cTile = getTileByType(archObject, cellType)
 
         tilesString += f'  <tile name="{cellType}">\n' #Add tiles and appropriate equivalent site
@@ -3900,8 +3897,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
         tilesString += f'    <site pb_type="{cellType}" pin_mapping="direct"/>\n'
         tilesString += '   </equivalents>\n'
 
-        if printToPB:
-            pb_typesString += f'  <pb_type name="{cellType}">\n' #Top layer block
+        pb_typesString += f'  <pb_type name="{cellType}">\n' #Top layer block
         doneBels = []
 
 
@@ -3928,79 +3924,67 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
 
             if bel[0] in specialBelDict: #If the bel has custom pb_type XML
-                printToPB = printToModel = False #Then disable printing to the pb_type string 
-                pb_typesString += specialBelDict[bel[0]] #And add the custom pb_type XML
+                pb_typesString += specialBelDict[bel[0]] #Add the custom pb_type XML
 
                 if bel[0] in specialModelDict: #If it also has custom model XML
                     modelsString += specialModelDict[bel[0]] #Then add in this XML
 
-            if bel[0] in blifDict: #If we have another blif model to substitute for this name then sub it in
-                blifName = blifDict[bel[0]]
             else:
-                blifName = ".subckt " + bel[0] #Otherwise treat it as a blackbox
- 
-            if printToPB:
+                if bel[0] in blifDict: #If we have another blif model to substitute for this name then sub it in
+                    blifName = blifDict[bel[0]]
+                else:
+                    blifName = ".subckt " + bel[0] #Otherwise treat it as a blackbox
+     
                 pb_typesString += f'   <pb_type name="{bel[0]}" num_pb="{count}" blif_model="{blifName}">\n' #Add inner pb_type tag opener
 
-            if printToModel:
                 modelsString += f'  <model name="{bel[0]}">\n' #Add model tag
                 modelsString += '   <input_ports>\n' #open tag for input ports in model list
 
 
-            unprefixedInputs = [removeStringPrefix(cInput, bel[1]) for cInput in bel[2]] #Create lists of ports without prefixes for our generic modelling
-            unprefixedOutputs = [removeStringPrefix(cOutput, bel[1]) for cOutput in bel[3]]
+                unprefixedInputs = [removeStringPrefix(cInput, bel[1]) for cInput in bel[2]] #Create lists of ports without prefixes for our generic modelling
+                unprefixedOutputs = [removeStringPrefix(cOutput, bel[1]) for cOutput in bel[3]]
 
-            allOutsStr = " ".join(unprefixedOutputs) #Generate space-separated list of all outputs for combinational sink ports
+                allOutsStr = " ".join(unprefixedOutputs) #Generate space-separated list of all outputs for combinational sink ports
 
-            for cInput in unprefixedInputs:
-                if printToPB:
+                for cInput in unprefixedInputs:
                     pb_typesString += f'    <input name="{cInput}" num_pins="1"/>\n' #Add input and outputs
-                if printToModel:
                     modelsString += f'    <port name="{cInput}" combinational_sink_ports="{allOutsStr}"/>\n' #Add all outputs as combinational sinks
 
-            if printToModel:
                 modelsString += '   </input_ports>\n' #close input ports tag
                 modelsString += '   <output_ports>\n' #open output ports tag
 
 
-            for cOutput in unprefixedOutputs:
-                if printToPB:
+                for cOutput in unprefixedOutputs:
                     pb_typesString += f'    <output name="{cOutput}" num_pins="1"/>\n' #Add outputs to pb and model
-                if printToModel:
                     modelsString += f'    <port name="{cOutput}"/>\n'
 
-            if printToModel:
                 modelsString += f'   </output_ports>\n' #close output ports tag
                 modelsString += '  </model>\n'
 
-            #Add metadata using prefixes gathered earlier
-            prefixStr = " ".join(prefixList) #Str instead of string used for variable name as it is not to be injected directly into output
+                #Add metadata using prefixes gathered earlier
+                prefixStr = " ".join(prefixList) #Str instead of string used for variable name as it is not to be injected directly into output
 
-            if prefixStr != "": 
-                if printToPB:
+                if prefixStr != "": 
                     pb_typesString += '    <metadata>\n' #Add metadata tag to represent FASM prefix for genfasm tool
                     pb_typesString += f'     <meta name="fasm_prefix">{prefixStr}</meta>\n'
                     pb_typesString += '    </metadata>\n'
 
 
-            #Generate delay constants - for the time being, we will assume that all inputs are combinatorially connected to all outputs
+                #Generate delay constants - for the time being, we will assume that all inputs are combinatorially connected to all outputs
 
-            if printToPB:
                 for cInput in unprefixedInputs:
                     for cOutput in unprefixedOutputs: #Add a constant delay between every pair of input and output ports (as currently we say they are all combinationally linked)
                         pb_typesString += f'    <delay_constant max="300e-12" in_port="{bel[0]}.{cInput}" out_port="{bel[0]}.{cOutput}"/>\n'
 
 
 
-            if printToPB:
                 pb_typesString += '   </pb_type>\n' #Close inner tag
+                
             doneBels.append(bel[0]) #Make sure we don't repeat similar BELs
-        
+            
 
-            printToPB = printToModel = True #Reset printToPB and printToModel in preparation for the next pb_type/finishing internal pb_types
 
-        if printToPB:
-            pb_typesString += '   <interconnect>\n' #We now need interconnect to link every bel to the top pb_type
+        pb_typesString += '   <interconnect>\n' #We now need interconnect to link every bel to the top pb_type
 
         belCountDict = {} #Use dict to track how many of each bel we have seen
         belIndexList = [] #Shows what index the bel at the relevant index has
@@ -4015,42 +3999,39 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
             belIndexList.append(i) #Update list to map current bel to its index
 
-            for cInput in bel[2]:
-                if printToPB: #Add direct connections from top level tile to the corresponding child port
+            for cInput in bel[2]:  #Add direct connections from top level tile to the corresponding child port
                     pb_typesString += f'    <direct name="{cTile.tileType}_{cInput}_top_to_child" input="{cellType}.{cInput}" output="{bel[0]}[{i}].{removeStringPrefix(cInput, bel[1])}"/>\n'
 
 
-            for cOutput in bel[3]:
-                if printToPB: #Add direct connections from child port to top level tile
+            for cOutput in bel[3]: #Add direct connections from child port to top level tile
                     pb_typesString += f'    <direct name="{cTile.tileType}_{cOutput}_child_to_top" input="{bel[0]}[{i}].{removeStringPrefix(cOutput, bel[1])}" output="{cellType}.{cOutput}"/>\n'
 
 
 
 
-        if printToPB:
 
-            for pip in cTile.pips: 
-                if (pip[0] in tileOutputs) and (pip[1] in tileInputs): #If we have a pip connecting a bel output to a bel input we add it as a direct connection
-                    for i, bel in enumerate(cTile.belsWithIO): 
-                        if pip[0] in bel[3]: #If the pip's source is the same as the bel's output then we note it as the source of the pip
-                            sourceBel = bel #Note which bel it is
-                            sourceIndex = belIndexList[i] #And what index it has (in terms of its own type e.g. LUT4[2])
-                        if pip[1] in bel[2]: #And if the pip's sink is the same as the bel's input then we note it as the sink
-                            sinkBel = bel #Note the same again
-                            sinkIndex = belIndexList[i]
-                    sourceStr = f'{sourceBel[0]}[{sourceIndex}].{removeStringPrefix(pip[0], sourceBel[1])}' #Generate the source
-                    sinkStr = f'{sinkBel[0]}[{sinkIndex}].{removeStringPrefix(pip[1], sinkBel[1])}' #And sink port names
-                    pb_typesString += f'    <direct name="{pip[0]}_{pip[1]}_pip" input="{sourceStr}" output="{sinkStr}"/>\n' #And add the direct tag
-     
+        for pip in cTile.pips: 
+            if (pip[0] in tileOutputs) and (pip[1] in tileInputs): #If we have a pip connecting a bel output to a bel input we add it as a direct connection
+                for i, bel in enumerate(cTile.belsWithIO): 
+                    if pip[0] in bel[3]: #If the pip's source is the same as the bel's output then we note it as the source of the pip
+                        sourceBel = bel #Note which bel it is
+                        sourceIndex = belIndexList[i] #And what index it has (in terms of its own type e.g. LUT4[2])
+                    if pip[1] in bel[2]: #And if the pip's sink is the same as the bel's input then we note it as the sink
+                        sinkBel = bel #Note the same again
+                        sinkIndex = belIndexList[i]
+                sourceStr = f'{sourceBel[0]}[{sourceIndex}].{removeStringPrefix(pip[0], sourceBel[1])}' #Generate the source
+                sinkStr = f'{sinkBel[0]}[{sinkIndex}].{removeStringPrefix(pip[1], sinkBel[1])}' #And sink port names
+                pb_typesString += f'    <direct name="{pip[0]}_{pip[1]}_pip" input="{sourceStr}" output="{sinkStr}"/>\n' #And add the direct tag
+ 
 
-            pb_typesString += '   </interconnect>\n'
-            for cInput in tileInputs:
-                pb_typesString += f'   <input name="{cInput}" num_pins="1"/>\n' #Add top level inputs and outputs
+        pb_typesString += '   </interconnect>\n'
+        for cInput in tileInputs:
+            pb_typesString += f'   <input name="{cInput}" num_pins="1"/>\n' #Add top level inputs and outputs
 
-            for cOutput in tileOutputs:
-                pb_typesString += f'   <output name="{cOutput}" num_pins="1"/>\n'
+        for cOutput in tileOutputs:
+            pb_typesString += f'   <output name="{cOutput}" num_pins="1"/>\n'
 
-            pb_typesString += f'  </pb_type>\n'
+        pb_typesString += f'  </pb_type>\n'
 
 
         #Now we add tile ports and close the tile tag

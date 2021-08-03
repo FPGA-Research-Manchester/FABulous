@@ -3926,8 +3926,10 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
                 if bel[0] in specialModelDict: #If it also has custom model XML
                     modelsString += specialModelDict[bel[0]] #Then add in this XML
 
-            else: #Otherwise we generate the pb_type and model text     
-                pb_typesString += f'   <pb_type name="{bel[0]}" num_pb="{count}" blif_model="{blifName}">\n' #Add inner pb_type tag opener
+            else: #Otherwise we generate the pb_type and model text
+
+     
+                pb_typesString += f'   <pb_type name="{bel[0]}" num_pb="{count}" blif_model=".subckt {bel[0]}">\n' #Add inner pb_type tag opener
 
                 modelsString += f'  <model name="{bel[0]}">\n' #Add model tag
                 modelsString += '   <input_ports>\n' #open tag for input ports in model list

@@ -4074,6 +4074,29 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
   </segment>"""
 
 
+    ### DIRECTLIST
+
+
+    directlistString = ""
+    clockX = 0 #For futureproofing so clock primitive does not have to be placed at 0, 0
+    clockY = 0
+
+    #Add direct connections for clock routing
+    for line in archObject.tiles:
+        for tile in line:
+            if tile.tileType == "NULL": #NULL tiles aren't placed in the specification so the sink pin won't exist to VPR if we try to add a direct connection
+                continue
+
+            if tile.x == clockX and (archObject.height - tile.y - 1 == clockY):
+                continue #If this is the clock tile then we don't need a clock connection
+
+            xoffset = tile.x - clockX   
+            yoffset = archObject.height - tile.y - 1 - clockY
+            directlistString += f' <direct name="clock_routing_to_{tile.genTileLoc()}" from_pin="clock_primitive.clock_in" to_pin="{tile.tileType}.UserCLK" x_offset="{xoffset}" y_offset="{yoffset}" z_offset="0"/>\n'
+
+
+
+
     ### OUTPUT
 
 
@@ -4120,6 +4143,10 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
  <segmentlist>
 {segmentlistString}
  </segmentlist>
+
+ <directlist>
+{directlistString}
+ </directlist>
 
 
 </architecture>''' #TODO: Once Yosys is set up (so primitive instantiation can be used), swap out the .input model on the clock input for a primitive

@@ -4041,6 +4041,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
     layoutString = f'  <fixed_layout name="FABulous" width="{archObject.width}" height="{archObject.height}">\n'
 
+    layoutString += f'      <single type="clock_primitive" priority="1" x="0" y="0"/>' #Add tag for dummy clock primitive
     #Tile locations are specified using <single> tags - while the typical fabric will be made up of larger blocks of tiles, this allows the most flexibility
 
     for line in archObject.tiles:
@@ -4082,19 +4083,28 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
  </layout>
 
  <tiles>
+  <tile name="clock_primitive">
+   <equivalents>
+    <site pb_type="clock_primitive" pin_mapping="direct"/>
+   </equivalents>
+  </tile>
 {tilesString}
  </tiles>
  
  <models>
-  <model name="clock_in">
-   <output_ports>
-    <port name="clk" is_clock="1"/>
-   </output_ports>
-  </model>
 {modelsString}
  </models>
 
  <complexblocklist>
+ <pb_type name="clock_primitive">
+  <pb_type name="clock_input" blif_model=".input" num_pb="1">
+   <output name="inpad" num_pins="1"/>
+  </pb_type>
+  <output name="clock_in" num_pins="1"/>
+  <interconnect>
+   <direct name="clockblock_to_top" input="clock_input.inpad" output="clock_primitive.clock_in"/>
+  </interconnect>
+ </pb_type>
 {pb_typesString}
  </complexblocklist>
 
@@ -4107,7 +4117,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
  </segmentlist>
 
 
-</architecture>'''
+</architecture>''' #TODO: Once Yosys is set up (so primitive instantiation can be used), swap out the .input model on the clock input for a primitive
 
     return outputString
 

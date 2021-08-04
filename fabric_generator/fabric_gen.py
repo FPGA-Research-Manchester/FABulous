@@ -4016,6 +4016,11 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
  
 
         pb_typesString += '   </interconnect>\n'
+
+        tilesString += f'   <input name="UserCLK" num_pins="1"/>\n'
+        pb_typesString += f'   <input name="UserCLK" num_pins="1"/>\n'
+
+
         for cInput in tileInputs:
             pb_typesString += f'   <input name="{cInput}" num_pins="1"/>\n' #Add top level inputs and outputs
 
@@ -4041,7 +4046,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
     layoutString = f'  <fixed_layout name="FABulous" width="{archObject.width}" height="{archObject.height}">\n'
 
-    layoutString += f'      <single type="clock_primitive" priority="1" x="0" y="0"/>' #Add tag for dummy clock primitive
+    layoutString += f'      <single type="clock_primitive" priority="1" x="0" y="0"/>' #Add tag for dummy clock
     #Tile locations are specified using <single> tags - while the typical fabric will be made up of larger blocks of tiles, this allows the most flexibility
 
     for line in archObject.tiles:

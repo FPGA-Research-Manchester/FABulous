@@ -4001,9 +4001,6 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
                     pb_typesString += f'    <direct name="{cTile.tileType}_{cOutput}_child_to_top" input="{bel[0]}[{i}].{removeStringPrefix(cOutput, bel[1])}" output="{cellType}.{cOutput}"/>\n'
 
 
-
-
-
         for pip in cTile.pips: 
             if (pip[0] in tileOutputs) and (pip[1] in tileInputs): #If we have a pip connecting a bel output to a bel input we add it as a direct connection
                 for i, bel in enumerate(cTile.belsWithIO): 
@@ -4087,8 +4084,13 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
  <tiles>
 {tilesString}
  </tiles>
-
+ 
  <models>
+  <model name="clock_in">
+   <output_ports>
+    <port name="clk" is_clock="1"/>
+   </output_ports>
+  </model>
 {modelsString}
  </models>
 

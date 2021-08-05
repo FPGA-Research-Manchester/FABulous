@@ -4113,9 +4113,36 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
             xoffset = tile.x - clockX   
             yoffset = archObject.height - tile.y - 1 - clockY
-            directlistString += f'  <direct name="clock_routing_to_{tile.genTileLoc()}" from_pin="clock_primitive.clock_in" to_pin="{tile.tileType}.UserCLK" x_offset="{xoffset}" y_offset="{yoffset}" z_offset="0"/>\n'
+            directlistString += f'  <direct name="clock_routing_to_{tile.genTileLoc()}" from_pin="clock_primitive.clock_in_{tile.genTileLoc()}" to_pin="{tile.tileType}.UserCLK" x_offset="{xoffset}" y_offset="{yoffset}" z_offset="0"/>\n'
 
 
+    ### CLOCK SETUP
+
+    clockOutputStr = ""
+    clockDirectStr = ""
+
+    for line in archObject.tiles:
+        for tile in line:
+            clockOutputStr += f'   <output name="clock_in_{tile.genTileLoc()}" num_pins="1"/>'
+            clockDirectStr += f'   <direct name="clockblock_to_top_{tile.genTileLoc()}" input="clock_input.inpad" output="clock_primitive.clock_in_{tile.genTileLoc()}"/>'
+
+
+    clockTileStr = f"""  <tile name="clock_primitive">
+   <equivalents>
+    <site pb_type="clock_primitive" pin_mapping="direct"/>
+   </equivalents>
+   {clockOutputStr}
+  </tile>"""
+
+    clockPbStr = f""" <pb_type name="clock_primitive">
+  <pb_type name="clock_input" blif_model=".input" num_pb="1">
+   <output name="inpad" num_pins="1"/>
+  </pb_type>
+  {clockOutputStr}
+  <interconnect>
+   {clockDirectStr}
+  </interconnect>
+ </pb_type> """
 
 
     ### OUTPUT
@@ -4132,11 +4159,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
  </layout>
 
  <tiles>
-  <tile name="clock_primitive">
-   <equivalents>
-    <site pb_type="clock_primitive" pin_mapping="direct"/>
-   </equivalents>
-  </tile>
+{clockTileStr}
 {tilesString}
  </tiles>
  
@@ -4145,15 +4168,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
  </models>
 
  <complexblocklist>
- <pb_type name="clock_primitive">
-  <pb_type name="clock_input" blif_model=".input" num_pb="1">
-   <output name="inpad" num_pins="1"/>
-  </pb_type>
-  <output name="clock_in" num_pins="1"/>
-  <interconnect>
-   <direct name="clockblock_to_top" input="clock_input.inpad" output="clock_primitive.clock_in"/>
-  </interconnect>
- </pb_type>
+{clockPbStr}
 {pb_typesString}
  </complexblocklist>
 

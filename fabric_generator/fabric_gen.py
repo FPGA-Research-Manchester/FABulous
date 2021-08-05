@@ -3888,7 +3888,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
   </chan_width_distr>
   <switch_block type="universal" fs="3"/>
   <connection_block input_switch_name="ipin_cblock"/>
-  <default_fc in_type="frac" in_val="0.1" out_type="abs" out_val="25"/>
+  <default_fc in_type="abs" in_val="0" out_type="abs" out_val="0"/>
 
 """ # Several of these values are fillers, as they are outside the current scope of the FABulous project
     # As we're feeding in a custom RR graph, the type of switch block shouldn't matter, so universal was just a filler - using 'custom' would require an extra tag

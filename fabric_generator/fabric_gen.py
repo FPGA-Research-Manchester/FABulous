@@ -3818,6 +3818,7 @@ lut4cStr = """
     <input name="I2" num_pins="1"/>
     <input name="I3" num_pins="1"/>
     <input name="Ci" num_pins="1"/>
+    <clock name="clk" num_pins="1"/>
     <output name="O" num_pins="1"/>
     <output name="Co" num_pins="1"/>
     <interconnect>
@@ -3828,6 +3829,8 @@ lut4cStr = """
      <direct name="LUT_out_to_ff" input="lut4.out" output="ff.D">
         <pack_pattern name="lut_with_ff" in_port="lut4.out" out_port="ff.D"/>
      </direct>
+
+     <direct name="clock_pb_to_lut" input="LUT4c_frame_config.clk" output="ff.clk"/>
 
      <mux name="lut4c_out_mux" input="ff.Q lut4.out" output="LUT4c_frame_config.O">
       <delay_constant max="25e-12" in_port="lut4.out" out_port="LUT4c_frame_config.O"/>
@@ -3845,9 +3848,21 @@ lut4cStr = """
     </metadata>       
    </pb_type>"""
 
+lut4InterconnectStr = """    <direct name="clock_top_to_pb0" input="LUT4AB.UserCLK" output="LUT4c_frame_config[0].clk"/>
+<direct name="clock_top_to_pb1" input="LUT4AB.UserCLK" output="LUT4c_frame_config[1].clk"/>
+<direct name="clock_top_to_pb2" input="LUT4AB.UserCLK" output="LUT4c_frame_config[2].clk"/>
+<direct name="clock_top_to_pb3" input="LUT4AB.UserCLK" output="LUT4c_frame_config[3].clk"/>
+<direct name="clock_top_to_pb4" input="LUT4AB.UserCLK" output="LUT4c_frame_config[4].clk"/>
+<direct name="clock_top_to_pb5" input="LUT4AB.UserCLK" output="LUT4c_frame_config[5].clk"/>
+<direct name="clock_top_to_pb6" input="LUT4AB.UserCLK" output="LUT4c_frame_config[6].clk"/>
+<direct name="clock_top_to_pb7" input="LUT4AB.UserCLK" output="LUT4c_frame_config[7].clk"/>
+"""
 specialBelDict = {"LUT4c_frame_config": lut4cStr, "IO_1_bidirectional_frame_config_pass": IO_bidirStr} #This dict maps BEL names to the pb_type XML that should be substituted in when they are foun
 
 specialModelDict = {} # This dict maps BEL names to the model XML that should be substituted in when they are found (but it must also have special PB type XML)
+
+specialInterconnectDict = {"LUT4c_frame_config": lut4InterconnectStr} #This dict maps custom bels to the special top-level interconnect they need (e.g. for external connections)
+
 
 def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
@@ -3903,6 +3918,8 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
         tileInputs = [] #Track the tile's top level inputs and outputs for the top pb_type definition
         tileOutputs = [] 
 
+        customInterconnectStr = "" #Create empty string to store custom interconnect XML
+
         for bel in cTile.belsWithIO: #Create second layer (leaf) blocks for each bel
 
             tileInputs.extend(bel[2]) #Add the inputs and outputs of this BEL to the top level tile inputs/outputs list
@@ -3925,6 +3942,9 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
                 if bel[0] in specialModelDict: #If it also has custom model XML
                     modelsString += specialModelDict[bel[0]] #Then add in this XML
+
+                if bel[0] in specialInterconnectDict: #And if it has any custom interconnects
+                    customInterconnectStr += specialInterconnectDict[bel[0]] #Add them to this string to be added in at the end of the pb_type
 
             else: #Otherwise we generate the pb_type and model text
 
@@ -4015,6 +4035,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
                 pb_typesString += f'    <direct name="{pip[0]}_{pip[1]}_pip" input="{sourceStr}" output="{sinkStr}"/>\n' #And add the direct tag
  
 
+        pb_typesString += customInterconnectStr
         pb_typesString += '   </interconnect>\n'
 
         tilesString += f'   <input name="UserCLK" num_pins="1"/>\n'
@@ -4092,7 +4113,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
             xoffset = tile.x - clockX   
             yoffset = archObject.height - tile.y - 1 - clockY
-            directlistString += f' <direct name="clock_routing_to_{tile.genTileLoc()}" from_pin="clock_primitive.clock_in" to_pin="{tile.tileType}.UserCLK" x_offset="{xoffset}" y_offset="{yoffset}" z_offset="0"/>\n'
+            directlistString += f'  <direct name="clock_routing_to_{tile.genTileLoc()}" from_pin="clock_primitive.clock_in" to_pin="{tile.tileType}.UserCLK" x_offset="{xoffset}" y_offset="{yoffset}" z_offset="0"/>\n'
 
 
 

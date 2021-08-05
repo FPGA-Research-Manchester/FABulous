@@ -4118,15 +4118,15 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
     ### CLOCK SETUP
 
-    clockOutputStr = ""
-    clockDirectStr = ""
+    clockOutputStr = "" #String to store all the outputs needed for the clock block (one for each tile)
+    clockDirectStr = "" #String to store all the directs needed to connect primitive ports to top level clock block ports
 
     for line in archObject.tiles:
         for tile in line:
-            clockOutputStr += f'   <output name="clock_in_{tile.genTileLoc()}" num_pins="1"/>'
-            clockDirectStr += f'   <direct name="clockblock_to_top_{tile.genTileLoc()}" input="clock_input.inpad" output="clock_primitive.clock_in_{tile.genTileLoc()}"/>'
+            clockOutputStr += f'   <output name="clock_in_{tile.genTileLoc()}" num_pins="1"/>' #Add output tag for each tile
+            clockDirectStr += f'   <direct name="clockblock_to_top_{tile.genTileLoc()}" input="clock_input.inpad" output="clock_primitive.clock_in_{tile.genTileLoc()}"/>' #And connect output to primitive port
 
-
+    #Generate full strings for insertion
     clockTileStr = f"""  <tile name="clock_primitive">
    <equivalents>
     <site pb_type="clock_primitive" pin_mapping="direct"/>

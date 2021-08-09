@@ -4192,6 +4192,45 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
 
+    ### BLOCKS
+
+
+    blocksString = '' #Initialise string for block types
+    curId = 0 #Increment id from 0 as we work through
+    blockIdMap = {} #Dictionary to record IDs for different tile types when generating grid
+    ptcMap = {} #Dict to map tiles to individual dicts that map pin name to PTC
+
+    for cellType in archObject.cellTypes:
+        tilePtcMap = {} #Dict to map each pin on this tile to its ptc
+        blocksString += f'  <block_type id="{curId}" name="{cellType}" width="1" height="1">\n' #Generate block type tile for each type of tile - we assume 1x1 tiles here
+        
+        cTile = getTileByType(archObject, cellType) #Fetch tile of this type
+        
+        ptc = 0
+        for bel in cTile.belsWithIO: #For each bel on the tile
+            for cInput in bel[2]: #Take each input and output
+                blocksString += f'   <pin_class type="INPUT">\n' #Generate the tags 
+                blocksString += f'    <pin ptc="{ptc}">{cellType}.{cInput}[0]</pin>\n'
+                blocksString += f'   </pin_class>\n'
+                tilePtcMap[cInput] = ptc #Note the ptc in the tile's ptc map
+                ptc += 1 #And increment the ptc
+
+            for cOutput in bel[3]:
+                blocksString += f'   <pin_class type="OUTPUT">\n' #Same as above
+                blocksString += f'    <pin ptc="{ptc}">{cellType}.{cOutput}[0]</pin>\n'
+                blocksString += f'   </pin_class>\n'
+                tilePtcMap[cOutput] = ptc
+                ptc += 1
+
+        blocksString += '  </block_type>\n'
+
+        ptcMap[cellType] = dict(tilePtcMap) #Create copy of ptc map for this tile and add to larger dict (passing by reference would have undesired effects)
+
+        blockIdMap[cellType] = curId #Populate our map of type name to ID as we need the ID for generating the grid
+        curId += 1
+
+
+
     ### NODES
 
 
@@ -4276,10 +4315,13 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
             # Generate nodes for bel ports
             for bel in tile.belsWithIO: 
                 for cInput in bel[2]:
+                    if tile.tileType in ptcMap and cInput in ptcMap[tile.tileType]:
+                        thisPtc = ptcMap[tile.tileType][cInput]
+                    else:
+                        raise Exception("Could not find pin ptc in block_type designation for RR Graph generation.")
                     nodesString += f'  <!-- BEL input: {cInput} -->\n'
-
                     nodesString += f'  <node id="{curNodeId}" type="IPIN" capacity="1">\n' #Generate tag for each node
-                    nodesString += f'   <loc xlow="{tile.x}" ylow="{tile.y}" xhigh="{tile.x}" yhigh="{tile.y}" ptc="0"/>\n' #Add loc tag - same high and low vals as no movement between tiles
+                    nodesString += f'   <loc xlow="{tile.x}" ylow="{tile.y}" xhigh="{tile.x}" yhigh="{tile.y}" ptc="{thisPtc}"/>\n' #Add loc tag - same high and low vals as no movement between tiles
                     nodesString += '  </node>\n' #Close node tag
 
                     sourceToWireIDMap[tileLoc + "." + cInput] = curNodeId #Add to source map as it is the equivalent of a wire source
@@ -4288,10 +4330,14 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
 
                 for cOutput in bel[3]:
+                    if tile.tileType in ptcMap and cOutput in ptcMap[tile.tileType]:
+                        thisPtc = ptcMap[tile.tileType][cOutput]
+                    else:
+                        raise Exception("Could not find pin ptc in block_type designation for RR Graph generation.")
                     nodesString += f'  <!-- BEL output: {cOutput} -->\n'
 
                     nodesString += f'  <node id="{curNodeId}" type="OPIN" capacity="1">\n' #Generate tag for each node
-                    nodesString += f'   <loc xlow="{tile.x}" ylow="{tile.y}" xhigh="{tile.x}" yhigh="{tile.y}" ptc="0"/>\n' #Add loc tag
+                    nodesString += f'   <loc xlow="{tile.x}" ylow="{tile.y}" xhigh="{tile.x}" yhigh="{tile.y}" ptc="{thisPtc}"/>\n' #Add loc tag
                     nodesString += '  </node>\n' #Close node tag
 
                     destToWireIDMap[tileLoc + "." + cOutput] = curNodeId #Add to dest map as equivalent to a wire destination
@@ -4349,42 +4395,6 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
     channelString = f'  <channel chan_width_max="{max_width}" x_min="0" y_min="0" x_max="{archObject.width - 1}" y_max="{archObject.height - 1}"/>\n'
 
 
-    ### BLOCKS
-
-
-    blocksString = '' #Initialise string for block types
-    curId = 0 #Increment id from 0 as we work through
-    blockIdMap = {} #Dictionary to record IDs for different tile types when generating grid
-    ptcMap = {} #Dict to map tiles to individual dicts that map pin name to PTC
-
-    for cellType in archObject.cellTypes:
-        tilePtcMap = {} #Dict to map each pin on this tile to its ptc
-        blocksString += f'  <block_type id="{curId}" name="{cellType}" width="1" height="1">\n' #Generate block type tile for each type of tile - we assume 1x1 tiles here
-        
-        cTile = getTileByType(archObject, cellType) #Fetch tile of this type
-        
-        ptc = 0
-        for bel in cTile.belsWithIO: #For each bel on the tile
-            for cInput in bel[2]: #Take each input and output
-                blocksString += f'   <pin_class type="INPUT">\n' #Generate the tags 
-                blocksString += f'    <pin ptc="{ptc}">{cellType}.{cInput}[0]</pin>\n'
-                blocksString += f'   </pin_class>\n'
-                tilePtcMap[cInput] = ptc #Note the ptc in the tile's ptc map
-                ptc += 1 #And increment the ptc
-
-            for cOutput in bel[3]:
-                blocksString += f'   <pin_class type="OUTPUT">\n' #Same as above
-                blocksString += f'    <pin ptc="{ptc}">{cellType}.{cOutput}[0]</pin>\n'
-                blocksString += f'   </pin_class>\n'
-                tilePtcMap[cOutput] = ptc
-                ptc += 1
-
-        blocksString += '  </block_type>\n'
-
-        ptcMap[cellType] = dict(tilePtcMap) #Create copy of ptc map for this tile and add to larger dict (passing by reference would have undesired effects)
-
-        blockIdMap[cellType] = curId #Populate our map of type name to ID as we need the ID for generating the grid
-        curId += 1
 
 
     ### GRID

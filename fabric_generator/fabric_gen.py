@@ -4358,6 +4358,23 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
     for cellType in archObject.cellTypes:
         blocksString += f'  <block_type id="{curId}" name="{cellType}" width="1" height="1">\n' #Generate block type tile for each type of tile - we assume 1x1 tiles here
+        
+        cTile = getTileByType(archObject, cellType)
+        
+        ptc = 0
+        for bel in cTile.belsWithIO:
+            for cInput in bel[2]:
+                blocksString += f'   <pin_class type="INPUT">\n'
+                blocksString += f'    <pin ptc="{ptc}">{cellType}.{cInput}[0]</pin>\n'
+                blocksString += f'   </pin_class>\n'
+                ptc += 1
+
+            for cOutput in bel[3]:
+                blocksString += f'   <pin_class type="OUTPUT">\n'
+                blocksString += f'    <pin ptc="{ptc}">{cellType}.{cOutput}[0]</pin>\n'
+                blocksString += f'   </pin_class>\n'
+                ptc += 1
+
         blocksString += '  </block_type>\n'
 
         blockIdMap[cellType] = curId #Populate our map of type name to ID as we need the ID for generating the grid

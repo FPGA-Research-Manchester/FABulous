@@ -4237,20 +4237,26 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
         ptc += 1        
 
+        blockInputString = "" #String to hold all input declarations
+        blockOutputString = "" #String to hold all output declarations
+
         for bel in cTile.belsWithIO: #For each bel on the tile
             for cInput in bel[2]: #Take each input and output
-                blocksString += f'   <pin_class type="INPUT">\n' #Generate the tags 
-                blocksString += f'    <pin ptc="{ptc}">{cellType}.{cInput}[0]</pin>\n'
-                blocksString += f'   </pin_class>\n'
+                blockInputString += f'   <pin_class type="INPUT">\n' #Generate the tags 
+                blockInputString += f'    <pin ptc="{ptc}">{cellType}.{cInput}[0]</pin>\n'
+                blockInputString += f'   </pin_class>\n'
                 tilePtcMap[cInput] = ptc #Note the ptc in the tile's ptc map
                 ptc += 1 #And increment the ptc
 
             for cOutput in bel[3]:
-                blocksString += f'   <pin_class type="OUTPUT">\n' #Same as above
-                blocksString += f'    <pin ptc="{ptc}">{cellType}.{cOutput}[0]</pin>\n'
-                blocksString += f'   </pin_class>\n'
+                blockOutputString += f'   <pin_class type="OUTPUT">\n' #Same as above
+                blockOutputString += f'    <pin ptc="{ptc}">{cellType}.{cOutput}[0]</pin>\n'
+                blockOutputString += f'   </pin_class>\n'
                 tilePtcMap[cOutput] = ptc
                 ptc += 1
+
+        blocksString += blockInputString
+        blocksString += blockOutputString
 
         blocksString += '  </block_type>\n'
 
@@ -4438,8 +4444,9 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
             if tile.x == clockX and archObject.height - tile.y - 1 == clockY:
                 gridString += f'  <grid_loc x="{clockX}" y="{clockY}" block_type_id="{blockIdMap["clock_primitive"]}" width_offset="0" height_offset="0"/>\n'  
                 continue      
-            if tile.tileType == "NULL": #The method that generates cellTypes ignores NULL, so it was never in our map - there's nothing there anyway, so we'll ignore it
-                continue    
+            if tile.tileType == "NULL": #The method that generates cellTypes ignores NULL, so it was never in our map - we'll just use EMPTY instead as we did for the main XML model
+                gridString += f'  <grid_loc x="{tile.x}" y="{archObject.height - tile.y - 1}" block_type_id="{blockIdMap["EMPTY"]}" width_offset="0" height_offset="0"/>\n'
+                continue
             gridString += f'  <grid_loc x="{tile.x}" y="{archObject.height - tile.y - 1}" block_type_id="{blockIdMap[tile.tileType]}" width_offset="0" height_offset="0"/>\n'
 
 

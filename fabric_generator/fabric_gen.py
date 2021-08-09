@@ -4368,7 +4368,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                         raise Exception("Could not find pin ptc in block_type designation for RR Graph generation.")
                     nodesString += f'  <!-- BEL input: {cInput} -->\n'
                     nodesString += f'  <node id="{curNodeId}" type="IPIN" capacity="1">\n' #Generate tag for each node
-                    nodesString += f'   <loc xlow="{tile.x}" ylow="{archObject.height - 1 - tile.y}" xhigh="{tile.x}" yhigh="{archObject.height - 1 - tile.y}" ptc="{thisPtc}"/>\n' #Add loc tag - same high and low vals as no movement between tiles
+                    nodesString += f'   <loc xlow="{tile.x}" ylow="{archObject.height - 1 - tile.y}" xhigh="{tile.x}" yhigh="{archObject.height - 1 - tile.y}" ptc="{thisPtc}" side="BOTTOM"/>\n' #Add loc tag - same high and low vals as no movement between tiles
                     nodesString += '  </node>\n' #Close node tag
 
                     sourceToWireIDMap[tileLoc + "." + cInput] = curNodeId #Add to source map as it is the equivalent of a wire source
@@ -4384,7 +4384,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                     nodesString += f'  <!-- BEL output: {cOutput} -->\n'
 
                     nodesString += f'  <node id="{curNodeId}" type="OPIN" capacity="1">\n' #Generate tag for each node
-                    nodesString += f'   <loc xlow="{tile.x}" ylow="{archObject.height - 1 - tile.y}" xhigh="{tile.x}" yhigh="{archObject.height - 1 - tile.y}" ptc="{thisPtc}"/>\n' #Add loc tag
+                    nodesString += f'   <loc xlow="{tile.x}" ylow="{archObject.height - 1 - tile.y}" xhigh="{tile.x}" yhigh="{archObject.height - 1 - tile.y}" ptc="{thisPtc}" side="BOTTOM"/>\n' #Add loc tag
                     nodesString += '  </node>\n' #Close node tag
 
                     destToWireIDMap[tileLoc + "." + cOutput] = curNodeId #Add to dest map as equivalent to a wire destination
@@ -4410,7 +4410,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                     destToWireIDMap[src_name] = curNodeId
                     nodesString += f'  <!-- Pin: {src_name} -->\n' #Comment destination for clarity
                     nodesString += f'  <node id="{curNodeId}" type="OPIN" capacity="1">\n' #Generate tag for each node - this outputs into the switch matrix so is an output pin
-                    nodesString += f'   <loc xlow="{tile.x}" ylow="{archObject.height - 1 - tile.y}" xhigh="{tile.x}" yhigh="{archObject.height - 1 - tile.y}" ptc="0"/>\n' #Add loc tag
+                    nodesString += f'   <loc xlow="{tile.x}" ylow="{archObject.height - 1 - tile.y}" xhigh="{tile.x}" yhigh="{archObject.height - 1 - tile.y}" ptc="0" side="BOTTOM"/>\n' #Add loc tag
                     nodesString += '  </node>\n' #Close node tag  
 
                     curNodeId += 1
@@ -4421,7 +4421,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                     sourceToWireIDMap[sink_name] = curNodeId
                     nodesString += f'  <!-- Pin: {sink_name} -->\n' #Comment destination for clarity
                     nodesString += '  <node id="{curNodeId}" type="IPIN" capacity="1">\n' #Generate tag for each node - this is a switch matrix sink so must be an input pin
-                    nodesString += f'   <loc xlow="{tile.x}" ylow="{archObject.height - 1 - tile.y}" xhigh="{tile.x}" yhigh="{archObject.height - 1 - tile.y}" ptc="0"/>\n' #Add loc tag
+                    nodesString += f'   <loc xlow="{tile.x}" ylow="{archObject.height - 1 - tile.y}" xhigh="{tile.x}" yhigh="{archObject.height - 1 - tile.y}" ptc="0" side="BOTTOM"/>\n' #Add loc tag
                     nodesString += '  </node>\n' #Close node tag 
 
                     curNodeId += 1

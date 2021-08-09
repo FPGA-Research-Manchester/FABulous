@@ -4204,6 +4204,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
     blocksString += f"""  <block_type id="{curId}" name="EMPTY" width="1" height="1">
   </block_type>\n"""
+    blockIdMap["EMPTY"] = curId
     curId += 1 #Add empty tile to block type spec and increment id by 1
 
     #And add clock tile (as this is a dummy to represent deeper FABulous functionality, so will not be in our csv files)
@@ -4219,6 +4220,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
             ptc += 1
 
     blocksString += '</block_type>\n'
+    blockIdMap["clock_primitive"] = curId
     curId += 1
 
     for cellType in archObject.cellTypes:
@@ -4419,14 +4421,18 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
 
     ### GRID
-
+    clockX = 0
+    clockY = 0
 
     gridString = ''
 
-    for row in archObject.tiles:
+    for row in archObject.tiles[::-1]:
         for tile in row:
+            if tile.x == clockX and archObject.height - tile.y - 1 == clockY:
+                gridString += f'  <grid_loc x="{clockX}" y="{clockY}" block_type_id="{blockIdMap["clock_primitive"]}" width_offset="0" height_offset="0"/>\n'  
+                continue      
             if tile.tileType == "NULL": #The method that generates cellTypes ignores NULL, so it was never in our map - there's nothing there anyway, so we'll ignore it
-                continue
+                continue    
             gridString += f'  <grid_loc x="{tile.x}" y="{archObject.height - tile.y - 1}" block_type_id="{blockIdMap[tile.tileType]}" width_offset="0" height_offset="0"/>\n'
 
 

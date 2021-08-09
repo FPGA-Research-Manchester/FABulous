@@ -4481,7 +4481,14 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
     ### SWITCHES
 
 
-    switchesString = '  <switch id="0" name="ipin_cblock" type="buffer">\n  </switch>'
+    switchesString = '''        <switch id="0" type="mux" name="__vpr_delayless_switch__">
+            <timing R="0" Cin="0" Cout="0" Tdel="0"/>
+            <sizing mux_trans_size="0" buf_size="0"/>
+        </switch>
+        <switch id="1" type="mux" name="buffer">
+            <timing R="1.99999999e-12" Cin="7.70000012e-16" Cout="4.00000001e-15" Tdel="5.80000006e-11"/>
+            <sizing mux_trans_size="2.63073993" buf_size="27.6459007"/>
+        </switch>\n'''
 
 
     ### OUTPUT    

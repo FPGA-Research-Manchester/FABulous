@@ -4355,27 +4355,33 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
     blocksString = '' #Initialise string for block types
     curId = 0 #Increment id from 0 as we work through
     blockIdMap = {} #Dictionary to record IDs for different tile types when generating grid
+    ptcMap = {} #Dict to map tiles to individual dicts that map pin name to PTC
 
     for cellType in archObject.cellTypes:
+        tilePtcMap = {} #Dict to map each pin on this tile to its ptc
         blocksString += f'  <block_type id="{curId}" name="{cellType}" width="1" height="1">\n' #Generate block type tile for each type of tile - we assume 1x1 tiles here
         
-        cTile = getTileByType(archObject, cellType)
+        cTile = getTileByType(archObject, cellType) #Fetch tile of this type
         
         ptc = 0
-        for bel in cTile.belsWithIO:
-            for cInput in bel[2]:
-                blocksString += f'   <pin_class type="INPUT">\n'
+        for bel in cTile.belsWithIO: #For each bel on the tile
+            for cInput in bel[2]: #Take each input and output
+                blocksString += f'   <pin_class type="INPUT">\n' #Generate the tags 
                 blocksString += f'    <pin ptc="{ptc}">{cellType}.{cInput}[0]</pin>\n'
                 blocksString += f'   </pin_class>\n'
-                ptc += 1
+                tilePtcMap[cInput] = ptc #Note the ptc in the tile's ptc map
+                ptc += 1 #And increment the ptc
 
             for cOutput in bel[3]:
-                blocksString += f'   <pin_class type="OUTPUT">\n'
+                blocksString += f'   <pin_class type="OUTPUT">\n' #Same as above
                 blocksString += f'    <pin ptc="{ptc}">{cellType}.{cOutput}[0]</pin>\n'
                 blocksString += f'   </pin_class>\n'
+                tilePtcMap[cOutput] = ptc
                 ptc += 1
 
         blocksString += '  </block_type>\n'
+
+        ptcMap[cellType] = dict(tilePtcMap) #Create copy of ptc map for this tile and add to larger dict (passing by reference would have undesired effects)
 
         blockIdMap[cellType] = curId #Populate our map of type name to ID as we need the ID for generating the grid
         curId += 1

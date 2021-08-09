@@ -4123,8 +4123,8 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
     for line in archObject.tiles:
         for tile in line:
-            clockOutputStr += f'   <output name="clock_in_{tile.genTileLoc()}" num_pins="1"/>' #Add output tag for each tile
-            clockDirectStr += f'   <direct name="clockblock_to_top_{tile.genTileLoc()}" input="clock_input.inpad" output="clock_primitive.clock_in_{tile.genTileLoc()}"/>' #And connect output to primitive port
+            clockOutputStr += f'   <output name="clock_in_{tile.genTileLoc()}" num_pins="1"/>\n' #Add output tag for each tile
+            clockDirectStr += f'   <direct name="clockblock_to_top_{tile.genTileLoc()}" input="clock_input.inpad" output="clock_primitive.clock_in_{tile.genTileLoc()}"/>\n' #And connect output to primitive port
 
     #Generate full strings for insertion
     clockTileStr = f"""  <tile name="clock_primitive">
@@ -4230,6 +4230,13 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
         cTile = getTileByType(archObject, cellType) #Fetch tile of this type
         
         ptc = 0
+
+        blocksString += f'   <pin_class type="INPUT">\n' #Generate the tags 
+        blocksString += f'    <pin ptc="{ptc}">{cellType}.UserCLK[0]</pin>\n'
+        blocksString += f'   </pin_class>\n'
+
+        ptc += 1        
+
         for bel in cTile.belsWithIO: #For each bel on the tile
             for cInput in bel[2]: #Take each input and output
                 blocksString += f'   <pin_class type="INPUT">\n' #Generate the tags 

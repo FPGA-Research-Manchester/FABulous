@@ -4297,10 +4297,18 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                 destx = tile.x + int(wire["xoffset"])
                 desttileLoc = f"X{destx}Y{desty}"
 
-                if (nodeType == "CHANX" and int(wire["xoffset"]) > 0) or (nodeType == "CHANY" and int(wire["yoffset"]) < 0):
+                if (nodeType == "CHANX" and int(wire["xoffset"]) > 0) or (nodeType == "CHANY" and int(wire["yoffset"]) > 0):
                     direction = "INC_DIR"
+                    yLow = archObject.height - tile.y - 1
+                    xLow = tile.x
+                    yHigh = archObject.height - desty - 1
+                    xHigh = destx
                 else:
                     direction = "DEC_DIR"
+                    yHigh = archObject.height - tile.y - 1
+                    xHigh = tile.x
+                    yLow = archObject.height - desty - 1
+                    xLow = destx
 
                 for i in range(int(wire["wire-count"])): #For every individual wire
                     wireSource = tileLoc + "." + wire["source"] #Generate location strings for the source and destination
@@ -4309,8 +4317,8 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
                     nodesString += f'  <!-- Wire: {wireSource+str(i)} -> {wireDest+str(i)} -->\n' #Comment destination for clarity
                     nodesString += f'  <node id="{curNodeId}" type="{nodeType}" capacity="1" direction="{direction}">\n' #Generate tag for each node
-
-                    nodesString += f'   <loc xlow="{tile.x}" ylow="{archObject.height - tile.y - 1}" xhigh="{destx}" yhigh="{archObject.height - desty - 1}" ptc="0"/>\n' #Add loc tag with the information we just calculated
+                    nodesString += '   <segment segment_id="0"/>\n'
+                    nodesString += f'   <loc xlow="{xLow}" ylow="{yLow}" xhigh="{xHigh}" yhigh="{yHigh}" ptc="0"/>\n' #Add loc tag with the information we just calculated
                     # TODO: Set ptc value here
                     # Currently assuming low is source, high is destination
 
@@ -4334,10 +4342,18 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                 elif wire["xoffset"] != "0":
                     nodeType = "CHANX" #Set as horizontal if moving along X
 
-                if (nodeType == "CHANX" and int(wire["xoffset"]) > 0) or (nodeType == "CHANY" and int(wire["yoffset"]) < 0):
+                if (nodeType == "CHANX" and int(wire["xoffset"]) > 0) or (nodeType == "CHANY" and int(wire["yoffset"]) > 0):
                     direction = "INC_DIR"
+                    yLow = archObject.height - tile.y - 1
+                    xLow = tile.x
+                    yHigh = archObject.height - desty - 1
+                    xHigh = destx
                 else:
                     direction = "DEC_DIR"
+                    yHigh = archObject.height - tile.y - 1
+                    xHigh = tile.x
+                    yLow = archObject.height - desty - 1
+                    xLow = destx
 
                 wireSource = wire["sourceTile"] + "." + wire["source"] #Generate location strings for the source and destination
                 wireDest = wire["destTile"] + "." + wire["destination"]
@@ -4347,8 +4363,8 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                 nodesString += f'  <!-- Atomic Wire: {wireSource} -> {wireDest} -->\n' #Comment destination for clarity
                 nodesString += f'  <node id="{curNodeId}" type="{nodeType}" capacity="1" direction="{direction}">\n' #Generate tag for each node
 
-                nodesString += f'   <loc xlow="{tile.x}" ylow="{archObject.height - 1 - tile.y}" xhigh="{destTile.x}" yhigh="{archObject.height - 1 - destTile.y}" ptc="0"/>\n' #Add loc tag with the information we just calculated
-                # TODO: Set ptc value here
+                nodesString += f'   <loc xlow="{xLow}" ylow="{yLow}" xhigh="{xHigh}" yhigh="{yHigh}" ptc="0"/>\n' #Add loc tag with the information we just calculated
+                nodesString += '   <segment segment_id="0"/>\n'
                 # Currently assuming low is source, high is destination
 
                 nodesString += f'  </node>\n' #Close node tag

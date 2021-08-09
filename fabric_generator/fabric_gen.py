@@ -4248,6 +4248,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                 tilePtcMap[cInput] = ptc #Note the ptc in the tile's ptc map
                 ptc += 1 #And increment the ptc
 
+        for bel in cTile.belsWithIO: #For each bel on the tile
             for cOutput in bel[3]:
                 blockOutputString += f'   <pin_class type="OUTPUT">\n' #Same as above
                 blockOutputString += f'    <pin ptc="{ptc}">{cellType}.{cOutput}[0]</pin>\n'

@@ -4430,7 +4430,24 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
     #Use the max width generated before for this tag
     channelString = f'  <channel chan_width_max="{max_width}" x_min="0" y_min="0" x_max="{archObject.width - 1}" y_max="{archObject.height - 1}"/>\n'
-
+    channelString += f'''     <x_list index ="0" info="292"/>
+        <x_list index ="1" info="292"/>
+        <x_list index ="2" info="292"/>
+        <x_list index ="3" info="292"/>
+        <x_list index ="4" info="292"/>
+        <x_list index ="5" info="292"/>
+        <x_list index ="6" info="292"/>
+        <x_list index ="7" info="292"/>
+        <x_list index ="8" info="292"/>
+        <y_list index ="0" info="292"/>
+        <y_list index ="1" info="292"/>
+        <y_list index ="2" info="292"/>
+        <y_list index ="3" info="292"/>
+        <y_list index ="4" info="292"/>
+        <y_list index ="5" info="292"/>
+        <y_list index ="6" info="292"/>
+        <y_list index ="7" info="292"/>
+        <y_list index ="8" info="292"/>\n'''
 
 
 
@@ -4463,13 +4480,19 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
     outputString = f'''
 <rr_graph tool_name="vpr" tool_version="82a3c72" tool_comment="Based on FABulous output">
 
- <channel>
+ <channels>
 {channelString}
- </channel>
+ </channels>
 
  <switches>
 {switchesString}
  </switches>
+
+ <segments>
+  <segment id="0" name="dummy">
+   <timing R_per_meter="9.99999996e-13" C_per_meter="2.25000005e-14"/>
+  </segment>
+ </segments>
 
  <block_types>
 {blocksString}

@@ -4215,7 +4215,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
     for line in archObject.tiles:
         for tile in line:
             blocksString += f'   <pin_class type="OUTPUT">\n'
-            blocksString += f'    <pin ptc="{ptc}"> clock_in_{tile.genTileLoc()} </pin>\n' #Add output tag for each tile
+            blocksString += f'    <pin ptc="{ptc}">clock_primitive.clock_in_{tile.genTileLoc()}[0]</pin>\n' #Add output tag for each tile
             blocksString += f'   </pin_class>\n'
             ptc += 1
 

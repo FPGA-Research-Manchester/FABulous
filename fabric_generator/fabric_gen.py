@@ -4200,6 +4200,27 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
     blockIdMap = {} #Dictionary to record IDs for different tile types when generating grid
     ptcMap = {} #Dict to map tiles to individual dicts that map pin name to PTC
 
+    #First, handle tiles not defined in architecture:
+
+    blocksString += f"""  <block_type id="{curId}" name="EMPTY" width="1" height="1">
+  </block_type>\n"""
+    curId += 1 #Add empty tile to block type spec and increment id by 1
+
+    #And add clock tile (as this is a dummy to represent deeper FABulous functionality, so will not be in our csv files)
+
+    blocksString += f'  <block_type id="{curId}" name="clock_primitive" width="1" height="1">\n'
+
+    ptc = 0
+    for line in archObject.tiles:
+        for tile in line:
+            blocksString += f'   <pin_class type="OUTPUT">\n'
+            blocksString += f'    <pin ptc="{ptc}"> clock_in_{tile.genTileLoc()} </pin>\n' #Add output tag for each tile
+            blocksString += f'   </pin_class>\n'
+            ptc += 1
+
+    blocksString += '</block_type>\n'
+    curId += 1
+
     for cellType in archObject.cellTypes:
         tilePtcMap = {} #Dict to map each pin on this tile to its ptc
         blocksString += f'  <block_type id="{curId}" name="{cellType}" width="1" height="1">\n' #Generate block type tile for each type of tile - we assume 1x1 tiles here
@@ -4406,7 +4427,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
         for tile in row:
             if tile.tileType == "NULL": #The method that generates cellTypes ignores NULL, so it was never in our map - there's nothing there anyway, so we'll ignore it
                 continue
-            gridString += f'  <grid_loc x="{tile.x}" y="{tile.y}" block_type_id="{blockIdMap[tile.tileType]}" width_offset="0" height_offset="0"/>\n'
+            gridString += f'  <grid_loc x="{tile.x}" y="{archObject.height - tile.y - 1}" block_type_id="{blockIdMap[tile.tileType]}" width_offset="0" height_offset="0"/>\n'
 
 
     ### SWITCHES

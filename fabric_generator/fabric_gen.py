@@ -3997,6 +3997,12 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
             doneBels.append(bel[0]) #Make sure we don't repeat similar BELs
             
 
+        tilesString += '   <pinlocations pattern="custom">\n'
+
+        for cPin in (tileInputs + tileOutputs):
+            tilesString += f'    <loc side ="bottom"> {cPin} </loc>\n'
+
+        tilesString += '   </pinlocations>\n'
 
         pb_typesString += '   <interconnect>\n' #We now need interconnect to link every bel to the top pb_type
 

@@ -4442,7 +4442,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                 if sink_name not in sourceToWireIDMap.keys():
                     sourceToWireIDMap[sink_name] = curNodeId
                     nodesString += f'  <!-- Pin: {sink_name} -->\n' #Comment destination for clarity
-                    nodesString += '  <node id="{curNodeId}" type="IPIN" capacity="1">\n' #Generate tag for each node - this is a switch matrix sink so must be an input pin
+                    nodesString += f'  <node id="{curNodeId}" type="IPIN" capacity="1">\n' #Generate tag for each node - this is a switch matrix sink so must be an input pin
                     nodesString += f'   <loc xlow="{tile.x}" ylow="{archObject.height - 1 - tile.y}" xhigh="{tile.x}" yhigh="{archObject.height - 1 - tile.y}" ptc="0" side="BOTTOM"/>\n' #Add loc tag
                     nodesString += '  </node>\n' #Close node tag 
 

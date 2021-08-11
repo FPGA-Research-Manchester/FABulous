@@ -4314,7 +4314,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                     yHigh = archObject.height - tile.y - 1
                     xHigh = tile.x
                     yLow = archObject.height - desty - 1
-                    xLow = destx
+                    xLow = destx                
 
                 for i in range(int(wire["wire-count"])): #For every individual wire
                     wireSource = tileLoc + "." + wire["source"] #Generate location strings for the source and destination
@@ -4348,23 +4348,23 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                 elif wire["xoffset"] != "0":
                     nodeType = "CHANX" #Set as horizontal if moving along X
 
-                if (nodeType == "CHANX" and int(wire["xoffset"]) > 0) or (nodeType == "CHANY" and int(wire["yoffset"]) > 0):
-                    direction = "INC_DIR"
-                    yLow = archObject.height - tile.y - 1
-                    xLow = tile.x
-                    yHigh = archObject.height - desty - 1
-                    xHigh = destx
-                else:
-                    direction = "DEC_DIR"
-                    yHigh = archObject.height - tile.y - 1
-                    xHigh = tile.x
-                    yLow = archObject.height - desty - 1
-                    xLow = destx
-
                 wireSource = wire["sourceTile"] + "." + wire["source"] #Generate location strings for the source and destination
                 wireDest = wire["destTile"] + "." + wire["destination"]
 
                 destTile = archObject.getTileByLoc(wire["destTile"])
+
+                if (nodeType == "CHANX" and int(wire["xoffset"]) > 0) or (nodeType == "CHANY" and int(wire["yoffset"]) > 0):
+                    direction = "INC_DIR"
+                    yLow = archObject.height - tile.y - 1
+                    xLow = tile.x
+                    yHigh = archObject.height - destTile.y - 1
+                    xHigh = destTile.x
+                else:
+                    direction = "DEC_DIR"
+                    yHigh = archObject.height - tile.y - 1
+                    xHigh = tile.x
+                    yLow = archObject.height - destTile.y - 1
+                    xLow = destTile.x
 
                 nodesString += f'  <!-- Atomic Wire: {wireSource} -> {wireDest} -->\n' #Comment destination for clarity
                 nodesString += f'  <node id="{curNodeId}" type="{nodeType}" capacity="1" direction="{direction}">\n' #Generate tag for each node

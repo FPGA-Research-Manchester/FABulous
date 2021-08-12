@@ -3863,8 +3863,8 @@ specialModelDict = {} # This dict maps BEL names to the model XML that should be
 
 specialInterconnectDict = {"LUT4c_frame_config": lut4InterconnectStr} #This dict maps custom bels to the special top-level interconnect they need (e.g. for external connections)
 
-clockX = 0
-clockY = 0
+clockX = 1
+clockY = 1
 
 def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
@@ -4073,15 +4073,15 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
     ### LAYOUT
 
 
-    layoutString = f'  <fixed_layout name="FABulous" width="{archObject.width}" height="{archObject.height}">\n'
+    layoutString = f'  <fixed_layout name="FABulous" width="{archObject.width + 2}" height="{archObject.height + 2}">\n' #Add 2 for empty padding
 
-    layoutString += f'      <single type="clock_primitive" priority="1" x="0" y="0"/>' #Add tag for dummy clock
+    layoutString += f'      <single type="clock_primitive" priority="1" x="{clockX}" y="{clockY}"/>' #Add tag for dummy clock
     #Tile locations are specified using <single> tags - while the typical fabric will be made up of larger blocks of tiles, this allows the most flexibility
 
     for line in archObject.tiles:
         for tile in line:
             if tile.tileType != "NULL": #We do not need to specify if the tile is empty as all tiles default to EMPTY in VPR
-                layoutString += f'   <single type="{tile.tileType}" priority="1" x="{tile.x}" y="{archObject.height - tile.y - 1}"/>\n' #Add single tag for each tile
+                layoutString += f'   <single type="{tile.tileType}" priority="1" x="{tile.x + 1}" y="{archObject.height - tile.y}"/>\n' #Add single tag for each tile - add 1 to x and y (cancels out in y conversion) for padding
 
     layoutString += '  </fixed_layout>\n'
 
@@ -4320,11 +4320,11 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                     wireSource = tileLoc + "." + wire["source"] #Generate location strings for the source and destination
                     wireDest = desttileLoc + "." + wire["destination"]
 
-
+                    #Coordinates until now have been relative to the fabric - only account for padding when formatting actual string
                     nodesString += f'  <!-- Wire: {wireSource+str(i)} -> {wireDest+str(i)} -->\n' #Comment destination for clarity
                     nodesString += f'  <node id="{curNodeId}" type="{nodeType}" capacity="1" direction="{direction}">\n' #Generate tag for each node
                     nodesString += '   <segment segment_id="0"/>\n'
-                    nodesString += f'   <loc xlow="{xLow}" ylow="{yLow}" xhigh="{xHigh}" yhigh="{yHigh}" ptc="0"/>\n' #Add loc tag with the information we just calculated
+                    nodesString += f'   <loc xlow="{xLow + 1}" ylow="{yLow + 1}" xhigh="{xHigh + 1}" yhigh="{yHigh + 1}" ptc="0"/>\n' #Add loc tag with the information we just calculated
                     # TODO: Set ptc value here
                     # Currently assuming low is source, high is destination
 
@@ -4369,7 +4369,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                 nodesString += f'  <!-- Atomic Wire: {wireSource} -> {wireDest} -->\n' #Comment destination for clarity
                 nodesString += f'  <node id="{curNodeId}" type="{nodeType}" capacity="1" direction="{direction}">\n' #Generate tag for each node
 
-                nodesString += f'   <loc xlow="{xLow}" ylow="{yLow}" xhigh="{xHigh}" yhigh="{yHigh}" ptc="0"/>\n' #Add loc tag with the information we just calculated
+                nodesString += f'   <loc xlow="{xLow + 1}" ylow="{yLow + 1}" xhigh="{xHigh + 1}" yhigh="{yHigh + 1}" ptc="0"/>\n' #Add loc tag with the information we just calculated
                 nodesString += '   <segment segment_id="0"/>\n'
                 # Currently assuming low is source, high is destination
 
@@ -4390,7 +4390,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                         raise Exception("Could not find pin ptc in block_type designation for RR Graph generation.")
                     nodesString += f'  <!-- BEL input: {cInput} -->\n'
                     nodesString += f'  <node id="{curNodeId}" type="IPIN" capacity="1">\n' #Generate tag for each node
-                    nodesString += f'   <loc xlow="{tile.x}" ylow="{archObject.height - 1 - tile.y}" xhigh="{tile.x}" yhigh="{archObject.height - 1 - tile.y}" ptc="{thisPtc}" side="BOTTOM"/>\n' #Add loc tag - same high and low vals as no movement between tiles
+                    nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="{thisPtc}" side="BOTTOM"/>\n' #Add loc tag - same high and low vals as no movement between tiles
                     nodesString += '  </node>\n' #Close node tag
 
                     sourceToWireIDMap[tileLoc + "." + cInput] = curNodeId #Add to source map as it is the equivalent of a wire source
@@ -4406,7 +4406,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                     nodesString += f'  <!-- BEL output: {cOutput} -->\n'
 
                     nodesString += f'  <node id="{curNodeId}" type="OPIN" capacity="1">\n' #Generate tag for each node
-                    nodesString += f'   <loc xlow="{tile.x}" ylow="{archObject.height - 1 - tile.y}" xhigh="{tile.x}" yhigh="{archObject.height - 1 - tile.y}" ptc="{thisPtc}" side="BOTTOM"/>\n' #Add loc tag
+                    nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="{thisPtc}" side="BOTTOM"/>\n' #Add loc tag
                     nodesString += '  </node>\n' #Close node tag
 
                     destToWireIDMap[tileLoc + "." + cOutput] = curNodeId #Add to dest map as equivalent to a wire destination
@@ -4432,7 +4432,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                     destToWireIDMap[src_name] = curNodeId
                     nodesString += f'  <!-- Pin: {src_name} -->\n' #Comment destination for clarity
                     nodesString += f'  <node id="{curNodeId}" type="OPIN" capacity="1">\n' #Generate tag for each node - this outputs into the switch matrix so is an output pin
-                    nodesString += f'   <loc xlow="{tile.x}" ylow="{archObject.height - 1 - tile.y}" xhigh="{tile.x}" yhigh="{archObject.height - 1 - tile.y}" ptc="0" side="BOTTOM"/>\n' #Add loc tag
+                    nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="0" side="BOTTOM"/>\n' #Add loc tag
                     nodesString += '  </node>\n' #Close node tag  
 
                     curNodeId += 1
@@ -4443,7 +4443,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                     sourceToWireIDMap[sink_name] = curNodeId
                     nodesString += f'  <!-- Pin: {sink_name} -->\n' #Comment destination for clarity
                     nodesString += f'  <node id="{curNodeId}" type="IPIN" capacity="1">\n' #Generate tag for each node - this is a switch matrix sink so must be an input pin
-                    nodesString += f'   <loc xlow="{tile.x}" ylow="{archObject.height - 1 - tile.y}" xhigh="{tile.x}" yhigh="{archObject.height - 1 - tile.y}" ptc="0" side="BOTTOM"/>\n' #Add loc tag
+                    nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="0" side="BOTTOM"/>\n' #Add loc tag
                     nodesString += '  </node>\n' #Close node tag 
 
                     curNodeId += 1
@@ -4461,7 +4461,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
 
     #Use the max width generated before for this tag
-    channelString = f'  <channel chan_width_max="{max_width}" x_min="0" y_min="0" x_max="{archObject.width - 1}" y_max="{archObject.height - 1}"/>\n'
+    channelString = f'  <channel chan_width_max="{max_width}" x_min="0" y_min="0" x_max="{archObject.width + 1}" y_max="{archObject.height + 1}"/>\n'
     channelString += f'''     <x_list index ="0" info="292"/>
         <x_list index ="1" info="292"/>
         <x_list index ="2" info="292"/>
@@ -4489,13 +4489,24 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
     for row in archObject.tiles[::-1]:
         for tile in row:
-            if tile.x == clockX and archObject.height - tile.y - 1 == clockY:
+            if tile.x + 1 == clockX and archObject.height - tile.y == clockY:
                 gridString += f'  <grid_loc x="{clockX}" y="{clockY}" block_type_id="{blockIdMap["clock_primitive"]}" width_offset="0" height_offset="0"/>\n'  
                 continue      
             if tile.tileType == "NULL": #The method that generates cellTypes ignores NULL, so it was never in our map - we'll just use EMPTY instead as we did for the main XML model
-                gridString += f'  <grid_loc x="{tile.x}" y="{archObject.height - tile.y - 1}" block_type_id="{blockIdMap["EMPTY"]}" width_offset="0" height_offset="0"/>\n'
+                gridString += f'  <grid_loc x="{tile.x + 1}" y="{archObject.height - tile.y}" block_type_id="{blockIdMap["EMPTY"]}" width_offset="0" height_offset="0"/>\n'
                 continue
-            gridString += f'  <grid_loc x="{tile.x}" y="{archObject.height - tile.y - 1}" block_type_id="{blockIdMap[tile.tileType]}" width_offset="0" height_offset="0"/>\n'
+            gridString += f'  <grid_loc x="{tile.x + 1}" y="{archObject.height - tile.y}" block_type_id="{blockIdMap[tile.tileType]}" width_offset="0" height_offset="0"/>\n'
+
+    # Create padding of EMPTY tiles around chip
+    gridString += '  <!-- EMPTY padding around chip -->\n'
+
+    for i in range(archObject.height + 2): #Add vertical padding
+        gridString += f'  <grid_loc x="0" y="{i}" block_type_id="{blockIdMap["EMPTY"]}" width_offset="0" height_offset="0"/>\n'
+        gridString += f'  <grid_loc x="{archObject.width + 1}" y="{i}" block_type_id="{blockIdMap["EMPTY"]}" width_offset="0" height_offset="0"/>\n'
+
+    for i in range(1, archObject.width + 1): #Add horizontal padding
+        gridString += f'  <grid_loc x="{i}" y="0" block_type_id="{blockIdMap["EMPTY"]}" width_offset="0" height_offset="0"/>\n'
+        gridString += f'  <grid_loc x="{i}" y="{archObject.height + 1}" block_type_id="{blockIdMap["EMPTY"]}" width_offset="0" height_offset="0"/>\n'
 
 
     ### SWITCHES

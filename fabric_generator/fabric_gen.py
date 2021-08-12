@@ -3863,6 +3863,8 @@ specialModelDict = {} # This dict maps BEL names to the model XML that should be
 
 specialInterconnectDict = {"LUT4c_frame_config": lut4InterconnectStr} #This dict maps custom bels to the special top-level interconnect they need (e.g. for external connections)
 
+clockX = 0
+clockY = 0
 
 def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
@@ -4105,8 +4107,6 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
 
     directlistString = ""
-    clockX = 0 #For futureproofing so clock primitive does not have to be placed at 0, 0
-    clockY = 0
 
     #Add direct connections for clock routing
     for line in archObject.tiles:
@@ -4484,8 +4484,6 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
 
     ### GRID
-    clockX = 0
-    clockY = 0
 
     gridString = ''
 

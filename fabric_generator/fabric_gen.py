@@ -3330,6 +3330,56 @@ def removeStringPrefix(mainStr: str, prefix: str):
     else:
         return mainStr
 
+#Method to find all 'hanging' sources and sinks in a fabric (i.e. ports with connections to pips in only one direction e.g. VCC, GND)
+#Returns dict mapping tileLoc to hanging pins
+def getFabricSourcesAndSinks(archObject: Fabric): 
+    allFabricInputs = [] #First, build a list of all fabric inputs/outputs (bel ports and wires) with the tile address
+    allFabricOutputs = []
+    returnDict = {}
+
+    for row in archObject.tiles:
+        for tile in row:
+            tileLoc = tile.genTileLoc()
+
+            for bel in tile.belsWithIO:
+                allFabricInputs.extend([(tileLoc + "." + cInput) for cInput in bel[2]])
+                allFabricOutputs.extend([(tileLoc + "." + cOutput) for cOutput in bel[3]])
+
+            for wire in tile.wires:
+                desty = tile.y - int(wire["yoffset"]) #Calculate destination location of the wire at hand
+                destx = tile.x + int(wire["xoffset"])
+                desttileLoc = f"X{destx}Y{desty}"
+
+                for i in range(int(wire["wire-count"])): #For every individual wire
+                    allFabricInputs.append(tileLoc + "." + wire["source"] + str(i))
+                    allFabricOutputs.append(desttileLoc + "." + wire["destination"] + str(i))
+
+            #Atomic wires TODO
+            for wire in tile.atomicWires:
+                allFabricInputs.append(wire["sourceTile"] + "." + wire["source"]) #Generate location strings for the source and destination
+                allFabricOutputs.append(wire["destTile"] + "." + wire["destination"])
+
+
+
+    #Now we go through all the pips, and if a source/sink doesn't appear in the list we keep it
+
+    for row in archObject.tiles:
+        for tile in row:
+            tileLoc = tile.genTileLoc()
+            sourceSet = set()
+            sinkSet = set()
+            for pip in tile.pips:
+                if (tileLoc + "." + pip[0]) not in allFabricOutputs:
+                    sourceSet.add(pip[0])
+                if (tileLoc + "." + pip[1]) not in allFabricInputs:
+                    sinkSet.add(pip[1])
+            returnDict[tileLoc] = (sourceSet, sinkSet)
+
+    return returnDict
+
+
+
+
 def genFabricObject(fabric: list):
     #The following iterates through the tile designations on the fabric
     archFabric = Fabric(len(fabric), len(fabric[0]))
@@ -3880,7 +3930,6 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
     ### DEVICE INFO
 
-
     deviceString = """
   <sizing R_minW_nmos="6065.520020" R_minW_pmos="18138.500000"/>
   <area grid_logic_tile_area="14813.392"/>
@@ -3905,6 +3954,8 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
     modelsString = "" #String to store different models
 
     tilesString = "" #String to store tiles
+
+    sourceSinkMap = getFabricSourcesAndSinks(archObject)
     
     for cellType in archObject.cellTypes: 
         cTile = getTileByType(archObject, cellType)
@@ -4050,22 +4101,27 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
         pb_typesString += f'   <input name="UserCLK" num_pins="1"/>\n'
 
 
+        #Now we add tile and top-level pb_type inputs and outputs
         for cInput in tileInputs:
             pb_typesString += f'   <input name="{cInput}" num_pins="1"/>\n' #Add top level inputs and outputs
+            tilesString += f'   <input name="{cInput}" num_pins="1"/>\n'
+
 
         for cOutput in tileOutputs:
             pb_typesString += f'   <output name="{cOutput}" num_pins="1"/>\n'
-
-        pb_typesString += f'  </pb_type>\n'
-
-
-        #Now we add tile ports and close the tile tag
-        for cInput in tileInputs:
-            tilesString += f'   <input name="{cInput}" num_pins="1"/>\n'
-
-        for cOutput in tileOutputs:
             tilesString += f'   <output name="{cOutput}" num_pins="1"/>\n'
 
+
+        for source in sourceSinkMap[cTile.genTileLoc()][0]:
+            pb_typesString += f'   <output name="{source}" num_pins="1"/>\n' #Add top level inputs and outputs
+            tilesString += f'   <output name="{source}" num_pins="1"/>\n'            
+
+        for sink in sourceSinkMap[cTile.genTileLoc()][1]:
+            pb_typesString += f'   <input name="{sink}" num_pins="1"/>\n' #Add top level inputs and outputs
+            tilesString += f'   <input name="{sink}" num_pins="1"/>\n'    
+
+        #And close final tile & pb_type string
+        pb_typesString += f'  </pb_type>\n'
         tilesString += '  </tile>\n'
 
 
@@ -4205,6 +4261,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
     curId = 0 #Increment id from 0 as we work through
     blockIdMap = {} #Dictionary to record IDs for different tile types when generating grid
     ptcMap = {} #Dict to map tiles to individual dicts that map pin name to PTC
+    sourceSinkMap = getFabricSourcesAndSinks(archObject)
 
     #First, handle tiles not defined in architecture:
 
@@ -4254,13 +4311,27 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                 tilePtcMap[cInput] = ptc #Note the ptc in the tile's ptc map
                 ptc += 1 #And increment the ptc
 
-        for bel in cTile.belsWithIO: #For each bel on the tile
+        for bel in cTile.belsWithIO: 
             for cOutput in bel[3]:
                 blockOutputString += f'   <pin_class type="OUTPUT">\n' #Same as above
                 blockOutputString += f'    <pin ptc="{ptc}">{cellType}.{cOutput}[0]</pin>\n'
                 blockOutputString += f'   </pin_class>\n'
                 tilePtcMap[cOutput] = ptc
                 ptc += 1
+
+        for source in sourceSinkMap[cTile.genTileLoc()][0]:
+            blockOutputString += f'   <pin_class type="OUTPUT">\n' #Same as above
+            blockOutputString += f'    <pin ptc="{ptc}">{cellType}.{source}[0]</pin>\n'
+            blockOutputString += f'   </pin_class>\n'
+            tilePtcMap[source] = ptc
+            ptc += 1     
+
+        for sink in sourceSinkMap[cTile.genTileLoc()][1]:
+            blockInputString += f'   <pin_class type="INPUT">\n' #Generate the tags 
+            blockInputString += f'    <pin ptc="{ptc}">{cellType}.{sink}[0]</pin>\n'
+            blockInputString += f'   </pin_class>\n'
+            tilePtcMap[sink] = ptc #Note the ptc in the tile's ptc map
+            ptc += 1 #And increment the ptc       
 
         blocksString += blockInputString
         blocksString += blockOutputString
@@ -4284,6 +4355,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
     destToWireIDMap = {} #Dictionary to map a wire destination to the relevant wire ID
 
     max_width = 1 #Initialise value to find maximum channel width for channels tag - start as 1 as you can't have a thinner wire!
+
 
     for row in archObject.tiles:
         for tile in row:
@@ -4371,7 +4443,6 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
                 nodesString += f'   <loc xlow="{xLow + 1}" ylow="{yLow + 1}" xhigh="{xHigh + 1}" yhigh="{yHigh + 1}" ptc="0"/>\n' #Add loc tag with the information we just calculated
                 nodesString += '   <segment segment_id="0"/>\n'
-                # Currently assuming low is source, high is destination
 
                 nodesString += f'  </node>\n' #Close node tag
 
@@ -4413,6 +4484,31 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
                     curNodeId += 1 #Increment id so all nodes have different ids
 
+            for source in sourceSinkMap[tile.genTileLoc()][0]:
+                thisPtc = ptcMap[tile.tileType][source]
+
+
+                nodesString += f'  <!-- Source: {tile.genTileLoc()}.{source} -->\n'
+
+                nodesString += f'  <node id="{curNodeId}" type="SOURCE" capacity="1">\n' #Generate tag for each node
+                nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="{thisPtc}" side="BOTTOM"/>\n' #Add loc tag
+                nodesString += '  </node>\n' #Close node tag
+
+                destToWireIDMap[tileLoc + "." + source] = curNodeId #Add to dest map as equivalent to a wire destination
+                curNodeId += 1 #Increment id so all nodes have different ids
+
+            for sink in sourceSinkMap[tile.genTileLoc()][1]:
+                thisPtc = ptcMap[tile.tileType][sink]
+
+
+                nodesString += f'  <!-- Sink: {tile.genTileLoc()}.{sink} -->\n'
+
+                nodesString += f'  <node id="{curNodeId}" type="SINK" capacity="1">\n' #Generate tag for each node
+                nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="{thisPtc}" side="BOTTOM"/>\n' #Add loc tag
+                nodesString += '  </node>\n' #Close node tag
+
+                sourceToWireIDMap[tileLoc + "." + sink] = curNodeId #Add to dest map as equivalent to a wire destination
+                curNodeId += 1 #Increment id so all nodes have different ids                
 
     ### EDGES
 
@@ -4428,25 +4524,25 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
                 #Check if the nodes this edge requires are in the map - if not then they're standalone pins that require a node, so we'll create one                  
 
-                if src_name not in destToWireIDMap.keys():
-                    destToWireIDMap[src_name] = curNodeId
-                    nodesString += f'  <!-- Pin: {src_name} -->\n' #Comment destination for clarity
-                    nodesString += f'  <node id="{curNodeId}" type="SOURCE" capacity="1">\n' #Generate tag for each node - this outputs into the switch matrix so is an output pin
-                    nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="0" side="BOTTOM"/>\n' #Add loc tag
-                    nodesString += '  </node>\n' #Close node tag  
+                # if src_name not in destToWireIDMap.keys():
+                #     destToWireIDMap[src_name] = curNodeId
+                #     nodesString += f'  <!-- Pin: {src_name} -->\n' #Comment destination for clarity
+                #     nodesString += f'  <node id="{curNodeId}" type="SOURCE" capacity="1">\n' #Generate tag for each node - this outputs into the switch matrix so is an output pin
+                #     nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="0" side="BOTTOM"/>\n' #Add loc tag
+                #     nodesString += '  </node>\n' #Close node tag  
 
-                    curNodeId += 1
+                #     curNodeId += 1
 
 
 
-                if sink_name not in sourceToWireIDMap.keys():
-                    sourceToWireIDMap[sink_name] = curNodeId
-                    nodesString += f'  <!-- Pin: {sink_name} -->\n' #Comment destination for clarity
-                    nodesString += f'  <node id="{curNodeId}" type="SINK" capacity="1">\n' #Generate tag for each node - this is a switch matrix sink so must be an input pin
-                    nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="0" side="BOTTOM"/>\n' #Add loc tag
-                    nodesString += '  </node>\n' #Close node tag 
+                # if sink_name not in sourceToWireIDMap.keys():
+                #     sourceToWireIDMap[sink_name] = curNodeId
+                #     nodesString += f'  <!-- Pin: {sink_name} -->\n' #Comment destination for clarity
+                #     nodesString += f'  <node id="{curNodeId}" type="SINK" capacity="1">\n' #Generate tag for each node - this is a switch matrix sink so must be an input pin
+                #     nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="0" side="BOTTOM"/>\n' #Add loc tag
+                #     nodesString += '  </node>\n' #Close node tag 
 
-                    curNodeId += 1
+                #     curNodeId += 1
 
 
                 edgeStr += f'  <edge src_node="{destToWireIDMap[src_name]}" sink_node="{sourceToWireIDMap[sink_name]}" switch_id="1">\n'

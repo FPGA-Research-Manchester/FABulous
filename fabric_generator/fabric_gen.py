@@ -4311,6 +4311,13 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                 tilePtcMap[cInput] = ptc #Note the ptc in the tile's ptc map
                 ptc += 1 #And increment the ptc
 
+        for sink in sourceSinkMap[cTile.genTileLoc()][1]:
+            blockInputString += f'   <pin_class type="INPUT">\n' #Generate the tags 
+            blockInputString += f'    <pin ptc="{ptc}">{cellType}.{sink}[0]</pin>\n'
+            blockInputString += f'   </pin_class>\n'
+            tilePtcMap[sink] = ptc #Note the ptc in the tile's ptc map
+            ptc += 1 #And increment the ptc 
+
         for bel in cTile.belsWithIO: 
             for cOutput in bel[3]:
                 blockOutputString += f'   <pin_class type="OUTPUT">\n' #Same as above
@@ -4326,12 +4333,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
             tilePtcMap[source] = ptc
             ptc += 1     
 
-        for sink in sourceSinkMap[cTile.genTileLoc()][1]:
-            blockInputString += f'   <pin_class type="INPUT">\n' #Generate the tags 
-            blockInputString += f'    <pin ptc="{ptc}">{cellType}.{sink}[0]</pin>\n'
-            blockInputString += f'   </pin_class>\n'
-            tilePtcMap[sink] = ptc #Note the ptc in the tile's ptc map
-            ptc += 1 #And increment the ptc       
+      
 
         blocksString += blockInputString
         blocksString += blockOutputString

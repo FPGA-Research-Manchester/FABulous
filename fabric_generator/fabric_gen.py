@@ -4358,6 +4358,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
     max_width = 1 #Initialise value to find maximum channel width for channels tag - start as 1 as you can't have a thinner wire!
 
+    srcToOpinStr = ''
 
     for row in archObject.tiles:
         for tile in row:
@@ -4481,9 +4482,13 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                     nodesString += f'  <node id="{curNodeId}" type="OPIN" capacity="1">\n' #Generate tag for each node
                     nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="{thisPtc}" side="BOTTOM"/>\n' #Add loc tag
                     nodesString += '  </node>\n' #Close node tag
+                    destToWireIDMap[tileLoc + "." + cOutput] = curNodeId #Add to dest map as equivalent to a wire destination                    
+                    curNodeId += 1 #Increment id so all nodes have different ids
 
-                    destToWireIDMap[tileLoc + "." + cOutput] = curNodeId #Add to dest map as equivalent to a wire destination
-
+                    nodesString += f'  <node id="{curNodeId}" type="SOURCE" capacity="1">\n' #Generate tag for each node
+                    nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="{thisPtc}" side="BOTTOM"/>\n' #Add loc tag
+                    nodesString += '  </node>\n' #Close node tag
+                    srcToOpinStr += f'  <edge src_node="{curNodeId}" sink_node="{curNodeId - 1}" switch_id="1"/>'
                     curNodeId += 1 #Increment id so all nodes have different ids
 
             for source in sourceSinkMap[tile.genTileLoc()][0]:
@@ -4498,6 +4503,14 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
                 destToWireIDMap[tileLoc + "." + source] = curNodeId #Add to dest map as equivalent to a wire destination
                 curNodeId += 1 #Increment id so all nodes have different ids
+
+                nodesString += f'  <node id="{curNodeId}" type="OPIN" capacity="1">\n' #Generate tag for each node
+                nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="{thisPtc}" side="BOTTOM"/>\n' #Add loc tag
+                nodesString += '  </node>\n' #Close node tag
+                srcToOpinStr += f'  <edge src_node="{curNodeId - 1}" sink_node="{curNodeId}" switch_id="1"/>'
+                destToWireIDMap[tileLoc + "." + source] = curNodeId #Add to dest map as equivalent to a wire destination
+
+                curNodeId += 1
 
             for sink in sourceSinkMap[tile.genTileLoc()][1]:
                 thisPtc = ptcMap[tile.tileType][sink]
@@ -4515,7 +4528,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
     ### EDGES
 
 
-    edgeStr = ''
+    edgeStr = srcToOpinStr
 
     for row in archObject.tiles:
         for tile in row:

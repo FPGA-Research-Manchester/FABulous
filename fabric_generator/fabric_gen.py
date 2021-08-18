@@ -4171,6 +4171,8 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
     for line in archObject.tiles:
         for tile in line:
+            if tile.tileType == "NULL":
+                continue
             clockOutputStr += f'   <output name="clock_in_{tile.genTileLoc()}" num_pins="1"/>\n' #Add output tag for each tile
             clockDirectStr += f'   <direct name="clockblock_to_top_{tile.genTileLoc()}" input="clock_input.inpad" output="clock_primitive.clock_in_{tile.genTileLoc()}"/>\n' #And connect output to primitive port
 
@@ -4259,6 +4261,8 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
     ptc = 0
     for line in archObject.tiles:
         for tile in line:
+            if tile.tileType == "NULL":
+                continue
             blocksString += f'   <pin_class type="OUTPUT">\n'
             blocksString += f'    <pin ptc="{ptc}">clock_primitive.clock_in_{tile.genTileLoc()}[0]</pin>\n' #Add output tag for each tile
             blocksString += f'   </pin_class>\n'
@@ -4351,32 +4355,33 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
             #Generate clock nodes:
 
             #First, clock output:
-            sourceX = clockX 
-            sourceY = clockY
+            if tile.tileType != "NULL":
+                sourceX = clockX 
+                sourceY = clockY
 
-            nodesString += f'  <!-- Clock output: {clockLoc}.clock_in_{tileLoc} -->\n'
+                nodesString += f'  <!-- Clock output: {clockLoc}.clock_in_{tileLoc} -->\n'
 
-            nodesString += f'  <node id="{curNodeId}" type="SOURCE" capacity="1">\n' #Generate tag for each node
-            nodesString += f'   <loc xlow="{clockX}" ylow="{clockY}" xhigh="{clockX}" yhigh="{clockY}" ptc="{clockPtc}" side="BOTTOM"/>\n' #Add loc tag
-            nodesString += '  </node>\n' #Close node tag
+                nodesString += f'  <node id="{curNodeId}" type="SOURCE" capacity="1">\n' #Generate tag for each node
+                nodesString += f'   <loc xlow="{clockX}" ylow="{clockY}" xhigh="{clockX}" yhigh="{clockY}" ptc="{clockPtc}" side="BOTTOM"/>\n' #Add loc tag
+                nodesString += '  </node>\n' #Close node tag
 
-            curNodeId += 1 #Increment id so all nodes have different ids
+                curNodeId += 1 #Increment id so all nodes have different ids
 
-            nodesString += f'  <node id="{curNodeId}" type="OPIN" capacity="1">\n' #Generate tag for each node
-            nodesString += f'   <loc xlow="{clockX}" ylow="{clockY}" xhigh="{clockX}" yhigh="{clockY}" ptc="{clockPtc}" side="BOTTOM"/>\n' #Add loc tag
-            nodesString += '  </node>\n' #Close node tag
-            srcToOpinStr += f'  <edge src_node="{curNodeId - 1}" sink_node="{curNodeId}" switch_id="1"/>'
-            destToWireIDMap[clockLoc + "." + "clock_in_" + tileLoc] = curNodeId #Add to dest map as equivalent to a wire destination
-            curNodeId += 1      
-            clockPtc += 1
+                nodesString += f'  <node id="{curNodeId}" type="OPIN" capacity="1">\n' #Generate tag for each node
+                nodesString += f'   <loc xlow="{clockX}" ylow="{clockY}" xhigh="{clockX}" yhigh="{clockY}" ptc="{clockPtc}" side="BOTTOM"/>\n' #Add loc tag
+                nodesString += '  </node>\n' #Close node tag
+                srcToOpinStr += f'  <edge src_node="{curNodeId - 1}" sink_node="{curNodeId}" switch_id="1"/>'
+                destToWireIDMap[clockLoc + "." + "clock_in_" + tileLoc] = curNodeId #Add to dest map as equivalent to a wire destination
+                curNodeId += 1      
+                clockPtc += 1
 
-            #And then the clock inputs for every tile:
-            nodesString += f'  <node id="{curNodeId}" type="IPIN" capacity="1">\n' #Generate tag for each node
-            nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="0" side="BOTTOM"/>\n' #Add loc tag
-            nodesString += '  </node>\n' #Close node tag            
-            sourceToWireIDMap[tileLoc + ".UserCLK"] = curNodeId #Add to dest map as equivalent to a wire destination
-            print(tileLoc + ".UserCLK")
-            curNodeId += 1      
+                #And then the clock inputs for every tile:
+                nodesString += f'  <node id="{curNodeId}" type="IPIN" capacity="1">\n' #Generate tag for each node
+                nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="0" side="BOTTOM"/>\n' #Add loc tag
+                nodesString += '  </node>\n' #Close node tag            
+                sourceToWireIDMap[tileLoc + ".UserCLK"] = curNodeId #Add to dest map as equivalent to a wire destination
+                print(tileLoc + ".UserCLK")
+                curNodeId += 1      
 
 
             for wire in tile.wires:
@@ -4547,36 +4552,14 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
     for row in archObject.tiles:
         for tile in row:
-            tileLoc = tile.genTileLoc()
-            edgeStr += f'  <edge src_node="{destToWireIDMap[clockLoc + "." + "clock_in_" + tileLoc]}" sink_node="{sourceToWireIDMap[tileLoc + ".UserCLK"]}" switch_id="1"/>\n'
+            if tile.tileType != "NULL":
+                tileLoc = tile.genTileLoc()
+                edgeStr += f'  <edge src_node="{destToWireIDMap[clockLoc + "." + "clock_in_" + tileLoc]}" sink_node="{sourceToWireIDMap[tileLoc + ".UserCLK"]}" switch_id="1"/>\n'
 
 
             for pip in tile.pips:
                 src_name = tileLoc + "." + pip[0]
                 sink_name = tileLoc + "." + pip[1]
-
-                #Check if the nodes this edge requires are in the map - if not then they're standalone pins that require a node, so we'll create one                  
-
-                # if src_name not in destToWireIDMap.keys():
-                #     destToWireIDMap[src_name] = curNodeId
-                #     nodesString += f'  <!-- Pin: {src_name} -->\n' #Comment destination for clarity
-                #     nodesString += f'  <node id="{curNodeId}" type="SOURCE" capacity="1">\n' #Generate tag for each node - this outputs into the switch matrix so is an output pin
-                #     nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="0" side="BOTTOM"/>\n' #Add loc tag
-                #     nodesString += '  </node>\n' #Close node tag  
-
-                #     curNodeId += 1
-
-
-
-                # if sink_name not in sourceToWireIDMap.keys():
-                #     sourceToWireIDMap[sink_name] = curNodeId
-                #     nodesString += f'  <!-- Pin: {sink_name} -->\n' #Comment destination for clarity
-                #     nodesString += f'  <node id="{curNodeId}" type="SINK" capacity="1">\n' #Generate tag for each node - this is a switch matrix sink so must be an input pin
-                #     nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="0" side="BOTTOM"/>\n' #Add loc tag
-                #     nodesString += '  </node>\n' #Close node tag 
-
-                #     curNodeId += 1
-
 
                 edgeStr += f'  <edge src_node="{destToWireIDMap[src_name]}" sink_node="{sourceToWireIDMap[sink_name]}" switch_id="1">\n'
                 edgeStr += '   <metadata>\n' #Generate metadata tag that tells us which switch matrix connection to activate

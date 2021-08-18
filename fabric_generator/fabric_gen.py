@@ -4158,39 +4158,23 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
    <mux name="buffer"/>
   </segment>"""
 
-
-    ### DIRECTLIST
-
-
-    directlistString = ""
-
     ### CLOCK SETUP
-
-    clockOutputStr = "" #String to store all the outputs needed for the clock block (one for each tile)
-    clockDirectStr = "" #String to store all the directs needed to connect primitive ports to top level clock block ports
-
-    for line in archObject.tiles:
-        for tile in line:
-            if tile.tileType == "NULL":
-                continue
-            clockOutputStr += f'   <output name="clock_in_{tile.genTileLoc()}" num_pins="1"/>\n' #Add output tag for each tile
-            clockDirectStr += f'   <direct name="clockblock_to_top_{tile.genTileLoc()}" input="clock_input.inpad" output="clock_primitive.clock_in_{tile.genTileLoc()}"/>\n' #And connect output to primitive port
 
     #Generate full strings for insertion
     clockTileStr = f"""  <tile name="clock_primitive">
    <equivalents>
     <site pb_type="clock_primitive" pin_mapping="direct"/>
    </equivalents>
-   {clockOutputStr}
+  <output name="clock_out" num_pins="1"/>
   </tile>"""
 
     clockPbStr = f""" <pb_type name="clock_primitive">
   <pb_type name="clock_input" blif_model=".input" num_pb="1">
    <output name="inpad" num_pins="1"/>
   </pb_type>
-  {clockOutputStr}
+  <output name="clock_out" num_pins="1"/>
   <interconnect>
-   {clockDirectStr}
+   <direct name="clock_prim_to_top" input="clock_input.inpad" output="clock_primitive.clock_out"/>
   </interconnect>
  </pb_type> """
 
@@ -4259,14 +4243,11 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
     blocksString += f'  <block_type id="{curId}" name="clock_primitive" width="1" height="1">\n'
 
     ptc = 0
-    for line in archObject.tiles:
-        for tile in line:
-            if tile.tileType == "NULL":
-                continue
-            blocksString += f'   <pin_class type="OUTPUT">\n'
-            blocksString += f'    <pin ptc="{ptc}">clock_primitive.clock_in_{tile.genTileLoc()}[0]</pin>\n' #Add output tag for each tile
-            blocksString += f'   </pin_class>\n'
-            ptc += 1
+
+    blocksString += f'   <pin_class type="OUTPUT">\n'
+    blocksString += f'    <pin ptc="{ptc}">clock_primitive.clock_out[0]</pin>\n' #Add output tag for each tile
+    blocksString += f'   </pin_class>\n'
+    ptc += 1
 
     blocksString += '</block_type>\n'
     blockIdMap["clock_primitive"] = curId
@@ -4350,6 +4331,23 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
     clockLoc = f'X{clockX - 1}Y{clockY - 1}'
 
 
+    nodesString += f'  <!-- Clock output: clock_primitive.clock_out -->\n'
+
+    nodesString += f'  <node id="{curNodeId}" type="SOURCE" capacity="1">\n' #Generate tag for each node
+    nodesString += f'   <loc xlow="{clockX}" ylow="{clockY}" xhigh="{clockX}" yhigh="{clockY}" ptc="0" side="BOTTOM"/>\n' #Add loc tag
+    nodesString += '  </node>\n' #Close node tag
+
+    curNodeId += 1 #Increment id so all nodes have different ids
+
+    nodesString += f'  <node id="{curNodeId}" type="OPIN" capacity="1">\n' #Generate tag for each node
+    nodesString += f'   <loc xlow="{clockX}" ylow="{clockY}" xhigh="{clockX}" yhigh="{clockY}" ptc="0" side="BOTTOM"/>\n' #Add loc tag
+    nodesString += '  </node>\n' #Close node tag
+    srcToOpinStr += f'  <edge src_node="{curNodeId - 1}" sink_node="{curNodeId}" switch_id="1"/>\n'
+    destToWireIDMap[clockLoc + "." + "clock_out"] = curNodeId #Add to dest map as equivalent to a wire destination
+    curNodeId += 1      
+    clockPtc += 1
+
+
     for row in archObject.tiles:
         for tile in row:
             tileLoc = tile.genTileLoc()
@@ -4357,26 +4355,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
             #First, clock output:
             if tile.tileType != "NULL":
-                sourceX = clockX 
-                sourceY = clockY
-
-                nodesString += f'  <!-- Clock output: {clockLoc}.clock_in_{tileLoc} -->\n'
-
-                nodesString += f'  <node id="{curNodeId}" type="SOURCE" capacity="1">\n' #Generate tag for each node
-                nodesString += f'   <loc xlow="{clockX}" ylow="{clockY}" xhigh="{clockX}" yhigh="{clockY}" ptc="{clockPtc}" side="BOTTOM"/>\n' #Add loc tag
-                nodesString += '  </node>\n' #Close node tag
-
-                curNodeId += 1 #Increment id so all nodes have different ids
-
-                nodesString += f'  <node id="{curNodeId}" type="OPIN" capacity="1">\n' #Generate tag for each node
-                nodesString += f'   <loc xlow="{clockX}" ylow="{clockY}" xhigh="{clockX}" yhigh="{clockY}" ptc="{clockPtc}" side="BOTTOM"/>\n' #Add loc tag
-                nodesString += '  </node>\n' #Close node tag
-                srcToOpinStr += f'  <edge src_node="{curNodeId - 1}" sink_node="{curNodeId}" switch_id="1"/>\n'
-                destToWireIDMap[clockLoc + "." + "clock_in_" + tileLoc] = curNodeId #Add to dest map as equivalent to a wire destination
-                curNodeId += 1      
-                clockPtc += 1
-
-                #And then the clock inputs for every tile:
+                #Add clock inputs for every tile:
 
                 nodesString += f'  <node id="{curNodeId}" type="IPIN" capacity="1">\n' #Generate tag for each node
                 nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="0" side="BOTTOM"/>\n' #Add loc tag
@@ -4574,7 +4553,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
         for tile in row:
             if tile.tileType != "NULL":
                 tileLoc = tile.genTileLoc()
-                edgeStr += f'  <edge src_node="{destToWireIDMap[clockLoc + "." + "clock_in_" + tileLoc]}" sink_node="{sourceToWireIDMap[tileLoc + ".UserCLK"]}" switch_id="1"/>\n'
+                edgeStr += f'  <edge src_node="{destToWireIDMap[clockLoc + "." + "clock_out"]}" sink_node="{sourceToWireIDMap[tileLoc + ".UserCLK"]}" switch_id="1"/>\n'
 
 
             for pip in tile.pips:

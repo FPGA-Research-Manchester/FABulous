@@ -1,0 +1,35 @@
+#frame_name,frame_index,bits_used_in_frame,used_bits_mask,ConfigBits_ranges
+frame0,0,8,0000_0000_0000_0000_0000_1111_0000_1111,3:0,7:4,#,Inst_OPA_InPass4_frame_config,Inst_OPB_InPass4_frame_config
+frame1,1,0,0000_0000_0000_1111_0000_1111_0000_1111,19:16,15:12,11:8,#,Inst_RES2_OutPass4_frame_config,Inst_RES1_OutPass4_frame_config,Inst_RES0_OutPass4_frame_config
+frame2,2,0,0000_0000_0000_0000_0000_0000_0000_0000,# NULL
+frame3,3,0,0000_0000_0000_0000_0000_0000_0000_0000,# NULL
+frame4,4,0,0000_0000_0000_0000_0000_0000_0000_0000,# NULL
+frame5,5,0,0000_0000_0000_0000_0000_0000_0000_0000,# NULL
+frame6,6,0,0000_0000_0000_0000_0000_0000_0000_0000,# NULL
+frame7,7,0,0000_0000_0000_0000_0000_0000_0000_0000,# NULL
+frame8,8,0,0000_0000_0000_0000_0000_0000_0000_0000,# NULL
+frame9,9,0,0000_0000_0000_0000_0000_0000_0000_0000,# NULL
+frame10,10,0,0000_0000_0000_0000_0000_0000_0000_0000,# NULL
+frame11,11,0,0000_0000_0000_0000_0000_0000_0000_0000,# NULL
+frame12,12,0,0000_0000_0000_0000_0000_0000_0000_0000,# NULL
+frame13,13,0,0000_0000_0000_0000_0000_0000_0000_0000,# NULL
+frame14,14,0,0000_0000_0000_0000_0000_0000_0000_0000,# NULL
+frame15,15,0,0000_0000_0000_0000_0000_0000_0000_0000,# NULL
+frame16,16,0,0000_0000_0000_0000_0000_0000_0000_0000,# NULL
+frame17,17,0,0000_0000_0000_0000_0000_0000_0000_0000,# NULL
+frame18,18,0,0000_0000_0000_0000_0000_0000_0000_0000,# NULL
+frame19,19,0,0000_0000_0000_0000_0000_0000_0000_0000,# NULL
+
+# the following can be used when generating the fabric with MultiplexerStyle = 'generic'
+# cat CPU_IO_tile.vhdl | grep -A 12 frame_config | grep -v "," | grep -v "\-\-" | grep -v Map
+
+# Inst_OPA_InPass4_frame_config : InPass4_frame_config
+#                  ConfigBits => ConfigBits ( 4 -1 downto 0 ) );
+# Inst_OPB_InPass4_frame_config : InPass4_frame_config
+#                  ConfigBits => ConfigBits ( 8 -1 downto 4 ) );
+# Inst_RES0_OutPass4_frame_config : OutPass4_frame_config
+#                  ConfigBits => ConfigBits ( 12 -1 downto 8 ) );
+# Inst_RES1_OutPass4_frame_config : OutPass4_frame_config
+#                  ConfigBits => ConfigBits ( 16 -1 downto 12 ) );
+# Inst_RES2_OutPass4_frame_config : OutPass4_frame_config
+#                  ConfigBits => ConfigBits ( 20 -1 downto 16 ) );

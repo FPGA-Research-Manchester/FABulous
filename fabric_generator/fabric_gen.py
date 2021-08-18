@@ -4164,20 +4164,6 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
     directlistString = ""
 
-    #Add direct connections for clock routing
-    for line in archObject.tiles:
-        for tile in line:
-            if tile.tileType == "NULL": #NULL tiles aren't placed in the specification so the sink pin won't exist to VPR if we try to add a direct connection
-                continue
-
-            if tile.x == clockX and (archObject.height - tile.y - 1 == clockY):
-                continue #If this is the clock tile then we don't need a clock connection
-
-            xoffset = tile.x - clockX   
-            yoffset = archObject.height - tile.y - 1 - clockY
-            directlistString += f'  <direct name="clock_routing_to_{tile.genTileLoc()}" from_pin="clock_primitive.clock_in_{tile.genTileLoc()}" to_pin="{tile.tileType}.UserCLK" x_offset="{xoffset}" y_offset="{yoffset}" z_offset="0"/>\n'
-
-
     ### CLOCK SETUP
 
     clockOutputStr = "" #String to store all the outputs needed for the clock block (one for each tile)
@@ -4241,10 +4227,6 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
  <segmentlist>
 {segmentlistString}
  </segmentlist>
-
- <directlist>
-{directlistString}
- </directlist>
 
 
 </architecture>''' #TODO: Once Yosys is set up (so primitive instantiation can be used), swap out the .input model on the clock input for a primitive
@@ -4359,10 +4341,44 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
     max_width = 1 #Initialise value to find maximum channel width for channels tag - start as 1 as you can't have a thinner wire!
 
     srcToOpinStr = ''
+    clockPtc = 0
+    clockLoc = f'X{clockX - 1}Y{clockY - 1}'
+
 
     for row in archObject.tiles:
         for tile in row:
             tileLoc = tile.genTileLoc()
+            #Generate clock nodes:
+
+            #First, clock output:
+            sourceX = clockX 
+            sourceY = clockY
+
+            nodesString += f'  <!-- Clock output: {clockLoc}.clock_in_{tileLoc} -->\n'
+
+            nodesString += f'  <node id="{curNodeId}" type="SOURCE" capacity="1">\n' #Generate tag for each node
+            nodesString += f'   <loc xlow="{clockX}" ylow="{clockY}" xhigh="{clockX}" yhigh="{clockY}" ptc="{clockPtc}" side="BOTTOM"/>\n' #Add loc tag
+            nodesString += '  </node>\n' #Close node tag
+
+            curNodeId += 1 #Increment id so all nodes have different ids
+
+            nodesString += f'  <node id="{curNodeId}" type="OPIN" capacity="1">\n' #Generate tag for each node
+            nodesString += f'   <loc xlow="{clockX}" ylow="{clockY}" xhigh="{clockX}" yhigh="{clockY}" ptc="{clockPtc}" side="BOTTOM"/>\n' #Add loc tag
+            nodesString += '  </node>\n' #Close node tag
+            srcToOpinStr += f'  <edge src_node="{curNodeId - 1}" sink_node="{curNodeId}" switch_id="1"/>'
+            destToWireIDMap[clockLoc + "." + "clock_in_" + tileLoc] = curNodeId #Add to dest map as equivalent to a wire destination
+            curNodeId += 1      
+            clockPtc += 1
+
+            #And then the clock inputs for every tile:
+            nodesString += f'  <node id="{curNodeId}" type="IPIN" capacity="1">\n' #Generate tag for each node
+            nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="0" side="BOTTOM"/>\n' #Add loc tag
+            nodesString += '  </node>\n' #Close node tag            
+            sourceToWireIDMap[tileLoc + ".UserCLK"] = curNodeId #Add to dest map as equivalent to a wire destination
+            print(tileLoc + ".UserCLK")
+            curNodeId += 1      
+
+
             for wire in tile.wires:
                 if wire["yoffset"] != "0" and wire["xoffset"] != "0": #We want to find the length of the wire based on the x and y offset - either it's a jump, or in theory goes off in only one direction - let's find which
                     raise Exception("Diagonal wires not currently supported for VPR routing resource model") #Stop if there are diagonal wires just in case they get put in a fabric
@@ -4501,7 +4517,6 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                 nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="{thisPtc}" side="BOTTOM"/>\n' #Add loc tag
                 nodesString += '  </node>\n' #Close node tag
 
-                destToWireIDMap[tileLoc + "." + source] = curNodeId #Add to dest map as equivalent to a wire destination
                 curNodeId += 1 #Increment id so all nodes have different ids
 
                 nodesString += f'  <node id="{curNodeId}" type="OPIN" capacity="1">\n' #Generate tag for each node
@@ -4533,6 +4548,9 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
     for row in archObject.tiles:
         for tile in row:
             tileLoc = tile.genTileLoc()
+            edgeStr += f'  <edge src_node="{destToWireIDMap[clockLoc + "." + "clock_in_" + tileLoc]}" sink_node="{sourceToWireIDMap[tileLoc + ".UserCLK"]}" switch_id="1"/>\n'
+
+
             for pip in tile.pips:
                 src_name = tileLoc + "." + pip[0]
                 sink_name = tileLoc + "." + pip[1]

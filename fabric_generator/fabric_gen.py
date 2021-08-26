@@ -4346,7 +4346,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
     destToWireIDMap[clockLoc + "." + "clock_out"] = curNodeId #Add to dest map as equivalent to a wire destination
     curNodeId += 1      
     clockPtc += 1
-
+    wirePtc = 0 #For simplicity's sake, we currently use a different ptc for every single wire - probably worth improving at some point but the only issue is some memory inefficiency
 
     for row in archObject.tiles:
         for tile in row:
@@ -4405,7 +4405,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                     nodesString += f'  <!-- Wire: {wireSource+str(i)} -> {wireDest+str(i)} -->\n' #Comment destination for clarity
                     nodesString += f'  <node id="{curNodeId}" type="{nodeType}" capacity="1" direction="{direction}">\n' #Generate tag for each node
                     nodesString += '   <segment segment_id="0"/>\n'
-                    nodesString += f'   <loc xlow="{xLow + 1}" ylow="{yLow + 1}" xhigh="{xHigh + 1}" yhigh="{yHigh + 1}" ptc="0"/>\n' #Add loc tag with the information we just calculated
+                    nodesString += f'   <loc xlow="{xLow + 1}" ylow="{yLow + 1}" xhigh="{xHigh + 1}" yhigh="{yHigh + 1}" ptc="{wirePtc}"/>\n' #Add loc tag with the information we just calculated
                     # TODO: Set ptc value here
                     # Currently assuming low is source, high is destination
 
@@ -4415,7 +4415,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                     destToWireIDMap[wireDest+str(i)] = curNodeId
 
                     curNodeId += 1 #Increment id so all nodes have different ids
-
+                    wirePtc += 1 #Increment wire ptc so that all wires have different ptcs
                 max_width = max(max_width, int(wire["wire-count"])) #If our current width is greater than the previous max, take the new one
 
 
@@ -4450,7 +4450,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                 nodesString += f'  <!-- Atomic Wire: {wireSource} -> {wireDest} -->\n' #Comment destination for clarity
                 nodesString += f'  <node id="{curNodeId}" type="{nodeType}" capacity="1" direction="{direction}">\n' #Generate tag for each node
 
-                nodesString += f'   <loc xlow="{xLow + 1}" ylow="{yLow + 1}" xhigh="{xHigh + 1}" yhigh="{yHigh + 1}" ptc="0"/>\n' #Add loc tag with the information we just calculated
+                nodesString += f'   <loc xlow="{xLow + 1}" ylow="{yLow + 1}" xhigh="{xHigh + 1}" yhigh="{yHigh + 1}" ptc="{wirePtc}"/>\n' #Add loc tag with the information we just calculated
                 nodesString += '   <segment segment_id="0"/>\n'
 
                 nodesString += f'  </node>\n' #Close node tag
@@ -4459,7 +4459,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                 destToWireIDMap[wireDest] = curNodeId
 
                 curNodeId += 1 #Increment id so all nodes have different ids
-
+                wirePtc += 1
 
             # Generate nodes for bel ports
             for bel in tile.belsWithIO: 
@@ -4570,27 +4570,16 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
     ### CHANNELS
 
+    max_width = wirePtc #Overwrite with an upper bound of the possible wire PTCs for now 
 
     #Use the max width generated before for this tag
     channelString = f'  <channel chan_width_max="{max_width}" x_min="0" y_min="0" x_max="{archObject.width + 1}" y_max="{archObject.height + 1}"/>\n'
-    channelString += f'''     <x_list index ="0" info="292"/>
-        <x_list index ="1" info="292"/>
-        <x_list index ="2" info="292"/>
-        <x_list index ="3" info="292"/>
-        <x_list index ="4" info="292"/>
-        <x_list index ="5" info="292"/>
-        <x_list index ="6" info="292"/>
-        <x_list index ="7" info="292"/>
-        <x_list index ="8" info="292"/>
-        <y_list index ="0" info="292"/>
-        <y_list index ="1" info="292"/>
-        <y_list index ="2" info="292"/>
-        <y_list index ="3" info="292"/>
-        <y_list index ="4" info="292"/>
-        <y_list index ="5" info="292"/>
-        <y_list index ="6" info="292"/>
-        <y_list index ="7" info="292"/>
-        <y_list index ="8" info="292"/>\n'''
+    for i in range(archObject.width + 2):
+        channelString += f'  <x_list index ="{i}" info="{max_width}"/>\n'
+
+    for i in range(archObject.height + 2):
+        channelString += f'  <y_list index ="{i}" info="{max_width}"/>\n'
+
 
 
 

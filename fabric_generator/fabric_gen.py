@@ -3853,6 +3853,12 @@ lut4cStr = """
       2.690e-10
       2.690e-10
      </delay_matrix>
+     <metadata>
+       <meta name="fasm_type">LUT</meta>
+       <meta name="fasm_lut">
+         INIT[15:0]
+       </meta>
+     </metadata>
     </pb_type>
 
     <pb_type name="ff" blif_model=".latch" class="flipflop" num_pb="1">

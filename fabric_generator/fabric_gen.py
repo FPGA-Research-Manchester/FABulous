@@ -3961,9 +3961,10 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
         cTile = getTileByType(archObject, cellType)
 
         tilesString += f'  <tile name="{cellType}">\n' #Add tiles and appropriate equivalent site
-        tilesString += '   <equivalents>\n'
-        tilesString += f'    <site pb_type="{cellType}" pin_mapping="direct"/>\n'
-        tilesString += '   </equivalents>\n'
+        tilesString += f'   <sub_tile name="{cellType}_sub">' #Add sub_tile declaration to meet VTR 8.1.0 requirements
+        tilesString += '    <equivalent_sites>\n'
+        tilesString += f'     <site pb_type="{cellType}" pin_mapping="direct"/>\n'
+        tilesString += '    </equivalent_sites>\n'
 
         pb_typesString += f'  <pb_type name="{cellType}">\n' #Top layer block
         doneBels = []
@@ -4049,13 +4050,18 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
                 
             doneBels.append(bel[0]) #Make sure we don't repeat similar BELs
             
+        pinlocationsAndInputsStr = ''
 
-        tilesString += '   <pinlocations pattern="custom">\n'
+        pinlocationsAndInputsStr += '   <pinlocations pattern="custom">\n'
+        
+        totalList = f'{cellType}_sub.UserCLK'
+        for cPin in (tileInputs + tileOutputs + list(sourceSinkMap[cTile.genTileLoc()][0]) + list(sourceSinkMap[cTile.genTileLoc()][1])):
+            totalList += f' {cellType}_sub.{cPin}'
 
-        for cPin in (tileInputs + tileOutputs):
-            tilesString += f'    <loc side ="bottom"> {cPin} </loc>\n'
+        pinlocationsAndInputsStr += f'    <loc side ="bottom"> {totalList} </loc>\n'
 
-        tilesString += '   </pinlocations>\n'
+        pinlocationsAndInputsStr += '   </pinlocations>\n'
+
 
         pb_typesString += '   <interconnect>\n' #We now need interconnect to link every bel to the top pb_type
 
@@ -4104,24 +4110,25 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
         #Now we add tile and top-level pb_type inputs and outputs
         for cInput in tileInputs:
             pb_typesString += f'   <input name="{cInput}" num_pins="1"/>\n' #Add top level inputs and outputs
-            tilesString += f'   <input name="{cInput}" num_pins="1"/>\n'
+            pinlocationsAndInputsStr += f'   <input name="{cInput}" num_pins="1"/>\n'
 
 
         for cOutput in tileOutputs:
             pb_typesString += f'   <output name="{cOutput}" num_pins="1"/>\n'
-            tilesString += f'   <output name="{cOutput}" num_pins="1"/>\n'
+            pinlocationsAndInputsStr += f'   <output name="{cOutput}" num_pins="1"/>\n'
 
 
         for source in sourceSinkMap[cTile.genTileLoc()][0]:
             pb_typesString += f'   <output name="{source}" num_pins="1"/>\n' #Add top level inputs and outputs
-            tilesString += f'   <output name="{source}" num_pins="1"/>\n'            
+            pinlocationsAndInputsStr += f'   <output name="{source}" num_pins="1"/>\n'            
 
         for sink in sourceSinkMap[cTile.genTileLoc()][1]:
             pb_typesString += f'   <input name="{sink}" num_pins="1"/>\n' #Add top level inputs and outputs
-            tilesString += f'   <input name="{sink}" num_pins="1"/>\n'    
+            pinlocationsAndInputsStr += f'   <input name="{sink}" num_pins="1"/>\n'    
 
         #And close final tile & pb_type string
         pb_typesString += f'  </pb_type>\n'
+        tilesString += pinlocationsAndInputsStr + '</sub_tile>\n' + pinlocationsAndInputsStr
         tilesString += '  </tile>\n'
 
 
@@ -4162,10 +4169,12 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
     #Generate full strings for insertion
     clockTileStr = f"""  <tile name="clock_primitive">
-   <equivalents>
-    <site pb_type="clock_primitive" pin_mapping="direct"/>
-   </equivalents>
-  <output name="clock_out" num_pins="1"/>
+   <sub_tile name="clock_sub">
+    <equivalent_sites>
+     <site pb_type="clock_primitive" pin_mapping="direct"/>
+    </equivalent_sites>
+    <output name="clock_out" num_pins="1"/>
+   </sub_tile>
   </tile>"""
 
     clockPbStr = f""" <pb_type name="clock_primitive">
@@ -4334,7 +4343,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
     nodesString += f'  <!-- Clock output: clock_primitive.clock_out -->\n'
 
     nodesString += f'  <node id="{curNodeId}" type="SOURCE" capacity="1">\n' #Generate tag for each node
-    nodesString += f'   <loc xlow="{clockX}" ylow="{clockY}" xhigh="{clockX}" yhigh="{clockY}" ptc="0" side="BOTTOM"/>\n' #Add loc tag
+    nodesString += f'   <loc xlow="{clockX}" ylow="{clockY}" xhigh="{clockX}" yhigh="{clockY}" ptc="0"/>\n' #Add loc tag
     nodesString += '  </node>\n' #Close node tag
 
     curNodeId += 1 #Increment id so all nodes have different ids
@@ -4364,7 +4373,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                 curNodeId += 1      
 
                 nodesString += f'  <node id="{curNodeId}" type="SINK" capacity="1">\n' #Generate tag for each node
-                nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="0" side="BOTTOM"/>\n' #Add loc tag
+                nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="0"/>\n' #Add loc tag
                 nodesString += '  </node>\n' #Close node tag  
                 IpinToSinkStr += f'  <edge src_node="{curNodeId - 1}" sink_node="{curNodeId}" switch_id="1"/>\n'          
                 curNodeId += 1    
@@ -4478,7 +4487,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                     curNodeId += 1 #Increment id so all nodes have different ids
 
                     nodesString += f'  <node id="{curNodeId}" type="SINK" capacity="1">\n' #Generate tag for each node
-                    nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="{thisPtc}" side="BOTTOM"/>\n' #Add loc tag - same high and low vals as no movement between tiles
+                    nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="{thisPtc}"/>\n' #Add loc tag - same high and low vals as no movement between tiles
                     nodesString += '  </node>\n' #Close node tag
                     IpinToSinkStr += f'  <edge src_node="{curNodeId - 1}" sink_node="{curNodeId}" switch_id="1"/>\n'          
 
@@ -4498,7 +4507,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                     curNodeId += 1 #Increment id so all nodes have different ids
 
                     nodesString += f'  <node id="{curNodeId}" type="SOURCE" capacity="1">\n' #Generate tag for each node
-                    nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="{thisPtc}" side="BOTTOM"/>\n' #Add loc tag
+                    nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="{thisPtc}"/>\n' #Add loc tag
                     nodesString += '  </node>\n' #Close node tag
                     srcToOpinStr += f'  <edge src_node="{curNodeId}" sink_node="{curNodeId - 1}" switch_id="1"/>\n'
                     curNodeId += 1 #Increment id so all nodes have different ids
@@ -4510,7 +4519,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                 nodesString += f'  <!-- Source: {tile.genTileLoc()}.{source} -->\n'
 
                 nodesString += f'  <node id="{curNodeId}" type="SOURCE" capacity="1">\n' #Generate tag for each node
-                nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="{thisPtc}" side="BOTTOM"/>\n' #Add loc tag
+                nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="{thisPtc}"/>\n' #Add loc tag
                 nodesString += '  </node>\n' #Close node tag
 
                 curNodeId += 1 #Increment id so all nodes have different ids
@@ -4530,7 +4539,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                 nodesString += f'  <!-- Sink: {tile.genTileLoc()}.{sink} -->\n'
 
                 nodesString += f'  <node id="{curNodeId}" type="SINK" capacity="1">\n' #Generate tag for each node
-                nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="{thisPtc}" side="BOTTOM"/>\n' #Add loc tag
+                nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="{thisPtc}"/>\n' #Add loc tag
                 nodesString += '  </node>\n' #Close node tag
                 curNodeId += 1 #Increment id so all nodes have different ids                
 

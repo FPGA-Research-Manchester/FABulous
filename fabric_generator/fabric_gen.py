@@ -3220,6 +3220,7 @@ sDelay = "8"
 GNDRE = re.compile("GND(\d*)")
 VCCRE = re.compile("VCC(\d*)")
 BracketAddingRE = re.compile(r"^(\S+?)(\d+)$")
+num_pbRE = re.compile("num_pb=\"(\d*)\"")
 letters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W"] #For LUT labelling
 
 #This class represents individual tiles in the architecture
@@ -3842,6 +3843,8 @@ IO_bidirStr = """   <pb_type name="IO_1_bidirectional_frame_config_pass" num_pb=
     </metadata>
    </pb_type>"""
 
+#This string is set up to use the .format method to fill in the prefixes
+
 lut4cStr = """
    <pb_type name="LUT4c_frame_config" num_pb="8">
     <pb_type name="lut4" blif_model=".names" num_pb="1" class="lut">
@@ -3900,7 +3903,7 @@ lut4cStr = """
      </mux>
     </interconnect> 
     <metadata>
-     <meta name="fasm_prefix">LA_ LB_ LC_ LD_ LE_ LF_ LG_ LH_</meta>
+     <meta name="fasm_prefix"> {fasm_prefix_list} </meta>
     </metadata>       
    </pb_type>"""
 
@@ -3998,7 +4001,22 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
 
             if bel[0] in specialBelDict: #If the bel has custom pb_type XML
-                pb_typesString += specialBelDict[bel[0]] #Add the custom pb_type XML
+                thisPbString = specialBelDict[bel[0]]
+                pbSearch = num_pbRE.search(thisPbString)
+                if pbSearch:
+                    try:
+                        fasm_prefix_count = int(pbSearch.group(1))
+                    except:
+                        raise ValueError("Non-integer num_pb specified in custom XML")
+                else:
+                    fasm_prefix_count = 1
+
+                fasm_prefix_list = ""
+
+                for i in range(fasm_prefix_count):
+                    fasm_prefix_list += letters[i] + " "
+
+                pb_typesString += thisPbString.format(fasm_prefix_list = fasm_prefix_list) #Add the custom pb_type XML
 
                 if bel[0] in specialModelDict: #If it also has custom model XML
                     modelsString += specialModelDict[bel[0]] #Then add in this XML
@@ -4150,7 +4168,12 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
     for line in archObject.tiles:
         for tile in line:
             if tile.tileType != "NULL": #We do not need to specify if the tile is empty as all tiles default to EMPTY in VPR
-                layoutString += f'   <single type="{tile.tileType}" priority="1" x="{tile.x + 1}" y="{archObject.height - tile.y}"/>\n' #Add single tag for each tile - add 1 to x and y (cancels out in y conversion) for padding
+                layoutString += f'   <single type="{tile.tileType}" priority="1" x="{tile.x + 1}" y="{archObject.height - tile.y}">\n' #Add single tag for each tile - add 1 to x and y (cancels out in y conversion) for padding
+                #Now add metadata for fasm generation
+                layoutString += '    <metadata>'
+                layoutString += f'     <meta name="fasm_prefix"> {tile.genTileLoc()} </meta>'
+                layoutString += '    </metadata>'
+                layoutString += '   </single>'
 
     layoutString += '  </fixed_layout>\n'
 

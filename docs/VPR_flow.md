@@ -17,3 +17,12 @@ and add any other desired metadata within the metadata tag. When producing the a
 If a BEL is found in the specialBelDict, there are two other features that can be used to ensure everything fits together as desired. If this pb\_type also requires custom model XML, this can be inserted into specialModelDict, once again with the name of the BEL as the key and including the model tag. Only model XML provided here will be added - the default is not to generate anything for special BELs. This may be useful if the BEL you are representing does not use a standard BLIF primitive, and still requires a matching model. 
 
 Similarly, there is a specialInterconnectDict, which can be used to insert special interconnect XML into the interconnect tag of the top-level pb\_type that houses the BEL. Note that in this case, you should not include the interconnect tag in your XML, as it will be inserted within an interconnect tag. This may be useful, for example, when generating custom XML for BELs that require a clock input, so that the clock signal can be routed into the BEL. The key in the dict should be the name of the BEL that the corresponding custom pb\_type XML is for.
+
+
+## Notes for developers
+
+The ptc number provided for each node in the routing resource (RR) graph represents the pin, track or class of the node. With SOURCE, SINK, IPIN and OPIN nodes, this is the ptc of the appropriate pin in the block type definition, however with CHANY and CHANX nodes it is more arbitrary. Here, each wire's ptc number should be different from any wire it overlaps with **anywhere along its length**. Currently, for simplicity's sake, we simply assign a different ptc number to every wire on the fabric. More information can be found in this Google Group discussion:
+
+[VTR Users PTC discussion]https://groups.google.com/g/vtr-users/c/ZFXPn-W3SxA/m/ROkfD2oEAQAJ
+
+

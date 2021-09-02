@@ -4,6 +4,10 @@ VPR (Versatile Place and Route) is a place and route tool from the VTR project t
 
 To generate the necessary materials to program using VPR, run $FABulous\_root/fabric\_generator/fabric\_gen.py with the -genVPRModel flag. In the $FABulous\_root/fabric\_generator/vproutput directory, two files will be created - architecture.xml and routing\_resources.xml. architecture.xml contains a description of the various tiles, ports and BELs - everything in the architecture except for the routing resources. These routing resources are specified in the routing\_resources.xml file, which contains a graph within which the nodes are routing wires and ports, and the edges are the switch matrix interconnects that connect these resources.
 
+To run the flow with ODIN II, the run\_vtr\_flow.py script in $VTR\_ROOT/vtr\_flow/scripts can be used, passing in your verilog circuit, followed by the genfasm utility.
+
+To use Yosys (recommended with FABulous for improved functionality), the Yosys flow found in $FABulous\_root/YosysFiles/VPR\_flow/vpr.ys can be used, which will output a Berkely Logic Interchange Format (BLIF) file, which can be used as an argument for the VPR executable, followed by the genfasm utility.
+
 ## Adding custom XML
 
 The auto-generated XML that FABulous creates for different BELs cannot cover all cases - for example, a BEL might depend on special functionality within VPR or require use of standard BLIF primitives, making it impractical to use as a blackbox. In this case, custom XML can be inserted when certain BELs are encountered. To do this, store the corresponding XML for the pb\_type, including the opening and closing tags, in the structure specialBelDict, with the key being the name of the BEL that should be replaced. This is particularly flexible as the XML doesn't have to be inserted directly into the code - extra code can be added to generate this XML if desired. In order to generate FASM, and therefore a bitstream, with your architecture, it may be necessary to add FASM prefixes if your BEL has more than one instance. This allows the bitstream generator to understand which BEL a certain feature is being enabled/set on. FABulous handles the actual prefixes itself, but the metadata tag itself must be provided by the user in case there is other metadata to be supplied. Where you wish to insert the metadata, simply write:
@@ -24,5 +28,7 @@ Similarly, there is a specialInterconnectDict, which can be used to insert speci
 The ptc number provided for each node in the routing resource (RR) graph represents the pin, track or class of the node. With SOURCE, SINK, IPIN and OPIN nodes, this is the ptc of the appropriate pin in the block type definition, however with CHANY and CHANX nodes it is more arbitrary. Here, each wire's ptc number should be different from any wire it overlaps with **anywhere along its length**. Currently, for simplicity's sake, we simply assign a different ptc number to every wire on the fabric. More information can be found in this Google Group discussion:
 
 [VTR Users PTC discussion]https://groups.google.com/g/vtr-users/c/ZFXPn-W3SxA/m/ROkfD2oEAQAJ
+
+Although no meaningful routing connections are specified in the architecture.xml file, it is important that all pins do not have an Fc value of 0. This is because VPR uses the Fc value to gauge how well connected to the fabric a pin is, and so will not be able to find routing candidates with 0 Fc pins. Currently FABulous is set up with a default fractional Fc of 1 such that all pins are connected to the fabric and are viable candidates.
 
 

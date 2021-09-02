@@ -4001,22 +4001,22 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
 
             if bel[0] in specialBelDict: #If the bel has custom pb_type XML
-                thisPbString = specialBelDict[bel[0]]
-                pbSearch = num_pbRE.search(thisPbString)
-                if pbSearch:
+                thisPbString = specialBelDict[bel[0]] #Get the custom XML string
+                pbSearch = num_pbRE.search(thisPbString) #And fetch the num_pb value (with regex)
+                if pbSearch: #If there is a num_pb value specified
                     try:
-                        fasm_prefix_count = int(pbSearch.group(1))
+                        fasm_prefix_count = int(pbSearch.group(1)) #Convert it to an int
                     except:
-                        raise ValueError("Non-integer num_pb specified in custom XML")
+                        raise ValueError("Non-integer num_pb specified in custom XML") #Or if that's not possible raise an exception
                 else:
-                    fasm_prefix_count = 1
+                    fasm_prefix_count = 1 #Default in case of no num_pb specification is 1
 
                 fasm_prefix_list = ""
 
                 for i in range(fasm_prefix_count):
-                    fasm_prefix_list += letters[i] + " "
+                    fasm_prefix_list += letters[i] + " " # Get a space separated list of the first <num_pb> letters
 
-                pb_typesString += thisPbString.format(fasm_prefix_list = fasm_prefix_list) #Add the custom pb_type XML
+                pb_typesString += thisPbString.format(fasm_prefix_list = fasm_prefix_list) #Add the custom pb_type XML with the list inserted
 
                 if bel[0] in specialModelDict: #If it also has custom model XML
                     modelsString += specialModelDict[bel[0]] #Then add in this XML
@@ -4170,8 +4170,8 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
             if tile.tileType != "NULL": #We do not need to specify if the tile is empty as all tiles default to EMPTY in VPR
                 layoutString += f'   <single type="{tile.tileType}" priority="1" x="{tile.x + 1}" y="{archObject.height - tile.y}">\n' #Add single tag for each tile - add 1 to x and y (cancels out in y conversion) for padding
                 #Now add metadata for fasm generation
-                layoutString += '    <metadata>'
-                layoutString += f'     <meta name="fasm_prefix"> {tile.genTileLoc()} </meta>'
+                layoutString += '    <metadata>' 
+                layoutString += f'     <meta name="fasm_prefix"> {tile.genTileLoc()} </meta>' #Only metadata required is the tile name for the prefix
                 layoutString += '    </metadata>'
                 layoutString += '   </single>'
 
@@ -4288,7 +4288,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
     ptc += 1
 
     blocksString += '</block_type>\n'
-    blockIdMap["clock_primitive"] = curId
+    blockIdMap["clock_primitive"] = curId #Store that the clock_primitive block has this ID
     curId += 1
 
     for cellType in archObject.cellTypes:
@@ -4422,7 +4422,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                 destx = tile.x + int(wire["xoffset"])
                 desttileLoc = f"X{destx}Y{desty}"
 
-                if (nodeType == "CHANX" and int(wire["xoffset"]) > 0) or (nodeType == "CHANY" and int(wire["yoffset"]) > 0):
+                if (nodeType == "CHANX" and int(wire["xoffset"]) > 0) or (nodeType == "CHANY" and int(wire["yoffset"]) > 0): #Check wire direction and set appropriate valuesz
                     direction = "INC_DIR"
                     yLow = archObject.height - tile.y - 1
                     xLow = tile.x
@@ -4585,7 +4585,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
     ### EDGES
 
 
-    edgeStr = srcToOpinStr + IpinToSinkStr
+    edgeStr = srcToOpinStr + IpinToSinkStr #Initialise list of edges with edges connecting OPINs and IPINs to their corresponding SINKs and SOURCEs
 
     for row in archObject.tiles:
         for tile in row:

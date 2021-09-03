@@ -3355,7 +3355,6 @@ def getFabricSourcesAndSinks(archObject: Fabric):
                     allFabricInputs.append(tileLoc + "." + wire["source"] + str(i))
                     allFabricOutputs.append(desttileLoc + "." + wire["destination"] + str(i))
 
-            #Atomic wires TODO
             for wire in tile.atomicWires:
                 allFabricInputs.append(wire["sourceTile"] + "." + wire["source"]) #Generate location strings for the source and destination
                 allFabricOutputs.append(wire["destTile"] + "." + wire["destination"])
@@ -4415,7 +4414,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                 elif wire["xoffset"] != "0":
                     nodeType = "CHANX" #Set as horizontal if moving along X
                 else: #If we get to here then both offsets are zero and so this must be a jump wire
-                    pass # TODO: Add JUMP handling here
+                    nodeType = "CHANY" # default to CHANY - as offsets are zero it does not matter
 
 
                 desty = tile.y - int(wire["yoffset"]) #Calculate destination location of the wire at hand
@@ -4444,8 +4443,6 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                     nodesString += f'  <node id="{curNodeId}" type="{nodeType}" capacity="1" direction="{direction}">\n' #Generate tag for each node
                     nodesString += '   <segment segment_id="0"/>\n'
                     nodesString += f'   <loc xlow="{xLow + 1}" ylow="{yLow + 1}" xhigh="{xHigh + 1}" yhigh="{yHigh + 1}" ptc="{wirePtc}"/>\n' #Add loc tag with the information we just calculated
-                    # TODO: Set ptc value here
-                    # Currently assuming low is source, high is destination
 
                     nodesString += '  </node>\n' #Close node tag
 

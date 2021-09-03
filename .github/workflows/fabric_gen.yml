@@ -10,7 +10,7 @@ on:
     branches: [ master ]
 
 jobs:
-  build and run:
+  build_and_run:
 
     runs-on: ubuntu-latest
 

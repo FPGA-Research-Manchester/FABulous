@@ -3921,8 +3921,9 @@ specialModelDict = {} # This dict maps BEL names to the model XML that should be
 
 specialInterconnectDict = {"LUT4c_frame_config": lut4InterconnectStr} #This dict maps custom bels to the special top-level interconnect they need (e.g. for external connections)
 
-clockX = 1
-clockY = 1
+#Clock coordinates - these are relative to the fabric.csv fabric, and ignore the padding
+clockX = 0
+clockY = 0
 
 def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
@@ -3934,6 +3935,11 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
     ### I've structured this with two newlines after the end of a section, then the title after '###', then another two newlines. I think this looks nice but it's a matter of taste
     ### and obviously is not particularly important!
+
+
+    #Calculate clock X and Y coordinates considering variations in coordinate systems and EMPTY padding around VPR model
+    newClockX = clockX + 1
+    newClockY = archObject.height - clockY
 
 
     ### DEVICE INFO
@@ -4161,7 +4167,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
     layoutString = f'  <fixed_layout name="FABulous" width="{archObject.width + 2}" height="{archObject.height + 2}">\n' #Add 2 for empty padding
 
-    layoutString += f'      <single type="clock_primitive" priority="1" x="{clockX}" y="{clockY}"/>' #Add tag for dummy clock
+    layoutString += f'      <single type="clock_primitive" priority="1" x="{newClockX}" y="{newClockY}"/>' #Add tag for dummy clock
     #Tile locations are specified using <single> tags - while the typical fabric will be made up of larger blocks of tiles, this allows the most flexibility
 
     for line in archObject.tiles:
@@ -4258,6 +4264,10 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
 def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
+    #Calculate clock X and Y coordinates considering variations in coordinate systems and EMPTY padding around VPR model
+    newClockX = clockX + 1
+    newClockY = archObject.height - clockY
+    
 
     ### BLOCKS
 
@@ -4365,19 +4375,19 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
     srcToOpinStr = ''
     IpinToSinkStr = ''
     clockPtc = 0
-    clockLoc = f'X{clockX - 1}Y{clockY - 1}'
+    clockLoc = f'X{clockX}Y{clockY}'
 
 
     nodesString += f'  <!-- Clock output: clock_primitive.clock_out -->\n'
 
     nodesString += f'  <node id="{curNodeId}" type="SOURCE" capacity="1">\n' #Generate tag for each node
-    nodesString += f'   <loc xlow="{clockX}" ylow="{clockY}" xhigh="{clockX}" yhigh="{clockY}" ptc="0"/>\n' #Add loc tag
+    nodesString += f'   <loc xlow="{newClockX}" ylow="{newClockY}" xhigh="{newClockX}" yhigh="{newClockY}" ptc="0"/>\n' #Add loc tag
     nodesString += '  </node>\n' #Close node tag
 
     curNodeId += 1 #Increment id so all nodes have different ids
 
     nodesString += f'  <node id="{curNodeId}" type="OPIN" capacity="1">\n' #Generate tag for each node
-    nodesString += f'   <loc xlow="{clockX}" ylow="{clockY}" xhigh="{clockX}" yhigh="{clockY}" ptc="0" side="BOTTOM"/>\n' #Add loc tag
+    nodesString += f'   <loc xlow="{newClockX}" ylow="{newClockY}" xhigh="{newClockX}" yhigh="{newClockY}" ptc="0" side="BOTTOM"/>\n' #Add loc tag
     nodesString += '  </node>\n' #Close node tag
     srcToOpinStr += f'  <edge src_node="{curNodeId - 1}" sink_node="{curNodeId}" switch_id="1"/>\n'
     destToWireIDMap[clockLoc + "." + "clock_out"] = curNodeId #Add to dest map as equivalent to a wire destination
@@ -4624,8 +4634,8 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
     for row in archObject.tiles[::-1]:
         for tile in row:
-            if tile.x + 1 == clockX and archObject.height - tile.y == clockY:
-                gridString += f'  <grid_loc x="{clockX}" y="{clockY}" block_type_id="{blockIdMap["clock_primitive"]}" width_offset="0" height_offset="0"/>\n'  
+            if tile.x == clockX and tile.y == clockY:
+                gridString += f'  <grid_loc x="{tile.x + 1}" y="{archObject.height - tile.y}" block_type_id="{blockIdMap["clock_primitive"]}" width_offset="0" height_offset="0"/>\n'  
                 continue      
             if tile.tileType == "NULL": #The method that generates cellTypes ignores NULL, so it was never in our map - we'll just use EMPTY instead as we did for the main XML model
                 gridString += f'  <grid_loc x="{tile.x + 1}" y="{archObject.height - tile.y}" block_type_id="{blockIdMap["EMPTY"]}" width_offset="0" height_offset="0"/>\n'

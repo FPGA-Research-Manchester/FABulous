@@ -3933,10 +3933,6 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
     ### A variable name of the form fooString means that it is a string which will be substituted directly into the output string - otherwise fooStr is used 
 
-    ### I've structured this with two newlines after the end of a section, then the title after '###', then another two newlines. I think this looks nice but it's a matter of taste
-    ### and obviously is not particularly important!
-
-
     #Calculate clock X and Y coordinates considering variations in coordinate systems and EMPTY padding around VPR model
     newClockX = clockX + 1
     newClockY = archObject.height - clockY
@@ -4175,10 +4171,10 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
             if tile.tileType != "NULL": #We do not need to specify if the tile is empty as all tiles default to EMPTY in VPR
                 layoutString += f'   <single type="{tile.tileType}" priority="1" x="{tile.x + 1}" y="{archObject.height - tile.y}">\n' #Add single tag for each tile - add 1 to x and y (cancels out in y conversion) for padding
                 #Now add metadata for fasm generation
-                layoutString += '    <metadata>' 
-                layoutString += f'     <meta name="fasm_prefix"> {tile.genTileLoc()} </meta>' #Only metadata required is the tile name for the prefix
-                layoutString += '    </metadata>'
-                layoutString += '   </single>'
+                layoutString += '    <metadata>\n' 
+                layoutString += f'     <meta name="fasm_prefix"> {tile.genTileLoc()} </meta>\n' #Only metadata required is the tile name for the prefix
+                layoutString += '    </metadata>\n'
+                layoutString += '   </single>\n'
 
     layoutString += '  </fixed_layout>\n'
 
@@ -4186,8 +4182,8 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
     ### SWITCHLIST
 
 
-    switchlistString = '  <switch type="buffer" name="ipin_cblock" R="551" Cin=".77e-15" Cout="4e-15" Tdel="58e-12" buf_size="27.645901"/>' #Values are fillers from templates
-    switchlistString += '  <switch type="mux" name="buffer"  R="2e-12" Cin=".77e-15" Cout="4e-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>'
+    switchlistString = '  <switch type="buffer" name="ipin_cblock" R="551" Cin=".77e-15" Cout="4e-15" Tdel="58e-12" buf_size="27.645901"/>\n' #Values are fillers from templates
+    switchlistString += '  <switch type="mux" name="buffer"  R="2e-12" Cin=".77e-15" Cout="4e-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>\n'
 
 
     ### SEGMENTLIST - contains only a filler as it is a necessity for Odin II to parse the architecture graph but we are reading a custom RR graph

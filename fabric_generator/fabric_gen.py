@@ -4208,12 +4208,12 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
   </tile>"""
 
     clockPbStr = f""" <pb_type name="clock_primitive">
-  <pb_type name="clock_input" blif_model=".input" num_pb="1">
-   <output name="inpad" num_pins="1"/>
+  <pb_type name="clock_input" blif_model=".subckt Global_Clock" num_pb="1">
+   <output name="CLK" num_pins="1"/>
   </pb_type>
   <output name="clock_out" num_pins="1"/>
   <interconnect>
-   <direct name="clock_prim_to_top" input="clock_input.inpad" output="clock_primitive.clock_out"/>
+   <direct name="clock_prim_to_top" input="clock_input.CLK" output="clock_primitive.clock_out"/>
   </interconnect>
  </pb_type> """
 
@@ -4237,6 +4237,11 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
  </tiles>
  
  <models>
+  <model name="Global_Clock">
+   <output_ports>
+    <port name="CLK"/>
+   </output_ports>
+  </model>
 {modelsString}
  </models>
 

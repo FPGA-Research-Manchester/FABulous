@@ -116,6 +116,10 @@ endmodule
 module IO_1_bidirectional_frame_config_pass (input T, I, output Q, O);
 endmodule
 
+(* blackbox *)
+module Global_Clock (output CLK);
+endmodule
+
 module SB_CARRY (output CO, input I0, I1, CI);
 	assign CO = (I0 && I1) || ((I0 || I1) && CI);
 endmodule

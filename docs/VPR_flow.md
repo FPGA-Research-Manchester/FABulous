@@ -45,4 +45,4 @@ The ptc number provided for each node in the routing resource (RR) graph represe
 
 Although no meaningful routing connections are specified in the architecture.xml file, it is important that all pins do not have an Fc value of 0. This is because VPR uses the Fc value to gauge how well connected to the fabric a pin is, and so will not be able to find routing candidates with 0 Fc pins. Currently FABulous is set up with a default fractional Fc of 1 such that all pins are connected to the fabric and are viable candidates.
 
-
+Due to the techmapping complexity, the multiplexers in the LUT4AB tiles are currently ignored and it is assumed each LUT is routed to a separate output - at the time of writing, the same assumption is made for the nextpnr model

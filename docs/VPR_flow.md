@@ -6,7 +6,21 @@ To generate the necessary materials to program using VPR, run $FABulous\_root/fa
 
 To run the flow with ODIN II, the run\_vtr\_flow.py script in $VTR\_ROOT/vtr\_flow/scripts can be used, passing in your verilog circuit, followed by the genfasm utility.
 
-To use Yosys (recommended with FABulous for improved functionality), the Yosys flow found in $FABulous\_root/YosysFiles/VPR\_flow/vpr.ys can be used, which will output a Berkely Logic Interchange Format (BLIF) file, which can be used as an argument for the VPR executable, followed by the genfasm utility.
+To use Yosys (recommended with FABulous for improved functionality), the Yosys flow found in $FABulous\_root/YosysFiles/VPR\_flow/vpr.ys can be used, which will output a Berkely Logic Interchange Format (BLIF) file, which can be used as an argument for the VPR executable, followed by the genfasm utility. More documentation on how to use this flow can be found in $FABulous\_root/YosysFiles/VPR\_flow/README.md
+
+When generating the VPR model, FABulous will print out a maximum width for routing channels in the form `Max Width: <max_width>`. This number should be noted, as it will be used as an argument when calling VPR.
+
+To run the VPR flow (with VPR 8.1.0 installed) , the following command can be used:
+
+`vpr <architecture.xml> <circuit.blif> --read_rr_graph <routing_resources.xml> --route_chan_width <max_width>`
+
+<architecture.xml> and <routing\_resources.xml> should be paths to the corresponding files in $FABulous\_root/fabric\_generator/vproutput. `--disp on` can be appended to the end if a GUI is desired.
+
+To generate FASM, you should then use the command:
+
+`genfasm <architecture.xml> <circuit.blif> --read_rr_graph <routing_resources.xml> --route_chan_width <max_width>` 
+
+The genfasm utility is part of the VTR flow, so should be installed alongside VPR. While the two commands are very similar, both must be called in sequence.
 
 ## Adding custom XML
 

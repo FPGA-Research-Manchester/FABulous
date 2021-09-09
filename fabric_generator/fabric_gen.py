@@ -3956,6 +3956,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
     #NOTE: Currently indentation is handled manually, but it's probably worth introducing a library/external function to handle this at some point
  
+
     ### COMPLEX BLOCKS, MODELS & TILES
 
 
@@ -3977,7 +3978,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
         tilesString += '    </equivalent_sites>\n'
 
         pb_typesString += f'  <pb_type name="{cellType}">\n' #Top layer block
-        doneBels = []
+        doneBels = [] # List to track bels that we've already created a pb_type for (by type)
 
         tileInputs = [] #Track the tile's top level inputs and outputs for the top pb_type definition
         tileOutputs = [] 
@@ -4077,13 +4078,13 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
             
         pinlocationsAndInputsStr = ''
 
-        pinlocationsAndInputsStr += '   <pinlocations pattern="custom">\n'
+        pinlocationsAndInputsStr += '   <pinlocations pattern="custom">\n' #Custom pinlocations allow us to set all pins to the bottom of the tile - this just makes RR graph accuracy easier
         
-        totalList = f'{cellType}_sub.UserCLK'
-        for cPin in (tileInputs + tileOutputs + list(sourceSinkMap[cTile.genTileLoc()][0]) + list(sourceSinkMap[cTile.genTileLoc()][1])):
-            totalList += f' {cellType}_sub.{cPin}'
+        totalList = f'{cellType}_sub.UserCLK' #Add UserCLK to the list of pins
+        for cPin in (tileInputs + tileOutputs + list(sourceSinkMap[cTile.genTileLoc()][0]) + list(sourceSinkMap[cTile.genTileLoc()][1])): #List all pins 
+            totalList += f' {cellType}_sub.{cPin}' #And add them to the pinlocation list
 
-        pinlocationsAndInputsStr += f'    <loc side ="bottom"> {totalList} </loc>\n'
+        pinlocationsAndInputsStr += f'    <loc side ="bottom"> {totalList} </loc>\n' #Set all to bottom of tile
 
         pinlocationsAndInputsStr += '   </pinlocations>\n'
 
@@ -4186,7 +4187,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
     switchlistString += '  <switch type="mux" name="buffer"  R="2e-12" Cin=".77e-15" Cout="4e-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>\n'
 
 
-    ### SEGMENTLIST - contains only a filler as it is a necessity for Odin II to parse the architecture graph but we are reading a custom RR graph
+    ### SEGMENTLIST - contains only a filler as it is a necessity to parse the architecture graph but we are reading a custom RR graph
 
 
     segmentlistString = """  <segment name="dummy" length="1" freq="1.000000" type="unidir" Rmetal="1e-12" Cmetal="22.5e-15">
@@ -4197,7 +4198,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
     ### CLOCK SETUP
 
-    #Generate full strings for insertion
+    #Generate full strings for insertion - this is just a tile with the clock primitive on it
     clockTileStr = f"""  <tile name="clock_primitive">
    <sub_tile name="clock_sub">
     <equivalent_sites>
@@ -4207,6 +4208,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
    </sub_tile>
   </tile>"""
 
+    #This is a pb_type with a Global_Clock primitive - when programming we instantiate this as a blackbox
     clockPbStr = f""" <pb_type name="clock_primitive">
   <pb_type name="clock_input" blif_model=".subckt Global_Clock" num_pb="1">
    <output name="CLK" num_pins="1"/>
@@ -4259,7 +4261,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
  </segmentlist>
 
 
-</architecture>''' #TODO: Once Yosys is set up (so primitive instantiation can be used), swap out the .input model on the clock input for a primitive
+</architecture>''' 
 
     return outputString
 
@@ -4277,7 +4279,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
     curId = 0 #Increment id from 0 as we work through
     blockIdMap = {} #Dictionary to record IDs for different tile types when generating grid
     ptcMap = {} #Dict to map tiles to individual dicts that map pin name to PTC
-    sourceSinkMap = getFabricSourcesAndSinks(archObject)
+    sourceSinkMap = getFabricSourcesAndSinks(archObject) # Get sources and sinks for fabric - more info in method
 
     #First, handle tiles not defined in architecture:
 
@@ -4378,7 +4380,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
     clockPtc = 0
     clockLoc = f'X{clockX}Y{clockY}'
 
-
+    # Add node for clock out
     nodesString += f'  <!-- Clock output: clock_primitive.clock_out -->\n'
 
     nodesString += f'  <node id="{curNodeId}" type="SOURCE" capacity="1">\n' #Generate tag for each node
@@ -4595,18 +4597,20 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
     edgeStr = srcToOpinStr + IpinToSinkStr #Initialise list of edges with edges connecting OPINs and IPINs to their corresponding SINKs and SOURCEs
 
+    #Create edges for all pips in fabric
+
     for row in archObject.tiles:
         for tile in row:
-            if tile.tileType != "NULL":
+            if tile.tileType != "NULL": #If the tile isn't NULL then create an edge for the clock primitive connection
                 tileLoc = tile.genTileLoc()
                 edgeStr += f'  <edge src_node="{destToWireIDMap[clockLoc + "." + "clock_out"]}" sink_node="{sourceToWireIDMap[tileLoc + ".UserCLK"]}" switch_id="1"/>\n'
 
 
-            for pip in tile.pips:
+            for pip in tile.pips: # Find source and sink name
                 src_name = tileLoc + "." + pip[0]
                 sink_name = tileLoc + "." + pip[1]
 
-                edgeStr += f'  <edge src_node="{destToWireIDMap[src_name]}" sink_node="{sourceToWireIDMap[sink_name]}" switch_id="1">\n'
+                edgeStr += f'  <edge src_node="{destToWireIDMap[src_name]}" sink_node="{sourceToWireIDMap[sink_name]}" switch_id="1">\n' #And create node
                 edgeStr += '   <metadata>\n' #Generate metadata tag that tells us which switch matrix connection to activate
                 edgeStr += f'    <meta name="fasm_features">{".".join([tileLoc, pip[0], pip[1]])}</meta>\n'
                 edgeStr += '   </metadata>\n'
@@ -4620,6 +4624,8 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
     #Use the max width generated before for this tag
     channelString = f'  <channel chan_width_max="{max_width}" x_min="0" y_min="0" x_max="{archObject.width + 1}" y_max="{archObject.height + 1}"/>\n'
+    
+    #Generate x_list tag and y_list tag for every channel - use the upper bound max_width for simplicity
     for i in range(archObject.width + 2):
         channelString += f'  <x_list index ="{i}" info="{max_width}"/>\n'
 
@@ -4635,7 +4641,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
     for row in archObject.tiles[::-1]:
         for tile in row:
-            if tile.x == clockX and tile.y == clockY:
+            if tile.x == clockX and tile.y == clockY: #We add the clock tile at the end so ignore it for now
                 continue      
             if tile.tileType == "NULL": #The method that generates cellTypes ignores NULL, so it was never in our map - we'll just use EMPTY instead as we did for the main XML model
                 gridString += f'  <grid_loc x="{tile.x + 1}" y="{archObject.height - tile.y}" block_type_id="{blockIdMap["EMPTY"]}" width_offset="0" height_offset="0"/>\n'
@@ -4646,22 +4652,25 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
     gridString += '  <!-- EMPTY padding around chip -->\n'
 
     for i in range(archObject.height + 2): #Add vertical padding
-        if newClockX != 0 or newClockY != i:
+        if newClockX != 0 or newClockY != i: #Make sure that this isn't the clock tile as we add this at the end
             gridString += f'  <grid_loc x="0" y="{i}" block_type_id="{blockIdMap["EMPTY"]}" width_offset="0" height_offset="0"/>\n'
-        if newClockX != archObject.width + 1 or newClockY != i:
+        if newClockX != archObject.width + 1 or newClockY != i: #Check not clock tile
             gridString += f'  <grid_loc x="{archObject.width + 1}" y="{i}" block_type_id="{blockIdMap["EMPTY"]}" width_offset="0" height_offset="0"/>\n'
 
     for i in range(1, archObject.width + 1): #Add horizontal padding
-        if newClockX != i or newClockY != 0:
+        if newClockX != i or newClockY != 0: #Check not clock tile
             gridString += f'  <grid_loc x="{i}" y="0" block_type_id="{blockIdMap["EMPTY"]}" width_offset="0" height_offset="0"/>\n'
-        if newClockX != i or newClockY != archObject.height + 1:      
+        if newClockX != i or newClockY != archObject.height + 1: #Check not clock tile      
             gridString += f'  <grid_loc x="{i}" y="{archObject.height + 1}" block_type_id="{blockIdMap["EMPTY"]}" width_offset="0" height_offset="0"/>\n'
 
+    #Finally, add clock tile loc
     gridString += f'  <grid_loc x="{newClockX}" y="{newClockY}" block_type_id="{blockIdMap["clock_primitive"]}" width_offset="0" height_offset="0"/>\n'
 
 
     ### SWITCHES
 
+
+    # Largely filler info - again, FABulous does not deal with this level of hardware detail currently
 
     switchesString = '''        <switch id="0" type="mux" name="__vpr_delayless_switch__">
             <timing R="0" Cin="0" Cout="0" Tdel="0"/>
@@ -4786,9 +4795,13 @@ def genBitstreamSpec(archObject: Fabric):
             try:
                 configCSV = open(cellType + "_ConfigMem.csv") #This may need to be .init.csv, not just .csv
             except:
-                print(f"No Config Mem csv file found for {cellType}. Assuming no config memory.")
-                #specData["FrameMap"][cellType] = {}
-                continue
+                try:
+                    configCSV = open(cellType + "_ConfigMem.init.csv")
+                except:
+                    print(f"No Config Mem csv file found for {cellType}. Assuming no config memory.")
+                    specData["FrameMap"][cellType] = {}
+                    specData["FrameMapEncode"][cellType] = {}
+                    continue
             configList = [i.strip('\n').split(',') for i in configCSV]
             configList = RemoveComments(configList)
             maskDict = {}
@@ -4809,7 +4822,7 @@ def genBitstreamSpec(archObject: Fabric):
                     if char != '0':
                         encodeDict[int(configEncode[encode_i])] = (31 - i) + ( 32 * int(line[1]))
                         encode_i += 1
-            #specData["FrameMap"][cellType] = maskDict
+            specData["FrameMap"][cellType] = maskDict
             # if specData["ArchSpecs"]["MaxFramesPerCol"] < int(line[1]) + 1:
             #     specData["ArchSpecs"]["MaxFramesPerCol"] = int(line[1]) + 1
             # if specData["ArchSpecs"]["FrameBitsPerRow"] < int(line[2]):

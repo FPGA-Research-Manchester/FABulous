@@ -35,7 +35,7 @@ jobs:
         flake8 fabric_generator --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Run fabric generator flow
       run: |
-        ls -R /
+        ls -R | grep boost /
         cd fabric_generator
         ./create_basic_files.sh
         ./run_fab_flow.sh

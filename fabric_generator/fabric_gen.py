@@ -4721,6 +4721,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 </rr_graph>
 ''' #Same point as in main XML generation applies here regarding outsourcing indentation
 
+    print(f'Max Width: {max_width}')
     return outputString
 
 

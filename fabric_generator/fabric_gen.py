@@ -4725,7 +4725,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
 
 def genBitstreamSpec(archObject: Fabric):
-    specData = {"TileMap":{}, "TileSpecs":{}, "FrameMap":{}, "ArchSpecs":{"MaxFramesPerCol":MaxFramesPerCol, "FrameBitsPerRow":FrameBitsPerRow}}
+    specData = {"TileMap":{}, "TileSpecs":{}, "FrameMap":{}, "FrameMapEncode":{}, "ArchSpecs":{"MaxFramesPerCol":MaxFramesPerCol, "FrameBitsPerRow":FrameBitsPerRow}}
     BelMap = {}
     for line in archObject.tiles:
         for tile in line:
@@ -4737,50 +4737,74 @@ def genBitstreamSpec(archObject: Fabric):
     #We do not worry about bitmasking here - that's handled in the generation
 
     #LUT4:
+
     LUTmap = {}
     LUTmap["INIT"] = 0 #Futureproofing as there are two ways that INIT[0] may be referred to (FASM parser will use INIT to refer to INIT[0])
     for i in range(16):
         LUTmap["INIT[" + str(i) + "]"] = i
     LUTmap["FF"] = 16
     LUTmap["IOmux"] = 17
+
     BelMap["LUT4c_frame_config"] = LUTmap
 
     #MUX8
+
     MUX8map = {"c0":0, "c1":1}
+
     BelMap["MUX8LUT_frame_config"] = MUX8map
 
     #MULADD 
+
     MULADDmap = {}
     MULADDmap["A_reg"] = 0
     MULADDmap["B_reg"] = 1
     MULADDmap["C_reg"] = 2
+
     MULADDmap["ACC"] = 3
+
     MULADDmap["signExtension"] = 4
+
     MULADDmap["ACCout"] = 5
+
     BelMap["MULADD"] = MULADDmap
 
     #InPass
+
     InPassmap = {}
+
     InPassmap["I0_reg"] = 0
     InPassmap["I1_reg"] = 1
     InPassmap["I2_reg"] = 2
     InPassmap["I3_reg"] = 3
-    BelMap["InPass4_frame_config"] = InPassmap
 
+    BelMap["InPass4_frame_config"] = InPassmap
     #OutPass
+
     OutPassmap = {}
+
     OutPassmap["I0_reg"] = 0
     OutPassmap["I1_reg"] = 1
     OutPassmap["I2_reg"] = 2
     OutPassmap["I3_reg"] = 3
+
     BelMap["OutPass4_frame_config"] = OutPassmap
+
 
     #RegFile
     RegFilemap = {}
+
     RegFilemap["AD_reg"] = 0
     RegFilemap["BD_reg"] = 1
+
     BelMap["RegFile_32x4"] = RegFilemap
+
     BelMap["IO_1_bidirectional_frame_config_pass"] = {}
+
+    BelMap["Config_access"] = {}
+
+
+    #DoneTypes = []
+
 
     ###NOTE: THIS METHOD HAS BEEN CHANGED FROM A PREVIOUS IMPLEMENTATION SO PLEASE BEAR THIS IN MIND
     #To account for cascading and termination, this now creates a separate map for every tile, as opposed to every cellType
@@ -4791,7 +4815,7 @@ def genBitstreamSpec(archObject: Fabric):
             if cellType == "NULL":
                 continue
 
-            #Generate frame masks from ConfigMem
+            #Add frame masks to the dictionary 
             try:
                 configCSV = open(cellType + "_ConfigMem.csv") #This may need to be .init.csv, not just .csv
             except:
@@ -4817,26 +4841,29 @@ def genBitstreamSpec(archObject: Fabric):
                             configEncode.append(str(int(index_temp[0])-i))
                     else:
                         configEncode.append(index)
+                #print(configEncode)
                 encode_i = 0
                 for i,char in enumerate(maskDict[int(line[1])]):
                     if char != '0':
+                        #encodeDict[int(line[1])][i] = configEncode[encode_i]
                         encodeDict[int(configEncode[encode_i])] = (31 - i) + ( 32 * int(line[1]))
                         encode_i += 1
+            #print(encodeDict)
             specData["FrameMap"][cellType] = maskDict
             # if specData["ArchSpecs"]["MaxFramesPerCol"] < int(line[1]) + 1:
-            #     specData["ArchSpecs"]["MaxFramesPerCol"] = int(line[1]) + 1
+            #   specData["ArchSpecs"]["MaxFramesPerCol"] = int(line[1]) + 1
             # if specData["ArchSpecs"]["FrameBitsPerRow"] < int(line[2]):
-            #     specData["ArchSpecs"]["FrameBitsPerRow"] = int(line[2])
+            #   specData["ArchSpecs"]["FrameBitsPerRow"] = int(line[2])
             configCSV.close()
 
             curBitOffset = 0
             curTileMap = {}
-            for i, belPair in enumerate(curTile.bels):    #Add the bel features we made a list of earlier
+            for i, belPair in enumerate(curTile.bels):  #Add the bel features we made a list of earlier
                 tempOffset = 0
                 name = letters[i]
                 belType = belPair[0]
                 for featureKey in BelMap[belType]:
-                    curTileMap[name + "." +featureKey] = {encodeDict[BelMap[belType][featureKey] + curBitOffset]: "1"}    #We convert to the desired format like so
+                    curTileMap[name + "." +featureKey] = {encodeDict[BelMap[belType][featureKey] + curBitOffset]: "1"}  #We convert to the desired format like so
                     if featureKey != "INIT":
                         tempOffset += 1
                 curBitOffset += tempOffset
@@ -4856,6 +4883,8 @@ def genBitstreamSpec(archObject: Fabric):
                         muxList.append(".".join((sources[x+1], sinks[y+1])))
                 muxList.reverse() #Order is flipped 
                 for i, pip in enumerate(muxList):
+                    #if cellType == "CPU_IO":
+                     #print(pip)
                     controlWidth = int(numpy.ceil(numpy.log2(pipCount)))
                     if pipCount < 2:
                         curTileMap[pip] = {}
@@ -4867,6 +4896,8 @@ def genBitstreamSpec(archObject: Fabric):
                         if pip not in curTileMap.keys():
                             curTileMap[pip] = {}
                         curTileMap[pip][encodeDict[curBitOffset + tempOffset]] = curChar
+                        #if cellType == "CPU_IO":
+                         #print(curBitOffset,tempOffset)
                         tempOffset += 1
                 curBitOffset += controlWidth
             for wire in curTile.wires: #And now we add empty config bit mappings for immutable connections (i.e. wires), as nextpnr sees these the same as normal pips
@@ -4878,6 +4909,8 @@ def genBitstreamSpec(archObject: Fabric):
                 curTileMap[wireName] = {}
 
             specData["TileSpecs"][curTile.genTileLoc()] = curTileMap
+
+
     return specData
 
 #####################################################################################

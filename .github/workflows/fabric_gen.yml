@@ -40,5 +40,6 @@ jobs:
         ./run_fab_flow.sh
     - name: Check pair generation
       run: |
+        cd fabric_generator
         ./create_basic_files.sh
         python3 fabric_gen.py -genNextpnrModel_pair

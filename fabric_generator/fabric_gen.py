@@ -3220,12 +3220,14 @@ sDelay = "8"
 GNDRE = re.compile("GND(\d*)")
 VCCRE = re.compile("VCC(\d*)")
 BracketAddingRE = re.compile(r"^(\S+?)(\d+)$")
+num_pbRE = re.compile("num_pb=\"(\d*)\"")
 letters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W"] #For LUT labelling
 
 #This class represents individual tiles in the architecture
 class Tile:
     tileType = ""
     bels = []
+    belsWithIO = [] #Currently the plan is to deprecate bels and replace it with this. However, this would require nextpnr model generation changes, so I won't do that until the VPR foundations are established
     wires = [] 
     atomicWires = [] #For storing single wires (to handle cascading and termination)
     pips = []
@@ -3262,7 +3264,7 @@ class Fabric:
     def getTileByLoc(self, loc: str):
         for row in self.tiles:
             for tile in row:
-                if tile.genTileLoc == loc:
+                if tile.genTileLoc() == loc:
                     return tile
         return None
     def getTileAndWireByWireDest(self, loc: str, dest: str, jumps: bool = True):
@@ -3303,11 +3305,8 @@ def findPipList(csvFile: list, returnDict: bool = False, mapSourceToSinks: bool 
     sources = csvFile[0]
     pips = []
     pipsdict = {}
-    #print(csvFile[1::])
     for y, row in enumerate(csvFile[1::]):
-        #print(row[1:-2:])
         for x, value in enumerate(row[1::]):
-            #print(value)
             #Remember that x and y are offset 
             if value == "1":
                 pips.append([sources[x+1], sinks[y+1]])
@@ -3321,10 +3320,65 @@ def findPipList(csvFile: list, returnDict: bool = False, mapSourceToSinks: bool 
                         pipsdict[sinks[y+1]].append(sources[x+1])
                     else:
                         pipsdict[sinks[y+1]]= [sources[x+1]]
-    #return ""
     if returnDict:
         return pipsdict
     return pips
+
+#Method to remove a known prefix from a string if it is present at the start - this is provided as str.removeprefix in Python 3.9 but has been implemented for compatibility
+def removeStringPrefix(mainStr: str, prefix: str): 
+    if mainStr[0:len(prefix)] == prefix:
+        return mainStr[len(prefix):]
+    else:
+        return mainStr
+
+#Method to find all 'hanging' sources and sinks in a fabric (i.e. ports with connections to pips in only one direction e.g. VCC, GND)
+#Returns dict mapping tileLoc to hanging pins
+def getFabricSourcesAndSinks(archObject: Fabric): 
+    allFabricInputs = [] #First, build a list of all fabric inputs/outputs (bel ports and wires) with the tile address
+    allFabricOutputs = []
+    returnDict = {}
+
+    for row in archObject.tiles:
+        for tile in row:
+            tileLoc = tile.genTileLoc()
+
+            for bel in tile.belsWithIO:
+                allFabricInputs.extend([(tileLoc + "." + cInput) for cInput in bel[2]])
+                allFabricOutputs.extend([(tileLoc + "." + cOutput) for cOutput in bel[3]])
+
+            for wire in tile.wires:
+                desty = tile.y - int(wire["yoffset"]) #Calculate destination location of the wire at hand
+                destx = tile.x + int(wire["xoffset"])
+                desttileLoc = f"X{destx}Y{desty}"
+
+                for i in range(int(wire["wire-count"])): #For every individual wire
+                    allFabricInputs.append(tileLoc + "." + wire["source"] + str(i))
+                    allFabricOutputs.append(desttileLoc + "." + wire["destination"] + str(i))
+
+            for wire in tile.atomicWires:
+                allFabricInputs.append(wire["sourceTile"] + "." + wire["source"]) #Generate location strings for the source and destination
+                allFabricOutputs.append(wire["destTile"] + "." + wire["destination"])
+
+
+
+    #Now we go through all the pips, and if a source/sink doesn't appear in the list we keep it
+
+    for row in archObject.tiles:
+        for tile in row:
+            tileLoc = tile.genTileLoc()
+            sourceSet = set()
+            sinkSet = set()
+            for pip in tile.pips:
+                if (tileLoc + "." + pip[0]) not in allFabricOutputs:
+                    sourceSet.add(pip[0])
+                if (tileLoc + "." + pip[1]) not in allFabricInputs:
+                    sinkSet.add(pip[1])
+            returnDict[tileLoc] = (sourceSet, sinkSet)
+
+    return returnDict
+
+
+
 
 def genFabricObject(fabric: list):
     #The following iterates through the tile designations on the fabric
@@ -3554,8 +3608,6 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
             pipsStr += f"#Tile-external pips on tile {tileLoc}:\n"
             for wire in tile.wires:
                 desty = tile.y - int(wire["yoffset"])
-                #print(wire)
-                #print(str(tile.y)+', '+str(desty))
                 destx = tile.x + int(wire["xoffset"])
                 desttileLoc = f"X{destx}Y{desty}"
                 for i in range(int(wire["wire-count"])):
@@ -3636,7 +3688,7 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
                         for pipSink in destTile.pipMuxes_MapSourceToSinks[wire["destination"] + str(i)]:
                             #If there is a multiplexer here, then we can simply add this pair
                             if len(destTile.pipMuxes_MapSinkToSources[pipSink]) > 1:
-                                pairStr += ",".join((".".join((tileLoc, wire["source"] + f"[{str(i)}]")), ".".join((desttileLoc, addBrackets(pipSink, tile))))) + "\n" #TODO: add square brackets to end
+                                pairStr += ",".join((".".join((tileLoc, wire["source"] + f"[{str(i)}]")), ".".join((desttileLoc, addBrackets(pipSink, tile))))) + "\n"
                             #otherwise, there is no physical pair in the ASIC netlist, so we must propagate back until we hit a multiplexer
                             else:
                                 finalDestination = ".".join((desttileLoc, addBrackets(pipSink, tile)))
@@ -3763,8 +3815,918 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
     else:
         return (pipsStr, belsStr, templateStr, constraintStr)
 
+IO_bidirStr = """   <pb_type name="IO_1_bidirectional_frame_config_pass" num_pb="2">
+    <mode name="pad_is_input">
+     <pb_type name="W_input" blif_model=".input" num_pb="1">
+      <output name="inpad" num_pins="1"/>
+     </pb_type>
+     <interconnect>
+      <direct name="input_interconnect" input="W_input.inpad" output="IO_1_bidirectional_frame_config_pass.O"/>
+     </interconnect>
+    </mode> 
+    <mode name="pad_is_output">
+     <pb_type name="W_output" blif_model=".output" num_pb="1">
+      <input name="outpad" num_pins="1"/>
+     </pb_type>
+     <interconnect>
+      <direct name="output_interconnect" input="IO_1_bidirectional_frame_config_pass.I" output="W_output.outpad"/>
+     </interconnect>
+    </mode>
+
+    <input name="I" num_pins="1"/>
+    <input name="T" num_pins="1"/>
+    <output name="O" num_pins="1"/>
+    <output name="Q" num_pins="1"/>
+    <metadata>
+     <meta name="fasm_prefix">A_ B_</meta>
+    </metadata>
+   </pb_type>"""
+
+#This string is set up to use the .format method to fill in the prefixes
+
+lut4cStr = """
+   <pb_type name="LUT4c_frame_config" num_pb="8">
+    <pb_type name="lut4" blif_model=".names" num_pb="1" class="lut">
+     <input name="in" num_pins="4" port_class="lut_in"/>
+     <output name="out" num_pins="1" port_class="lut_out"/>
+     <delay_matrix type="max" in_port="lut4.in" out_port="lut4.out">
+      2.690e-10
+      2.690e-10
+      2.690e-10
+      2.690e-10
+     </delay_matrix>
+     <metadata>
+       <meta name="fasm_type">LUT</meta>
+       <meta name="fasm_lut">
+         INIT[15:0]
+       </meta>
+     </metadata>
+    </pb_type>
+
+    <pb_type name="ff" blif_model=".latch" class="flipflop" num_pb="1">
+     <input name="D" num_pins="1" port_class="D"/>
+     <output name="Q" num_pins="1" port_class="Q"/>
+     <clock name="clk" num_pins="1" port_class="clock"/>
+     <T_setup value="2.448e-10" port="ff.D" clock="clk"/>
+     <T_clock_to_Q max="7.732e-11" port="ff.Q" clock="clk"/>                
+    </pb_type>
+
+    <input name="I0" num_pins="1"/>    
+    <input name="I1" num_pins="1"/>
+    <input name="I2" num_pins="1"/>
+    <input name="I3" num_pins="1"/>
+    <input name="Ci" num_pins="1"/>
+    <clock name="clk" num_pins="1"/>
+    <output name="O" num_pins="1"/>
+    <output name="Co" num_pins="1"/>
+    <interconnect>
+     <direct name="I0_to_LUT_in" input="LUT4c_frame_config.I0" output="lut4.in[0]"/>
+     <direct name="I1_to_LUT_in" input="LUT4c_frame_config.I1" output="lut4.in[1]"/>
+     <direct name="I2_to_LUT_in" input="LUT4c_frame_config.I2" output="lut4.in[2]"/>
+     <direct name="I3_to_LUT_in" input="LUT4c_frame_config.I3" output="lut4.in[3]"/>
+     <direct name="LUT_out_to_ff" input="lut4.out" output="ff.D">
+        <pack_pattern name="lut_with_ff" in_port="lut4.out" out_port="ff.D"/>
+     </direct>
+
+     <direct name="clock_pb_to_lut" input="LUT4c_frame_config.clk" output="ff.clk"/>
+
+     <mux name="lut4c_out_mux" input="ff.Q lut4.out" output="LUT4c_frame_config.O">
+      <delay_constant max="25e-12" in_port="lut4.out" out_port="LUT4c_frame_config.O"/>
+      <delay_constant max="45e-12" in_port="ff.Q" out_port="LUT4c_frame_config.O"/>
+      <metadata>
+       <meta name="fasm_mux">
+        ff.Q: FF
+        lut4.out: NULL
+       </meta>
+      </metadata>
+     </mux>
+    </interconnect> 
+    <metadata>
+     <meta name="fasm_prefix"> {fasm_prefix_list} </meta>
+    </metadata>       
+   </pb_type>"""
+
+lut4InterconnectStr = """    <direct name="clock_top_to_pb0" input="LUT4AB.UserCLK" output="LUT4c_frame_config[0].clk"/>
+<direct name="clock_top_to_pb1" input="LUT4AB.UserCLK" output="LUT4c_frame_config[1].clk"/>
+<direct name="clock_top_to_pb2" input="LUT4AB.UserCLK" output="LUT4c_frame_config[2].clk"/>
+<direct name="clock_top_to_pb3" input="LUT4AB.UserCLK" output="LUT4c_frame_config[3].clk"/>
+<direct name="clock_top_to_pb4" input="LUT4AB.UserCLK" output="LUT4c_frame_config[4].clk"/>
+<direct name="clock_top_to_pb5" input="LUT4AB.UserCLK" output="LUT4c_frame_config[5].clk"/>
+<direct name="clock_top_to_pb6" input="LUT4AB.UserCLK" output="LUT4c_frame_config[6].clk"/>
+<direct name="clock_top_to_pb7" input="LUT4AB.UserCLK" output="LUT4c_frame_config[7].clk"/>
+"""
+specialBelDict = {"LUT4c_frame_config": lut4cStr, "IO_1_bidirectional_frame_config_pass": IO_bidirStr} #This dict maps BEL names to the pb_type XML that should be substituted in when they are foun
+
+specialModelDict = {} # This dict maps BEL names to the model XML that should be substituted in when they are found (but it must also have special PB type XML)
+
+specialInterconnectDict = {"LUT4c_frame_config": lut4InterconnectStr} #This dict maps custom bels to the special top-level interconnect they need (e.g. for external connections)
+
+#Clock coordinates - these are relative to the fabric.csv fabric, and ignore the padding
+clockX = 0
+clockY = 0
+
+def genVPRModelXML(archObject: Fabric, generatePairs = True):
+
+    ### STYLE NOTE: As this function uses f-strings so regularly, as a standard these f-strings should be denoted with single quotes ('...') instead of double quotes ("...")
+    ### This is because the XML being generated uses double quotes to denote values, so every attribute set introduces a pair of quotes to escape
+    ### This is doable but frustrating and leaves room for error, so as standard single quotes are recommended. 
+
+    ### A variable name of the form fooString means that it is a string which will be substituted directly into the output string - otherwise fooStr is used 
+
+    #Calculate clock X and Y coordinates considering variations in coordinate systems and EMPTY padding around VPR model
+    newClockX = clockX + 1
+    newClockY = archObject.height - clockY
+
+
+    ### DEVICE INFO
+
+    deviceString = """
+  <sizing R_minW_nmos="6065.520020" R_minW_pmos="18138.500000"/>
+  <area grid_logic_tile_area="14813.392"/>
+  <chan_width_distr>
+   <x distr="uniform" peak="1.000000"/>
+   <y distr="uniform" peak="1.000000"/>
+  </chan_width_distr>
+  <switch_block type="universal" fs="3"/>
+  <connection_block input_switch_name="ipin_cblock"/>
+  <default_fc in_type="frac" in_val="1" out_type="frac" out_val="1"/>
+
+""" # Several of these values are fillers, as they are outside the current scope of the FABulous project
+    # As we're feeding in a custom RR graph, the type of switch block shouldn't matter, so universal was just a filler - using 'custom' would require an extra tag
+
+    #NOTE: Currently indentation is handled manually, but it's probably worth introducing a library/external function to handle this at some point
+ 
+
+    ### COMPLEX BLOCKS, MODELS & TILES
+
+
+    pb_typesString = "" #String to store all the different kinds of pb_types needed
+
+    modelsString = "" #String to store different models
+
+    tilesString = "" #String to store tiles
+
+    sourceSinkMap = getFabricSourcesAndSinks(archObject)
+    
+    for cellType in archObject.cellTypes: 
+        cTile = getTileByType(archObject, cellType)
+
+        tilesString += f'  <tile name="{cellType}">\n' #Add tiles and appropriate equivalent site
+        tilesString += f'   <sub_tile name="{cellType}_sub">' #Add sub_tile declaration to meet VTR 8.1.0 requirements
+        tilesString += '    <equivalent_sites>\n'
+        tilesString += f'     <site pb_type="{cellType}" pin_mapping="direct"/>\n'
+        tilesString += '    </equivalent_sites>\n'
+
+        pb_typesString += f'  <pb_type name="{cellType}">\n' #Top layer block
+        doneBels = [] # List to track bels that we've already created a pb_type for (by type)
+
+        tileInputs = [] #Track the tile's top level inputs and outputs for the top pb_type definition
+        tileOutputs = [] 
+
+        customInterconnectStr = "" #Create empty string to store custom interconnect XML
+
+        for bel in cTile.belsWithIO: #Create second layer (leaf) blocks for each bel
+
+            tileInputs.extend(bel[2]) #Add the inputs and outputs of this BEL to the top level tile inputs/outputs list
+            tileOutputs.extend(bel[3])
+
+
+            if bel[0] in doneBels: #We only want one tag for each kind of bel so we track which ones we have already done
+                continue
+
+            count = 0
+            prefixList = []
+            for innerBel in cTile.belsWithIO:
+                if innerBel[0] == bel[0]: #Count how many of the current bel we have
+                    count += 1
+                    prefixList.append(innerBel[1]) #Add the prefix of this bel to our list of prefixes
+
+
+            if bel[0] in specialBelDict: #If the bel has custom pb_type XML
+                thisPbString = specialBelDict[bel[0]] #Get the custom XML string
+                pbSearch = num_pbRE.search(thisPbString) #And fetch the num_pb value (with regex)
+                if pbSearch: #If there is a num_pb value specified
+                    try:
+                        fasm_prefix_count = int(pbSearch.group(1)) #Convert it to an int
+                    except:
+                        raise ValueError("Non-integer num_pb specified in custom XML") #Or if that's not possible raise an exception
+                else:
+                    fasm_prefix_count = 1 #Default in case of no num_pb specification is 1
+
+                fasm_prefix_list = ""
+
+                for i in range(fasm_prefix_count):
+                    fasm_prefix_list += letters[i] + " " # Get a space separated list of the first <num_pb> letters
+
+                pb_typesString += thisPbString.format(fasm_prefix_list = fasm_prefix_list) #Add the custom pb_type XML with the list inserted
+
+                if bel[0] in specialModelDict: #If it also has custom model XML
+                    modelsString += specialModelDict[bel[0]] #Then add in this XML
+
+                if bel[0] in specialInterconnectDict: #And if it has any custom interconnects
+                    customInterconnectStr += specialInterconnectDict[bel[0]] #Add them to this string to be added in at the end of the pb_type
+
+            else: #Otherwise we generate the pb_type and model text
+
+     
+                pb_typesString += f'   <pb_type name="{bel[0]}" num_pb="{count}" blif_model=".subckt {bel[0]}">\n' #Add inner pb_type tag opener
+
+                modelsString += f'  <model name="{bel[0]}">\n' #Add model tag
+                modelsString += '   <input_ports>\n' #open tag for input ports in model list
+
+
+                unprefixedInputs = [removeStringPrefix(cInput, bel[1]) for cInput in bel[2]] #Create lists of ports without prefixes for our generic modelling
+                unprefixedOutputs = [removeStringPrefix(cOutput, bel[1]) for cOutput in bel[3]]
+
+                allOutsStr = " ".join(unprefixedOutputs) #Generate space-separated list of all outputs for combinational sink ports
+
+                for cInput in unprefixedInputs:
+                    pb_typesString += f'    <input name="{cInput}" num_pins="1"/>\n' #Add input and outputs
+                    modelsString += f'    <port name="{cInput}" combinational_sink_ports="{allOutsStr}"/>\n' #Add all outputs as combinational sinks
+
+                modelsString += '   </input_ports>\n' #close input ports tag
+                modelsString += '   <output_ports>\n' #open output ports tag
+
+
+                for cOutput in unprefixedOutputs:
+                    pb_typesString += f'    <output name="{cOutput}" num_pins="1"/>\n' #Add outputs to pb and model
+                    modelsString += f'    <port name="{cOutput}"/>\n'
+
+                modelsString += f'   </output_ports>\n' #close output ports tag
+                modelsString += '  </model>\n'
+
+                #Add metadata using prefixes gathered earlier
+                prefixStr = " ".join(prefixList) #Str instead of string used for variable name as it is not to be injected directly into output
+
+                if prefixStr != "": 
+                    pb_typesString += '    <metadata>\n' #Add metadata tag to represent FASM prefix for genfasm tool
+                    pb_typesString += f'     <meta name="fasm_prefix">{prefixStr}</meta>\n'
+                    pb_typesString += '    </metadata>\n'
+
+
+                #Generate delay constants - for the time being, we will assume that all inputs are combinatorially connected to all outputs
+
+                for cInput in unprefixedInputs:
+                    for cOutput in unprefixedOutputs: #Add a constant delay between every pair of input and output ports (as currently we say they are all combinationally linked)
+                        pb_typesString += f'    <delay_constant max="300e-12" in_port="{bel[0]}.{cInput}" out_port="{bel[0]}.{cOutput}"/>\n'
+
+
+
+                pb_typesString += '   </pb_type>\n' #Close inner tag
+                
+            doneBels.append(bel[0]) #Make sure we don't repeat similar BELs
+            
+        pinlocationsAndInputsStr = ''
+
+        pinlocationsAndInputsStr += '   <pinlocations pattern="custom">\n' #Custom pinlocations allow us to set all pins to the bottom of the tile - this just makes RR graph accuracy easier
+        
+        totalList = f'{cellType}_sub.UserCLK' #Add UserCLK to the list of pins
+        for cPin in (tileInputs + tileOutputs + list(sourceSinkMap[cTile.genTileLoc()][0]) + list(sourceSinkMap[cTile.genTileLoc()][1])): #List all pins 
+            totalList += f' {cellType}_sub.{cPin}' #And add them to the pinlocation list
+
+        pinlocationsAndInputsStr += f'    <loc side ="bottom"> {totalList} </loc>\n' #Set all to bottom of tile
+
+        pinlocationsAndInputsStr += '   </pinlocations>\n'
+
+
+        pb_typesString += '   <interconnect>\n' #We now need interconnect to link every bel to the top pb_type
+
+        belCountDict = {} #Use dict to track how many of each bel we have seen
+        belIndexList = [] #Shows what index the bel at the relevant index has
+
+        for bel in cTile.belsWithIO:
+            if bel[0] in belCountDict: #If we've already seen one of the bel
+                i = belCountDict[bel[0]] #Then our index is the number we've already seen (indexing starts at 0)
+                belCountDict[bel[0]] = i + 1 #And we increment our seen count by 1
+            else:
+                i = 0
+                belCountDict[bel[0]] = 1 #Otherwise we set our seen count to 1 and set i to 0
+
+            belIndexList.append(i) #Update list to map current bel to its index
+
+            for cInput in bel[2]:  #Add direct connections from top level tile to the corresponding child port
+                    pb_typesString += f'    <direct name="{cTile.tileType}_{cInput}_top_to_child" input="{cellType}.{cInput}" output="{bel[0]}[{i}].{removeStringPrefix(cInput, bel[1])}"/>\n'
+
+
+            for cOutput in bel[3]: #Add direct connections from child port to top level tile
+                    pb_typesString += f'    <direct name="{cTile.tileType}_{cOutput}_child_to_top" input="{bel[0]}[{i}].{removeStringPrefix(cOutput, bel[1])}" output="{cellType}.{cOutput}"/>\n'
+
+
+        for pip in cTile.pips: 
+            if (pip[0] in tileOutputs) and (pip[1] in tileInputs): #If we have a pip connecting a bel output to a bel input we add it as a direct connection
+                for i, bel in enumerate(cTile.belsWithIO): 
+                    if pip[0] in bel[3]: #If the pip's source is the same as the bel's output then we note it as the source of the pip
+                        sourceBel = bel #Note which bel it is
+                        sourceIndex = belIndexList[i] #And what index it has (in terms of its own type e.g. LUT4[2])
+                    if pip[1] in bel[2]: #And if the pip's sink is the same as the bel's input then we note it as the sink
+                        sinkBel = bel #Note the same again
+                        sinkIndex = belIndexList[i]
+                sourceStr = f'{sourceBel[0]}[{sourceIndex}].{removeStringPrefix(pip[0], sourceBel[1])}' #Generate the source
+                sinkStr = f'{sinkBel[0]}[{sinkIndex}].{removeStringPrefix(pip[1], sinkBel[1])}' #And sink port names
+                pb_typesString += f'    <direct name="{pip[0]}_{pip[1]}_pip" input="{sourceStr}" output="{sinkStr}"/>\n' #And add the direct tag
+ 
+
+        pb_typesString += customInterconnectStr
+        pb_typesString += '   </interconnect>\n'
+
+        tilesString += f'   <input name="UserCLK" num_pins="1"/>\n'
+        pb_typesString += f'   <input name="UserCLK" num_pins="1"/>\n'
+
+
+        #Now we add tile and top-level pb_type inputs and outputs
+        for cInput in tileInputs:
+            pb_typesString += f'   <input name="{cInput}" num_pins="1"/>\n' #Add top level inputs and outputs
+            pinlocationsAndInputsStr += f'   <input name="{cInput}" num_pins="1"/>\n'
+
+
+        for cOutput in tileOutputs:
+            pb_typesString += f'   <output name="{cOutput}" num_pins="1"/>\n'
+            pinlocationsAndInputsStr += f'   <output name="{cOutput}" num_pins="1"/>\n'
+
+
+        for source in sourceSinkMap[cTile.genTileLoc()][0]:
+            pb_typesString += f'   <output name="{source}" num_pins="1"/>\n' #Add top level inputs and outputs
+            pinlocationsAndInputsStr += f'   <output name="{source}" num_pins="1"/>\n'            
+
+        for sink in sourceSinkMap[cTile.genTileLoc()][1]:
+            pb_typesString += f'   <input name="{sink}" num_pins="1"/>\n' #Add top level inputs and outputs
+            pinlocationsAndInputsStr += f'   <input name="{sink}" num_pins="1"/>\n'    
+
+        #And close final tile & pb_type string
+        pb_typesString += f'  </pb_type>\n'
+        tilesString += pinlocationsAndInputsStr + '</sub_tile>\n' + pinlocationsAndInputsStr
+        tilesString += '  </tile>\n'
+
+
+
+    ### LAYOUT
+
+
+    layoutString = f'  <fixed_layout name="FABulous" width="{archObject.width + 2}" height="{archObject.height + 2}">\n' #Add 2 for empty padding
+
+    layoutString += f'      <single type="clock_primitive" priority="1" x="{newClockX}" y="{newClockY}"/>\n' #Add tag for dummy clock
+    #Tile locations are specified using <single> tags - while the typical fabric will be made up of larger blocks of tiles, this allows the most flexibility
+
+    for line in archObject.tiles:
+        for tile in line:
+            if tile.tileType != "NULL": #We do not need to specify if the tile is empty as all tiles default to EMPTY in VPR
+                layoutString += f'   <single type="{tile.tileType}" priority="1" x="{tile.x + 1}" y="{archObject.height - tile.y}">\n' #Add single tag for each tile - add 1 to x and y (cancels out in y conversion) for padding
+                #Now add metadata for fasm generation
+                layoutString += '    <metadata>\n' 
+                layoutString += f'     <meta name="fasm_prefix"> {tile.genTileLoc()} </meta>\n' #Only metadata required is the tile name for the prefix
+                layoutString += '    </metadata>\n'
+                layoutString += '   </single>\n'
+
+    layoutString += '  </fixed_layout>\n'
+
+
+    ### SWITCHLIST
+
+
+    switchlistString = '  <switch type="buffer" name="ipin_cblock" R="551" Cin=".77e-15" Cout="4e-15" Tdel="58e-12" buf_size="27.645901"/>\n' #Values are fillers from templates
+    switchlistString += '  <switch type="mux" name="buffer"  R="2e-12" Cin=".77e-15" Cout="4e-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>\n'
+
+
+    ### SEGMENTLIST - contains only a filler as it is a necessity to parse the architecture graph but we are reading a custom RR graph
+
+
+    segmentlistString = """  <segment name="dummy" length="1" freq="1.000000" type="unidir" Rmetal="1e-12" Cmetal="22.5e-15">
+   <sb type="pattern">0 0</sb>
+   <cb type="pattern">0</cb>
+   <mux name="buffer"/>
+  </segment>"""
+
+    ### CLOCK SETUP
+
+    #Generate full strings for insertion - this is just a tile with the clock primitive on it
+    clockTileStr = f"""  <tile name="clock_primitive">
+   <sub_tile name="clock_sub">
+    <equivalent_sites>
+     <site pb_type="clock_primitive" pin_mapping="direct"/>
+    </equivalent_sites>
+    <output name="clock_out" num_pins="1"/>
+   </sub_tile>
+  </tile>"""
+
+    #This is a pb_type with a Global_Clock primitive - when programming we instantiate this as a blackbox
+    clockPbStr = f""" <pb_type name="clock_primitive">
+  <pb_type name="clock_input" blif_model=".subckt Global_Clock" num_pb="1">
+   <output name="CLK" num_pins="1"/>
+  </pb_type>
+  <output name="clock_out" num_pins="1"/>
+  <interconnect>
+   <direct name="clock_prim_to_top" input="clock_input.CLK" output="clock_primitive.clock_out"/>
+  </interconnect>
+ </pb_type> """
+
+
+    ### OUTPUT
+
+
+    outputString = f'''<architecture>
+
+ <device>
+{deviceString}
+ </device>
+
+ <layout>
+{layoutString}
+ </layout>
+
+ <tiles>
+{clockTileStr}
+{tilesString}
+ </tiles>
+ 
+ <models>
+  <model name="Global_Clock">
+   <output_ports>
+    <port name="CLK"/>
+   </output_ports>
+  </model>
+{modelsString}
+ </models>
+
+ <complexblocklist>
+{clockPbStr}
+{pb_typesString}
+ </complexblocklist>
+
+ <switchlist>
+{switchlistString}
+ </switchlist>
+
+ <segmentlist>
+{segmentlistString}
+ </segmentlist>
+
+
+</architecture>''' 
+
+    return outputString
+
+def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
+
+    #Calculate clock X and Y coordinates considering variations in coordinate systems and EMPTY padding around VPR model
+    newClockX = clockX + 1
+    newClockY = archObject.height - clockY
+    
+
+    ### BLOCKS
+
+
+    blocksString = '' #Initialise string for block types
+    curId = 0 #Increment id from 0 as we work through
+    blockIdMap = {} #Dictionary to record IDs for different tile types when generating grid
+    ptcMap = {} #Dict to map tiles to individual dicts that map pin name to PTC
+    sourceSinkMap = getFabricSourcesAndSinks(archObject) # Get sources and sinks for fabric - more info in method
+
+    #First, handle tiles not defined in architecture:
+
+    blocksString += f"""  <block_type id="{curId}" name="EMPTY" width="1" height="1">
+  </block_type>\n"""
+    blockIdMap["EMPTY"] = curId
+    curId += 1 #Add empty tile to block type spec and increment id by 1
+
+    #And add clock tile (as this is a dummy to represent deeper FABulous functionality, so will not be in our csv files)
+
+    blocksString += f'  <block_type id="{curId}" name="clock_primitive" width="1" height="1">\n'
+
+    ptc = 0
+
+    blocksString += f'   <pin_class type="OUTPUT">\n'
+    blocksString += f'    <pin ptc="{ptc}">clock_primitive.clock_out[0]</pin>\n' #Add output tag for each tile
+    blocksString += f'   </pin_class>\n'
+    ptc += 1
+
+    blocksString += '</block_type>\n'
+    blockIdMap["clock_primitive"] = curId #Store that the clock_primitive block has this ID
+    curId += 1
+
+    for cellType in archObject.cellTypes:
+        tilePtcMap = {} #Dict to map each pin on this tile to its ptc
+        blocksString += f'  <block_type id="{curId}" name="{cellType}" width="1" height="1">\n' #Generate block type tile for each type of tile - we assume 1x1 tiles here
+        
+        cTile = getTileByType(archObject, cellType) #Fetch tile of this type
+        
+        ptc = 0
+
+        blocksString += f'   <pin_class type="INPUT">\n' #Generate the tags 
+        blocksString += f'    <pin ptc="{ptc}">{cellType}.UserCLK[0]</pin>\n'
+        blocksString += f'   </pin_class>\n'
+
+        ptc += 1        
+
+        blockInputString = "" #String to hold all input declarations
+        blockOutputString = "" #String to hold all output declarations
+
+        for bel in cTile.belsWithIO: #For each bel on the tile
+            for cInput in bel[2]: #Take each input and output
+                blockInputString += f'   <pin_class type="INPUT">\n' #Generate the tags 
+                blockInputString += f'    <pin ptc="{ptc}">{cellType}.{cInput}[0]</pin>\n'
+                blockInputString += f'   </pin_class>\n'
+                tilePtcMap[cInput] = ptc #Note the ptc in the tile's ptc map
+                ptc += 1 #And increment the ptc
+
+        for sink in sourceSinkMap[cTile.genTileLoc()][1]:
+            blockInputString += f'   <pin_class type="INPUT">\n' #Generate the tags 
+            blockInputString += f'    <pin ptc="{ptc}">{cellType}.{sink}[0]</pin>\n'
+            blockInputString += f'   </pin_class>\n'
+            tilePtcMap[sink] = ptc #Note the ptc in the tile's ptc map
+            ptc += 1 #And increment the ptc 
+
+        for bel in cTile.belsWithIO: 
+            for cOutput in bel[3]:
+                blockOutputString += f'   <pin_class type="OUTPUT">\n' #Same as above
+                blockOutputString += f'    <pin ptc="{ptc}">{cellType}.{cOutput}[0]</pin>\n'
+                blockOutputString += f'   </pin_class>\n'
+                tilePtcMap[cOutput] = ptc
+                ptc += 1
+
+        for source in sourceSinkMap[cTile.genTileLoc()][0]:
+            blockOutputString += f'   <pin_class type="OUTPUT">\n' #Same as above
+            blockOutputString += f'    <pin ptc="{ptc}">{cellType}.{source}[0]</pin>\n'
+            blockOutputString += f'   </pin_class>\n'
+            tilePtcMap[source] = ptc
+            ptc += 1     
+
+      
+
+        blocksString += blockInputString
+        blocksString += blockOutputString
+
+        blocksString += '  </block_type>\n'
+
+        ptcMap[cellType] = dict(tilePtcMap) #Create copy of ptc map for this tile and add to larger dict (passing by reference would have undesired effects)
+
+        blockIdMap[cellType] = curId #Populate our map of type name to ID as we need the ID for generating the grid
+        curId += 1
+
+
+
+    ### NODES
+
+
+    nodesString = ''
+    curNodeId = 0 #Start indexing nodes at 0 and increment each time a node is added
+
+    sourceToWireIDMap = {} #Dictionary to map a wire source to the relevant wire ID
+    destToWireIDMap = {} #Dictionary to map a wire destination to the relevant wire ID
+
+    max_width = 1 #Initialise value to find maximum channel width for channels tag - start as 1 as you can't have a thinner wire!
+
+    srcToOpinStr = ''
+    IpinToSinkStr = ''
+    clockPtc = 0
+    clockLoc = f'X{clockX}Y{clockY}'
+
+    # Add node for clock out
+    nodesString += f'  <!-- Clock output: clock_primitive.clock_out -->\n'
+
+    nodesString += f'  <node id="{curNodeId}" type="SOURCE" capacity="1">\n' #Generate tag for each node
+    nodesString += f'   <loc xlow="{newClockX}" ylow="{newClockY}" xhigh="{newClockX}" yhigh="{newClockY}" ptc="0"/>\n' #Add loc tag
+    nodesString += '  </node>\n' #Close node tag
+
+    curNodeId += 1 #Increment id so all nodes have different ids
+
+    nodesString += f'  <node id="{curNodeId}" type="OPIN" capacity="1">\n' #Generate tag for each node
+    nodesString += f'   <loc xlow="{newClockX}" ylow="{newClockY}" xhigh="{newClockX}" yhigh="{newClockY}" ptc="0" side="BOTTOM"/>\n' #Add loc tag
+    nodesString += '  </node>\n' #Close node tag
+    srcToOpinStr += f'  <edge src_node="{curNodeId - 1}" sink_node="{curNodeId}" switch_id="1"/>\n'
+    destToWireIDMap[clockLoc + "." + "clock_out"] = curNodeId #Add to dest map as equivalent to a wire destination
+    curNodeId += 1      
+    clockPtc += 1
+    wirePtc = 0 #For simplicity's sake, we currently use a different ptc for every single wire - probably worth improving at some point but the only issue is some memory inefficiency
+
+    for row in archObject.tiles:
+        for tile in row:
+            tileLoc = tile.genTileLoc()
+            #Generate clock nodes:
+
+            #First, clock output:
+            if tile.tileType != "NULL":
+                #Add clock inputs for every tile:
+
+                nodesString += f'  <node id="{curNodeId}" type="IPIN" capacity="1">\n' #Generate tag for each node
+                nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="0" side="BOTTOM"/>\n' #Add loc tag
+                nodesString += '  </node>\n' #Close node tag            
+                sourceToWireIDMap[tileLoc + ".UserCLK"] = curNodeId #Add to dest map as equivalent to a wire destination
+                curNodeId += 1      
+
+                nodesString += f'  <node id="{curNodeId}" type="SINK" capacity="1">\n' #Generate tag for each node
+                nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="0"/>\n' #Add loc tag
+                nodesString += '  </node>\n' #Close node tag  
+                IpinToSinkStr += f'  <edge src_node="{curNodeId - 1}" sink_node="{curNodeId}" switch_id="1"/>\n'          
+                curNodeId += 1    
+
+            for wire in tile.wires:
+                if wire["yoffset"] != "0" and wire["xoffset"] != "0": #We want to find the length of the wire based on the x and y offset - either it's a jump, or in theory goes off in only one direction - let's find which
+                    raise Exception("Diagonal wires not currently supported for VPR routing resource model") #Stop if there are diagonal wires just in case they get put in a fabric
+                if wire["yoffset"] != "0": #Then we check which one isn't zero and take that as the length
+                    nodeType = "CHANY" #Set node type as vertical channel if wire is vertical
+                elif wire["xoffset"] != "0":
+                    nodeType = "CHANX" #Set as horizontal if moving along X
+                else: #If we get to here then both offsets are zero and so this must be a jump wire
+                    nodeType = "CHANY" # default to CHANY - as offsets are zero it does not matter
+
+
+                desty = tile.y - int(wire["yoffset"]) #Calculate destination location of the wire at hand
+                destx = tile.x + int(wire["xoffset"])
+                desttileLoc = f"X{destx}Y{desty}"
+
+                if (nodeType == "CHANX" and int(wire["xoffset"]) > 0) or (nodeType == "CHANY" and int(wire["yoffset"]) > 0): #Check wire direction and set appropriate valuesz
+                    direction = "INC_DIR"
+                    yLow = archObject.height - tile.y - 1
+                    xLow = tile.x
+                    yHigh = archObject.height - desty - 1
+                    xHigh = destx
+                else:
+                    direction = "DEC_DIR"
+                    yHigh = archObject.height - tile.y - 1
+                    xHigh = tile.x
+                    yLow = archObject.height - desty - 1
+                    xLow = destx                
+
+                for i in range(int(wire["wire-count"])): #For every individual wire
+                    wireSource = tileLoc + "." + wire["source"] #Generate location strings for the source and destination
+                    wireDest = desttileLoc + "." + wire["destination"]
+
+                    #Coordinates until now have been relative to the fabric - only account for padding when formatting actual string
+                    nodesString += f'  <!-- Wire: {wireSource+str(i)} -> {wireDest+str(i)} -->\n' #Comment destination for clarity
+                    nodesString += f'  <node id="{curNodeId}" type="{nodeType}" capacity="1" direction="{direction}">\n' #Generate tag for each node
+                    nodesString += '   <segment segment_id="0"/>\n'
+                    nodesString += f'   <loc xlow="{xLow + 1}" ylow="{yLow + 1}" xhigh="{xHigh + 1}" yhigh="{yHigh + 1}" ptc="{wirePtc}"/>\n' #Add loc tag with the information we just calculated
+
+                    nodesString += '  </node>\n' #Close node tag
+
+                    sourceToWireIDMap[wireSource+str(i)] = curNodeId
+                    destToWireIDMap[wireDest+str(i)] = curNodeId
+
+                    curNodeId += 1 #Increment id so all nodes have different ids
+                    wirePtc += 1 #Increment wire ptc so that all wires have different ptcs
+                max_width = max(max_width, int(wire["wire-count"])) #If our current width is greater than the previous max, take the new one
+
+
+            # Generate nodes for atomic wires
+            for wire in tile.atomicWires:
+                if wire["yoffset"] != "0" and wire["xoffset"] != "0": #We want to find the length of the wire based on the x and y offset - either it's a jump, or in theory goes off in only one direction - let's find which
+                    print(wire["yoffset"], wire["xoffset"])
+                    raise Exception("Diagonal wires not currently supported for VPR routing resource model") #Stop if there are diagonal wires just in case they get put in a fabric
+                if wire["yoffset"] != "0": #Then we check which one isn't zero and take that as the length
+                    nodeType = "CHANY" #Set node type as vertical channel if wire is vertical
+                elif wire["xoffset"] != "0":
+                    nodeType = "CHANX" #Set as horizontal if moving along X
+
+                wireSource = wire["sourceTile"] + "." + wire["source"] #Generate location strings for the source and destination
+                wireDest = wire["destTile"] + "." + wire["destination"]
+
+                destTile = archObject.getTileByLoc(wire["destTile"])
+
+                if (nodeType == "CHANX" and int(wire["xoffset"]) > 0) or (nodeType == "CHANY" and int(wire["yoffset"]) > 0):
+                    direction = "INC_DIR"
+                    yLow = archObject.height - tile.y - 1
+                    xLow = tile.x
+                    yHigh = archObject.height - destTile.y - 1
+                    xHigh = destTile.x
+                else:
+                    direction = "DEC_DIR"
+                    yHigh = archObject.height - tile.y - 1
+                    xHigh = tile.x
+                    yLow = archObject.height - destTile.y - 1
+                    xLow = destTile.x
+
+                nodesString += f'  <!-- Atomic Wire: {wireSource} -> {wireDest} -->\n' #Comment destination for clarity
+                nodesString += f'  <node id="{curNodeId}" type="{nodeType}" capacity="1" direction="{direction}">\n' #Generate tag for each node
+
+                nodesString += f'   <loc xlow="{xLow + 1}" ylow="{yLow + 1}" xhigh="{xHigh + 1}" yhigh="{yHigh + 1}" ptc="{wirePtc}"/>\n' #Add loc tag with the information we just calculated
+                nodesString += '   <segment segment_id="0"/>\n'
+
+                nodesString += f'  </node>\n' #Close node tag
+
+                sourceToWireIDMap[wireSource] = curNodeId
+                destToWireIDMap[wireDest] = curNodeId
+
+                curNodeId += 1 #Increment id so all nodes have different ids
+                wirePtc += 1
+
+            # Generate nodes for bel ports
+            for bel in tile.belsWithIO: 
+                for cInput in bel[2]:
+                    if tile.tileType in ptcMap and cInput in ptcMap[tile.tileType]:
+                        thisPtc = ptcMap[tile.tileType][cInput]
+                    else:
+                        raise Exception("Could not find pin ptc in block_type designation for RR Graph generation.")
+                    nodesString += f'  <!-- BEL input: {cInput} -->\n'
+                    nodesString += f'  <node id="{curNodeId}" type="IPIN" capacity="1">\n' #Generate tag for each node
+                    nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="{thisPtc}" side="BOTTOM"/>\n' #Add loc tag - same high and low vals as no movement between tiles
+                    nodesString += '  </node>\n' #Close node tag
+
+                    sourceToWireIDMap[tileLoc + "." + cInput] = curNodeId #Add to source map as it is the equivalent of a wire source
+
+                    curNodeId += 1 #Increment id so all nodes have different ids
+
+                    nodesString += f'  <node id="{curNodeId}" type="SINK" capacity="1">\n' #Generate tag for each node
+                    nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="{thisPtc}"/>\n' #Add loc tag - same high and low vals as no movement between tiles
+                    nodesString += '  </node>\n' #Close node tag
+                    IpinToSinkStr += f'  <edge src_node="{curNodeId - 1}" sink_node="{curNodeId}" switch_id="1"/>\n'          
+
+                    curNodeId += 1 #Increment id so all nodes have different ids
+
+                for cOutput in bel[3]:
+                    if tile.tileType in ptcMap and cOutput in ptcMap[tile.tileType]:
+                        thisPtc = ptcMap[tile.tileType][cOutput]
+                    else:
+                        raise Exception("Could not find pin ptc in block_type designation for RR Graph generation.")
+                    nodesString += f'  <!-- BEL output: {cOutput} -->\n'
+
+                    nodesString += f'  <node id="{curNodeId}" type="OPIN" capacity="1">\n' #Generate tag for each node
+                    nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="{thisPtc}" side="BOTTOM"/>\n' #Add loc tag
+                    nodesString += '  </node>\n' #Close node tag
+                    destToWireIDMap[tileLoc + "." + cOutput] = curNodeId #Add to dest map as equivalent to a wire destination                    
+                    curNodeId += 1 #Increment id so all nodes have different ids
+
+                    nodesString += f'  <node id="{curNodeId}" type="SOURCE" capacity="1">\n' #Generate tag for each node
+                    nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="{thisPtc}"/>\n' #Add loc tag
+                    nodesString += '  </node>\n' #Close node tag
+                    srcToOpinStr += f'  <edge src_node="{curNodeId}" sink_node="{curNodeId - 1}" switch_id="1"/>\n'
+                    curNodeId += 1 #Increment id so all nodes have different ids
+
+            for source in sourceSinkMap[tile.genTileLoc()][0]:
+                thisPtc = ptcMap[tile.tileType][source]
+
+
+                nodesString += f'  <!-- Source: {tile.genTileLoc()}.{source} -->\n'
+
+                nodesString += f'  <node id="{curNodeId}" type="SOURCE" capacity="1">\n' #Generate tag for each node
+                nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="{thisPtc}"/>\n' #Add loc tag
+                nodesString += '  </node>\n' #Close node tag
+
+                curNodeId += 1 #Increment id so all nodes have different ids
+
+                nodesString += f'  <node id="{curNodeId}" type="OPIN" capacity="1">\n' #Generate tag for each node
+                nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="{thisPtc}" side="BOTTOM"/>\n' #Add loc tag
+                nodesString += '  </node>\n' #Close node tag
+                srcToOpinStr += f'  <edge src_node="{curNodeId - 1}" sink_node="{curNodeId}" switch_id="1"/>\n'
+                destToWireIDMap[tileLoc + "." + source] = curNodeId #Add to dest map as equivalent to a wire destination
+
+                curNodeId += 1
+
+            for sink in sourceSinkMap[tile.genTileLoc()][1]:
+                thisPtc = ptcMap[tile.tileType][sink]
+
+
+                nodesString += f'  <!-- Sink: {tile.genTileLoc()}.{sink} -->\n'
+
+                nodesString += f'  <node id="{curNodeId}" type="SINK" capacity="1">\n' #Generate tag for each node
+                nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="{thisPtc}"/>\n' #Add loc tag
+                nodesString += '  </node>\n' #Close node tag
+                curNodeId += 1 #Increment id so all nodes have different ids                
+
+
+                nodesString += f'  <node id="{curNodeId}" type="IPIN" capacity="1">\n' #Generate tag for each node
+                nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="{thisPtc}" side="BOTTOM"/>\n' #Add loc tag
+                nodesString += '  </node>\n' #Close node tag
+
+                IpinToSinkStr += f'  <edge src_node="{curNodeId}" sink_node="{curNodeId - 1}" switch_id="1"/>\n'          
+
+                sourceToWireIDMap[tileLoc + "." + sink] = curNodeId #Add to dest map as equivalent to a wire destination
+                curNodeId += 1 #Increment id so all nodes have different ids                
+
+    ### EDGES
+
+
+    edgeStr = srcToOpinStr + IpinToSinkStr #Initialise list of edges with edges connecting OPINs and IPINs to their corresponding SINKs and SOURCEs
+
+    #Create edges for all pips in fabric
+
+    for row in archObject.tiles:
+        for tile in row:
+            if tile.tileType != "NULL": #If the tile isn't NULL then create an edge for the clock primitive connection
+                tileLoc = tile.genTileLoc()
+                edgeStr += f'  <edge src_node="{destToWireIDMap[clockLoc + "." + "clock_out"]}" sink_node="{sourceToWireIDMap[tileLoc + ".UserCLK"]}" switch_id="1"/>\n'
+
+
+            for pip in tile.pips: # Find source and sink name
+                src_name = tileLoc + "." + pip[0]
+                sink_name = tileLoc + "." + pip[1]
+
+                edgeStr += f'  <edge src_node="{destToWireIDMap[src_name]}" sink_node="{sourceToWireIDMap[sink_name]}" switch_id="1">\n' #And create node
+                edgeStr += '   <metadata>\n' #Generate metadata tag that tells us which switch matrix connection to activate
+                edgeStr += f'    <meta name="fasm_features">{".".join([tileLoc, pip[0], pip[1]])}</meta>\n'
+                edgeStr += '   </metadata>\n'
+                edgeStr += '  </edge>\n'
+
+
+
+    ### CHANNELS
+
+    max_width = wirePtc #Overwrite with an upper bound of the possible wire PTCs for now 
+
+    #Use the max width generated before for this tag
+    channelString = f'  <channel chan_width_max="{max_width}" x_min="0" y_min="0" x_max="{archObject.width + 1}" y_max="{archObject.height + 1}"/>\n'
+    
+    #Generate x_list tag and y_list tag for every channel - use the upper bound max_width for simplicity
+    for i in range(archObject.width + 2):
+        channelString += f'  <x_list index ="{i}" info="{max_width}"/>\n'
+
+    for i in range(archObject.height + 2):
+        channelString += f'  <y_list index ="{i}" info="{max_width}"/>\n'
+
+
+
+
+    ### GRID
+
+    gridString = ''
+
+    for row in archObject.tiles[::-1]:
+        for tile in row:
+            if tile.x == clockX and tile.y == clockY: #We add the clock tile at the end so ignore it for now
+                continue      
+            if tile.tileType == "NULL": #The method that generates cellTypes ignores NULL, so it was never in our map - we'll just use EMPTY instead as we did for the main XML model
+                gridString += f'  <grid_loc x="{tile.x + 1}" y="{archObject.height - tile.y}" block_type_id="{blockIdMap["EMPTY"]}" width_offset="0" height_offset="0"/>\n'
+                continue
+            gridString += f'  <grid_loc x="{tile.x + 1}" y="{archObject.height - tile.y}" block_type_id="{blockIdMap[tile.tileType]}" width_offset="0" height_offset="0"/>\n'
+
+    # Create padding of EMPTY tiles around chip
+    gridString += '  <!-- EMPTY padding around chip -->\n'
+
+    for i in range(archObject.height + 2): #Add vertical padding
+        if newClockX != 0 or newClockY != i: #Make sure that this isn't the clock tile as we add this at the end
+            gridString += f'  <grid_loc x="0" y="{i}" block_type_id="{blockIdMap["EMPTY"]}" width_offset="0" height_offset="0"/>\n'
+        if newClockX != archObject.width + 1 or newClockY != i: #Check not clock tile
+            gridString += f'  <grid_loc x="{archObject.width + 1}" y="{i}" block_type_id="{blockIdMap["EMPTY"]}" width_offset="0" height_offset="0"/>\n'
+
+    for i in range(1, archObject.width + 1): #Add horizontal padding
+        if newClockX != i or newClockY != 0: #Check not clock tile
+            gridString += f'  <grid_loc x="{i}" y="0" block_type_id="{blockIdMap["EMPTY"]}" width_offset="0" height_offset="0"/>\n'
+        if newClockX != i or newClockY != archObject.height + 1: #Check not clock tile      
+            gridString += f'  <grid_loc x="{i}" y="{archObject.height + 1}" block_type_id="{blockIdMap["EMPTY"]}" width_offset="0" height_offset="0"/>\n'
+
+    #Finally, add clock tile loc
+    gridString += f'  <grid_loc x="{newClockX}" y="{newClockY}" block_type_id="{blockIdMap["clock_primitive"]}" width_offset="0" height_offset="0"/>\n'
+
+
+    ### SWITCHES
+
+
+    # Largely filler info - again, FABulous does not deal with this level of hardware detail currently
+
+    switchesString = '''        <switch id="0" type="mux" name="__vpr_delayless_switch__">
+            <timing R="0" Cin="0" Cout="0" Tdel="0"/>
+            <sizing mux_trans_size="0" buf_size="0"/>
+        </switch>
+        <switch id="1" type="mux" name="buffer">
+            <timing R="1.99999999e-12" Cin="7.70000012e-16" Cout="4.00000001e-15" Tdel="5.80000006e-11"/>
+            <sizing mux_trans_size="2.63073993" buf_size="27.6459007"/>
+        </switch>\n'''
+
+
+    ### OUTPUT    
+
+
+    outputString = f'''
+<rr_graph tool_name="vpr" tool_version="82a3c72" tool_comment="Based on FABulous output">
+
+ <channels>
+{channelString}
+ </channels>
+
+ <switches>
+{switchesString}
+ </switches>
+
+ <segments>
+  <segment id="0" name="dummy">
+   <timing R_per_meter="9.99999996e-13" C_per_meter="2.25000005e-14"/>
+  </segment>
+ </segments>
+
+ <block_types>
+{blocksString}
+ </block_types>
+
+ <grid>
+{gridString}
+ </grid>
+
+ <rr_nodes>
+{nodesString}
+ </rr_nodes>
+
+ <rr_edges>
+{edgeStr}
+ </rr_edges>
+
+</rr_graph>
+''' #Same point as in main XML generation applies here regarding outsourcing indentation
+
+    print(f'Max Width: {max_width}')
+    return outputString
+
+
 def genBitstreamSpec(archObject: Fabric):
-    specData = {"TileMap":{}, "TileSpecs":{}, "FrameMap":{}, "ArchSpecs":{"MaxFramesPerCol":MaxFramesPerCol, "FrameBitsPerRow":FrameBitsPerRow}}
+    specData = {"TileMap":{}, "TileSpecs":{}, "FrameMap":{}, "FrameMapEncode":{}, "ArchSpecs":{"MaxFramesPerCol":MaxFramesPerCol, "FrameBitsPerRow":FrameBitsPerRow}}
     BelMap = {}
     for line in archObject.tiles:
         for tile in line:
@@ -3776,50 +4738,74 @@ def genBitstreamSpec(archObject: Fabric):
     #We do not worry about bitmasking here - that's handled in the generation
 
     #LUT4:
+
     LUTmap = {}
     LUTmap["INIT"] = 0 #Futureproofing as there are two ways that INIT[0] may be referred to (FASM parser will use INIT to refer to INIT[0])
     for i in range(16):
         LUTmap["INIT[" + str(i) + "]"] = i
     LUTmap["FF"] = 16
     LUTmap["IOmux"] = 17
+
     BelMap["LUT4c_frame_config"] = LUTmap
 
     #MUX8
+
     MUX8map = {"c0":0, "c1":1}
+
     BelMap["MUX8LUT_frame_config"] = MUX8map
 
     #MULADD 
+
     MULADDmap = {}
     MULADDmap["A_reg"] = 0
     MULADDmap["B_reg"] = 1
     MULADDmap["C_reg"] = 2
+
     MULADDmap["ACC"] = 3
+
     MULADDmap["signExtension"] = 4
+
     MULADDmap["ACCout"] = 5
+
     BelMap["MULADD"] = MULADDmap
 
     #InPass
+
     InPassmap = {}
+
     InPassmap["I0_reg"] = 0
     InPassmap["I1_reg"] = 1
     InPassmap["I2_reg"] = 2
     InPassmap["I3_reg"] = 3
-    BelMap["InPass4_frame_config"] = InPassmap
 
+    BelMap["InPass4_frame_config"] = InPassmap
     #OutPass
+
     OutPassmap = {}
+
     OutPassmap["I0_reg"] = 0
     OutPassmap["I1_reg"] = 1
     OutPassmap["I2_reg"] = 2
     OutPassmap["I3_reg"] = 3
+
     BelMap["OutPass4_frame_config"] = OutPassmap
+
 
     #RegFile
     RegFilemap = {}
+
     RegFilemap["AD_reg"] = 0
     RegFilemap["BD_reg"] = 1
+
     BelMap["RegFile_32x4"] = RegFilemap
+
     BelMap["IO_1_bidirectional_frame_config_pass"] = {}
+
+    BelMap["Config_access"] = {}
+
+
+    #DoneTypes = []
+
 
     ###NOTE: THIS METHOD HAS BEEN CHANGED FROM A PREVIOUS IMPLEMENTATION SO PLEASE BEAR THIS IN MIND
     #To account for cascading and termination, this now creates a separate map for every tile, as opposed to every cellType
@@ -3830,13 +4816,17 @@ def genBitstreamSpec(archObject: Fabric):
             if cellType == "NULL":
                 continue
 
-            #Generate frame masks from ConfigMem
+            #Add frame masks to the dictionary 
             try:
                 configCSV = open(cellType + "_ConfigMem.csv") #This may need to be .init.csv, not just .csv
             except:
-                print(f"No Config Mem csv file found for {cellType}. Assuming no config memory.")
-                #specData["FrameMap"][cellType] = {}
-                continue
+                try:
+                    configCSV = open(cellType + "_ConfigMem.init.csv")
+                except:
+                    print(f"No Config Mem csv file found for {cellType}. Assuming no config memory.")
+                    specData["FrameMap"][cellType] = {}
+                    specData["FrameMapEncode"][cellType] = {}
+                    continue
             configList = [i.strip('\n').split(',') for i in configCSV]
             configList = RemoveComments(configList)
             maskDict = {}
@@ -3852,26 +4842,29 @@ def genBitstreamSpec(archObject: Fabric):
                             configEncode.append(str(int(index_temp[0])-i))
                     else:
                         configEncode.append(index)
+                #print(configEncode)
                 encode_i = 0
                 for i,char in enumerate(maskDict[int(line[1])]):
                     if char != '0':
+                        #encodeDict[int(line[1])][i] = configEncode[encode_i]
                         encodeDict[int(configEncode[encode_i])] = (31 - i) + ( 32 * int(line[1]))
                         encode_i += 1
-            #specData["FrameMap"][cellType] = maskDict
+            #print(encodeDict)
+            specData["FrameMap"][cellType] = maskDict
             # if specData["ArchSpecs"]["MaxFramesPerCol"] < int(line[1]) + 1:
-            #     specData["ArchSpecs"]["MaxFramesPerCol"] = int(line[1]) + 1
+            #   specData["ArchSpecs"]["MaxFramesPerCol"] = int(line[1]) + 1
             # if specData["ArchSpecs"]["FrameBitsPerRow"] < int(line[2]):
-            #     specData["ArchSpecs"]["FrameBitsPerRow"] = int(line[2])
+            #   specData["ArchSpecs"]["FrameBitsPerRow"] = int(line[2])
             configCSV.close()
 
             curBitOffset = 0
             curTileMap = {}
-            for i, belPair in enumerate(curTile.bels):    #Add the bel features we made a list of earlier
+            for i, belPair in enumerate(curTile.bels):  #Add the bel features we made a list of earlier
                 tempOffset = 0
                 name = letters[i]
                 belType = belPair[0]
                 for featureKey in BelMap[belType]:
-                    curTileMap[name + "." +featureKey] = {encodeDict[BelMap[belType][featureKey] + curBitOffset]: "1"}    #We convert to the desired format like so
+                    curTileMap[name + "." +featureKey] = {encodeDict[BelMap[belType][featureKey] + curBitOffset]: "1"}  #We convert to the desired format like so
                     if featureKey != "INIT":
                         tempOffset += 1
                 curBitOffset += tempOffset
@@ -3891,6 +4884,8 @@ def genBitstreamSpec(archObject: Fabric):
                         muxList.append(".".join((sources[x+1], sinks[y+1])))
                 muxList.reverse() #Order is flipped 
                 for i, pip in enumerate(muxList):
+                    #if cellType == "CPU_IO":
+                     #print(pip)
                     controlWidth = int(numpy.ceil(numpy.log2(pipCount)))
                     if pipCount < 2:
                         curTileMap[pip] = {}
@@ -3902,6 +4897,8 @@ def genBitstreamSpec(archObject: Fabric):
                         if pip not in curTileMap.keys():
                             curTileMap[pip] = {}
                         curTileMap[pip][encodeDict[curBitOffset + tempOffset]] = curChar
+                        #if cellType == "CPU_IO":
+                         #print(curBitOffset,tempOffset)
                         tempOffset += 1
                 curBitOffset += controlWidth
             for wire in curTile.wires: #And now we add empty config bit mappings for immutable connections (i.e. wires), as nextpnr sees these the same as normal pips
@@ -3913,6 +4910,8 @@ def genBitstreamSpec(archObject: Fabric):
                 curTileMap[wireName] = {}
 
             specData["TileSpecs"][curTile.genTileLoc()] = curTileMap
+
+
     return specData
 
 #####################################################################################
@@ -4137,6 +5136,24 @@ if ('-GenNextpnrModel_pair'.lower() in str(sys.argv).lower()) :
     templateFile.close()
     constraintFile.close()
     pairFile.close()
+
+if ('-GenVPRModel'.lower() in str(sys.argv).lower()) :
+    arguments = re.split(' ',str(sys.argv))
+    fabricObject = genFabricObject(fabric)
+
+    archFile = open("vproutput/architecture.xml","w")
+    rrFile = open("vproutput/routing_resources.xml","w")
+
+    archXML = genVPRModelXML(fabricObject, False)
+    rrGraphXML = genVPRModelRRGraph(fabricObject, False)
+
+    archFile.write(archXML)
+    rrFile.write(rrGraphXML)
+
+    if ('-debug'.lower() in str(sys.argv).lower()) : 
+        print(archXML)
+        print(rrGraphXML)
+
 
 if ('-GenBitstreamSpec'.lower() in str(sys.argv).lower()) :
 	arguments = re.split(' ',str(sys.argv))

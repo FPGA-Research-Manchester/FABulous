@@ -4129,7 +4129,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
             for cOutput in bel[3]: #Add direct connections from child port to top level tile
                 pb_typesString += f'    <direct name="{cTile.tileType}_{cOutput}_child_to_top" input="{bel[0]}[{i}].{removeStringPrefix(cOutput, bel[1])}" output="{cellType}.{cOutput}"/>\n'
 
-            if bel[4] and bel[0] not in specialBelDict: #If the BEL has a clock input then route it in - currently ignoring custom XML
+            if bel[4] and bel[0] not in specialBelDict: #If the BEL has a clock input then route it in - we don't do this for custom XML so the user is not restricted in terms of clock port presence or naming
                 pb_typesString += f'    <direct name="{cTile.tileType}_{bel[0]}_{i}_clock_in" input="{cellType}.UserCLK" output="{bel[0]}[{i}].UserCLK"/>\n'
 
 

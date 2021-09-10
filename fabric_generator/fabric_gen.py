@@ -3228,6 +3228,8 @@ class Tile:
     tileType = ""
     bels = []
     belsWithIO = [] #Currently the plan is to deprecate bels and replace it with this. However, this would require nextpnr model generation changes, so I won't do that until the VPR foundations are established
+    #Format for belsWithIO is [bel name, prefix, inputs, outputs, whether it has a clock input]
+    #Format for bels is [bel name, prefix, ports, whether it has a clock input]
     wires = [] 
     atomicWires = [] #For storing single wires (to handle cascading and termination)
     pips = []
@@ -3424,8 +3426,20 @@ def genFabricObject(fabric: list):
                         raise Exception("CSV File not found.")
 
                 if wire[0] == "BEL":
+                    belHasClockInput = False
                     try:
                         ports = GetComponentPortsFromFile(wire[1])
+
+                        #We also want to check whether the component has a clock input
+                        externalPorts = (GetComponentPortsFromFile(wire[1], port = "external")) #Get all external (routed to top) ports
+                        for port in externalPorts: 
+                            PortName = re.sub('\:.*', '', port) #Get port name
+                            substitutions = {" ": "", "\t": ""} #Strip
+                            PortName=(replace(PortName, substitutions))
+                            if PortName == "UserCLK": #And if UserCLK is in there then we have a clock input
+                                belHasClockInput = True
+
+
                     except:
                         raise Exception(f"{wire[1]} file for BEL not found")
 
@@ -3446,8 +3460,8 @@ def genFabricObject(fabric: list):
                         outputPorts.append(prefix + re.sub(" *\(.*\) *", "", str(port)))
                     cTile.belPorts.update(nports)
 
-                    belListWithIO.append([wire[1][0:-5:], prefix, inputPorts, outputPorts])
-                    belList.append([wire[1][0:-5:], prefix, nports])
+                    belListWithIO.append([wire[1][0:-5:], prefix, inputPorts, outputPorts, belHasClockInput])
+                    belList.append([wire[1][0:-5:], prefix, nports, belHasClockInput])
 
                 elif wire[0] in ["NORTH", "SOUTH", "EAST", "WEST"]: 
                     #Wires are added in next pass - this pass generates port lists to be used for wire generation

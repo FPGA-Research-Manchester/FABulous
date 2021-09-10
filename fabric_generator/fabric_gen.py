@@ -34,9 +34,9 @@ ConfigBitMode = 'FlipFlopChain'
 FrameBitsPerRow = 32
 MaxFramesPerCol = 20
 Package = 'use work.my_package.all;'
-GenerateDelayInSwitchMatrix = '100' # time in ps - this is needed for simulation as a fabric configuration can result in loops crashing the simulator
-MultiplexerStyle = 'custom'     # 'custom': using our hard-coded MUX-4 and MUX-16; 'generic': using standard generic RTL code
-SwitchMatrixDebugSignals = True     # generate switch matrix select signals (index) which is useful to verify if bitstream matches bitstream
+GenerateDelayInSwitchMatrix = '100'	# time in ps - this is needed for simulation as a fabric configuration can result in loops crashing the simulator
+MultiplexerStyle = 'custom'		# 'custom': using our hard-coded MUX-4 and MUX-16; 'generic': using standard generic RTL code
+SwitchMatrixDebugSignals = True		# generate switch matrix select signals (index) which is useful to verify if bitstream matches bitstream
 
 # TILE field aliases
 direction = 0
@@ -2320,14 +2320,14 @@ def GenerateTileVerilog( tile_description, module, file ):
             if re.search('SHARED_PORT', item):
                 shared_port = re.sub(':.*', '',re.sub('.*BEL_prefix_string_marker', '', item)).strip()
                 if shared_port not in SharedExternalPorts:
-                    bel_port = re.split(' | ',re.sub('.*BEL_prefix_string_marker', '', item))
+                    bel_port = re.split(' |	',re.sub('.*BEL_prefix_string_marker', '', item))
                     if bel_port[2] == 'in':
                         module_header_ports += ', '+bel_port[0]
                     elif bel_port[2] == 'out':
                         module_header_ports += ', '+bel_port[0]
                     SharedExternalPorts.append(shared_port)
             else:
-                bel_port = re.split(' | ',re.sub('BEL_prefix_string_marker', '', item))
+                bel_port = re.split(' |	',re.sub('BEL_prefix_string_marker', '', item))
                 if bel_port[2] == 'in':
                     module_header_ports += ', '+bel_port[0]
                 elif bel_port[2] == 'out':
@@ -2407,14 +2407,14 @@ def GenerateTileVerilog( tile_description, module, file ):
                 # we place that in the SharedExternalPorts list to check if that port was declared earlier
                 shared_port = re.sub(':.*', '',re.sub('.*BEL_prefix_string_marker', '', item)).strip()
                 if shared_port not in SharedExternalPorts:
-                    bel_port = re.split(' | ',re.sub('.*BEL_prefix_string_marker', '', item))
+                    bel_port = re.split(' |	',re.sub('.*BEL_prefix_string_marker', '', item))
                     if bel_port[2] == 'in':
                         print('\tinput '+bel_port[0]+';', file=file)
                     elif bel_port[2] == 'out':
                         print('\toutput '+bel_port[0]+';', file=file)
                     SharedExternalPorts.append(shared_port)
             else:
-                bel_port = re.split(' | ',re.sub('BEL_prefix_string_marker', '', item))
+                bel_port = re.split(' |	',re.sub('BEL_prefix_string_marker', '', item))
                 if bel_port[2] == 'in':
                     print('\tinput '+bel_port[0]+';', file=file)
                 elif bel_port[2] == 'out':
@@ -4062,7 +4062,6 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
                     pb_typesString += f'    <input name="UserCLK" num_pins="1"/>\n' #Create an input to represent this
                     modelsString += f'    <port name="UserCLK"/>\n' #Add all outputs as combinational sinks
 
-
                 modelsString += '   </input_ports>\n' #close input ports tag
                 modelsString += '   <output_ports>\n' #open output ports tag
 
@@ -5178,30 +5177,30 @@ if ('-GenVPRModel'.lower() in str(sys.argv).lower()) :
 
 
 if ('-GenBitstreamSpec'.lower() in str(sys.argv).lower()) :
-    arguments = re.split(' ',str(sys.argv))
-    # index was not working...
-    i = 0
-    for item in arguments:
-        # print('debug',item)
-        if re.search('-genBitstreamSpec', arguments[i], flags=re.IGNORECASE):
-            break
-        i += 1
-    if arguments[i+1] == '':
-        raise ValueError('\nError: -genBitstreamSpec expect an output file name\n')
-    substitutions = {",": "", "\'": "", "\]": "", "\[": ""}
-    OutFileName  = re.sub('\]','',re.sub('\'','',(replace(arguments[i+1], substitutions))))
+	arguments = re.split(' ',str(sys.argv))
+	# index was not working...
+	i = 0
+	for item in arguments:
+		# print('debug',item)
+		if re.search('-genBitstreamSpec', arguments[i], flags=re.IGNORECASE):
+			break
+		i += 1
+	if arguments[i+1] == '':
+		raise ValueError('\nError: -genBitstreamSpec expect an output file name\n')
+	substitutions = {",": "", "\'": "", "\]": "", "\[": ""}
+	OutFileName  = re.sub('\]','',re.sub('\'','',(replace(arguments[i+1], substitutions))))
 
-    print(arguments)
-    fabricObject = genFabricObject(fabric)
-    bitstreamSpecFile = open(OutFileName, "wb")
-    specObject = genBitstreamSpec(fabricObject)
-    pickle.dump(specObject, bitstreamSpecFile)
-    bitstreamSpecFile.close()
-    w = csv.writer(open(OutFileName.replace("txt","csv"), "w"))
-    for key1 in specObject["TileSpecs"]:
-        w.writerow([key1])
-        for key2, val in specObject["TileSpecs"][key1].items():
-          w.writerow([key2,val])
+	print(arguments)
+	fabricObject = genFabricObject(fabric)
+	bitstreamSpecFile = open(OutFileName, "wb")
+	specObject = genBitstreamSpec(fabricObject)
+	pickle.dump(specObject, bitstreamSpecFile)
+	bitstreamSpecFile.close()
+	w = csv.writer(open(OutFileName.replace("txt","csv"), "w"))
+	for key1 in specObject["TileSpecs"]:
+		w.writerow([key1])
+		for key2, val in specObject["TileSpecs"][key1].items():
+		  w.writerow([key2,val])
 
 if ('-help'.lower() in str(sys.argv).lower()) or ('-h' in str(sys.argv).lower()):
     print('')

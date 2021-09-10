@@ -42,4 +42,4 @@ jobs:
       run: |
         cd fabric_generator
         ./create_basic_files.sh
-        python3 fabric_gen.py -genNextpnrModel_pair
+        ./run_fab_flow_nextpnr_pair.sh

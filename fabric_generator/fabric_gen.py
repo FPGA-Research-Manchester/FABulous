@@ -4983,7 +4983,12 @@ TileTypes = GetCellTypes(fabric)
 
 print('### Script command arguments are:\n' , str(sys.argv))
 
-if ('-GenTileSwitchMatrixCSV'.lower() in str(sys.argv).lower()) or ('-run_all'.lower() in str(sys.argv).lower()):
+#Strip arguments
+processedArguments = map(lambda x: x.strip(), sys.argv)
+processedArguments = list(map(lambda x: x.lower(), processedArguments))
+
+
+if ('-GenTileSwitchMatrixCSV'.lower() in processedArguments) or ('-run_all'.lower() in processedArguments):
     print('### Generate initial switch matrix template (has to be bootstrapped first)')
     for tile in TileTypes:
         print('### generate csv for tile ', tile, ' # filename:', (str(tile)+'_switch_matrix.csv'))
@@ -4992,7 +4997,7 @@ if ('-GenTileSwitchMatrixCSV'.lower() in str(sys.argv).lower()) or ('-run_all'.l
         BootstrapSwitchMatrix(TileInformation,str(tile),(str(tile)+'_switch_matrix.csv'))
         TileFileHandler.close()
 
-if ('-GenTileSwitchMatrixVHDL'.lower() in str(sys.argv).lower()) or ('-run_all'.lower() in str(sys.argv).lower()):
+if ('-GenTileSwitchMatrixVHDL'.lower() in processedArguments) or ('-run_all'.lower() in processedArguments):
     print('### Generate initial switch matrix VHDL code')
     for tile in TileTypes:
         print('### generate VHDL for tile ', tile, ' # filename:', (str(tile)+'_switch_matrix.vhdl'))
@@ -5000,7 +5005,7 @@ if ('-GenTileSwitchMatrixVHDL'.lower() in str(sys.argv).lower()) or ('-run_all'.
         GenTileSwitchMatrixVHDL(tile,(str(tile)+'_switch_matrix.csv'),TileFileHandler)
         TileFileHandler.close()
 
-if ('-GenTileSwitchMatrixVerilog'.lower() in str(sys.argv).lower()) or ('-run_all'.lower() in str(sys.argv).lower()):
+if ('-GenTileSwitchMatrixVerilog'.lower() in processedArguments) or ('-run_all'.lower() in processedArguments):
     print('### Generate initial switch matrix Verilog code')
     for tile in TileTypes:
         print('### generate Verilog for tile ', tile, ' # filename:', (str(tile)+'_switch_matrix.v'))
@@ -5008,7 +5013,7 @@ if ('-GenTileSwitchMatrixVerilog'.lower() in str(sys.argv).lower()) or ('-run_al
         GenTileSwitchMatrixVerilog(tile,(str(tile)+'_switch_matrix.csv'),TileFileHandler)
         TileFileHandler.close()
 
-if ('-GenTileConfigMemVHDL'.lower() in str(sys.argv).lower()) or ('-run_all'.lower() in str(sys.argv).lower()):
+if ('-GenTileConfigMemVHDL'.lower() in processedArguments) or ('-run_all'.lower() in processedArguments):
     print('### Generate all tile HDL descriptions')
     for tile in TileTypes:
         print('### generate configuration bitstream storage VHDL for tile ', tile, ' # filename:', (str(tile)+'_ConfigMem.vhdl'))
@@ -5020,7 +5025,7 @@ if ('-GenTileConfigMemVHDL'.lower() in str(sys.argv).lower()) or ('-run_all'.low
         GenerateConfigMemVHDL(TileInformation,str(tile)+'_ConfigMem',TileFileHandler)
         TileFileHandler.close()
 
-if ('-GenTileConfigMemVerilog'.lower() in str(sys.argv).lower()) or ('-run_all'.lower() in str(sys.argv).lower()):
+if ('-GenTileConfigMemVerilog'.lower() in processedArguments) or ('-run_all'.lower() in processedArguments):
     #print('### Generate all tile HDL descriptions')
     for tile in TileTypes:
         print('### generate configuration bitstream storage Verilog for tile ', tile, ' # filename:', (str(tile)+'_ConfigMem.v'))
@@ -5032,7 +5037,7 @@ if ('-GenTileConfigMemVerilog'.lower() in str(sys.argv).lower()) or ('-run_all'.
         GenerateConfigMemVerilog(TileInformation,str(tile)+'_ConfigMem',TileFileHandler)
         TileFileHandler.close()
 
-if ('-GenTileHDL'.lower() in str(sys.argv).lower()) or ('-run_all'.lower() in str(sys.argv).lower()):
+if ('-GenTileHDL'.lower() in processedArguments) or ('-run_all'.lower() in processedArguments):
     print('### Generate all tile HDL descriptions')
     for tile in TileTypes:
         print('### generate VHDL for tile ', tile, ' # filename:', (str(tile)+'_tile.vhdl'))
@@ -5044,7 +5049,7 @@ if ('-GenTileHDL'.lower() in str(sys.argv).lower()) or ('-run_all'.lower() in st
         GenerateTileVHDL(TileInformation,str(tile),TileFileHandler)
         TileFileHandler.close()
 
-if ('-GenTileVerilog'.lower() in str(sys.argv).lower()) or ('-run_all'.lower() in str(sys.argv).lower()):
+if ('-GenTileVerilog'.lower() in processedArguments) or ('-run_all'.lower() in processedArguments):
     #print('### Generate all tile Verilog descriptions')
     for tile in TileTypes:
         print('### generate Verilog for tile ', tile, ' # filename:', (str(tile)+'_tile.v'))
@@ -5056,13 +5061,13 @@ if ('-GenTileVerilog'.lower() in str(sys.argv).lower()) or ('-run_all'.lower() i
         GenerateTileVerilog(TileInformation,str(tile),TileFileHandler)
         TileFileHandler.close()
 
-if ('-GenFabricHDL'.lower() in str(sys.argv).lower()) or ('-run_all'.lower() in str(sys.argv).lower()):
+if ('-GenFabricHDL'.lower() in processedArguments) or ('-run_all'.lower() in processedArguments):
     print('### Generate the Fabric VHDL descriptions')
     FileHandler = open('fabric.vhdl','w+')
     GenerateFabricVHDL(FabricFile,FileHandler)
     FileHandler.close()
 
-if ('-GenFabricVerilog'.lower() in str(sys.argv).lower()) or ('-run_all'.lower() in str(sys.argv).lower()):
+if ('-GenFabricVerilog'.lower() in processedArguments) or ('-run_all'.lower() in processedArguments):
     print('### Generate the Fabric Verilog descriptions')
     FileHandler = open('fabric.v','w+')
     fabric_top = GenerateFabricVerilog(FabricFile,FileHandler)
@@ -5071,7 +5076,7 @@ if ('-GenFabricVerilog'.lower() in str(sys.argv).lower()) or ('-run_all'.lower()
     #w.write(fabric_top)
     #w.close()
 
-if ('-CSV2list'.lower() in str(sys.argv).lower()) or ('-AddList2CSV'.lower() in str(sys.argv).lower()):
+if ('-CSV2list'.lower() in processedArguments) or ('-AddList2CSV'.lower() in processedArguments):
     arguments = re.split(' ',str(sys.argv))
     # index was not working...
     i = 0
@@ -5093,7 +5098,7 @@ if ('-CSV2list'.lower() in str(sys.argv).lower()) or ('-AddList2CSV'.lower() in 
     if ('-AddList2CSV'.lower() in str(sys.argv).lower()):
         list2CSV(InFileName, OutFileName)
 
-if ('-PrintCSV_FileInfo'.lower() in str(sys.argv).lower()) :
+if ('-PrintCSV_FileInfo'.lower() in processedArguments) :
     arguments = re.split(' ',str(sys.argv))
     # index was not working...
     i = 0
@@ -5109,10 +5114,10 @@ if ('-PrintCSV_FileInfo'.lower() in str(sys.argv).lower()) :
     # InFileName  = (replace(arguments[i+1], substitutions))
     # don't ask me why I have to delete the stupid '['...; but at least works now
     InFileName  = re.sub('\]','',re.sub('\'','',(replace(arguments[i+1], substitutions))))
-    if ('-PrintCSV_FileInfo'.lower() in str(sys.argv).lower()):
+    if ('-PrintCSV_FileInfo'.lower() in processedArguments):
         PrintCSV_FileInfo(InFileName)
 
-if ('-GenNextpnrModel'.lower() in str(sys.argv).lower()) :
+if ('-GenNextpnrModel'.lower() in processedArguments) :
     arguments = re.split(' ',str(sys.argv))
     fabricObject = genFabricObject(fabric)
     pipFile = open("npnroutput/pips.txt","w")
@@ -5135,7 +5140,7 @@ if ('-GenNextpnrModel'.lower() in str(sys.argv).lower()) :
     constraintFile.close()
     #pairFile.close()
 
-if ('-GenNextpnrModel_pair'.lower() in str(sys.argv).lower()) :
+if ('-GenNextpnrModel_pair'.lower() in processedArguments) :
     arguments = re.split(' ',str(sys.argv))
     fabricObject = genFabricObject(fabric)
     pipFile = open("npnroutput/pips.txt","w")
@@ -5158,7 +5163,7 @@ if ('-GenNextpnrModel_pair'.lower() in str(sys.argv).lower()) :
     constraintFile.close()
     pairFile.close()
 
-if ('-GenVPRModel'.lower() in str(sys.argv).lower()) :
+if ('-GenVPRModel'.lower() in processedArguments) :
     arguments = re.split(' ',str(sys.argv))
     fabricObject = genFabricObject(fabric)
 
@@ -5176,7 +5181,7 @@ if ('-GenVPRModel'.lower() in str(sys.argv).lower()) :
         print(rrGraphXML)
 
 
-if ('-GenBitstreamSpec'.lower() in str(sys.argv).lower()) :
+if ('-GenBitstreamSpec'.lower() in processedArguments) :
 	arguments = re.split(' ',str(sys.argv))
 	# index was not working...
 	i = 0
@@ -5202,7 +5207,7 @@ if ('-GenBitstreamSpec'.lower() in str(sys.argv).lower()) :
 		for key2, val in specObject["TileSpecs"][key1].items():
 		  w.writerow([key2,val])
 
-if ('-help'.lower() in str(sys.argv).lower()) or ('-h' in str(sys.argv).lower()):
+if ('-help'.lower() in processedArguments) or ('-h' in processedArguments):
     print('')
     print('Options/Switches')
     print('  -GenTileSwitchMatrixCSV    - generate initial switch matrix template (has to be bootstrapped first)')

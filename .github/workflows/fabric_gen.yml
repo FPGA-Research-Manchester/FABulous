@@ -38,3 +38,8 @@ jobs:
         cd fabric_generator
         ./create_basic_files.sh
         ./run_fab_flow.sh
+    - name: Check pair generation
+      run: |
+        cd fabric_generator
+        ./create_basic_files.sh
+        ./run_fab_flow_nextpnr_pair.sh

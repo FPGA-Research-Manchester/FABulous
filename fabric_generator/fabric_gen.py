@@ -3228,6 +3228,8 @@ class Tile:
     tileType = ""
     bels = []
     belsWithIO = [] #Currently the plan is to deprecate bels and replace it with this. However, this would require nextpnr model generation changes, so I won't do that until the VPR foundations are established
+    #Format for belsWithIO is [bel name, prefix, inputs, outputs, whether it has a clock input]
+    #Format for bels is [bel name, prefix, ports, whether it has a clock input]
     wires = [] 
     atomicWires = [] #For storing single wires (to handle cascading and termination)
     pips = []
@@ -3424,8 +3426,20 @@ def genFabricObject(fabric: list):
                         raise Exception("CSV File not found.")
 
                 if wire[0] == "BEL":
+                    belHasClockInput = False
                     try:
                         ports = GetComponentPortsFromFile(wire[1])
+
+                        #We also want to check whether the component has a clock input
+                        externalPorts = (GetComponentPortsFromFile(wire[1], port = "external")) #Get all external (routed to top) ports
+                        for port in externalPorts: 
+                            PortName = re.sub('\:.*', '', port) #Get port name
+                            substitutions = {" ": "", "\t": ""} #Strip
+                            PortName=(replace(PortName, substitutions))
+                            if PortName == "UserCLK": #And if UserCLK is in there then we have a clock input
+                                belHasClockInput = True
+
+
                     except:
                         raise Exception(f"{wire[1]} file for BEL not found")
 
@@ -3446,8 +3460,8 @@ def genFabricObject(fabric: list):
                         outputPorts.append(prefix + re.sub(" *\(.*\) *", "", str(port)))
                     cTile.belPorts.update(nports)
 
-                    belListWithIO.append([wire[1][0:-5:], prefix, inputPorts, outputPorts])
-                    belList.append([wire[1][0:-5:], prefix, nports])
+                    belListWithIO.append([wire[1][0:-5:], prefix, inputPorts, outputPorts, belHasClockInput])
+                    belList.append([wire[1][0:-5:], prefix, nports, belHasClockInput])
 
                 elif wire[0] in ["NORTH", "SOUTH", "EAST", "WEST"]: 
                     #Wires are added in next pass - this pass generates port lists to be used for wire generation
@@ -4044,6 +4058,10 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
                     pb_typesString += f'    <input name="{cInput}" num_pins="1"/>\n' #Add input and outputs
                     modelsString += f'    <port name="{cInput}" combinational_sink_ports="{allOutsStr}"/>\n' #Add all outputs as combinational sinks
 
+                if bel[4]: #If the spec of the bel has an external clock connection
+                    pb_typesString += f'    <input name="UserCLK" num_pins="1"/>\n' #Create an input to represent this
+                    modelsString += f'    <port name="UserCLK"/>\n' #Add all outputs as combinational sinks
+
                 modelsString += '   </input_ports>\n' #close input ports tag
                 modelsString += '   <output_ports>\n' #open output ports tag
 
@@ -4105,11 +4123,14 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
             belIndexList.append(i) #Update list to map current bel to its index
 
             for cInput in bel[2]:  #Add direct connections from top level tile to the corresponding child port
-                    pb_typesString += f'    <direct name="{cTile.tileType}_{cInput}_top_to_child" input="{cellType}.{cInput}" output="{bel[0]}[{i}].{removeStringPrefix(cInput, bel[1])}"/>\n'
+                pb_typesString += f'    <direct name="{cTile.tileType}_{cInput}_top_to_child" input="{cellType}.{cInput}" output="{bel[0]}[{i}].{removeStringPrefix(cInput, bel[1])}"/>\n'
 
 
             for cOutput in bel[3]: #Add direct connections from child port to top level tile
-                    pb_typesString += f'    <direct name="{cTile.tileType}_{cOutput}_child_to_top" input="{bel[0]}[{i}].{removeStringPrefix(cOutput, bel[1])}" output="{cellType}.{cOutput}"/>\n'
+                pb_typesString += f'    <direct name="{cTile.tileType}_{cOutput}_child_to_top" input="{bel[0]}[{i}].{removeStringPrefix(cOutput, bel[1])}" output="{cellType}.{cOutput}"/>\n'
+
+            if bel[4] and bel[0] not in specialBelDict: #If the BEL has a clock input then route it in - we don't do this for custom XML so the user is not restricted in terms of clock port presence or naming
+                pb_typesString += f'    <direct name="{cTile.tileType}_{bel[0]}_{i}_clock_in" input="{cellType}.UserCLK" output="{bel[0]}[{i}].UserCLK"/>\n'
 
 
         for pip in cTile.pips: 

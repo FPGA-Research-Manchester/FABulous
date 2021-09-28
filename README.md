@@ -38,11 +38,12 @@ The following packages need to be installed for CAD toolchain
  - [Yosys 0.9](http://www.clifford.at/yosys/download.html)
    - copy the contents of the YosysFiles directory to `/usr/share/yosys` or `/usr/local/share/yosys`
  - nextpnr-fabulous
- 
 
 ## Getting started
 ```
-git clone --recurse-submodules https://github.com/FPGA-Research-Manchester/FABulous
+git clone https://github.com/FPGA-Research-Manchester/FABulous
+cd FABulous
+git clone -branch fabulous https://github.com/FPGA-Research-Manchester/nextpnr
 ```
 
 Fabric generator flow is run with bash script. (Examples are provided under ```/fabric_files```.)
@@ -63,7 +64,9 @@ A simple example that runs to generate bitstream can be found in nextpnr-fabulou
 Usage example:
 
 ```
-cd nextpnr-fabulous/fabulous/
+cp fabric_generator/npnroutput/{bel.txt,pips.txt,template.pcf,template.v,meta_data.txt} nextpnr/fabulous/fab_arch/
+cp fabric_generator/csv_output/fabric.csv nextpnr/fabulous/fab_arch/
+cd nextpnr/fabulous/
 ./template.sh
 python3 bit_gen.py -genBitstream template.fasm meta_data.txt template_output.bin
 ```

@@ -2667,7 +2667,7 @@ def genBitstreamSpec(archObject: Fabric):
 
 	BelMap["IO_1_bidirectional_frame_config_pass"] = {}
 
-
+	BelMap["Config_access"] = {}
 
 
 	#DoneTypes = []
@@ -2681,15 +2681,20 @@ def genBitstreamSpec(archObject: Fabric):
 			cellType = curTile.tileType
 			if cellType == "NULL":
 				continue
+			elif 'term' in cellType:
+				continue
 
 			#Add frame masks to the dictionary 
 			try:
 				configCSV = open(cellType + "_ConfigMem.csv") #This may need to be .init.csv, not just .csv
 			except:
-				print(f"No Config Mem csv file found for {cellType}. Assuming no config memory.")
-				specData["FrameMap"][cellType] = {}
-				specData["FrameMapEncode"][cellType] = {}
-				continue
+			    try:
+			        configCSV = open(cellType + "_ConfigMem.init.csv")
+			    except:
+			        print(f"No Config Mem csv file found for {cellType}. Assuming no config memory.")
+			        specData["FrameMap"][cellType] = {}
+			        specData["FrameMapEncode"][cellType] = {}
+			        continue
 			configList = [i.strip('\n').split(',') for i in configCSV]
 			configList = RemoveComments(configList)
 			maskDict = {}

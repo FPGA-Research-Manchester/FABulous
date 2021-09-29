@@ -71,7 +71,7 @@ Usage example:
 cp fabric_generator/npnroutput/{bel.txt,pips.txt,template.pcf,template.v,meta_data.txt} nextpnr/fabulous/fab_arch/
 cp fabric_generator/csv_output/fabric.csv nextpnr/fabulous/fab_arch/
 cd nextpnr/fabulous/
-./template.sh
-python3 bit_gen.py -genBitstream template.fasm meta_data.txt template_output.bin
+./fabulous_flow.sh sequential_16bit.v
+python3 bit_gen.py -genBitstream sequential_16bit.fasm meta_data_v2.txt sequential_16bit_output.bin
 ```
 More details on instruction of bitstream generation can check [here](https://github.com/FPGA-Research-Manchester/FABulous/tree/master/fabric_generator/bitstream_npnr)

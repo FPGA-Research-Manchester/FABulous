@@ -44,6 +44,10 @@ The following packages need to be installed for CAD toolchain
 git clone https://github.com/FPGA-Research-Manchester/FABulous
 cd FABulous
 git clone -branch fabulous https://github.com/FPGA-Research-Manchester/nextpnr
+cd nextpnr
+cmake . -DARCH=fabulous
+make -j$(nproc)
+sudo make install
 ```
 
 Fabric generator flow is run with bash script. (Examples are provided under ```/fabric_files```.)

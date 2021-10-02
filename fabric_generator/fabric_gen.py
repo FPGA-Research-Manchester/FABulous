@@ -3622,6 +3622,8 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
             pipsStr += f"#Tile-external pips on tile {tileLoc}:\n"
             for wire in tile.wires:
                 desty = tile.y - int(wire["yoffset"])
+                #print(wire)
+                #print(str(tile.y)+', '+str(desty))
                 destx = tile.x + int(wire["xoffset"])
                 desttileLoc = f"X{destx}Y{desty}"
                 for i in range(int(wire["wire-count"])):
@@ -3647,7 +3649,7 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
                 prefix = belpair[1]
                 nports = belpair[2]
                 if bel == "LUT4c_frame_config":
-                    cType = "LUT4"
+                    cType = "FABULOUS_LC"         #"LUT4"
                 #elif bel == "IO_1_bidirectional_frame_config_pass":
                 #    cType = "IOBUF"
                 else:
@@ -3702,7 +3704,7 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
                         for pipSink in destTile.pipMuxes_MapSourceToSinks[wire["destination"] + str(i)]:
                             #If there is a multiplexer here, then we can simply add this pair
                             if len(destTile.pipMuxes_MapSinkToSources[pipSink]) > 1:
-                                pairStr += ",".join((".".join((tileLoc, wire["source"] + f"[{str(i)}]")), ".".join((desttileLoc, addBrackets(pipSink, tile))))) + "\n"
+                                pairStr += ",".join((".".join((tileLoc, wire["source"] + f"[{str(i)}]")), ".".join((desttileLoc, addBrackets(pipSink, tile))))) + "\n" #TODO: add square brackets to end
                             #otherwise, there is no physical pair in the ASIC netlist, so we must propagate back until we hit a multiplexer
                             else:
                                 finalDestination = ".".join((desttileLoc, addBrackets(pipSink, tile)))

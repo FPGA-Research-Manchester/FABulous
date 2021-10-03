@@ -62,15 +62,13 @@ Then using the following command to build the entire FPGA fabric in both VHDL an
 ```
 You are now ready to emulate or synthesis with the netlists in ```/vhdl_output``` or ```/verilog_output```.
 
-A simple example that runs to generate bitstream can be found in nextpnr-fabulous/fabulous/template.*
+A simple example that runs to generate bitstream can be found under nextpnr/fabulous/fab_arch/
 
 Usage example:
 
 ```
-cp fabric_generator/npnroutput/{bel.txt,pips.txt,template.pcf,template.v,meta_data.txt} nextpnr/fabulous/fab_arch/
-cp fabric_generator/csv_output/fabric.csv nextpnr/fabulous/fab_arch/
-cd nextpnr/fabulous/
-./fabulous_flow.sh sequential_16bit.v
-python3 bit_gen.py -genBitstream sequential_16bit.fasm meta_data_v2.txt sequential_16bit_output.bin
+cd ../nextpnr/fabulous/
+./fabulous_flow.sh sequential_16bit
+python3 bit_gen.py -genBitstream sequential_16bit.fasm meta_data.txt sequential_16bit_output.bin
 ```
 More details on instruction of bitstream generation can check [here](https://github.com/FPGA-Research-Manchester/FABulous/tree/master/fabric_generator/bitstream_npnr)

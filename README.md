@@ -67,7 +67,7 @@ A simple example that runs to generate bitstream can be found under nextpnr/fabu
 Usage example:
 
 ```
-cd ../nextpnr/fabulous/
+cd ../nextpnr/fabulous/fab_arch/
 ./fabulous_flow.sh sequential_16bit
 python3 bit_gen.py -genBitstream sequential_16bit.fasm meta_data.txt sequential_16bit_output.bin
 ```

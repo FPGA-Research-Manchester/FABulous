@@ -41,5 +41,5 @@ mv -f *.list ./list_files
 mkdir -p csv_output
 mv -f *.csv ./csv_output
 
-#cp ./npnroutput/{bel.txt,pips.txt,template.pcf,template.v,meta_data.txt} ../nextpnr-fabulous/fabulous/
-#cp csv_output/fabric.csv ../nextpnr-fabulous/fabulous/
+cp npnroutput/{bel.txt,pips.txt,template.v,meta_data.txt} ../nextpnr/fabulous/fab_arch/
+cp csv_output/fabric.csv ../nextpnr/fabulous/fab_arch/

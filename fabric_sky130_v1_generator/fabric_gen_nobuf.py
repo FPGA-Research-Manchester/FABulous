@@ -3396,7 +3396,9 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
             #Wires between tiles
             pipsStr += f"#Tile-external pips on tile {tileLoc}:\n"
             for wire in tile.wires:
-                desty = tile.y + int(wire["yoffset"])
+                desty = tile.y - int(wire["yoffset"])
+                #print(wire)
+                #print(str(tile.y)+', '+str(desty))
                 destx = tile.x + int(wire["xoffset"])
                 desttileLoc = f"X{destx}Y{desty}"
                 for i in range(int(wire["wire-count"])):
@@ -3422,7 +3424,7 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
                 prefix = belpair[1]
                 nports = belpair[2]
                 if bel == "LUT4c_frame_config":
-                    cType = "LUT4"
+                    cType = "FABULOUS_LC"         #"LUT4"
                 #elif bel == "IO_1_bidirectional_frame_config_pass":
                 #    cType = "IOBUF"
                 else:
@@ -3468,7 +3470,7 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
                 pairStr += "#" + tileLoc + "\n"
                 for wire in tile.wires:
                     for i in range(int(wire["wire-count"])):
-                        desty = tile.y + int(wire["yoffset"])
+                        desty = tile.y - int(wire["yoffset"])
                         destx = tile.x + int(wire["xoffset"]) 
                         destTile = archObject.getTileByCoords(destx, desty)
                         desttileLoc = f"X{destx}Y{desty}"

@@ -3515,7 +3515,7 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
                 prefix = belpair[1]
                 nports = belpair[2]
                 if bel == "LUT4c_frame_config":
-                    cType = "LUT4"
+                    cType = "FABULOUS_LC"         #"LUT4"
                 #elif bel == "IO_1_bidirectional_frame_config_pass":
                 #    cType = "IOBUF"
                 else:

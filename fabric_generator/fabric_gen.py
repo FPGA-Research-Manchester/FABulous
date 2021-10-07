@@ -1853,7 +1853,7 @@ def GenTileSwitchMatrixVerilog( tile, CSV_FileName, file ):
         if ConfigBitMode == 'FlipFlopChain':
             module_header_ports += ', MODE, CONFin, CONFout, CLK'
         elif ConfigBitMode == 'frame_based':
-            module_header_ports += ', ConfigBits'
+            module_header_ports += ', ConfigBits, ConfigBits_N'
     else:
         module_header_ports += ''
 
@@ -1892,7 +1892,7 @@ def GenTileSwitchMatrixVerilog( tile, CSV_FileName, file ):
 
     # signal declaration
     for k in range(1,len(CSVFile),1):
-        print('\twire ['+str(mux_size_list[k-1]),'-1:0]'+CSVFile[k][0]+'_input'+';', file=file)
+        print('\twire ['+str(mux_size_list[k-1])+'-1:0] '+CSVFile[k][0]+'_input'+';', file=file)
 
     ### SwitchMatrixDebugSignals ### SwitchMatrixDebugSignals ###
     ### SwitchMatrixDebugSignals ### SwitchMatrixDebugSignals ###
@@ -2076,7 +2076,7 @@ def GenTileSwitchMatrixVerilog( tile, CSV_FileName, file ):
                 MuxComponentName = 'cus_mux81_buf'
                 num_gnd = 8-mux_size
             if (MultiplexerStyle == 'custom') and (mux_size == 2):
-                MuxComponentName = 'sky130_fd_sc_hd__mux2_1'
+                MuxComponentName = 'my_mux2'
             if (MultiplexerStyle == 'custom') and (mux_size == 4 or mux_size == 16 or mux_size == 8):
                 # cus_mux41
                 print('\t'+MuxComponentName+' inst_'+MuxComponentName+'_'+line[0]+' ('+'\n',end='', file=file)
@@ -2089,7 +2089,7 @@ def GenTileSwitchMatrixVerilog( tile, CSV_FileName, file ):
                 # S2   => ConfigBits(low_362 + 1, ...
                 for k in range(0,(math.ceil(math.log2(mux_size)))):
                     print('\t'+'.S'+str(k)+' (ConfigBits['+str(old_ConfigBitstreamPosition)+'+'+str(k)+']),\n',end='', file=file)
-                    print('\t'+'.S'+str(k)+'N (~ConfigBits['+str(old_ConfigBitstreamPosition)+'+'+str(k)+']),\n',end='', file=file)
+                    print('\t'+'.S'+str(k)+'N (ConfigBits_N['+str(old_ConfigBitstreamPosition)+'+'+str(k)+']),\n',end='', file=file)
                 print('\t'+'.X ('+line[0]+')\n',end='', file=file)
                 print('\t);\n', file=file)
             elif (MultiplexerStyle == 'custom') and (mux_size == 2):
@@ -2097,7 +2097,8 @@ def GenTileSwitchMatrixVerilog( tile, CSV_FileName, file ):
                 print('\t'+MuxComponentName+' inst_'+MuxComponentName+'_'+line[0]+' ('+'\n',end='', file=file)
                 for k in range(0,mux_size):
                     print('\t'+'.A'+str(k)+' ('+line[0]+'_input['+str(k)+']),\n',end='', file=file)
-                print('\t'+'.S (ConfigBits['+str(old_ConfigBitstreamPosition)+'+'+str(k)+']),\n',end='', file=file)
+                for k in range(0,(math.ceil(math.log2(mux_size)))):
+                    print('\t'+'.S (ConfigBits['+str(old_ConfigBitstreamPosition)+'+'+str(k)+']),\n',end='', file=file)
                 print('\t'+'.X ('+line[0]+')\n',end='', file=file)
                 print('\t);\n', file=file)
             else:        # generic multiplexer
@@ -2111,7 +2112,7 @@ def GenTileSwitchMatrixVerilog( tile, CSV_FileName, file ):
                         print('\t'+'.A'+str(k+mux_size)+' (GND0),\n',end='', file=file)
                     for k in range(0,(math.ceil(math.log2(mux_size)))):
                         print('\t'+'.S'+str(k)+' (ConfigBits['+str(old_ConfigBitstreamPosition)+'+'+str(k)+']),\n',end='', file=file)
-                        print('\t'+'.S'+str(k)+'N (~ConfigBits['+str(old_ConfigBitstreamPosition)+'+'+str(k)+']),\n',end='', file=file)
+                        print('\t'+'.S'+str(k)+'N (ConfigBits_N['+str(old_ConfigBitstreamPosition)+'+'+str(k)+']),\n',end='', file=file)
                     print('\t'+'.X ('+line[0]+')\n',end='', file=file)
                     print('\t);\n', file=file)
                 else:
@@ -2188,7 +2189,7 @@ def GenerateConfigMemVerilog( tile_description, module, file ):
         raise ValueError('bitstream mapping file '+module+'.csv has a bitmask missmatch; bitmask has in total '+str(UsedBitsCounter)+' 1-values for '+str(GlobalConfigBitsCounter)+' bits')
 
     # write module
-    module_header_ports = 'FrameData, FrameStrobe, ConfigBits'
+    module_header_ports = 'FrameData, FrameStrobe, ConfigBits, ConfigBits_N'
     CSVFile = ''
     GenerateVerilog_Header(module_header_ports, file, module, package='', NoConfigBits=str(GlobalConfigBitsCounter), MaxFramesPerCol=str(MaxFramesPerCol), FrameBitsPerRow=str(FrameBitsPerRow))
 
@@ -2196,6 +2197,7 @@ def GenerateConfigMemVerilog( tile_description, module, file ):
     print('\tinput [FrameBitsPerRow-1:0] FrameData;', file=file)
     print('\tinput [MaxFramesPerCol-1:0] FrameStrobe;', file=file)
     print('\toutput [NoConfigBits-1:0] ConfigBits;', file=file)
+    print('\toutput [NoConfigBits-1:0] ConfigBits_N;', file=file)
 
     # one_line('frame_name')('frame_index')('bits_used_in_frame')('used_bits_mask')('ConfigBits_ranges')
 
@@ -2255,7 +2257,8 @@ def GenerateConfigMemVerilog( tile_description, module, file ):
                 # FrameData[FrameBitsPerRow-1-0], FrameData[FrameBitsPerRow-1-1], FrameData[FrameBitsPerRow-1-2],
                 print('\t.D(FrameData['+str(FrameBitsPerRow-1-k)+']),', file=file)
                 print('\t.E(FrameStrobe['+str(frame)+']),', file=file)
-                print('\t.Q(ConfigBits['+str(AllConfigBitsOrder[AllConfigBitsCounter])+'])', file=file)
+                print('\t.Q(ConfigBits['+str(AllConfigBitsOrder[AllConfigBitsCounter])+']),', file=file)
+                print('\t.QN(ConfigBits_N['+str(AllConfigBitsOrder[AllConfigBitsCounter])+'])', file=file)
                 print('\t);\n', file=file)
                 AllConfigBitsCounter += 1
 
@@ -2342,7 +2345,7 @@ def GenerateTileVerilog( tile_description, module, file ):
         if ConfigBitMode == 'FlipFlopChain':
             module_header_ports += ', MODE, CONFin, CONFout, CLK'
         elif ConfigBitMode == 'frame_based':
-            module_header_ports += ', ConfigBits'
+            module_header_ports += ', ConfigBits, ConfigBits_N'
 
     # insert CLB, I/O (or whatever BEL) component declaration
     # specified in the fabric csv file after the 'BEL' key word
@@ -2477,6 +2480,7 @@ def GenerateTileVerilog( tile_description, module, file ):
     #print('\twire ['+str(BEL_counter+NuberOfSwitchMatricesWithConfigPort)+':0] conf_data;', file=file)
     if GlobalConfigBitsCounter > 0:
         print('\twire [NoConfigBits-1:0] ConfigBits;', file=file)
+        print('\twire [NoConfigBits-1:0] ConfigBits_N;', file=file)
 
     # Cascading of routing for wires spanning more than one tile
     print('\n// Cascading of routing for wires spanning more than one tile', file=file)
@@ -2536,7 +2540,7 @@ def GenerateTileVerilog( tile_description, module, file ):
                 for i in range(int(high_bound_index)-int(line[wires])+1):
                 #print('\tgenvar '+line[0][0]+'_index;', file=file)
                 #print('\tfor ('+line[0][0]+'_index=0; '+line[0][0]+'_index<='+str(high_bound_index)+'-'+str(line[wires])+'; '+line[0][0]+'_index='+line[0][0]+'_index+1) begin: '+line[0][0]+'_buf', file=file)
-                    print('\tmy_buf '+line[0][0]+'_inbuf_'+str(i)+' (', file=file)
+                    print('\tmy_buf '+line[destination_name]+'_inbuf_'+str(i)+' (', file=file)
                     print('\t.A('+line[destination_name]+'['+str(i+int(line[wires]))+']),', file=file)
                     print('\t.X('+line[destination_name]+'_i['+str(i+int(line[wires]))+'])', file=file)
                     print('\t);\n', file=file)
@@ -2545,7 +2549,7 @@ def GenerateTileVerilog( tile_description, module, file ):
                 for j in range(int(high_bound_index)-int(line[wires])+1):
                 #print('\tgenvar '+line[0][0]+'_index;', file=file)
                 #print('\tfor ('+line[0][0]+'_index=0; '+line[0][0]+'_index<='+str(high_bound_index)+'-'+str(line[wires])+'; '+line[0][0]+'_index='+line[0][0]+'_index+1) begin: '+line[0][0]+'_buf', file=file)
-                    print('\tmy_buf '+line[0][0]+'_outbuf_'+str(j)+' (', file=file)
+                    print('\tmy_buf '+line[source_name]+'_outbuf_'+str(j)+' (', file=file)
                     print('\t.A('+line[source_name]+'_i['+str(j)+']),', file=file)
                     print('\t.X('+line[source_name]+'['+str(j)+'])', file=file)
                     print('\t);\n', file=file)
@@ -2564,7 +2568,8 @@ def GenerateTileVerilog( tile_description, module, file ):
         print('\t'+module+'_ConfigMem Inst_'+module+'_ConfigMem (', file=file)
         print('\t.FrameData(FrameData),', file=file)
         print('\t.FrameStrobe(FrameStrobe),', file=file)
-        print('\t.ConfigBits(ConfigBits)', file=file)
+        print('\t.ConfigBits(ConfigBits),', file=file)
+        print('\t.ConfigBits_N(ConfigBits_N)', file=file)
         print('\t);', file=file)
 
     # BEL component instantiations
@@ -2636,6 +2641,7 @@ def GenerateTileVerilog( tile_description, module, file ):
                         print('\t);\n', file=file)
                     else:
                         print('\t.ConfigBits(ConfigBits['+str(BEL_ConfigBitsCounter + int(BEL_ConfigBits))+'-1:'+str(BEL_ConfigBitsCounter)+'])', file=file)
+                        #print('\t.ConfigBits(ConfigBits_N['+str(BEL_ConfigBitsCounter + int(BEL_ConfigBits))+'-1:'+str(BEL_ConfigBitsCounter)+'])', file=file)
                         print('\t);\n', file=file)
                         BEL_ConfigBitsCounter = BEL_ConfigBitsCounter + int(BEL_ConfigBits)
             # for the next BEL (if any) for cascading configuration chain (this information is also needed for chaining the switch matrix)
@@ -2699,7 +2705,8 @@ def GenerateTileVerilog( tile_description, module, file ):
                     BEL_ConfigBits = GetNoConfigBitsFromFile(line[VHDL_file_position])
                     if BEL_ConfigBits != 'NULL':
                     # print('DEBUG:',BEL_ConfigBits)
-                        print('\t.ConfigBits(ConfigBits['+str(BEL_ConfigBitsCounter + int(BEL_ConfigBits))+'-1:'+str(BEL_ConfigBitsCounter)+'])', file=file)
+                        print('\t.ConfigBits(ConfigBits['+str(BEL_ConfigBitsCounter + int(BEL_ConfigBits))+'-1:'+str(BEL_ConfigBitsCounter)+']),', file=file)
+                        print('\t.ConfigBits_N(ConfigBits_N['+str(BEL_ConfigBitsCounter + int(BEL_ConfigBits))+'-1:'+str(BEL_ConfigBitsCounter)+'])', file=file)
                         BEL_ConfigBitsCounter = BEL_ConfigBitsCounter + int(BEL_ConfigBits)
             print('\t);', file=file)
     print('\n'+'endmodule', file=file)
@@ -3152,6 +3159,7 @@ def GenerateVerilog_PortsFooter ( file, module, ConfigPort=True , NumberOfConfig
             print('\tinput CLK;', file=file)
         elif ConfigBitMode == 'frame_based':
             print('\tinput [NoConfigBits-1:0] ConfigBits;', file=file)
+            print('\tinput [NoConfigBits-1:0] ConfigBits_N;', file=file)
     print('', file=file)
     return
 

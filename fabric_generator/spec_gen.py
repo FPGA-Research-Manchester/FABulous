@@ -2635,6 +2635,16 @@ def genBitstreamSpec(archObject: Fabric):
 
 	BelMap["MULADD"] = MULADDmap
 
+    #IOpad
+	BelMap["IO_1_bidirectional_frame_config_pass"] = {}
+
+	Config_accessmap = {}
+	Config_accessmap["C_bit0"] = 0
+	Config_accessmap["C_bit1"] = 1
+	Config_accessmap["C_bit2"] = 2
+	Config_accessmap["C_bit3"] = 3
+	BelMap["Config_access"] = Config_accessmap
+
 	#InPass
 
 	InPassmap = {}
@@ -2664,11 +2674,6 @@ def genBitstreamSpec(archObject: Fabric):
 	RegFilemap["BD_reg"] = 1
 
 	BelMap["RegFile_32x4"] = RegFilemap
-
-	BelMap["IO_1_bidirectional_frame_config_pass"] = {}
-
-	BelMap["Config_access"] = {}
-
 
 	#DoneTypes = []
 
@@ -2730,12 +2735,15 @@ def genBitstreamSpec(archObject: Fabric):
 			for i, belPair in enumerate(curTile.bels):	#Add the bel features we made a list of earlier
 				tempOffset = 0
 				name = letters[i]
+				#print(belPair)
 				belType = belPair[0]
 				for featureKey in BelMap[belType]:
 					curTileMap[name + "." +featureKey] = {encodeDict[BelMap[belType][featureKey] + curBitOffset]: "1"}	#We convert to the desired format like so
 					if featureKey != "INIT":
 					    tempOffset += 1
 				curBitOffset += tempOffset
+				#if(belType == 'Config_access'):
+				    #print(curBitOffset)
 			csvFile = [i.strip('\n').split(',') for i in open(curTile.matrixFileName)] 
 			pipCounts = [int(row[-1]) for row in csvFile[1::]]
 			csvFile = RemoveComments(csvFile)
@@ -2752,8 +2760,8 @@ def genBitstreamSpec(archObject: Fabric):
 						muxList.append(".".join((sources[x+1], sinks[y+1])))
 				muxList.reverse() #Order is flipped 
 				for i, pip in enumerate(muxList):
-					#if cellType == "CPU_IO":
-					 #print(pip)
+					#if cellType == "W_IO":
+						#print(pip)
 					controlWidth = int(numpy.ceil(numpy.log2(pipCount)))
 					if pipCount < 2:
 						curTileMap[pip] = {}
@@ -2765,8 +2773,8 @@ def genBitstreamSpec(archObject: Fabric):
 						if pip not in curTileMap.keys():
 							curTileMap[pip] = {}
 						curTileMap[pip][encodeDict[curBitOffset + tempOffset]] = curChar
-						#if cellType == "CPU_IO":
-						 #print(curBitOffset,tempOffset)
+						#if cellType == "W_IO":
+							#print(curBitOffset,tempOffset)
 						tempOffset += 1
 				curBitOffset += controlWidth
 			for wire in curTile.wires: #And now we add empty config bit mappings for immutable connections (i.e. wires), as nextpnr sees these the same as normal pips

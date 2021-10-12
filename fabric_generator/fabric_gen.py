@@ -4757,193 +4757,208 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
 
 def genBitstreamSpec(archObject: Fabric):
-    specData = {"TileMap":{}, "TileSpecs":{}, "FrameMap":{}, "FrameMapEncode":{}, "ArchSpecs":{"MaxFramesPerCol":MaxFramesPerCol, "FrameBitsPerRow":FrameBitsPerRow}}
-    BelMap = {}
-    for line in archObject.tiles:
-        for tile in line:
-            specData["TileMap"][tile.genTileLoc()] = tile.tileType
+	specData = {"TileMap":{}, "TileSpecs":{}, "FrameMap":{}, "FrameMapEncode":{}, "ArchSpecs":{"MaxFramesPerCol":MaxFramesPerCol, "FrameBitsPerRow":FrameBitsPerRow}}
+	BelMap = {}
+	for line in archObject.tiles:
+		for tile in line:
+			specData["TileMap"][tile.genTileLoc()] = tile.tileType
 
-    #Generate mapping dicts for bel types: 
-    #The format here is that each BEL has a dictionary that maps a fasm feature to another dictionary that maps bits to their values
-    #The lines generating the BEL maps do it slightly differently, just notating bits that should go high - this is translated further down
-    #We do not worry about bitmasking here - that's handled in the generation
+	#Generate mapping dicts for bel types: 
+	#The format here is that each BEL has a dictionary that maps a fasm feature to another dictionary that maps bits to their values
+	#The lines generating the BEL maps do it slightly differently, just notating bits that should go high - this is translated further down
+	#We do not worry about bitmasking here - that's handled in the generation
 
-    #LUT4:
+	#LUT4:
 
-    LUTmap = {}
-    LUTmap["INIT"] = 0 #Futureproofing as there are two ways that INIT[0] may be referred to (FASM parser will use INIT to refer to INIT[0])
-    for i in range(16):
-        LUTmap["INIT[" + str(i) + "]"] = i
-    LUTmap["FF"] = 16
-    LUTmap["IOmux"] = 17
+	LUTmap = {}
+	LUTmap["INIT"] = 0 #Futureproofing as there are two ways that INIT[0] may be referred to (FASM parser will use INIT to refer to INIT[0])
+	for i in range(16):
+		LUTmap["INIT[" + str(i) + "]"] = i
+	LUTmap["FF"] = 16
+	LUTmap["IOmux"] = 17
 
-    BelMap["LUT4c_frame_config"] = LUTmap
+	BelMap["LUT4c_frame_config"] = LUTmap
 
-    #MUX8
+	#MUX8
 
-    MUX8map = {"c0":0, "c1":1}
+	MUX8map = {"c0":0, "c1":1}
 
-    BelMap["MUX8LUT_frame_config"] = MUX8map
+	BelMap["MUX8LUT_frame_config"] = MUX8map
 
-    #MULADD 
+	#MULADD 
 
-    MULADDmap = {}
-    MULADDmap["A_reg"] = 0
-    MULADDmap["B_reg"] = 1
-    MULADDmap["C_reg"] = 2
+	MULADDmap = {}
+	MULADDmap["A_reg"] = 0
+	MULADDmap["B_reg"] = 1
+	MULADDmap["C_reg"] = 2
 
-    MULADDmap["ACC"] = 3
+	MULADDmap["ACC"] = 3
 
-    MULADDmap["signExtension"] = 4
+	MULADDmap["signExtension"] = 4
 
-    MULADDmap["ACCout"] = 5
+	MULADDmap["ACCout"] = 5
 
-    BelMap["MULADD"] = MULADDmap
+	BelMap["MULADD"] = MULADDmap
 
-    #InPass
+    #IOpad
+	BelMap["IO_1_bidirectional_frame_config_pass"] = {}
 
-    InPassmap = {}
+	Config_accessmap = {}
+	Config_accessmap["C_bit0"] = 0
+	Config_accessmap["C_bit1"] = 1
+	Config_accessmap["C_bit2"] = 2
+	Config_accessmap["C_bit3"] = 3
+	BelMap["Config_access"] = Config_accessmap
 
-    InPassmap["I0_reg"] = 0
-    InPassmap["I1_reg"] = 1
-    InPassmap["I2_reg"] = 2
-    InPassmap["I3_reg"] = 3
+	#InPass
 
-    BelMap["InPass4_frame_config"] = InPassmap
-    #OutPass
+	InPassmap = {}
 
-    OutPassmap = {}
+	InPassmap["I0_reg"] = 0
+	InPassmap["I1_reg"] = 1
+	InPassmap["I2_reg"] = 2
+	InPassmap["I3_reg"] = 3
 
-    OutPassmap["I0_reg"] = 0
-    OutPassmap["I1_reg"] = 1
-    OutPassmap["I2_reg"] = 2
-    OutPassmap["I3_reg"] = 3
+	BelMap["InPass4_frame_config"] = InPassmap
+	#OutPass
 
-    BelMap["OutPass4_frame_config"] = OutPassmap
+	OutPassmap = {}
 
+	OutPassmap["I0_reg"] = 0
+	OutPassmap["I1_reg"] = 1
+	OutPassmap["I2_reg"] = 2
+	OutPassmap["I3_reg"] = 3
 
-    #RegFile
-    RegFilemap = {}
-
-    RegFilemap["AD_reg"] = 0
-    RegFilemap["BD_reg"] = 1
-
-    BelMap["RegFile_32x4"] = RegFilemap
-
-    BelMap["IO_1_bidirectional_frame_config_pass"] = {}
-
-    BelMap["Config_access"] = {}
+	BelMap["OutPass4_frame_config"] = OutPassmap
 
 
-    #DoneTypes = []
+	#RegFile
+	RegFilemap = {}
+
+	RegFilemap["AD_reg"] = 0
+	RegFilemap["BD_reg"] = 1
+
+	BelMap["RegFile_32x4"] = RegFilemap
+
+	#DoneTypes = []
 
 
-    ###NOTE: THIS METHOD HAS BEEN CHANGED FROM A PREVIOUS IMPLEMENTATION SO PLEASE BEAR THIS IN MIND
-    #To account for cascading and termination, this now creates a separate map for every tile, as opposed to every cellType
-    for row in archObject.tiles:
-        #curTile = getTileByType(archObject, cellType)
-        for curTile in row:
-            cellType = curTile.tileType
-            if cellType == "NULL":
-                continue
-
-            #Add frame masks to the dictionary 
-            try:
-                configCSV = open(cellType + "_ConfigMem.csv") #This may need to be .init.csv, not just .csv
-            except:
-                try:
-                    configCSV = open(cellType + "_ConfigMem.init.csv")
-                except:
-                    print(f"No Config Mem csv file found for {cellType}. Assuming no config memory.")
-                    specData["FrameMap"][cellType] = {}
-                    specData["FrameMapEncode"][cellType] = {}
-                    continue
-            configList = [i.strip('\n').split(',') for i in configCSV]
-            configList = RemoveComments(configList)
-            maskDict = {}
-            encodeDict = [-1 for i in range(FrameBitsPerRow*MaxFramesPerCol)]  #Bitmap with the specific configmem.csv file
-            for line in configList:
-                configEncode = []
-                maskDict[int(line[1])] = line[3].replace("_", "")
-                for index in line[4:]:
-                    if ':' in index:
-                        index_temp = index.split(':')
-                        index_width = int(index_temp[0])-int(index_temp[1])+1
-                        for i in range(index_width):
-                            configEncode.append(str(int(index_temp[0])-i))
-                    else:
-                        configEncode.append(index)
-                #print(configEncode)
-                encode_i = 0
-                for i,char in enumerate(maskDict[int(line[1])]):
-                    if char != '0':
-                        #encodeDict[int(line[1])][i] = configEncode[encode_i]
-                        encodeDict[int(configEncode[encode_i])] = (31 - i) + ( 32 * int(line[1]))
-                        encode_i += 1
-            #print(encodeDict)
-            specData["FrameMap"][cellType] = maskDict
-            # if specData["ArchSpecs"]["MaxFramesPerCol"] < int(line[1]) + 1:
-            #   specData["ArchSpecs"]["MaxFramesPerCol"] = int(line[1]) + 1
-            # if specData["ArchSpecs"]["FrameBitsPerRow"] < int(line[2]):
-            #   specData["ArchSpecs"]["FrameBitsPerRow"] = int(line[2])
-            configCSV.close()
-
-            curBitOffset = 0
-            curTileMap = {}
-            for i, belPair in enumerate(curTile.bels):  #Add the bel features we made a list of earlier
-                tempOffset = 0
-                name = letters[i]
-                belType = belPair[0]
-                for featureKey in BelMap[belType]:
-                    curTileMap[name + "." +featureKey] = {encodeDict[BelMap[belType][featureKey] + curBitOffset]: "1"}  #We convert to the desired format like so
-                    if featureKey != "INIT":
-                        tempOffset += 1
-                curBitOffset += tempOffset
-            csvFile = [i.strip('\n').split(',') for i in open(curTile.matrixFileName)] 
-            pipCounts = [int(row[-1]) for row in csvFile[1::]]
-            csvFile = RemoveComments(csvFile)
-            sinks = [line[0] for line in csvFile]
-            sources = csvFile[0]
-            pips = []
-            pipsdict = {}
-            for y, row in enumerate(csvFile[1::]): #Config bits for switch matrix from file
-                muxList = []
-                pipCount = pipCounts[y]
-                for x, value in enumerate(row[1::]):
-                    #Remember that x and y are offset 
-                    if value == "1":
-                        muxList.append(".".join((sources[x+1], sinks[y+1])))
-                muxList.reverse() #Order is flipped 
-                for i, pip in enumerate(muxList):
-                    #if cellType == "CPU_IO":
-                     #print(pip)
-                    controlWidth = int(numpy.ceil(numpy.log2(pipCount)))
-                    if pipCount < 2:
-                        curTileMap[pip] = {}
-                        continue
-                    pip_index = pipCount-i-1
-                    controlValue = f"{pip_index:0{controlWidth}b}"
-                    tempOffset = 0
-                    for curChar in controlValue[::-1]:
-                        if pip not in curTileMap.keys():
-                            curTileMap[pip] = {}
-                        curTileMap[pip][encodeDict[curBitOffset + tempOffset]] = curChar
-                        #if cellType == "CPU_IO":
-                         #print(curBitOffset,tempOffset)
-                        tempOffset += 1
-                curBitOffset += controlWidth
-            for wire in curTile.wires: #And now we add empty config bit mappings for immutable connections (i.e. wires), as nextpnr sees these the same as normal pips
-                for count in range(int(wire["wire-count"])):
-                    wireName = ".".join((wire["source"] + str(count), wire["destination"] + str(count)))
-                    curTileMap[wireName] = {} #Tile connection wires are seen as pips by nextpnr for ease of use, so this makes sure those pips still have corresponding keys
-            for wire in curTile.atomicWires:
-                wireName = ".".join((wire["source"], wire["destination"]))
-                curTileMap[wireName] = {}
-
-            specData["TileSpecs"][curTile.genTileLoc()] = curTileMap
+	###NOTE: THIS METHOD HAS BEEN CHANGED FROM A PREVIOUS IMPLEMENTATION SO PLEASE BEAR THIS IN MIND
+	#To account for cascading and termination, this now creates a separate map for every tile, as opposed to every cellType
+	for row in archObject.tiles:
+		#curTile = getTileByType(archObject, cellType)
+		for curTile in row:
+			cellType = curTile.tileType
+			if cellType == "NULL":
+				continue
 
 
-    return specData
+			#Add frame masks to the dictionary 
+			try:
+				configCSV = open(cellType + "_ConfigMem.csv") #This may need to be .init.csv, not just .csv
+			except:
+			    try:
+			        configCSV = open(cellType + "_ConfigMem.init.csv")
+			    except:
+			        print(f"No Config Mem csv file found for {cellType}. Assuming no config memory.")
+			        specData["FrameMap"][cellType] = {}
+			        specData["FrameMapEncode"][cellType] = {}
+			        continue
+			configList = [i.strip('\n').split(',') for i in configCSV]
+			configList = RemoveComments(configList)
+			maskDict = {}
+			encodeDict = [-1 for i in range(FrameBitsPerRow*MaxFramesPerCol)]  #Bitmap with the specific configmem.csv file
+			for line in configList:
+				configEncode = []
+				maskDict[int(line[1])] = line[3].replace("_", "")
+				for index in line[4:]:
+				    if ':' in index:
+				        index_temp = index.split(':')
+				        index_width = int(index_temp[0])-int(index_temp[1])+1
+				        for i in range(index_width):
+				            configEncode.append(str(int(index_temp[0])-i))
+				    else:
+				        configEncode.append(index)
+				#print(configEncode)
+				encode_i = 0
+				for i,char in enumerate(maskDict[int(line[1])]):
+				    if char != '0':
+				        #encodeDict[int(line[1])][i] = configEncode[encode_i]
+				        encodeDict[int(configEncode[encode_i])] = (31 - i) + ( 32 * int(line[1]))
+				        encode_i += 1
+			#print(encodeDict)
+			specData["FrameMap"][cellType] = maskDict
+			if 'term' in cellType:
+				print(f"No config memory for {cellType}.")
+				specData["FrameMap"][cellType] = {}
+				specData["FrameMapEncode"][cellType] = {}
+				#continue
+			# if specData["ArchSpecs"]["MaxFramesPerCol"] < int(line[1]) + 1:
+			# 	specData["ArchSpecs"]["MaxFramesPerCol"] = int(line[1]) + 1
+			# if specData["ArchSpecs"]["FrameBitsPerRow"] < int(line[2]):
+			# 	specData["ArchSpecs"]["FrameBitsPerRow"] = int(line[2])
+			configCSV.close()
+
+			curBitOffset = 0
+			curTileMap = {}
+			for i, belPair in enumerate(curTile.bels):	#Add the bel features we made a list of earlier
+				tempOffset = 0
+				name = letters[i]
+				#print(belPair)
+				belType = belPair[0]
+				for featureKey in BelMap[belType]:
+					curTileMap[name + "." +featureKey] = {encodeDict[BelMap[belType][featureKey] + curBitOffset]: "1"}	#We convert to the desired format like so
+					if featureKey != "INIT":
+					    tempOffset += 1
+				curBitOffset += tempOffset
+				#if(belType == 'Config_access'):
+				    #print(curBitOffset)
+			csvFile = [i.strip('\n').split(',') for i in open(curTile.matrixFileName)] 
+			pipCounts = [int(row[-1]) for row in csvFile[1::]]
+			csvFile = RemoveComments(csvFile)
+			sinks = [line[0] for line in csvFile]
+			sources = csvFile[0]
+			pips = []
+			pipsdict = {}
+			for y, row in enumerate(csvFile[1::]): #Config bits for switch matrix from file
+				muxList = []
+				pipCount = pipCounts[y]
+				for x, value in enumerate(row[1::]):
+					#Remember that x and y are offset 
+					if value == "1":
+						muxList.append(".".join((sources[x+1], sinks[y+1])))
+				muxList.reverse() #Order is flipped 
+				for i, pip in enumerate(muxList):
+					#if cellType == "W_IO":
+						#print(pip)
+					controlWidth = int(numpy.ceil(numpy.log2(pipCount)))
+					if pipCount < 2:
+						curTileMap[pip] = {}
+						continue
+					pip_index = pipCount-i-1
+					controlValue = f"{pip_index:0{controlWidth}b}"
+					tempOffset = 0
+					for curChar in controlValue[::-1]:
+						if pip not in curTileMap.keys():
+							curTileMap[pip] = {}
+						curTileMap[pip][encodeDict[curBitOffset + tempOffset]] = curChar
+						#if cellType == "W_IO":
+							#print(curBitOffset,tempOffset)
+						tempOffset += 1
+				curBitOffset += controlWidth
+			for wire in curTile.wires: #And now we add empty config bit mappings for immutable connections (i.e. wires), as nextpnr sees these the same as normal pips
+				for count in range(int(wire["wire-count"])):
+					wireName = ".".join((wire["source"] + str(count), wire["destination"] + str(count)))
+					curTileMap[wireName] = {} #Tile connection wires are seen as pips by nextpnr for ease of use, so this makes sure those pips still have corresponding keys
+			for wire in curTile.atomicWires:
+				wireName = ".".join((wire["source"], wire["destination"]))
+				curTileMap[wireName] = {}
+
+			specData["TileSpecs"][curTile.genTileLoc()] = curTileMap
+			#if curTile.genTileLoc() == "X3Y8":
+			   #print(curTileMap)
+
+	return specData
 
 #####################################################################################
 # Main

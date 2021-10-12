@@ -2686,8 +2686,7 @@ def genBitstreamSpec(archObject: Fabric):
 			cellType = curTile.tileType
 			if cellType == "NULL":
 				continue
-			elif 'term' in cellType:
-				continue
+
 
 			#Add frame masks to the dictionary 
 			try:
@@ -2724,6 +2723,11 @@ def genBitstreamSpec(archObject: Fabric):
 				        encode_i += 1
 			#print(encodeDict)
 			specData["FrameMap"][cellType] = maskDict
+			if 'term' in cellType:
+				print(f"No config memory for {cellType}.")
+				specData["FrameMap"][cellType] = {}
+				specData["FrameMapEncode"][cellType] = {}
+				#continue
 			# if specData["ArchSpecs"]["MaxFramesPerCol"] < int(line[1]) + 1:
 			# 	specData["ArchSpecs"]["MaxFramesPerCol"] = int(line[1]) + 1
 			# if specData["ArchSpecs"]["FrameBitsPerRow"] < int(line[2]):

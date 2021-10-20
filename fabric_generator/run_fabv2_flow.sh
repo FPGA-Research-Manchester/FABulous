@@ -42,7 +42,7 @@ python3 fabric_gen.py -GenTileVerilog
 python3 fabric_gen.py -GenFabricVerilog
 #REM STEP 7 : generate the nextpnr model
 python3 fabric_gen.py -GenNextpnrModel
-python3 spec_gen.py -GenBitstreamSpec npnroutput/meta_data_v2.txt
+python3 fabric_gen.py -GenBitstreamSpec npnroutput/meta_data_v2.txt
 #GOTO END
 
 mkdir -p verilog_output

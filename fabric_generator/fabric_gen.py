@@ -3978,7 +3978,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
     tilesString = "" #String to store tiles
 
     sourceSinkMap = getFabricSourcesAndSinks(archObject)
-    
+    doneBels = [] # List to track bels that we've already created a pb_type for (by type)
     for cellType in archObject.cellTypes: 
         cTile = getTileByType(archObject, cellType)
 

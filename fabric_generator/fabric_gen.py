@@ -5179,8 +5179,8 @@ if ('-GenVPRModel'.lower() in processedArguments) :
     arguments = re.split(' ',str(sys.argv))
     fabricObject = genFabricObject(fabric)
 
-    archFile = open("vproutput/architecture.xml","w")
-    rrFile = open("vproutput/routing_resources.xml","w")
+    archFile = open("vproutput/architecture.xml","w+")
+    rrFile = open("vproutput/routing_resources.xml","w+")
 
     archXML = genVPRModelXML(fabricObject, False)
     rrGraphXML = genVPRModelRRGraph(fabricObject, False)

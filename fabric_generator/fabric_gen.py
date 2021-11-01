@@ -3989,7 +3989,6 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
         tilesString += '    </equivalent_sites>\n'
 
         pb_typesString += f'  <pb_type name="{cellType}">\n' #Top layer block
-        doneBels = [] # List to track bels that we've already created a pb_type for (by type)
 
         tileInputs = [] #Track the tile's top level inputs and outputs for the top pb_type definition
         tileOutputs = [] 

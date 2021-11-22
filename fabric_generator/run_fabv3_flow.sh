@@ -57,3 +57,6 @@ mv -f *.list ./list_files
 
 mkdir -p csv_output
 mv -f *.csv ./csv_output
+
+cp ./npnroutput/{bel.txt,pips.txt,meta_data_v3.txt} ../nextpnr/fabulous_v3/fab_arch/
+cp ./csv_output/fabric.csv ../nextpnr/fabulous_v3/fab_arch/

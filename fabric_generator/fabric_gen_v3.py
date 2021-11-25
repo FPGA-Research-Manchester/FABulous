@@ -4267,7 +4267,7 @@ class Fabric:
                         if wire["direction"] == "JUMP":
                             continue
                     for i in range(int(wire["wire-count"])):
-                        desty = tile.y - int(wire["yoffset"])
+                        desty = tile.y + int(wire["yoffset"])
                         destx = tile.x + int(wire["xoffset"])
                         desttileLoc = f"X{destx}Y{desty}"
                         if (desttileLoc == loc) and (wire["destination"] + str(i) == dest):
@@ -4339,7 +4339,7 @@ def getFabricSourcesAndSinks(archObject: Fabric):
                 allFabricOutputs.extend([(tileLoc + "." + cOutput) for cOutput in bel[3]])
 
             for wire in tile.wires:
-                desty = tile.y - int(wire["yoffset"]) #Calculate destination location of the wire at hand
+                desty = tile.y + int(wire["yoffset"]) #Calculate destination location of the wire at hand
                 destx = tile.x + int(wire["xoffset"])
                 desttileLoc = f"X{destx}Y{desty}"
 
@@ -4484,7 +4484,7 @@ def genFabricObject(fabric: list):
             tempAtomicWires = []
             #Wires from tile
             for wire in wireTextList:
-                destinationTile = archFabric.getTileByCoords(tile.x + int(wire["xoffset"]), tile.y - int(wire["yoffset"]))
+                destinationTile = archFabric.getTileByCoords(tile.x + int(wire["xoffset"]), tile.y + int(wire["yoffset"]))
                 if abs(int(wire["xoffset"]))<=1 and abs(int(wire["yoffset"]))<=1 and not ("NULL" in wire.values()):
                     wires.append(wire)                 
                     portMap[destinationTile].remove(wire["destination"])
@@ -4492,7 +4492,7 @@ def genFabricObject(fabric: list):
                 elif not ("NULL" in wire.values()): #If the wire goes off the fabric then we account for cascading by finding the last tile the wire goes through
                     if int(wire["xoffset"]) != 0:    #If we're moving in the x axis
                         if int(wire["xoffset"]) > 1:
-                            cTile = archFabric.getTileByCoords(tile.x + 1, tile.y - int(wire["yoffset"]))    #destination tile
+                            cTile = archFabric.getTileByCoords(tile.x + 1, tile.y + int(wire["yoffset"]))    #destination tile
                             for i in range(int(wire["wire-count"])*abs(int(wire["xoffset"]))):
                                 if i < int(wire["wire-count"]):
                                     cascaded_i = i + int(wire["wire-count"])*(abs(int(wire["xoffset"]))-1)
@@ -4503,7 +4503,7 @@ def genFabricObject(fabric: list):
                             portMap[cTile].remove(wire["destination"])
                             portMap[tile].remove(wire["source"])
                         elif int(wire["xoffset"]) < -1:
-                            cTile = archFabric.getTileByCoords(tile.x - 1, tile.y - int(wire["yoffset"]))    #destination tile
+                            cTile = archFabric.getTileByCoords(tile.x - 1, tile.y + int(wire["yoffset"]))    #destination tile
                             for i in range(int(wire["wire-count"])*abs(int(wire["xoffset"]))):
                                 if i < int(wire["wire-count"]):
                                     cascaded_i = i + int(wire["wire-count"])*(abs(int(wire["xoffset"]))-1)
@@ -4515,7 +4515,7 @@ def genFabricObject(fabric: list):
                             portMap[tile].remove(wire["source"])
                     elif int(wire["yoffset"]) != 0:    #If we're moving in the y axis
                         if int(wire["yoffset"]) > 1:
-                            cTile = archFabric.getTileByCoords(tile.x + int(wire["xoffset"]), tile.y - 1)    #destination tile
+                            cTile = archFabric.getTileByCoords(tile.x + int(wire["xoffset"]), tile.y + 1)    #destination tile
                             for i in range(int(wire["wire-count"])*abs(int(wire["yoffset"]))):
                                 if i < int(wire["wire-count"]):
                                     cascaded_i = i + int(wire["wire-count"])*(abs(int(wire["yoffset"]))-1)
@@ -4526,7 +4526,7 @@ def genFabricObject(fabric: list):
                             portMap[cTile].remove(wire["destination"])
                             portMap[tile].remove(wire["source"])
                         elif int(wire["yoffset"]) < -1:
-                            cTile = archFabric.getTileByCoords(tile.x + int(wire["xoffset"]), tile.y + 1)    #destination tile
+                            cTile = archFabric.getTileByCoords(tile.x + int(wire["xoffset"]), tile.y - 1)    #destination tile
                             for i in range(int(wire["wire-count"])*abs(int(wire["yoffset"]))):
                                 if i < int(wire["wire-count"]):
                                     cascaded_i = i + int(wire["wire-count"])*(abs(int(wire["yoffset"]))-1)
@@ -4548,26 +4548,26 @@ def genFabricObject(fabric: list):
                         dest_wire_name = wire["source"].replace("BEG","END")
                     if int(wire["xoffset"]) != 0:    #If we're moving in the x axis
                         if int(wire["xoffset"]) > 0:
-                            cTile = archFabric.getTileByCoords(tile.x + 1, tile.y - int(wire["yoffset"]))    #destination tile
+                            cTile = archFabric.getTileByCoords(tile.x + 1, tile.y + int(wire["yoffset"]))    #destination tile
                             for i in range(int(wire["wire-count"])*abs(int(wire["xoffset"]))):
                                 tempAtomicWires.append({"direction": wire["direction"], "source": wire["source"] + str(i), "xoffset": '1', "yoffset": wire["yoffset"], "destination": dest_wire_name + str(i), "sourceTile": tile.genTileLoc(), "destTile": cTile.genTileLoc()}) #Add atomic wire names
                             portMap[cTile].remove(dest_wire_name)
                             portMap[tile].remove(wire["source"])
                         elif int(wire["xoffset"]) < 0:
-                            cTile = archFabric.getTileByCoords(tile.x - 1, tile.y - int(wire["yoffset"]))    #destination tile
+                            cTile = archFabric.getTileByCoords(tile.x - 1, tile.y + int(wire["yoffset"]))    #destination tile
                             for i in range(int(wire["wire-count"])*abs(int(wire["xoffset"]))):
                                 tempAtomicWires.append({"direction": wire["direction"], "source": wire["source"] + str(i), "xoffset": '-1', "yoffset": wire["yoffset"], "destination": dest_wire_name + str(i), "sourceTile": tile.genTileLoc(), "destTile": cTile.genTileLoc()}) #Add atomic wire names
                             portMap[cTile].remove(dest_wire_name)
                             portMap[tile].remove(wire["source"])
                     elif int(wire["yoffset"]) != 0:    #If we're moving in the y axis
                         if int(wire["yoffset"]) > 0:
-                            cTile = archFabric.getTileByCoords(tile.x + int(wire["xoffset"]), tile.y - 1)    #destination tile
+                            cTile = archFabric.getTileByCoords(tile.x + int(wire["xoffset"]), tile.y + 1)    #destination tile
                             for i in range(int(wire["wire-count"])*abs(int(wire["yoffset"]))):
                                 tempAtomicWires.append({"direction": wire["direction"], "source": wire["source"] + str(i), "xoffset": wire["xoffset"], "yoffset": '1', "destination": dest_wire_name + str(i), "sourceTile": tile.genTileLoc(), "destTile": cTile.genTileLoc()}) #Add atomic wire names
                             portMap[cTile].remove(dest_wire_name)
                             portMap[tile].remove(wire["source"])
                         elif int(wire["yoffset"]) < 0:
-                            cTile = archFabric.getTileByCoords(tile.x + int(wire["xoffset"]), tile.y + 1)    #destination tile
+                            cTile = archFabric.getTileByCoords(tile.x + int(wire["xoffset"]), tile.y - 1)    #destination tile
                             for i in range(int(wire["wire-count"])*abs(int(wire["yoffset"]))):
                                 tempAtomicWires.append({"direction": wire["direction"], "source": wire["source"] + str(i), "xoffset": wire["xoffset"], "yoffset": '-1', "destination": dest_wire_name + str(i), "sourceTile": tile.genTileLoc(), "destTile": cTile.genTileLoc()}) #Add atomic wire names
                             portMap[cTile].remove(dest_wire_name)
@@ -4599,9 +4599,7 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
             #Wires between tiles
             pipsStr += f"#Tile-external pips on tile {tileLoc}:\n"
             for wire in tile.wires:
-                desty = tile.y - int(wire["yoffset"])
-                #print(wire)
-                #print(str(tile.y)+', '+str(desty))
+                desty = tile.y + int(wire["yoffset"])
                 destx = tile.x + int(wire["xoffset"])
                 desttileLoc = f"X{destx}Y{desty}"
                 for i in range(int(wire["wire-count"])):
@@ -4673,7 +4671,7 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
                 pairStr += "#" + tileLoc + "\n"
                 for wire in tile.wires:
                     for i in range(int(wire["wire-count"])):
-                        desty = tile.y - int(wire["yoffset"])
+                        desty = tile.y + int(wire["yoffset"])
                         destx = tile.x + int(wire["xoffset"]) 
                         destTile = archObject.getTileByCoords(destx, desty)
                         desttileLoc = f"X{destx}Y{desty}"
@@ -5431,7 +5429,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                     nodeType = "CHANY" # default to CHANY - as offsets are zero it does not matter
 
 
-                desty = tile.y - int(wire["yoffset"]) #Calculate destination location of the wire at hand
+                desty = tile.y + int(wire["yoffset"]) #Calculate destination location of the wire at hand
                 destx = tile.x + int(wire["xoffset"])
                 desttileLoc = f"X{destx}Y{desty}"
 
@@ -5727,7 +5725,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
 
 def genBitstreamSpec(archObject: Fabric):
-	specData = {"TileMap":{}, "TileSpecs":{}, "FrameMap":{}, "FrameMapEncode":{}, "ArchSpecs":{"MaxFramesPerCol":MaxFramesPerCol, "FrameBitsPerRow":FrameBitsPerRow}}
+	specData = {"TileMap":{}, "TileSpecs":{}, "TileSpecs_No_Mask":{}, "FrameMap":{}, "FrameMapEncode":{}, "ArchSpecs":{"MaxFramesPerCol":MaxFramesPerCol, "FrameBitsPerRow":FrameBitsPerRow}}
 	BelMap = {}
 	for line in archObject.tiles:
 		for tile in line:
@@ -5872,6 +5870,8 @@ def genBitstreamSpec(archObject: Fabric):
 
 			curBitOffset = 0
 			curTileMap = {}
+			curTileMap_No_Mask = {}
+
 			for i, belPair in enumerate(curTile.bels):	#Add the bel features we made a list of earlier
 				tempOffset = 0
 				name = letters[i]
@@ -5879,6 +5879,7 @@ def genBitstreamSpec(archObject: Fabric):
 				belType = belPair[0]
 				for featureKey in BelMap[belType]:
 					curTileMap[name + "." +featureKey] = {encodeDict[BelMap[belType][featureKey] + curBitOffset]: "1"}	#We convert to the desired format like so
+					curTileMap_No_Mask[name + "." +featureKey] = {(BelMap[belType][featureKey] + curBitOffset): "1"}
 					if featureKey != "INIT":
 					    tempOffset += 1
 				curBitOffset += tempOffset
@@ -5900,11 +5901,10 @@ def genBitstreamSpec(archObject: Fabric):
 						muxList.append(".".join((sources[x+1], sinks[y+1])))
 				muxList.reverse() #Order is flipped 
 				for i, pip in enumerate(muxList):
-					#if cellType == "W_IO":
-						#print(pip)
 					controlWidth = int(numpy.ceil(numpy.log2(pipCount)))
 					if pipCount < 2:
 						curTileMap[pip] = {}
+						curTileMap_No_Mask[pip] = {}
 						continue
 					pip_index = pipCount-i-1
 					controlValue = f"{pip_index:0{controlWidth}b}"
@@ -5912,22 +5912,23 @@ def genBitstreamSpec(archObject: Fabric):
 					for curChar in controlValue[::-1]:
 						if pip not in curTileMap.keys():
 							curTileMap[pip] = {}
+							curTileMap_No_Mask[pip] = {}
 						curTileMap[pip][encodeDict[curBitOffset + tempOffset]] = curChar
-						#if cellType == "W_IO":
-							#print(curBitOffset,tempOffset)
+						curTileMap_No_Mask[pip][curBitOffset + tempOffset] = curChar
 						tempOffset += 1
 				curBitOffset += controlWidth
 			for wire in curTile.wires: #And now we add empty config bit mappings for immutable connections (i.e. wires), as nextpnr sees these the same as normal pips
 				for count in range(int(wire["wire-count"])):
 					wireName = ".".join((wire["source"] + str(count), wire["destination"] + str(count)))
 					curTileMap[wireName] = {} #Tile connection wires are seen as pips by nextpnr for ease of use, so this makes sure those pips still have corresponding keys
+					curTileMap_No_Mask[wireName] = {}
 			for wire in curTile.atomicWires:
 				wireName = ".".join((wire["source"], wire["destination"]))
 				curTileMap[wireName] = {}
+				curTileMap_No_Mask[wireName] = {}
 
 			specData["TileSpecs"][curTile.genTileLoc()] = curTileMap
-			#if curTile.genTileLoc() == "X3Y8":
-			   #print(curTileMap)
+			specData["TileSpecs_No_Mask"][curTile.genTileLoc()] = curTileMap_No_Mask
 
 	return specData
 

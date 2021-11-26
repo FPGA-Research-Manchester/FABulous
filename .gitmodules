@@ -1,4 +1,1 @@
-[submodule "nextpnr"]
-	path = nextpnr
-	url = https://github.com/FPGA-Research-Manchester/nextpnr.git
-	branch = fabulous
+

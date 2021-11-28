@@ -1,4 +1,0 @@
-Background and Features
-=======================
-
-todo

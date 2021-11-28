@@ -1,24 +1,10 @@
--- Copyright 2021 University of Manchester
-
--- Licensed under the Apache License, Version 2.0 (the "License");
--- you may not use this file except in compliance with the License.
--- You may obtain a copy of the License at
-
---     http://www.apache.org/licenses/LICENSE-2.0
-
--- Unless required by applicable law or agreed to in writing, software
--- distributed under the License is distributed on an "AS IS" BASIS,
--- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
--- See the License for the specific language governing permissions and
--- limitations under the License.
-
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 use work.my_package.all;
 
 entity LUT4c_frame_config is
-    Generic ( NoConfigBits : integer := 18 );	-- has to be adjusted manually (we don't use an arithmetic parser for the value)
+    Generic ( NoConfigBits : integer := 19 );	-- has to be adjusted manually (we don't use an arithmetic parser for the value)
     Port (      -- IMPORTANT: this has to be in a dedicated line
 	I0	: in	STD_LOGIC; -- LUT inputs
 	I1	: in	STD_LOGIC;
@@ -27,6 +13,8 @@ entity LUT4c_frame_config is
 	O	: out	STD_LOGIC; -- LUT output (combinatorial or FF)
 	Ci	: in	STD_LOGIC; -- carry chain input
 	Co	: out	STD_LOGIC; -- carry chain output
+	SR	: in	STD_LOGIC; -- SHARED_RESET
+	EN	: in	STD_LOGIC; -- SHARED_ENABLE
 	UserCLK : in	STD_LOGIC; -- EXTERNAL -- SHARED_PORT -- ## the EXTERNAL keyword will send this sisgnal all the way to top and the --SHARED Allows multiple BELs using the same port (e.g. for exporting a clock to the top)
 	-- GLOBAL all primitive pins that are connected to the switch matrix have to go before the GLOBAL label
 	ConfigBits : in 	 STD_LOGIC_VECTOR( NoConfigBits -1 downto 0 )
@@ -46,14 +34,15 @@ signal LUT_index : unsigned(LUT_SIZE-1 downto 0);
 signal LUT_out : std_logic;
 signal LUT_flop  : std_logic;
 signal I0mux              : std_logic;	-- normal input '0', or carry input '1'
-signal c_out_mux, c_I0mux : std_logic;	-- extra configuration bits
+signal c_out_mux, c_I0mux, c_reset_value : std_logic;	-- extra configuration bits
 
 
 begin
 
-LUT_values <= ConfigBits(15 downto 0);
-c_out_mux  <= ConfigBits(16);
-c_I0mux    <= ConfigBits(17);
+LUT_values    <= ConfigBits(15 downto 0);
+c_out_mux     <= ConfigBits(16);
+c_I0mux       <= ConfigBits(17);
+c_reset_value <= ConfigBits(18);
 
 --CONFout <= c_I0mux;
 
@@ -94,7 +83,13 @@ Co <= (Ci AND I1) OR (Ci AND I2) OR (I1 AND I2);	-- iCE40 like carry chain (as t
 process(UserCLK)
 begin
 	if UserCLK'event and UserCLK='1' then
-		LUT_flop <= LUT_out;
+		if EN = '1' then
+			if SR = '1' then
+				LUT_flop <= c_reset_value;
+			else
+				LUT_flop <= LUT_out;
+			end if;
+		end if;
 	end if;
 end process;
 

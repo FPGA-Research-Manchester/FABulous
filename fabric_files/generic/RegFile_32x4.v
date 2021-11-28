@@ -1,16 +1,16 @@
-/* Copyright 2021 University of Manchester
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License. */
+// Copyright 2021 University of Manchester
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 module RegFile_32x4 (D0, D1, D2, D3, W_ADR0, W_ADR1, W_ADR2, W_ADR3, W_ADR4, W_en, AD0, AD1, AD2, AD3, A_ADR0, A_ADR1, A_ADR2, A_ADR3, A_ADR4, BD0, BD1, BD2, BD3, B_ADR0, B_ADR1, B_ADR2, B_ADR3, B_ADR4, UserCLK, ConfigBits);
 	parameter NoConfigBits = 2;// has to be adjusted manually (we don't use an arithmetic parser for the value)
@@ -80,17 +80,19 @@ module RegFile_32x4 (D0, D1, D2, D3, W_ADR0, W_ADR1, W_ADR2, W_ADR3, W_ADR4, W_e
 	end
 
 //P_write: process (UserCLK)
-	always @ (posedge UserCLK)
-	begin
+	always @ (posedge UserCLK) begin : P_write
 		if (W_en == 1'b1) begin
 			mem[W_ADR] <= D ;
 		end
-		AD_reg <= AD;
-		BD_reg <= BD;
 	end
 
 	assign AD = mem[A_ADR];
 	assign BD = mem[B_ADR];
+
+    always @ (posedge UserCLK) begin
+        AD_reg <= AD;
+		BD_reg <= BD;
+    end
 
 	assign AD0 = ConfigBits[0] ? AD_reg[0] : AD[0];
 	assign AD1 = ConfigBits[0] ? AD_reg[1] : AD[1];

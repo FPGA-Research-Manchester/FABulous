@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    
+    <title>Bitstream generation &#8212; FABulous Dokumentation 0.1 documentation</title>
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/material-icons.css" />
+    <link rel="stylesheet" href="../_static/notosanscjkjp.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/roboto.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/material-design-lite-1.3.0/material.indigo-pink.min.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/sphinx_materialdesign_theme.css" type="text/css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_materialdesign_theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Simulation and emulation" href="../simulation/index.html" />
+    <link rel="prev" title="VPR compilation" href="VPR%20compilation.html" /> 
+  </head>
+<body>
+    <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header mdl-layout--fixed-drawer"><header class="mdl-layout__header mdl-layout__header--waterfall ">
+    <div class="mdl-layout__header-row">
+        
+        <nav class="mdl-navigation breadcrumb">
+            <a class="mdl-navigation__link" href="index.html">RTL to Bitstream</a><i class="material-icons">navigate_next</i>
+            <a class="mdl-navigation__link is-active">Bitstream generation</a>
+        </nav>
+        <div class="mdl-layout-spacer"></div>
+        <nav class="mdl-navigation">
+        
+<form class="form-inline pull-sm-right" action="../search.html" method="get">
+      <div class="mdl-textfield mdl-js-textfield mdl-textfield--expandable mdl-textfield--floating-label mdl-textfield--align-right">
+        <label id="quick-search-icon" class="mdl-button mdl-js-button mdl-button--icon"  for="waterfall-exp">
+            <i class="material-icons">search</i>
+        </label>
+        <div class="mdl-textfield__expandable-holder">
+          <input class="mdl-textfield__input" type="text" name="q"  id="waterfall-exp" placeholder="Search" />
+          <input type="hidden" name="check_keywords" value="yes" />
+          <input type="hidden" name="area" value="default" />
+        </div>
+      </div>
+      <div class="mdl-tooltip" data-mdl-for="quick-search-icon">
+      Quick search
+      </div>
+</form>
+        
+<a id="button-show-source"
+    class="mdl-button mdl-js-button mdl-button--icon"
+    href="../_sources/FPGA-to-bitstream/Bitstream generation.rst.txt" rel="nofollow">
+<i class="material-icons">code</i>
+</a>
+<div class="mdl-tooltip" data-mdl-for="button-show-source">
+Show Source
+</div>
+        </nav>
+    </div>
+    <div class="mdl-layout__header-row header-links">
+      <div class="mdl-layout-spacer"></div>
+      <nav class="mdl-navigation">
+      </nav>
+    </div>
+</header><header class="mdl-layout__drawer">
+    
+          <!-- Title -->
+      <span class="mdl-layout-title">
+          <a class="title" href="../index.html">
+              <img class="logo" src="../_static/FAB_logo.png" alt="FABulous Dokumentation"/>
+          </a>
+      </span>
+    
+    
+      <div class="globaltoc">
+        <span class="mdl-layout-title toc">Table Of Contents</span>
+        
+        
+            
+            <nav class="mdl-navigation">
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../background.html">Background and Features</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../Usage.html">Quick start</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../Building%20fabric.html">Building fabric</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../fabric_definition.html">Fabric definition</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../ASIC/index.html">Fabric ASIC implementation</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../FPGA_CAD-tools/index.html">FPGA CAD-tool parameterization</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../FPGA_CAD-tools/yosys.html">Yosys models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../FPGA_CAD-tools/nextpnr.html">Nextpnr models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../FPGA_CAD-tools/vpr.html">VPR models</a></li>
+</ul>
+</li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">RTL to Bitstream</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="Yosys%20compilation.html">Yosys compilation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Nextpnr%20compilation.html">Nextpnr compilation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="VPR%20compilation.html">VPR compilation</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Bitstream generation</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation and emulation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../simulation/simulation.html">Simulation setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../simulation/emulation.html">Emulation setup</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../references/index.html">Technical references</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../gallery/index.html">Chip Gallery</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../definitions.html">Definitions and abbreviations</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../contact.html">Team and contact</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../publications.html">Publications</a></li>
+</ul>
+
+            </nav>
+        
+        </div>
+    
+</header>
+        <main class="mdl-layout__content" tabIndex="0">
+<header class="mdl-layout__drawer">
+    
+          <!-- Title -->
+      <span class="mdl-layout-title">
+          <a class="title" href="../index.html">
+              <img class="logo" src="../_static/FAB_logo.png" alt="FABulous Dokumentation"/>
+          </a>
+      </span>
+    
+    
+      <div class="globaltoc">
+        <span class="mdl-layout-title toc">Table Of Contents</span>
+        
+        
+            
+            <nav class="mdl-navigation">
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../background.html">Background and Features</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../Usage.html">Quick start</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../Building%20fabric.html">Building fabric</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../fabric_definition.html">Fabric definition</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../ASIC/index.html">Fabric ASIC implementation</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../FPGA_CAD-tools/index.html">FPGA CAD-tool parameterization</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../FPGA_CAD-tools/yosys.html">Yosys models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../FPGA_CAD-tools/nextpnr.html">Nextpnr models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../FPGA_CAD-tools/vpr.html">VPR models</a></li>
+</ul>
+</li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">RTL to Bitstream</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="Yosys%20compilation.html">Yosys compilation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Nextpnr%20compilation.html">Nextpnr compilation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="VPR%20compilation.html">VPR compilation</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Bitstream generation</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation and emulation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../simulation/simulation.html">Simulation setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../simulation/emulation.html">Emulation setup</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../references/index.html">Technical references</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../gallery/index.html">Chip Gallery</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../definitions.html">Definitions and abbreviations</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../contact.html">Team and contact</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../publications.html">Publications</a></li>
+</ul>
+
+            </nav>
+        
+        </div>
+    
+</header>
+
+    <div class="document">
+        <div class="page-content">
+        
+  <section id="bitstream-generation">
+<h1>Bitstream generation<a class="headerlink" href="#bitstream-generation" title="Permalink to this headline">¶</a></h1>
+<p>Generate Bitstream &lt;– Meta Data</p>
+<section id="user-guide">
+<h2>User guide<a class="headerlink" href="#user-guide" title="Permalink to this headline">¶</a></h2>
+<p>To generate the necessary materials to generate bitstream, run <code class="docutils literal notranslate"><span class="pre">$FAB_ROOT/fabric_generator/fabric_gen.py</span></code> with the <code class="docutils literal notranslate"><span class="pre">-GenBitstreamSpec</span></code> flag.</p>
+<p>With the FASM file generated by Nextpnr or VPR, you can run this command for bitstream generation.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">python3 $FAB_ROOT/nextpnr/fabulous/fab_arch/bit_gen.py -genBitstream &lt;fasm_file&gt; meta_data.txt &lt;bitstream file&gt;</span>
+</pre></div>
+</div>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 80%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p>&lt;fasm_file&gt;</p></td>
+<td><p>the FASM file generated by Nextpnr or VPR in previous compilation</p></td>
+</tr>
+<tr class="row-even"><td><p>&lt;bitstream_file&gt;</p></td>
+<td><p>User can define the output binary file name with <code class="docutils literal notranslate"><span class="pre">.bin</span></code> format</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="example">
+<h2>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h2>
+<p>The following are simple command-line to synthesis the netlist <code class="docutils literal notranslate"><span class="pre">sequential_16bit</span></code> into JSON netlist.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">python3 bit_gen.py -genBitstream 16bit_sequential.fasm meta_data.txt 16bit_sequential_output.bin</span>
+</pre></div>
+</div>
+</section>
+<section id="changes-in-the-primitives-or-adding-new-primitives">
+<h2>Changes in the primitives or adding new primitives<a class="headerlink" href="#changes-in-the-primitives-or-adding-new-primitives" title="Permalink to this headline">¶</a></h2>
+<p>For a change in the primitives or adding new primitives, you should make sure the function <code class="docutils literal notranslate"><span class="pre">genBitstreamSpec</span></code> in <code class="docutils literal notranslate"><span class="pre">fabric_gen_v3.py</span></code> has correct dictionary map for all primitives configuration. Here is the example in FABulous version3, in <code class="docutils literal notranslate"><span class="pre">LUT4</span></code> netlist, there are 16 configuration bits for init values, 1 configuration bit <code class="docutils literal notranslate"><span class="pre">FF</span></code> for Flip-flop bypass switch, 1 configuration bit <code class="docutils literal notranslate"><span class="pre">IOmux</span></code> for carry input switch, 1 conifguration bit <code class="docutils literal notranslate"><span class="pre">SET_NORESET</span></code> for SET or RESET switch, which means there are 19 configuration bits for each LUT4 parameters setting.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">genBitstreamSpec</span><span class="p">(</span><span class="n">archObject</span><span class="p">:</span> <span class="n">Fabric</span><span class="p">):</span>
+  <span class="o">.</span>
+  <span class="o">.</span>
+  <span class="o">.</span>
+  <span class="c1">#Generate mapping dicts for bel types:</span>
+  <span class="c1">#The format here is that each BEL has a dictionary that maps a fasm feature to another dictionary that maps bits to their values</span>
+  <span class="c1">#The lines generating the BEL maps do it slightly differently, just notating bits that should go high - this is translated further down</span>
+  <span class="c1">#We do not worry about bitmasking here - that&#39;s handled in the generation</span>
+  <span class="c1">#LUT4:</span>
+  <span class="n">LUTmap</span> <span class="o">=</span> <span class="p">{}</span>
+  <span class="n">LUTmap</span><span class="p">[</span><span class="s1">&#39;INIT&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+  <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">16</span><span class="p">):</span>
+      <span class="n">LUTmap</span><span class="p">[</span><span class="s2">&quot;INIT[&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;]&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span>
+  <span class="n">LUTmap</span><span class="p">[</span><span class="s2">&quot;FF&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">16</span>
+  <span class="n">LUTmap</span><span class="p">[</span><span class="s2">&quot;IOmux&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">17</span>
+  <span class="n">LUTmap</span><span class="p">[</span><span class="s2">&quot;SET_NORESET&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">18</span>
+  <span class="n">BelMap</span><span class="p">[</span><span class="s2">&quot;LUT4c_frame_config&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">LUTmap</span>
+  <span class="c1">#LUT-MUX8</span>
+  <span class="n">MUX8map</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;c0&quot;</span><span class="p">:</span><span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;c1&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">}</span>
+  <span class="n">BelMap</span><span class="p">[</span><span class="s2">&quot;MUX8LUT_frame_config&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">MUX8map</span>
+  <span class="c1">#DSP</span>
+  <span class="n">MULADDmap</span> <span class="o">=</span> <span class="p">{}</span>
+  <span class="n">MULADDmap</span><span class="p">[</span><span class="s2">&quot;A_reg&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+  <span class="n">MULADDmap</span><span class="p">[</span><span class="s2">&quot;B_reg&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+  <span class="n">MULADDmap</span><span class="p">[</span><span class="s2">&quot;C_reg&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
+  <span class="n">MULADDmap</span><span class="p">[</span><span class="s2">&quot;ACC&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span>
+  <span class="n">MULADDmap</span><span class="p">[</span><span class="s2">&quot;signExtension&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">4</span>
+  <span class="n">MULADDmap</span><span class="p">[</span><span class="s2">&quot;ACCout&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">5</span>
+  <span class="n">BelMap</span><span class="p">[</span><span class="s2">&quot;MULADD&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">MULADDmap</span>
+  <span class="c1">#IOpad</span>
+  <span class="n">BelMap</span><span class="p">[</span><span class="s2">&quot;IO_1_bidirectional_frame_config_pass&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+  <span class="n">Config_accessmap</span> <span class="o">=</span> <span class="p">{}</span>
+  <span class="n">Config_accessmap</span><span class="p">[</span><span class="s2">&quot;C_bit0&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+  <span class="n">Config_accessmap</span><span class="p">[</span><span class="s2">&quot;C_bit1&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+  <span class="n">Config_accessmap</span><span class="p">[</span><span class="s2">&quot;C_bit2&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
+  <span class="n">Config_accessmap</span><span class="p">[</span><span class="s2">&quot;C_bit3&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span>
+  <span class="n">BelMap</span><span class="p">[</span><span class="s2">&quot;Config_access&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Config_accessmap</span>
+  <span class="c1">#InPass</span>
+  <span class="n">InPassmap</span> <span class="o">=</span> <span class="p">{}</span>
+  <span class="n">InPassmap</span><span class="p">[</span><span class="s2">&quot;I0_reg&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+  <span class="n">InPassmap</span><span class="p">[</span><span class="s2">&quot;I1_reg&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+  <span class="n">InPassmap</span><span class="p">[</span><span class="s2">&quot;I2_reg&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
+  <span class="n">InPassmap</span><span class="p">[</span><span class="s2">&quot;I3_reg&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span>
+  <span class="n">BelMap</span><span class="p">[</span><span class="s2">&quot;InPass4_frame_config&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">InPassmap</span>
+  <span class="c1">#OutPass</span>
+  <span class="n">OutPassmap</span> <span class="o">=</span> <span class="p">{}</span>
+  <span class="n">OutPassmap</span><span class="p">[</span><span class="s2">&quot;I0_reg&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+  <span class="n">OutPassmap</span><span class="p">[</span><span class="s2">&quot;I1_reg&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+  <span class="n">OutPassmap</span><span class="p">[</span><span class="s2">&quot;I2_reg&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
+  <span class="n">OutPassmap</span><span class="p">[</span><span class="s2">&quot;I3_reg&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span>
+  <span class="n">BelMap</span><span class="p">[</span><span class="s2">&quot;OutPass4_frame_config&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">OutPassmap</span>
+  <span class="c1">#RegFile</span>
+  <span class="n">RegFilemap</span> <span class="o">=</span> <span class="p">{}</span>
+  <span class="n">RegFilemap</span><span class="p">[</span><span class="s2">&quot;AD_reg&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+  <span class="n">RegFilemap</span><span class="p">[</span><span class="s2">&quot;BD_reg&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+  <span class="n">BelMap</span><span class="p">[</span><span class="s2">&quot;RegFile_32x4&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">RegFilemap</span>
+</pre></div>
+</div>
+<p>(to do)</p>
+</section>
+</section>
+
+
+        </div>
+        <div class="side-doc-outline">
+            <div class="side-doc-outline--content"> 
+<div class="localtoc">
+    <p class="caption">
+      <span class="caption-text">Table Of Contents</span>
+    </p>
+    <ul>
+<li><a class="reference internal" href="#">Bitstream generation</a><ul>
+<li><a class="reference internal" href="#user-guide">User guide</a></li>
+<li><a class="reference internal" href="#example">Example</a></li>
+<li><a class="reference internal" href="#changes-in-the-primitives-or-adding-new-primitives">Changes in the primitives or adding new primitives</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+            </div>
+        </div>
+
+      <div class="clearer"></div>
+    </div><div class="pagenation">
+     <a id="button-prev" href="VPR%20compilation.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="P">
+         <i class="pagenation-arrow-L material-icons">arrow_back</i>
+         <div class="pagenation-text">
+            <span class="pagenation-direction">Previous</span>
+            <div>VPR compilation</div>
+         </div>
+     </a>
+     <a id="button-next" href="../simulation/index.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="N">
+        <i class="pagenation-arrow-R material-icons">arrow_forward</i>
+        <div class="pagenation-text">
+            <span class="pagenation-direction">Next</span>
+            <div>Simulation and emulation</div>
+        </div>
+     </a>
+  </div>
+        <footer class="mdl-mini-footer">
+    <div class="mdl-mini-footer__left-section">
+      <div class="mdl-logo">FABulous Dokumentation</div>
+      <div>
+        
+        <ul>
+<li class="toctree-l1"><a class="reference internal" href="../background.html">Background and Features</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../Usage.html">Quick start</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../Building%20fabric.html">Building fabric</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../fabric_definition.html">Fabric definition</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../ASIC/index.html">Fabric ASIC implementation</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../FPGA_CAD-tools/index.html">FPGA CAD-tool parameterization</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">RTL to Bitstream</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation and emulation</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../references/index.html">Technical references</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../gallery/index.html">Chip Gallery</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../definitions.html">Definitions and abbreviations</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../contact.html">Team and contact</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../publications.html">Publications</a></li>
+</ul>
+
+      </div>
+    </div>
+
+    <div class="mdl-mini-footer__right-section">
+        <div>&copy; Copyright 2021, University of Manchester.</div>
+      <div>Generated by <a href="http://sphinx.pocoo.org/">Sphinx</a> 4.3.0 using <a href="https://github.com/myyasuda/sphinx_materialdesign_theme">sphinx_materialdesign_theme</a>.</div>
+    </div>
+</footer>
+        </main>
+    </div>
+  </body>
+</html>

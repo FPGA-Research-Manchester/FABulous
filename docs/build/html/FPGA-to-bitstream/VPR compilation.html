@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    
+    <title>VPR compilation &#8212; FABulous Dokumentation 0.1 documentation</title>
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/material-icons.css" />
+    <link rel="stylesheet" href="../_static/notosanscjkjp.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/roboto.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/material-design-lite-1.3.0/material.indigo-pink.min.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/sphinx_materialdesign_theme.css" type="text/css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_materialdesign_theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Bitstream generation" href="Bitstream%20generation.html" />
+    <link rel="prev" title="Nextpnr compilation" href="Nextpnr%20compilation.html" /> 
+  </head>
+<body>
+    <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header mdl-layout--fixed-drawer"><header class="mdl-layout__header mdl-layout__header--waterfall ">
+    <div class="mdl-layout__header-row">
+        
+        <nav class="mdl-navigation breadcrumb">
+            <a class="mdl-navigation__link" href="index.html">RTL to Bitstream</a><i class="material-icons">navigate_next</i>
+            <a class="mdl-navigation__link is-active">VPR compilation</a>
+        </nav>
+        <div class="mdl-layout-spacer"></div>
+        <nav class="mdl-navigation">
+        
+<form class="form-inline pull-sm-right" action="../search.html" method="get">
+      <div class="mdl-textfield mdl-js-textfield mdl-textfield--expandable mdl-textfield--floating-label mdl-textfield--align-right">
+        <label id="quick-search-icon" class="mdl-button mdl-js-button mdl-button--icon"  for="waterfall-exp">
+            <i class="material-icons">search</i>
+        </label>
+        <div class="mdl-textfield__expandable-holder">
+          <input class="mdl-textfield__input" type="text" name="q"  id="waterfall-exp" placeholder="Search" />
+          <input type="hidden" name="check_keywords" value="yes" />
+          <input type="hidden" name="area" value="default" />
+        </div>
+      </div>
+      <div class="mdl-tooltip" data-mdl-for="quick-search-icon">
+      Quick search
+      </div>
+</form>
+        
+<a id="button-show-source"
+    class="mdl-button mdl-js-button mdl-button--icon"
+    href="../_sources/FPGA-to-bitstream/VPR compilation.rst.txt" rel="nofollow">
+<i class="material-icons">code</i>
+</a>
+<div class="mdl-tooltip" data-mdl-for="button-show-source">
+Show Source
+</div>
+        </nav>
+    </div>
+    <div class="mdl-layout__header-row header-links">
+      <div class="mdl-layout-spacer"></div>
+      <nav class="mdl-navigation">
+      </nav>
+    </div>
+</header><header class="mdl-layout__drawer">
+    
+          <!-- Title -->
+      <span class="mdl-layout-title">
+          <a class="title" href="../index.html">
+              <img class="logo" src="../_static/FAB_logo.png" alt="FABulous Dokumentation"/>
+          </a>
+      </span>
+    
+    
+      <div class="globaltoc">
+        <span class="mdl-layout-title toc">Table Of Contents</span>
+        
+        
+            
+            <nav class="mdl-navigation">
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../background.html">Background and Features</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../Usage.html">Quick start</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../Building%20fabric.html">Building fabric</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../fabric_definition.html">Fabric definition</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../ASIC/index.html">Fabric ASIC implementation</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../FPGA_CAD-tools/index.html">FPGA CAD-tool parameterization</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../FPGA_CAD-tools/yosys.html">Yosys models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../FPGA_CAD-tools/nextpnr.html">Nextpnr models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../FPGA_CAD-tools/vpr.html">VPR models</a></li>
+</ul>
+</li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">RTL to Bitstream</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="Yosys%20compilation.html">Yosys compilation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Nextpnr%20compilation.html">Nextpnr compilation</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">VPR compilation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Bitstream%20generation.html">Bitstream generation</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation and emulation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../simulation/simulation.html">Simulation setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../simulation/emulation.html">Emulation setup</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../references/index.html">Technical references</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../gallery/index.html">Chip Gallery</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../definitions.html">Definitions and abbreviations</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../contact.html">Team and contact</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../publications.html">Publications</a></li>
+</ul>
+
+            </nav>
+        
+        </div>
+    
+</header>
+        <main class="mdl-layout__content" tabIndex="0">
+<header class="mdl-layout__drawer">
+    
+          <!-- Title -->
+      <span class="mdl-layout-title">
+          <a class="title" href="../index.html">
+              <img class="logo" src="../_static/FAB_logo.png" alt="FABulous Dokumentation"/>
+          </a>
+      </span>
+    
+    
+      <div class="globaltoc">
+        <span class="mdl-layout-title toc">Table Of Contents</span>
+        
+        
+            
+            <nav class="mdl-navigation">
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../background.html">Background and Features</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../Usage.html">Quick start</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../Building%20fabric.html">Building fabric</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../fabric_definition.html">Fabric definition</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../ASIC/index.html">Fabric ASIC implementation</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../FPGA_CAD-tools/index.html">FPGA CAD-tool parameterization</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../FPGA_CAD-tools/yosys.html">Yosys models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../FPGA_CAD-tools/nextpnr.html">Nextpnr models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../FPGA_CAD-tools/vpr.html">VPR models</a></li>
+</ul>
+</li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">RTL to Bitstream</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="Yosys%20compilation.html">Yosys compilation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Nextpnr%20compilation.html">Nextpnr compilation</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">VPR compilation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Bitstream%20generation.html">Bitstream generation</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation and emulation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../simulation/simulation.html">Simulation setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../simulation/emulation.html">Emulation setup</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../references/index.html">Technical references</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../gallery/index.html">Chip Gallery</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../definitions.html">Definitions and abbreviations</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../contact.html">Team and contact</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../publications.html">Publications</a></li>
+</ul>
+
+            </nav>
+        
+        </div>
+    
+</header>
+
+    <div class="document">
+        <div class="page-content">
+        
+  <section id="vpr-compilation">
+<h1>VPR compilation<a class="headerlink" href="#vpr-compilation" title="Permalink to this headline">¶</a></h1>
+<p>Compile BLIF to FASM by VPR &lt;– architecture.xml + routing_resources.xml</p>
+<p>VPR (Versatile Place and Route) is a place and route tool from the VTR project that can be used to program a fabric generated by FABulous, using either Yosys or ODIN II for the logic synthesis. The VTR genfasm tool can then be used to generate a fasm file from which the bitstream can be generated.</p>
+<p>To generate the necessary materials to program using VPR, run <code class="docutils literal notranslate"><span class="pre">$FAB_ROOT/fabric_generator/fabric_gen_v3.py</span></code> with the -genVPRModel flag. In the <code class="docutils literal notranslate"><span class="pre">$FAB_ROOT/fabric_generator/vproutput</span></code> directory, two files will be created - <code class="docutils literal notranslate"><span class="pre">architecture.xml</span></code> and <code class="docutils literal notranslate"><span class="pre">routing_resources.xml</span></code>.</p>
+<p>architecture.xml contains a description of the various tiles, ports and BELs - everything in the architecture except for the routing resources.</p>
+<p>routing_resources.xml contains the specifications of these routing resources, which contains a graph within which the nodes are routing wires and ports, and the edges are the switch matrix interconnects that connect these resources.</p>
+<p>To run the flow with ODIN II, the <code class="docutils literal notranslate"><span class="pre">run_vtr_flow.py</span></code> script in <code class="docutils literal notranslate"><span class="pre">$VTR_ROOT/vtr_flow/scripts</span></code> can be used, passing in your verilog circuit, followed by the genfasm utility.</p>
+<p>To use Yosys (recommended with FABulous for improved functionality), the Yosys flow description can be found at <a class="reference internal" href="Yosys%20compilation.html#yosys"><span class="std std-ref">Yosys compilation</span></a> , which will output a Berkely Logic Interchange Format (BLIF) file, which can be used as an argument for the VPR executable, followed by the genfasm utility. More documentation on how to use this flow can be found in $FABulous_root/YosysFiles/VPR_flow/README.md</p>
+<p>When generating the VPR model, FABulous will print out a maximum width for routing channels in the form <code class="docutils literal notranslate"><span class="pre">Max</span> <span class="pre">Width:</span> <span class="pre">&lt;max_width&gt;</span></code>. This number should be noted, as it will be used as an argument when calling VPR.</p>
+<p>To run the VPR flow (with VPR 8.1.0 installed) , the following command can be used:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">vpr &lt;architecture.xml&gt; &lt;circuit.blif&gt; --read_rr_graph &lt;routing_resources.xml&gt; --route_chan_width &lt;max_width&gt;</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">&lt;architecture.xml&gt;</span></code> and <code class="docutils literal notranslate"><span class="pre">&lt;routing_resources.xml&gt;</span></code> should be paths to the corresponding files in <code class="docutils literal notranslate"><span class="pre">$FAB_ROOT/fabric_generator/vproutput</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">--disp</span> <span class="pre">on</span></code> can be appended to the end if a GUI is desired.</p>
+<p>To generate FASM, you should then use the command:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">genfasm &lt;architecture.xml&gt; &lt;circuit.blif&gt; --read_rr_graph &lt;routing_resources.xml&gt; --route_chan_width &lt;max_width&gt;`</span>
+</pre></div>
+</div>
+<p>The genfasm utility is part of the VTR flow, so should be installed alongside VPR. While the two commands are very similar, both must be called in sequence.</p>
+</section>
+
+
+        </div>
+        <div class="side-doc-outline">
+            <div class="side-doc-outline--content"> 
+            </div>
+        </div>
+
+      <div class="clearer"></div>
+    </div><div class="pagenation">
+     <a id="button-prev" href="Nextpnr%20compilation.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="P">
+         <i class="pagenation-arrow-L material-icons">arrow_back</i>
+         <div class="pagenation-text">
+            <span class="pagenation-direction">Previous</span>
+            <div>Nextpnr compilation</div>
+         </div>
+     </a>
+     <a id="button-next" href="Bitstream%20generation.html" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--colored" role="botton" accesskey="N">
+        <i class="pagenation-arrow-R material-icons">arrow_forward</i>
+        <div class="pagenation-text">
+            <span class="pagenation-direction">Next</span>
+            <div>Bitstream generation</div>
+        </div>
+     </a>
+  </div>
+        <footer class="mdl-mini-footer">
+    <div class="mdl-mini-footer__left-section">
+      <div class="mdl-logo">FABulous Dokumentation</div>
+      <div>
+        
+        <ul>
+<li class="toctree-l1"><a class="reference internal" href="../background.html">Background and Features</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../Usage.html">Quick start</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../Building%20fabric.html">Building fabric</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../fabric_definition.html">Fabric definition</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../ASIC/index.html">Fabric ASIC implementation</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../FPGA_CAD-tools/index.html">FPGA CAD-tool parameterization</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">RTL to Bitstream</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation and emulation</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../references/index.html">Technical references</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../gallery/index.html">Chip Gallery</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../definitions.html">Definitions and abbreviations</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../contact.html">Team and contact</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../publications.html">Publications</a></li>
+</ul>
+
+      </div>
+    </div>
+
+    <div class="mdl-mini-footer__right-section">
+        <div>&copy; Copyright 2021, University of Manchester.</div>
+      <div>Generated by <a href="http://sphinx.pocoo.org/">Sphinx</a> 4.3.0 using <a href="https://github.com/myyasuda/sphinx_materialdesign_theme">sphinx_materialdesign_theme</a>.</div>
+    </div>
+</footer>
+        </main>
+    </div>
+  </body>
+</html>

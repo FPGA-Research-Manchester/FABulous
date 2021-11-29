@@ -36,6 +36,15 @@ Example,
         
         nextpnr-fabulous --pre-pack fab_arch.py --pre-place fab_timing.py --json 16bit-sequential.json --router router2 --post-route bitstream.py
 
+Primitive instantiation
+-----------------------
+
+As described in more detail in the yosys documentation, the (*keep*) attribute can be used to instantiate a component and clarify that yosys should not try to optimise it away. This is done in the format
+
+.. code-block:: none
+
+        (* keep *) COMPONENT_TYPE #(PARAMETER = VALUE)  COMPONENT_NAME(.PORT_NAME1(WIRE_NAME1), .PORT_NAME2(WIRE_NAME2), ...);
+
 Constraints for the placement of IO/bels
 ----------------------------------------
 
@@ -47,15 +56,97 @@ Constraints for your architecture can be put in place using Absolute Placement C
 
 We can constrain which BEL to be used in the routing resource, LUT "C" is constrained to be used in Tile X7Y3 as shown in the example. With the same constrain method, we can also declare ``InPass4_frame_config, OutPass4_frame_config and IO_1_bidirectional_frame_config_pass`` for IO constrains.       
 
+The following example is a 16-bit counter output to Block_RAM, and then Block_RAM to W_IO in a 10x10 fabric.
 
-Primitive instantiation
------------------------
+.. code-block:: verilog
 
-As described in more detail in the yosys documentation, the (*keep*) attribute can be used to instantiate a component and clarify that yosys should not try to optimise it away. This is done in the format
+        module sequential_16bit_en_bram (enable, reset, counter);
 
-.. code-block:: none
+        input enable, reset;
+        output [15:0] counter;
 
-        (* keep *) COMPONENT_TYPE #(PARAMETER = VALUE)  COMPONENT_NAME(.PORT_NAME1(WIRE_NAME1), .PORT_NAME2(WIRE_NAME2), ...);
+        reg [15:0] counter_i;
+
+        wire clk;
+        (* keep *) Global_Clock inst_clk (.CLK(clk));
+
+        wire Tile_X11Y10_RAM2FAB_D0_O0, Tile_X11Y10_RAM2FAB_D0_O1, Tile_X11Y10_RAM2FAB_D0_O2, Tile_X11Y10_RAM2FAB_D0_O3;
+        (* keep *) (* BEL="X11Y10.A" *) InPass4_frame_config Tile_X11Y10_A (.O0(Tile_X11Y10_RAM2FAB_D0_O0), .O1(Tile_X11Y10_RAM2FAB_D0_O1), .O2(Tile_X11Y10_RAM2FAB_D0_O2), .O3(Tile_X11Y10_RAM2FAB_D0_O3));
+        wire Tile_X11Y10_RAM2FAB_D1_O0, Tile_X11Y10_RAM2FAB_D1_O1, Tile_X11Y10_RAM2FAB_D1_O2, Tile_X11Y10_RAM2FAB_D1_O3;
+        (* keep *) (* BEL="X11Y10.B" *) InPass4_frame_config Tile_X11Y10_B (.O0(Tile_X11Y10_RAM2FAB_D1_O0), .O1(Tile_X11Y10_RAM2FAB_D1_O1), .O2(Tile_X11Y10_RAM2FAB_D1_O2), .O3(Tile_X11Y10_RAM2FAB_D1_O3));
+        wire Tile_X11Y10_RAM2FAB_D2_O0, Tile_X11Y10_RAM2FAB_D2_O1, Tile_X11Y10_RAM2FAB_D2_O2, Tile_X11Y10_RAM2FAB_D2_O3;
+        (* keep *) (* BEL="X11Y10.C" *) InPass4_frame_config Tile_X11Y10_C (.O0(Tile_X11Y10_RAM2FAB_D2_O0), .O1(Tile_X11Y10_RAM2FAB_D2_O1), .O2(Tile_X11Y10_RAM2FAB_D2_O2), .O3(Tile_X11Y10_RAM2FAB_D2_O3));
+        wire Tile_X11Y10_RAM2FAB_D3_O0, Tile_X11Y10_RAM2FAB_D3_O1, Tile_X11Y10_RAM2FAB_D3_O2, Tile_X11Y10_RAM2FAB_D3_O3;
+        (* keep *) (* BEL="X11Y10.D" *) InPass4_frame_config Tile_X11Y10_D (.O0(Tile_X11Y10_RAM2FAB_D3_O0), .O1(Tile_X11Y10_RAM2FAB_D3_O1), .O2(Tile_X11Y10_RAM2FAB_D3_O2), .O3(Tile_X11Y10_RAM2FAB_D3_O3));
+
+        wire Tile_X11Y9_FAB2RAM_D0_I0, Tile_X11Y9_FAB2RAM_D0_I1, Tile_X11Y9_FAB2RAM_D0_I2, Tile_X11Y9_FAB2RAM_D0_I3;
+        (* keep *) (* BEL="X11Y9.E" *) OutPass4_frame_config Tile_X11Y9_E (.I0(Tile_X11Y9_FAB2RAM_D0_I0), .I1(Tile_X11Y9_FAB2RAM_D0_I1), .I2(Tile_X11Y9_FAB2RAM_D0_I2), .I3(Tile_X11Y9_FAB2RAM_D0_I3));
+        wire Tile_X11Y9_FAB2RAM_D1_I0, Tile_X11Y9_FAB2RAM_D1_I1, Tile_X11Y9_FAB2RAM_D1_I2, Tile_X11Y9_FAB2RAM_D1_I3;
+        (* keep *) (* BEL="X11Y9.F" *) OutPass4_frame_config Tile_X11Y9_F (.I0(Tile_X11Y9_FAB2RAM_D1_I0), .I1(Tile_X11Y9_FAB2RAM_D1_I1), .I2(Tile_X11Y9_FAB2RAM_D1_I2), .I3(Tile_X11Y9_FAB2RAM_D1_I3));
+        wire Tile_X11Y9_FAB2RAM_D2_I0, Tile_X11Y9_FAB2RAM_D2_I1, Tile_X11Y9_FAB2RAM_D2_I2, Tile_X11Y9_FAB2RAM_D2_I3;
+        (* keep *) (* BEL="X11Y9.G" *) OutPass4_frame_config Tile_X11Y9_G (.I0(Tile_X11Y9_FAB2RAM_D2_I0), .I1(Tile_X11Y9_FAB2RAM_D2_I1), .I2(Tile_X11Y9_FAB2RAM_D2_I2), .I3(Tile_X11Y9_FAB2RAM_D2_I3));
+        wire Tile_X11Y9_FAB2RAM_D3_I0, Tile_X11Y9_FAB2RAM_D3_I1, Tile_X11Y9_FAB2RAM_D3_I2, Tile_X11Y9_FAB2RAM_D3_I3;
+        (* keep *) (* BEL="X11Y9.H" *) OutPass4_frame_config Tile_X11Y9_H (.I0(Tile_X11Y9_FAB2RAM_D3_I0), .I1(Tile_X11Y9_FAB2RAM_D3_I1), .I2(Tile_X11Y9_FAB2RAM_D3_I2), .I3(Tile_X11Y9_FAB2RAM_D3_I3));
+        wire Tile_X11Y10_FAB2RAM_D0_I0, Tile_X11Y10_FAB2RAM_D0_I1, Tile_X11Y10_FAB2RAM_D0_I2, Tile_X11Y10_FAB2RAM_D0_I3;
+        (* keep *) (* BEL="X11Y10.E" *) OutPass4_frame_config Tile_X11Y10_E (.I0(Tile_X11Y10_FAB2RAM_D0_I0), .I1(Tile_X11Y10_FAB2RAM_D0_I1), .I2(Tile_X11Y10_FAB2RAM_D0_I2), .I3(Tile_X11Y10_FAB2RAM_D0_I3));
+        wire Tile_X11Y10_FAB2RAM_D1_I0, Tile_X11Y10_FAB2RAM_D1_I1, Tile_X11Y10_FAB2RAM_D1_I2, Tile_X11Y10_FAB2RAM_D1_I3;
+        (* keep *) (* BEL="X11Y10.F" *) OutPass4_frame_config Tile_X11Y10_F (.I0(Tile_X11Y10_FAB2RAM_D1_I0), .I1(Tile_X11Y10_FAB2RAM_D1_I1), .I2(Tile_X11Y10_FAB2RAM_D1_I2), .I3(Tile_X11Y10_FAB2RAM_D1_I3));
+        wire Tile_X11Y10_FAB2RAM_D2_I0, Tile_X11Y10_FAB2RAM_D2_I1, Tile_X11Y10_FAB2RAM_D2_I2, Tile_X11Y10_FAB2RAM_D2_I3;
+        (* keep *) (* BEL="X11Y10.G" *) OutPass4_frame_config Tile_X11Y10_G (.I0(Tile_X11Y10_FAB2RAM_D2_I0), .I1(Tile_X11Y10_FAB2RAM_D2_I1), .I2(Tile_X11Y10_FAB2RAM_D2_I2), .I3(Tile_X11Y10_FAB2RAM_D2_I3));
+        wire Tile_X11Y10_FAB2RAM_D3_I0, Tile_X11Y10_FAB2RAM_D3_I1, Tile_X11Y10_FAB2RAM_D3_I2, Tile_X11Y10_FAB2RAM_D3_I3;
+        (* keep *) (* BEL="X11Y10.H" *) OutPass4_frame_config Tile_X11Y10_H (.I0(Tile_X11Y10_FAB2RAM_D3_I0), .I1(Tile_X11Y10_FAB2RAM_D3_I1), .I2(Tile_X11Y10_FAB2RAM_D3_I2), .I3(Tile_X11Y10_FAB2RAM_D3_I3));
+
+        wire Tile_X11Y9_FAB2RAM_A0_I0, Tile_X11Y9_FAB2RAM_A0_I1, Tile_X11Y9_FAB2RAM_A0_I2, Tile_X11Y9_FAB2RAM_A0_I3;
+        (* keep *) (* BEL="X11Y9.I" *) OutPass4_frame_config Tile_X11Y9_I (.I0(Tile_X11Y9_FAB2RAM_A0_I0), .I1(Tile_X11Y9_FAB2RAM_A0_I1), .I2(Tile_X11Y9_FAB2RAM_A0_I2), .I3(Tile_X11Y9_FAB2RAM_A0_I3));
+        wire Tile_X11Y9_FAB2RAM_A1_I0, Tile_X11Y9_FAB2RAM_A1_I1, Tile_X11Y9_FAB2RAM_A1_I2, Tile_X11Y9_FAB2RAM_A1_I3;
+        (* keep *) (* BEL="X11Y9.J" *) OutPass4_frame_config Tile_X11Y9_J (.I0(Tile_X11Y9_FAB2RAM_A1_I0), .I1(Tile_X11Y9_FAB2RAM_A1_I1), .I2(Tile_X11Y9_FAB2RAM_A1_I2), .I3(Tile_X11Y9_FAB2RAM_A1_I3));
+
+        wire Tile_X11Y10_FAB2RAM_A0_I0, Tile_X11Y10_FAB2RAM_A0_I1, Tile_X11Y10_FAB2RAM_A0_I2, Tile_X11Y10_FAB2RAM_A0_I3;
+        (* keep *) (* BEL="X11Y10.I" *) OutPass4_frame_config Tile_X11Y10_I (.I0(Tile_X11Y10_FAB2RAM_A0_I0), .I1(Tile_X11Y10_FAB2RAM_A0_I1), .I2(Tile_X11Y10_FAB2RAM_A0_I2), .I3(Tile_X11Y10_FAB2RAM_A0_I3));
+        wire Tile_X11Y10_FAB2RAM_A1_I0, Tile_X11Y10_FAB2RAM_A1_I1, Tile_X11Y10_FAB2RAM_A1_I2, Tile_X11Y10_FAB2RAM_A1_I3;
+        (* keep *) (* BEL="X11Y10.J" *) OutPass4_frame_config Tile_X11Y10_J (.I0(Tile_X11Y10_FAB2RAM_A1_I0), .I1(Tile_X11Y10_FAB2RAM_A1_I1), .I2(Tile_X11Y10_FAB2RAM_A1_I2), .I3(Tile_X11Y10_FAB2RAM_A1_I3));
+
+        wire Tile_X11Y9_FAB2RAM_C_I2, Tile_X11Y9_FAB2RAM_C_I3;
+        (* keep *) (* BEL="X11Y9.K" *) OutPass4_frame_config Tile_X11Y9_K (.I2(Tile_X11Y9_FAB2RAM_C_I2), .I3(Tile_X11Y9_FAB2RAM_C_I3));
+        wire Tile_X11Y10_FAB2RAM_C_I0, Tile_X11Y10_FAB2RAM_C_I1, Tile_X11Y10_FAB2RAM_C_I2, Tile_X11Y10_FAB2RAM_C_I3;
+        (* keep *) (* BEL="X11Y10.K" *) OutPass4_frame_config Tile_X11Y10_K (.I0(Tile_X11Y10_FAB2RAM_C_I0), .I1(Tile_X11Y10_FAB2RAM_C_I1), .I2(Tile_X11Y10_FAB2RAM_C_I2), .I3(Tile_X11Y10_FAB2RAM_C_I3));
+
+        initial begin
+            counter_i = 16'b0000000000000000;
+        end
+
+        always @ (posedge clk) begin
+            if(enable) begin
+                    if(reset) begin
+                        counter_i <= 0;
+                    end 
+                    else begin
+                        counter_i <= counter_i + 1'b1;
+                    end
+            end
+        end
+        
+        assign counter = {Tile_X11Y10_RAM2FAB_D0_O0, Tile_X11Y10_RAM2FAB_D0_O1, Tile_X11Y10_RAM2FAB_D0_O2, Tile_X11Y10_RAM2FAB_D0_O3,
+                        Tile_X11Y10_RAM2FAB_D1_O0, Tile_X11Y10_RAM2FAB_D1_O1, Tile_X11Y10_RAM2FAB_D1_O2, Tile_X11Y10_RAM2FAB_D1_O3,
+                        Tile_X11Y10_RAM2FAB_D2_O0, Tile_X11Y10_RAM2FAB_D2_O1, Tile_X11Y10_RAM2FAB_D2_O2, Tile_X11Y10_RAM2FAB_D2_O3,
+                        Tile_X11Y10_RAM2FAB_D3_O0, Tile_X11Y10_RAM2FAB_D3_O1, Tile_X11Y10_RAM2FAB_D3_O2, Tile_X11Y10_RAM2FAB_D3_O3};
+
+        assign {Tile_X11Y9_FAB2RAM_D0_I0, Tile_X11Y9_FAB2RAM_D0_I1, Tile_X11Y9_FAB2RAM_D0_I2, Tile_X11Y9_FAB2RAM_D0_I3,
+                Tile_X11Y9_FAB2RAM_D1_I0, Tile_X11Y9_FAB2RAM_D1_I1, Tile_X11Y9_FAB2RAM_D1_I2, Tile_X11Y9_FAB2RAM_D1_I3,
+                Tile_X11Y9_FAB2RAM_D2_I0, Tile_X11Y9_FAB2RAM_D2_I1, Tile_X11Y9_FAB2RAM_D2_I2, Tile_X11Y9_FAB2RAM_D2_I3,
+                Tile_X11Y9_FAB2RAM_D3_I0, Tile_X11Y9_FAB2RAM_D3_I1, Tile_X11Y9_FAB2RAM_D3_I2, Tile_X11Y9_FAB2RAM_D3_I3,
+                Tile_X11Y10_FAB2RAM_D0_I0, Tile_X11Y10_FAB2RAM_D0_I1, Tile_X11Y10_FAB2RAM_D0_I2, Tile_X11Y10_FAB2RAM_D0_I3,
+                Tile_X11Y10_FAB2RAM_D1_I0, Tile_X11Y10_FAB2RAM_D1_I1, Tile_X11Y10_FAB2RAM_D1_I2, Tile_X11Y10_FAB2RAM_D1_I3,
+                Tile_X11Y10_FAB2RAM_D2_I0, Tile_X11Y10_FAB2RAM_D2_I1, Tile_X11Y10_FAB2RAM_D2_I2, Tile_X11Y10_FAB2RAM_D2_I3,
+                Tile_X11Y10_FAB2RAM_D3_I0, Tile_X11Y10_FAB2RAM_D3_I1, Tile_X11Y10_FAB2RAM_D3_I2, Tile_X11Y10_FAB2RAM_D3_I3} = {16'd0, counter_i};
+
+        assign {Tile_X11Y9_FAB2RAM_A0_I0, Tile_X11Y9_FAB2RAM_A0_I1, Tile_X11Y9_FAB2RAM_A0_I2, Tile_X11Y9_FAB2RAM_A0_I3, Tile_X11Y9_FAB2RAM_A1_I0, Tile_X11Y9_FAB2RAM_A1_I1, Tile_X11Y9_FAB2RAM_A1_I2, Tile_X11Y9_FAB2RAM_A1_I3} = 8'd0;
+        assign {Tile_X11Y10_FAB2RAM_A0_I0, Tile_X11Y10_FAB2RAM_A0_I1, Tile_X11Y10_FAB2RAM_A0_I2, Tile_X11Y10_FAB2RAM_A0_I3, Tile_X11Y10_FAB2RAM_A1_I0, Tile_X11Y10_FAB2RAM_A1_I1, Tile_X11Y10_FAB2RAM_A1_I2, Tile_X11Y10_FAB2RAM_A1_I3} = 8'd0;
+        assign {Tile_X11Y9_FAB2RAM_C_I2, Tile_X11Y9_FAB2RAM_C_I3, Tile_X11Y10_FAB2RAM_C_I0, Tile_X11Y10_FAB2RAM_C_I1, Tile_X11Y10_FAB2RAM_C_I2, Tile_X11Y10_FAB2RAM_C_I3} = 6'b110000;
+
+        endmodule
+
+
 
 
 

@@ -1,4 +1,10 @@
-module DSP (top_N1BEG, top_N2BEG, top_N2BEGb, top_N4BEG, top_NN4BEG, top_S1END, top_S2MID, top_S2END, top_S4END, top_SS4END, top_E1BEG, top_E2BEG, top_E2BEGb, top_EE4BEG, top_E6BEG, top_E1END, top_E2MID, top_E2END, top_EE4END, top_E6END, top_W1BEG, top_W2BEG, top_W2BEGb, top_WW4BEG, top_W6BEG, top_W1END, top_W2MID, top_W2END, top_WW4END, top_W6END, bot_E1BEG, bot_E2BEG, bot_E2BEGb, bot_EE4BEG, bot_E6BEG, bot_E1END, bot_E2MID, bot_E2END, bot_EE4END, bot_E6END, bot_W1BEG, bot_W2BEG, bot_W2BEGb, bot_WW4BEG, bot_W6BEG, bot_W1END, bot_W2MID, bot_W2END, bot_WW4END, bot_W6END, bot_S1BEG, bot_S2BEG, bot_S2BEGb, bot_S4BEG, bot_SS4BEG, bot_N1END, bot_N2MID, bot_N2END, bot_N4END, bot_NN4END, UserCLK, top_FrameData, top_FrameData_O, bot_FrameData, bot_FrameData_O, FrameStrobe, FrameStrobe_O);
+module DSP (top_N1BEG, top_N2BEG, top_N2BEGb, top_N4BEG, top_NN4BEG, top_S1END, top_S2MID, top_S2END, top_S4END, top_SS4END, top_E1BEG, top_E2BEG, top_E2BEGb, top_EE4BEG, top_E6BEG, top_E1END, top_E2MID, top_E2END, top_EE4END, top_E6END, top_W1BEG, top_W2BEG, top_W2BEGb, top_WW4BEG, top_W6BEG, top_W1END, top_W2MID, top_W2END, top_WW4END, top_W6END, bot_E1BEG, bot_E2BEG, bot_E2BEGb, bot_EE4BEG, bot_E6BEG, bot_E1END, bot_E2MID, bot_E2END, bot_EE4END, bot_E6END, bot_W1BEG, bot_W2BEG, bot_W2BEGb, bot_WW4BEG, bot_W6BEG, bot_W1END, bot_W2MID, bot_W2END, bot_WW4END, bot_W6END, bot_S1BEG, bot_S2BEG, bot_S2BEGb, bot_S4BEG, bot_SS4BEG, bot_N1END, bot_N2MID, bot_N2END, bot_N4END, bot_NN4END, UserCLK,
+`ifdef EMULATION_MODE
+	top_Bitstream, bot_Bitstream
+`else
+	top_FrameData, top_FrameData_O, bot_FrameData, bot_FrameData_O, FrameStrobe, FrameStrobe_O
+`endif
+	);
 
 	parameter MaxFramesPerCol = 20;
 	parameter FrameBitsPerRow = 32;
@@ -107,12 +113,20 @@ module DSP (top_N1BEG, top_N2BEG, top_N2BEGb, top_N4BEG, top_NN4BEG, top_S1END, 
 	
 	// Tile IO ports from BELs
 	input UserCLK; // EXTERNAL // SHARED_PORT // ## the EXTERNAL keyword will send this sisgnal all the way to top and the //SHARED Allows multiple BELs using the same port (e.g. for exporting a clock to the top)
+
+`ifdef EMULATION_MODE
+	input [MaxFramesPerCol*FrameBitsPerRow-1:0] top_Bitstream;
+	input [MaxFramesPerCol*FrameBitsPerRow-1:0] bot_Bitstream;
+`else
 	input [FrameBitsPerRow-1:0] top_FrameData;   // CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register
 	output [FrameBitsPerRow-1:0] top_FrameData_O;
 	input [FrameBitsPerRow-1:0] bot_FrameData;   // CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register
 	output [FrameBitsPerRow-1:0] bot_FrameData_O;
 	input [MaxFramesPerCol-1:0] FrameStrobe;    // CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register 
 	output [MaxFramesPerCol-1:0] FrameStrobe_O;
+`endif
+
+	
 	// global
 
 	// signal declarations
@@ -176,10 +190,14 @@ module DSP (top_N1BEG, top_N2BEG, top_N2BEGb, top_N4BEG, top_NN4BEG, top_S1END, 
 	.W2BEGb(top_W2BEGb),
 	.WW4BEG(top_WW4BEG),
 	.W6BEG(top_W6BEG),
+`ifdef EMULATION_MODE
+	.Bitstream(top_Bitstream)
+`else
 	.FrameData(top_FrameData),
 	.FrameData_O(top_FrameData_O),
 	.FrameStrobe(bot2top_FrameStrobe),
 	.FrameStrobe_O(FrameStrobe_O)
+`endif
 	); 
 
 	DSP_bot Inst_DSP_bot(
@@ -227,10 +245,14 @@ module DSP (top_N1BEG, top_N2BEG, top_N2BEGb, top_N4BEG, top_NN4BEG, top_S1END, 
 	.W6BEG(bot_W6BEG),
 	// tile IO port which gets directly connected to top-level tile entity
 	.UserCLK(UserCLK),
+`ifdef EMULATION_MODE
+	.Bitstream(bot_Bitstream)
+`else
 	.FrameData(bot_FrameData),
 	.FrameData_O(bot_FrameData_O),
 	.FrameStrobe(FrameStrobe),
 	.FrameStrobe_O(bot2top_FrameStrobe)
+`endif
 	);
 	
 endmodule

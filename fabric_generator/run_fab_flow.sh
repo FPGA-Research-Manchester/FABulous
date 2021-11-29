@@ -45,7 +45,7 @@ python3 fabric_gen.py -GenFabricVerilog
 python3 fabric_gen.py -GenNextpnrModel
 
 #REM STEP 8 : generate the VPR model
-python3 fabric_gen.py -GenVPRModel
+#python3 fabric_gen.py -GenVPRModel
 
 #REM STRP 9 : generate the meta data list for FASM -> bitstream
 python3 fabric_gen.py -GenBitstreamSpec npnroutput/meta_data.txt
@@ -63,5 +63,5 @@ mv -f *.list ./list_files
 mkdir -p csv_output
 mv -f *.csv ./csv_output
 
-cp ./npnroutput/{bel.txt,pips.txt,meta_data.txt} ../nextpnr/fabulous/fab_arch/
-cp ./csv_output/fabric.csv ../nextpnr/fabulous/fab_arch/
+#cp ./npnroutput/{bel.txt,pips.txt,meta_data.txt} ../nextpnr/fabulous/fab_arch/
+#cp ./csv_output/fabric.csv ../nextpnr/fabulous/fab_arch/

@@ -3,6 +3,8 @@ Bitstream generation
 
 Generate Bitstream <-- Meta Data
 
+.. _bitstream generation:
+
 User guide
 ----------
 

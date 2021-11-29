@@ -45,7 +45,7 @@ Yosys models
 | cells_map_ff.v| LUT-4 technology mapping (can be modified to LUT-6)                   |
 +---------------+-----------------------------------------------------------------------+
 
-The ``synth_fabulous_dffesr.tcl`` is built for FABuloud version3. Compared to the previous two versions, the new version supports *ENABLE* and *SET/RESET* functions in D-type Flip-flops (DFF) (Line 14 and 15 of TCL script). Under line 14, Yosys represents cells ``$_DFF_P_``, ``$_DFFE_PP_``, ``$_SDFF_PP?_`` and ``$_SDFFCE_PP?P_`` for DFFs (More DFF cells definitions can be found in the 
+The ``synth_fabulous_dffesr.tcl`` is built for FABuloud version3. Compared to the previous two versions, the new version supports **ENABLE** and **SET/RESET** functions in D-type Flip-flops (DFF) (Line 14 and 15 of TCL script). Under line 14, Yosys represents cells ``$_DFF_P_``, ``$_DFFE_PP_``, ``$_SDFF_PP?_`` and ``$_SDFFCE_PP?P_`` for DFFs (More DFF cells definitions can be found in the 
 `Yosys manual <https://github.com/YosysHQ/yosys-manual-build/releases/download/manual/manual.pdf>`_
 Chapter 5.2). User should also define different types of DFF in the ``ff_map.v`` for DFF technology mapping.
 
@@ -59,7 +59,7 @@ Chapter 5.2). User should also define different types of DFF in the ``ff_map.v``
 | $_SDFFCE_PP?P_ | Positive Clock edge, High active Enable and Set/Reset |
 +----------------+-------------------------------------------------------+
 
-We have made a comparation synthesis between with and without *ENABLE* and *SET/RESET* DFF on benchmark ``Murax core``, as shown below
+We have made a comparation synthesis between with and without **ENABLE** and **SET/RESET** DFF on benchmark ``Murax core``, as shown below
 
 +-------------+-----+-----+-----+-----+----------+------+--------+---------+---------+----------+----------+-------------+
 | Name        | LUT1| LUT2| LUT3| LUT4| LUT_total| LUTFF| LUTFF_E| LUTFF_SR| LUTFF_SS| LUTFF_ESR| LUTFF_ESS| RegFile_32x4|

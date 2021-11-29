@@ -73,6 +73,21 @@ The output <benchmark_name>_output.bin can be used in further simulation.
 
 VPR models can be found under ``/vproutput``
 
+Build options
+-------------
+
+User can choose the script to run for different models generation under ``$FAB_ROOT/fabric_generator``.
+
++------------------------------+------------------------------------------------------------------------------------------------+
+| run_fab_flow.sh              | Run FABulous flow and generate both Nexpnr and VPR model files (**default**)                   |
++------------------------------+------------------------------------------------------------------------------------------------+
+| run_fab_flow_nextpnr.sh      | Run FABulous flow and generate Nexpnr model files                                              |
++------------------------------+------------------------------------------------------------------------------------------------+
+| run_fab_flow_nextpnr_pair.sh | Run FABulous flow , generate Nexpnr model files and ``wirePairs.csv`` for timing model purpose |
++------------------------------+------------------------------------------------------------------------------------------------+
+| run_fab_flow_vpr.sh          | Run FABulous flow and generate VPR model files                                                 |
++------------------------------+------------------------------------------------------------------------------------------------+
+
 Running in a Docker container
 -----------------------------
 

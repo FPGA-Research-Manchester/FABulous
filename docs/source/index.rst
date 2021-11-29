@@ -31,71 +31,18 @@ Contents
 --------
 
 .. toctree::
-   :maxdepth: 1 
-
-   background
-
-.. toctree::
    :maxdepth: 2
 
    Usage
-
-.. toctree::
-   :maxdepth: 2
-
    Building fabric
-
-
-.. toctree::
-   :maxdepth: 2
-
    fabric_definition
-
-.. toctree::
-   :maxdepth: 2 
-
    ASIC/index
-
-.. toctree::
-   :maxdepth: 2 
-
    FPGA_CAD-tools/index
-
-.. toctree::
-   :maxdepth: 2 
-
    FPGA-to-bitstream/index
-
-..		Nextpnr path
-.. 		VPR path
-..		Bitstream assembly
-
-.. toctree::
-   :maxdepth: 2
-
    simulation/index
-
-..   Model validation
-..   Test and characterization
-   
-.. toctree::
-   :maxdepth: 2 
-
    references/index
-
-.. toctree::
-   :maxdepth: 1 
-
    gallery/index
-   
-.. toctree::
-   :maxdepth: 1 
-
    definitions
-   
-.. toctree::
-   :maxdepth: 1 
-   
    contact
    publications
 

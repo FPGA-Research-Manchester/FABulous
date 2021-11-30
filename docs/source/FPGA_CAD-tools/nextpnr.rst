@@ -3,7 +3,7 @@ Nextpnr models
 
 After fabulous flow running correctly, ``bel.txt`` and ``pips.txt`` are copied to ``$FAB_ROOT/nextpnr/fabulous/fab_arch``.
 
-* ``bel.txt`` is the primitive description file in order of tiles
+``bel.txt`` is the primitive description file in order of tiles
 
 .. code-block:: none
     :emphasize-lines: 7
@@ -30,7 +30,19 @@ After fabulous flow running correctly, ``bel.txt`` and ``pips.txt`` are copied t
 |X1Y1|X1    |Y1    |A     |FABULOUS_LC   |LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_SR,LA_EN,LA_O,LA_Co|
 +----+------+------+------+--------------+----------------------------------------------------+
 
-* ``pips.txt`` is the routing resource description.
+To any changes in the primitives, user should also modify the architecture description in nextpnr files located at ``$FAB_ROOT/nextpnr/fabulous``.
+
+**arch.cc** 
+
+* void Arch::assignArchInfo()
+* bool Arch::cellsCompatible(const CellInfo \**cells, int count)
+
+**cells.cc** 
+
+* std::unique_ptr<CellInfo> create_fabulous_cell(Context \*ctx, IdString type, std::string name)
+* void lut_to_lc(const Context \*ctx, CellInfo \*lut, CellInfo \*lc, bool no_dff)
+   
+``pips.txt`` is the routing resource description.
 
 .. code-block:: none
     :emphasize-lines: 1

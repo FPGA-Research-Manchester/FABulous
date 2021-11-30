@@ -1,3 +1,14 @@
+### For the MPW netlist generation, you can use the script gen_mpw3_netlist.sh
+```
+./gen_mpw3_netlist.sh <csv file> <number of columns> <number of rows>
+```
+
+Example,
+
+```
+./gen_mpw3_netlist.sh ../fabric_files/fabric_8x14_supertile.csv 8 14
+```
+
 <img src="https://www.dropbox.com/s/frnugxm1kjvv947/FABulous_flow2.png?raw=1" width="500"/>
 
 

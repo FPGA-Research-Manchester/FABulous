@@ -24,7 +24,17 @@ python3 fabric_gen.py -GenTileVerilog
 #REM STEP 6 : generate the entire fabric (RTL)
 python3 fabric_gen.py -GenFabricHDL
 python3 fabric_gen.py -GenFabricVerilog
-#REM STEP 7 : generate the nextpnr model
+rm N_term_DSP_ConfigMem.v
+rm N_term_RAM_IO_ConfigMem.v
+rm N_term_single_ConfigMem.v
+rm N_term_single2_ConfigMem.v
+rm S_term_DSP_ConfigMem.v
+rm S_term_RAM_IO_ConfigMem.v
+rm S_term_single_ConfigMem.v
+rm S_term_single2_ConfigMem.v
+#REM STEP 7 : generate verilog top wrapper
+python3 fabulous_top_wrapper_temp/top_wrapper_generator_with_BRAM.py -c $1 -r $2
+#REM STEP 8 : generate the nextpnr model
 python3 fabric_gen.py -GenNextpnrModel
 python3 fabric_gen.py -GenBitstreamSpec npnroutput/meta_data.txt
 #GOTO END

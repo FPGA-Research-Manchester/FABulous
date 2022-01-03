@@ -51,7 +51,6 @@ rm S_term_single2_ConfigMem.v
 
 #REM STEP 7 : generate verilog top wrapper
 python3 fabulous_top_wrapper_temp/top_wrapper_generator_with_BRAM.py -c $1 -r $2
-rm tb_bitbang.vhd
 
 #REM STEP 8 : generate the nextpnr model
 python3 fabric_gen.py -GenNextpnrModel

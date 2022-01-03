@@ -371,28 +371,28 @@ def main(argv):
     #wrapper_top_str+=strobe_reg_modules
         
     if wrapper_top_str:
-        with open("verilog_output/eFPGA_top.v", 'w') as file:
+        with open("eFPGA_top.v", 'w') as file:
             file.write(wrapper_top_str)
 
     if data_reg_modules:
-        with open("verilog_output/Frame_Data_Reg_Pack.v", 'w') as file:
+        with open("Frame_Data_Reg_Pack.v", 'w') as file:
             file.write(data_reg_modules)
 
     if strobe_reg_modules:
-        with open("verilog_output/Frame_Select_Pack.v", 'w') as file:
+        with open("Frame_Select_Pack.v", 'w') as file:
             file.write(strobe_reg_modules)
         
     if config_str:
-        with open("verilog_output/Config.v", 'w') as file:
+        with open("Config.v", 'w') as file:
             file.write(config_str)
         
     if configfsm_str:
-        with open("verilog_output/ConfigFSM.v", 'w') as file:
+        with open("ConfigFSM.v", 'w') as file:
             file.write(configfsm_str)
         
-    if testbench_str:
-        with open("verilog_output/tb_bitbang.vhd", 'w') as file:
-            file.write(testbench_str)
+    #if testbench_str:
+    #    with open("tb_bitbang.vhd", 'w') as file:
+    #        file.write(testbench_str)
     
     print("Finish")
 

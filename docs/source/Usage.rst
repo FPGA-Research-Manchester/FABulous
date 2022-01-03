@@ -46,7 +46,7 @@ Building Fabric
 .. code-block:: console
 
    cd $FAB_ROOT/fabric_generator
-   #<csv file> -- the specific csv file to generate the fabric. Ex. ./create_basic_files.sh ../fabric_files/generic/fabric.csv
+   #<csv file> -- the user-defined csv file to generate the fabric. Ex. ./create_basic_files.sh ../fabric_files/generic/fabric.csv
    ./create_basic_files.sh <csv file> 
    #Both <number of columns> and <number of rows> are not including the terminal blocks. Ex. ./run_fab_flow.sh 8 14
    ./run_fab_flow.sh <number of columns> <number of rows>

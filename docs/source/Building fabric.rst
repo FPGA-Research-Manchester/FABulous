@@ -64,6 +64,12 @@ The user can run the flow step by step as well (see below for instructions on bu
         python3 fabric_gen.py -GenFabricHDL
         python3 fabric_gen.py -GenFabricVerilog
 
+#. Generate Verilog top wrapper. (Both number of columns and rows are not including terminal blocks.)
+
+   .. code-block:: console
+
+        python3 fabulous_top_wrapper_temp/top_wrapper_generator_with_BRAM.py -c <number of columns> -r <number of rows>
+
 #. Generate the nextpnr model files under ``npnroutput/``.
 
    .. code-block:: console

@@ -13,7 +13,7 @@ entity Config_access is
 	-- GLOBAL all primitive pins that are connected to the switch matrix have to go before the GLOBAL label
 	ConfigBits : in 	 STD_LOGIC_VECTOR( NoConfigBits -1 downto 0 )
 	);
-end entity OutPass4_frame_config;
+end entity Config_access;
 
 architecture Behavioral of Config_access is
 

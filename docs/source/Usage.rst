@@ -70,7 +70,7 @@ Example:
 
 .. code-block:: console
 
-   ./fabulous_flow.sh sequential_16bit
+   ./fabulous_flow.sh sequential_16bit_en
 
 The output <benchmark_name>_output.bin can be used in further simulation.
 

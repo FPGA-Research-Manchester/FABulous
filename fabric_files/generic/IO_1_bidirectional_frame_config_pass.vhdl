@@ -17,7 +17,7 @@ entity IO_1_bidirectional_frame_config_pass is
 	T_top : out STD_LOGIC; -- EXTERNAL has to ge to top-level entity not the switch matrix
 	O_top : in STD_LOGIC; -- EXTERNAL has to ge to top-level entity not the switch matrix
 	-- Tile IO ports from BELs
- 	UserCLK : in	STD_LOGIC; -- EXTERNAL -- SHARED_PORT -- ## the EXTERNAL keyword will send this signal all the way to top and the --SHARED Allows multiple BELs using the same port (e.g. for exporting a clock to the top)
+ 	UserCLK : in	STD_LOGIC -- EXTERNAL -- SHARED_PORT -- ## the EXTERNAL keyword will send this signal all the way to top and the --SHARED Allows multiple BELs using the same port (e.g. for exporting a clock to the top)
 	-- GLOBAL all primitive pins that are connected to the switch matrix have to go before the GLOBAL label
 	-- ConfigBits : in 	 STD_LOGIC_VECTOR( NoConfigBits -1 downto 0 )
 	);

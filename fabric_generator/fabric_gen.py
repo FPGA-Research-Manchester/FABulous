@@ -4871,6 +4871,8 @@ lut4cStr = """
     <clock name="clk" num_pins="1"/>
     <output name="O" num_pins="1"/>
     <output name="Co" num_pins="1"/>
+    <input name="SR" num_pins="1"/>
+    <input name="EN" num_pins="1"/>
     <interconnect>
      <direct name="I0_to_LUT_in" input="LUT4c_frame_config.I0" output="lut4.in[0]"/>
      <direct name="I1_to_LUT_in" input="LUT4c_frame_config.I1" output="lut4.in[1]"/>

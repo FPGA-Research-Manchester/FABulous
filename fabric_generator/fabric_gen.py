@@ -4960,6 +4960,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
     sourceSinkMap = getFabricSourcesAndSinks(archObject)
     
+    doneBels = [] # List to track bels that we've already created a pb_type for (by type)
     for cellType in archObject.cellTypes: 
         cTile = getTileByType(archObject, cellType)
 
@@ -4970,7 +4971,6 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
         tilesString += '    </equivalent_sites>\n'
 
         pb_typesString += f'  <pb_type name="{cellType}">\n' #Top layer block
-        doneBels = [] # List to track bels that we've already created a pb_type for (by type)
 
         tileInputs = [] #Track the tile's top level inputs and outputs for the top pb_type definition
         tileOutputs = [] 
@@ -4978,7 +4978,6 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
         customInterconnectStr = "" #Create empty string to store custom interconnect XML
 
         for bel in cTile.belsWithIO: #Create second layer (leaf) blocks for each bel
-
             tileInputs.extend(bel[2]) #Add the inputs and outputs of this BEL to the top level tile inputs/outputs list
             tileOutputs.extend(bel[3])
 

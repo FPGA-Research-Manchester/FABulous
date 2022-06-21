@@ -5626,10 +5626,11 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
     channelString = f'  <channel chan_width_max="{max_width}" x_min="0" y_min="0" x_max="{archObject.width + 1}" y_max="{archObject.height + 1}"/>\n'
     
     #Generate x_list tag and y_list tag for every channel - use the upper bound max_width for simplicity
-    for i in range(archObject.width + 2):
+    #Not a bug that this uses height for the x_list and width for the y_list - see VtR's RR graph file format docs
+    for i in range(archObject.height + 2):
         channelString += f'  <x_list index ="{i}" info="{max_width}"/>\n'
 
-    for i in range(archObject.height + 2):
+    for i in range(archObject.width + 2):
         channelString += f'  <y_list index ="{i}" info="{max_width}"/>\n'
 
 

@@ -5471,7 +5471,6 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                         wirePtc = rowPtcArr[tile.y]
                         rowPtcArr[tile.y] += 1
 
-
                     #Coordinates until now have been relative to the fabric - only account for padding when formatting actual string
                     nodesString += f'  <!-- Wire: {wireSource+str(i)} -> {wireDest+str(i)} -->\n' #Comment destination for clarity
                     nodesString += f'  <node id="{curNodeId}" type="{nodeType}" capacity="1" direction="{direction}">\n' #Generate tag for each node
@@ -5521,6 +5520,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                 else: #i.e. if nodeType == "CHANX"
                     wirePtc = rowPtcArr[tile.y]
                     rowPtcArr[tile.y] += 1
+
 
                 nodesString += f'  <!-- Atomic Wire: {wireSource} -> {wireDest} -->\n' #Comment destination for clarity
                 nodesString += f'  <node id="{curNodeId}" type="{nodeType}" capacity="1" direction="{direction}">\n' #Generate tag for each node
@@ -5646,7 +5646,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
     ### CHANNELS
 
-    max_width = wirePtc #Overwrite with an upper bound of the possible wire PTCs for now 
+    max_width = max(rowPtcArr + colPtcArr)
 
     #Use the max width generated before for this tag
     channelString = f'  <channel chan_width_max="{max_width}" x_min="0" y_min="0" x_max="{archObject.width + 1}" y_max="{archObject.height + 1}"/>\n'

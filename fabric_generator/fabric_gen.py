@@ -4871,6 +4871,8 @@ lut4cStr = """
     <clock name="clk" num_pins="1"/>
     <output name="O" num_pins="1"/>
     <output name="Co" num_pins="1"/>
+    <input name="SR" num_pins="1"/>
+    <input name="EN" num_pins="1"/>
     <interconnect>
      <direct name="I0_to_LUT_in" input="LUT4c_frame_config.I0" output="lut4.in[0]"/>
      <direct name="I1_to_LUT_in" input="LUT4c_frame_config.I1" output="lut4.in[1]"/>
@@ -4960,6 +4962,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
     sourceSinkMap = getFabricSourcesAndSinks(archObject)
     
+    doneBels = [] # List to track bels that we've already created a pb_type for (by type)
     for cellType in archObject.cellTypes: 
         cTile = getTileByType(archObject, cellType)
 
@@ -4970,7 +4973,6 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
         tilesString += '    </equivalent_sites>\n'
 
         pb_typesString += f'  <pb_type name="{cellType}">\n' #Top layer block
-        doneBels = [] # List to track bels that we've already created a pb_type for (by type)
 
         tileInputs = [] #Track the tile's top level inputs and outputs for the top pb_type definition
         tileOutputs = [] 
@@ -4978,7 +4980,6 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
         customInterconnectStr = "" #Create empty string to store custom interconnect XML
 
         for bel in cTile.belsWithIO: #Create second layer (leaf) blocks for each bel
-
             tileInputs.extend(bel[2]) #Add the inputs and outputs of this BEL to the top level tile inputs/outputs list
             tileOutputs.extend(bel[3])
 
@@ -5366,6 +5367,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
     ### NODES
 
 
+
     nodesString = ''
     curNodeId = 0 #Start indexing nodes at 0 and increment each time a node is added
 
@@ -5395,7 +5397,23 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
     destToWireIDMap[clockLoc + "." + "clock_out"] = curNodeId #Add to dest map as equivalent to a wire destination
     curNodeId += 1      
     clockPtc += 1
-    wirePtc = 0 #For simplicity's sake, we currently use a different ptc for every single wire - probably worth improving at some point but the only issue is some memory inefficiency
+
+    #Looks like VPR can only handle node PTCs up to (2^15-1), so not sufficient to just give every wire a different PTC
+    #Context: wires can't overlap another wire with the same PTC
+    #Exhaustive search here might take a while, so instead vertical and horizontal wires have a different set of PTCs
+    #Each column and row has its own current PTC so that there's no repetition in one column or row
+    #Horizontal wires take and increment their row's PTC num
+    #Vertical wires take and increment their column's PTC num
+    #Column PTCs start at 2^14 so that there's no overlap between column and row PTCs
+
+    #These are just indexed by tile.x and tile.y - not exactly the same as the coordinates in the
+    #VPR description but it's a one-to-one mapping and all we need is no overlap so it's fine and simple
+    rowPtcArr = [0] * archObject.height
+    colPtcArr = [2**14] * archObject.width
+
+    #These are just used as bound checks to make sure the fabric isn't still too big
+    rowMaxPtc = 2**14 - 1
+    colMaxPtc = 2**15 - 1
 
     for row in archObject.tiles:
         for tile in row:
@@ -5450,6 +5468,18 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                     wireSource = tileLoc + "." + wire["source"] #Generate location strings for the source and destination
                     wireDest = desttileLoc + "." + wire["destination"]
 
+                    if nodeType == "CHANY":
+                        wirePtc = colPtcArr[tile.x]
+                        colPtcArr[tile.x] += 1
+                        if wirePtc > colMaxPtc:
+                            raise ValueError("Channel PTC value too high - FABulous' VPR flow may not currently be able to support this many overlapping wires.")
+                    else: #i.e. if nodeType == "CHANX"
+                        wirePtc = rowPtcArr[tile.y]
+                        rowPtcArr[tile.y] += 1
+                        if wirePtc > rowMaxPtc:
+                            raise ValueError("Channel PTC value too high - FABulous' VPR flow may not currently be able to support this many overlapping wires.")
+
+
                     #Coordinates until now have been relative to the fabric - only account for padding when formatting actual string
                     nodesString += f'  <!-- Wire: {wireSource+str(i)} -> {wireDest+str(i)} -->\n' #Comment destination for clarity
                     nodesString += f'  <node id="{curNodeId}" type="{nodeType}" capacity="1" direction="{direction}">\n' #Generate tag for each node
@@ -5462,7 +5492,6 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                     destToWireIDMap[wireDest+str(i)] = curNodeId
 
                     curNodeId += 1 #Increment id so all nodes have different ids
-                    wirePtc += 1 #Increment wire ptc so that all wires have different ptcs
                 max_width = max(max_width, int(wire["wire-count"])) #If our current width is greater than the previous max, take the new one
 
 
@@ -5494,6 +5523,18 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                     yLow = archObject.height - destTile.y - 1
                     xLow = destTile.x
 
+                if nodeType == "CHANY":
+                    wirePtc = colPtcArr[tile.x]
+                    colPtcArr[tile.x] += 1
+                    if wirePtc > colMaxPtc:
+                        raise ValueError("Channel PTC value too high - FABulous' VPR flow may not currently be able to support this many overlapping wires.")
+                else: #i.e. if nodeType == "CHANX"
+                    wirePtc = rowPtcArr[tile.y]
+                    rowPtcArr[tile.y] += 1
+                    if wirePtc > rowMaxPtc:
+                        raise ValueError("Channel PTC value too high - FABulous' VPR flow may not currently be able to support this many overlapping wires.")
+
+
                 nodesString += f'  <!-- Atomic Wire: {wireSource} -> {wireDest} -->\n' #Comment destination for clarity
                 nodesString += f'  <node id="{curNodeId}" type="{nodeType}" capacity="1" direction="{direction}">\n' #Generate tag for each node
 
@@ -5506,7 +5547,6 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                 destToWireIDMap[wireDest] = curNodeId
 
                 curNodeId += 1 #Increment id so all nodes have different ids
-                wirePtc += 1
 
             # Generate nodes for bel ports
             for bel in tile.belsWithIO: 
@@ -5619,16 +5659,17 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
     ### CHANNELS
 
-    max_width = wirePtc #Overwrite with an upper bound of the possible wire PTCs for now 
+    max_width = max(rowPtcArr + colPtcArr)
 
     #Use the max width generated before for this tag
     channelString = f'  <channel chan_width_max="{max_width}" x_min="0" y_min="0" x_max="{archObject.width + 1}" y_max="{archObject.height + 1}"/>\n'
     
     #Generate x_list tag and y_list tag for every channel - use the upper bound max_width for simplicity
-    for i in range(archObject.width + 2):
+    #Not a bug that this uses height for the x_list and width for the y_list - see VtR's RR graph file format docs
+    for i in range(archObject.height + 2):
         channelString += f'  <x_list index ="{i}" info="{max_width}"/>\n'
 
-    for i in range(archObject.height + 2):
+    for i in range(archObject.width + 2):
         channelString += f'  <y_list index ="{i}" info="{max_width}"/>\n'
 
 

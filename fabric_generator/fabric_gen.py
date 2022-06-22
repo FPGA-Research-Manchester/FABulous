@@ -5367,6 +5367,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
     ### NODES
 
 
+
     nodesString = ''
     curNodeId = 0 #Start indexing nodes at 0 and increment each time a node is added
 
@@ -5396,7 +5397,19 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
     destToWireIDMap[clockLoc + "." + "clock_out"] = curNodeId #Add to dest map as equivalent to a wire destination
     curNodeId += 1      
     clockPtc += 1
-    wirePtc = 0 #For simplicity's sake, we currently use a different ptc for every single wire - probably worth improving at some point but the only issue is some memory inefficiency
+
+    #Looks like VPR can only handle node PTCs up to (2^15-1), so not sufficient to just give every wire a different PTC
+    #Context: wires can't overlap another wire with the same PTC
+    #Exhaustive search here might take a while, so instead vertical and horizontal wires have a different set of PTCs
+    #Each column and row has its own current PTC so that there's no repetition in one column or row
+    #Horizontal wires take and increment their row's PTC num
+    #Vertical wires take and increment their column's PTC num
+    #Column PTCs start at 2^14 so that there's no overlap between column and row PTCs
+
+    #These are just indexed by tile.x and tile.y - not exactly the same as the coordinates in the
+    #VPR description but it's a one-to-one mapping and all we need is no overlap so it's fine and simple
+    rowPtcArr = [0] * archObject.height
+    colPtcArr = [2**14] * archObject.width
 
     for row in archObject.tiles:
         for tile in row:
@@ -5451,6 +5464,14 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                     wireSource = tileLoc + "." + wire["source"] #Generate location strings for the source and destination
                     wireDest = desttileLoc + "." + wire["destination"]
 
+                    if nodeType == "CHANY":
+                        wirePtc = colPtcArr[tile.x]
+                        colPtcArr[tile.x] += 1
+                    else: #i.e. if nodeType == "CHANX"
+                        wirePtc = rowPtcArr[tile.y]
+                        rowPtcArr[tile.y] += 1
+
+
                     #Coordinates until now have been relative to the fabric - only account for padding when formatting actual string
                     nodesString += f'  <!-- Wire: {wireSource+str(i)} -> {wireDest+str(i)} -->\n' #Comment destination for clarity
                     nodesString += f'  <node id="{curNodeId}" type="{nodeType}" capacity="1" direction="{direction}">\n' #Generate tag for each node
@@ -5463,7 +5484,6 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                     destToWireIDMap[wireDest+str(i)] = curNodeId
 
                     curNodeId += 1 #Increment id so all nodes have different ids
-                    wirePtc += 1 #Increment wire ptc so that all wires have different ptcs
                 max_width = max(max_width, int(wire["wire-count"])) #If our current width is greater than the previous max, take the new one
 
 
@@ -5495,6 +5515,13 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                     yLow = archObject.height - destTile.y - 1
                     xLow = destTile.x
 
+                if nodeType == "CHANY":
+                    wirePtc = colPtcArr[tile.x]
+                    colPtcArr[tile.x] += 1
+                else: #i.e. if nodeType == "CHANX"
+                    wirePtc = rowPtcArr[tile.y]
+                    rowPtcArr[tile.y] += 1
+
                 nodesString += f'  <!-- Atomic Wire: {wireSource} -> {wireDest} -->\n' #Comment destination for clarity
                 nodesString += f'  <node id="{curNodeId}" type="{nodeType}" capacity="1" direction="{direction}">\n' #Generate tag for each node
 
@@ -5507,7 +5534,6 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                 destToWireIDMap[wireDest] = curNodeId
 
                 curNodeId += 1 #Increment id so all nodes have different ids
-                wirePtc += 1
 
             # Generate nodes for bel ports
             for bel in tile.belsWithIO: 

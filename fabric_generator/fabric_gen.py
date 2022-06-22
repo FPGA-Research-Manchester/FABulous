@@ -5411,6 +5411,10 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
     rowPtcArr = [0] * archObject.height
     colPtcArr = [2**14] * archObject.width
 
+    #These are just used as bound checks to make sure the fabric isn't still too big
+    rowMaxPtc = 2**14 - 1
+    colMaxPtc = 2**15 - 1
+
     for row in archObject.tiles:
         for tile in row:
             tileLoc = tile.genTileLoc()
@@ -5467,9 +5471,14 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                     if nodeType == "CHANY":
                         wirePtc = colPtcArr[tile.x]
                         colPtcArr[tile.x] += 1
+                        if wirePtc > colMaxPtc:
+                            raise ValueError("Channel PTC value too high - FABulous' VPR flow may not currently be able to support this many overlapping wires.")
                     else: #i.e. if nodeType == "CHANX"
                         wirePtc = rowPtcArr[tile.y]
                         rowPtcArr[tile.y] += 1
+                        if wirePtc > rowMaxPtc:
+                            raise ValueError("Channel PTC value too high - FABulous' VPR flow may not currently be able to support this many overlapping wires.")
+
 
                     #Coordinates until now have been relative to the fabric - only account for padding when formatting actual string
                     nodesString += f'  <!-- Wire: {wireSource+str(i)} -> {wireDest+str(i)} -->\n' #Comment destination for clarity
@@ -5517,9 +5526,13 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                 if nodeType == "CHANY":
                     wirePtc = colPtcArr[tile.x]
                     colPtcArr[tile.x] += 1
+                    if wirePtc > colMaxPtc:
+                        raise ValueError("Channel PTC value too high - FABulous' VPR flow may not currently be able to support this many overlapping wires.")
                 else: #i.e. if nodeType == "CHANX"
                     wirePtc = rowPtcArr[tile.y]
                     rowPtcArr[tile.y] += 1
+                    if wirePtc > rowMaxPtc:
+                        raise ValueError("Channel PTC value too high - FABulous' VPR flow may not currently be able to support this many overlapping wires.")
 
 
                 nodesString += f'  <!-- Atomic Wire: {wireSource} -> {wireDest} -->\n' #Comment destination for clarity

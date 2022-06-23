@@ -34,7 +34,7 @@ The following are simple commands to synthesis the netlist ``sequential_16bit_en
 Changes in the primitives or adding new primitives
 --------------------------------------------------
 
-For a change in the primitives or adding new primitives, you should make sure the function ``genBitstreamSpec`` in ``fabric_gen.py`` has a correct dictionary map for all primitive configurations. As an example, in the ``LUT4`` netlist, there are 16 configuration bits for INIT values, 1 configuration bit ``FF`` for the flip-flop bypass switch, 1 configuration bit ``IOmux`` for the carry input switch and 1 configuration bit ``SET_NORESET`` for the SET or RESET switch, which means there are 19 configuration bits for each LUT4 parameters setting.
+For a change in the primitives or adding new primitives, you should make sure the function ``genBitstreamSpec`` in ``fabric_gen.py`` has a correct dictionary map for all primitive configurations. As an example, in the ``LUT4`` description below there are 16 configuration bits for INIT values, 1 configuration bit ``FF`` for the flip-flop bypass switch, 1 configuration bit ``IOmux`` for the carry input switch and 1 configuration bit ``SET_NORESET`` for the SET or RESET switch, which means there are 19 configuration bits for each LUT4 parameters setting.
 
 .. code-block:: python
 

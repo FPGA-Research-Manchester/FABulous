@@ -71,4 +71,4 @@ cd ../nextpnr/fabulous/fab_arch/
 ./fabulous_flow.sh sequential_16bit_en
 python3 bit_gen.py -genBitstream sequential_16bit_en.fasm meta_data.txt sequential_16bit_en_output.bin
 ```
-More details on bitstream generation can be found [here](https://github.com/FPGA-Research-Manchester/FABulous/tree/master/fabric_generator/bitstream_npnr)
+More details on bitstream generation can be found [here](https://github.com/FPGA-Research-Manchester/FABulous/tree/master/fabric_generator/bitstream_npnr).

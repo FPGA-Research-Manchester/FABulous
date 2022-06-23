@@ -4929,7 +4929,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
     #Calculate clock X and Y coordinates considering variations in coordinate systems and EMPTY padding around VPR model
     newClockX = clockX + 1
-    newClockY = archObject.height - clockY
+    newClockY = clockY + 1
 
 
     ### DEVICE INFO
@@ -5170,7 +5170,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
     for line in archObject.tiles:
         for tile in line:
             if tile.tileType != "NULL": #We do not need to specify if the tile is empty as all tiles default to EMPTY in VPR
-                layoutString += f'   <single type="{tile.tileType}" priority="1" x="{tile.x + 1}" y="{archObject.height - tile.y}">\n' #Add single tag for each tile - add 1 to x and y (cancels out in y conversion) for padding
+                layoutString += f'   <single type="{tile.tileType}" priority="1" x="{tile.x + 1}" y="{tile.y + 1}">\n' #Add single tag for each tile - add 1 to x and y (cancels out in y conversion) for padding
                 #Now add metadata for fasm generation
                 layoutString += '    <metadata>\n' 
                 layoutString += f'     <meta name="fasm_prefix"> {tile.genTileLoc()} </meta>\n' #Only metadata required is the tile name for the prefix
@@ -5269,7 +5269,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
     #Calculate clock X and Y coordinates considering variations in coordinate systems and EMPTY padding around VPR model
     newClockX = clockX + 1
-    newClockY = archObject.height - clockY
+    newClockY = clockY + 1
     
 
     ### BLOCKS
@@ -5425,13 +5425,13 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                 #Add clock inputs for every tile:
 
                 nodesString += f'  <node id="{curNodeId}" type="IPIN" capacity="1">\n' #Generate tag for each node
-                nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="0" side="BOTTOM"/>\n' #Add loc tag
+                nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{tile.y + 1}" xhigh="{tile.x + 1}" yhigh="{tile.y + 1}" ptc="0" side="BOTTOM"/>\n' #Add loc tag
                 nodesString += '  </node>\n' #Close node tag            
                 sourceToWireIDMap[tileLoc + ".UserCLK"] = curNodeId #Add to dest map as equivalent to a wire destination
                 curNodeId += 1      
 
                 nodesString += f'  <node id="{curNodeId}" type="SINK" capacity="1">\n' #Generate tag for each node
-                nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="0"/>\n' #Add loc tag
+                nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{tile.y + 1}" xhigh="{tile.x + 1}" yhigh="{tile.y + 1}" ptc="0"/>\n' #Add loc tag
                 nodesString += '  </node>\n' #Close node tag  
                 IpinToSinkStr += f'  <edge src_node="{curNodeId - 1}" sink_node="{curNodeId}" switch_id="1"/>\n'          
                 curNodeId += 1    
@@ -5453,15 +5453,15 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
                 if (nodeType == "CHANX" and int(wire["xoffset"]) > 0) or (nodeType == "CHANY" and int(wire["yoffset"]) > 0): #Check wire direction and set appropriate valuesz
                     direction = "INC_DIR"
-                    yLow = archObject.height - tile.y - 1
+                    yLow = tile.y
                     xLow = tile.x
-                    yHigh = archObject.height - desty - 1
+                    yHigh = desty
                     xHigh = destx
                 else:
                     direction = "DEC_DIR"
-                    yHigh = archObject.height - tile.y - 1
+                    yHigh = tile.y
                     xHigh = tile.x
-                    yLow = archObject.height - desty - 1
+                    yLow = desty 
                     xLow = destx                
 
                 for i in range(int(wire["wire-count"])): #For every individual wire
@@ -5512,15 +5512,15 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
 
                 if (nodeType == "CHANX" and int(wire["xoffset"]) > 0) or (nodeType == "CHANY" and int(wire["yoffset"]) > 0):
                     direction = "INC_DIR"
-                    yLow = archObject.height - tile.y - 1
+                    yLow = tile.y
                     xLow = tile.x
-                    yHigh = archObject.height - destTile.y - 1
+                    yHigh = destTile.y
                     xHigh = destTile.x
                 else:
                     direction = "DEC_DIR"
-                    yHigh = archObject.height - tile.y - 1
+                    yHigh = tile.y
                     xHigh = tile.x
-                    yLow = archObject.height - destTile.y - 1
+                    yLow = destTile.y
                     xLow = destTile.x
 
                 if nodeType == "CHANY":
@@ -5557,7 +5557,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                         raise Exception("Could not find pin ptc in block_type designation for RR Graph generation.")
                     nodesString += f'  <!-- BEL input: {cInput} -->\n'
                     nodesString += f'  <node id="{curNodeId}" type="IPIN" capacity="1">\n' #Generate tag for each node
-                    nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="{thisPtc}" side="BOTTOM"/>\n' #Add loc tag - same high and low vals as no movement between tiles
+                    nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{tile.y + 1}" xhigh="{tile.x + 1}" yhigh="{tile.y + 1}" ptc="{thisPtc}" side="BOTTOM"/>\n' #Add loc tag - same high and low vals as no movement between tiles
                     nodesString += '  </node>\n' #Close node tag
 
                     sourceToWireIDMap[tileLoc + "." + cInput] = curNodeId #Add to source map as it is the equivalent of a wire source
@@ -5565,7 +5565,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                     curNodeId += 1 #Increment id so all nodes have different ids
 
                     nodesString += f'  <node id="{curNodeId}" type="SINK" capacity="1">\n' #Generate tag for each node
-                    nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="{thisPtc}"/>\n' #Add loc tag - same high and low vals as no movement between tiles
+                    nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{tile.y + 1}" xhigh="{tile.x + 1}" yhigh="{tile.y + 1}" ptc="{thisPtc}"/>\n' #Add loc tag - same high and low vals as no movement between tiles
                     nodesString += '  </node>\n' #Close node tag
                     IpinToSinkStr += f'  <edge src_node="{curNodeId - 1}" sink_node="{curNodeId}" switch_id="1"/>\n'          
 
@@ -5579,13 +5579,13 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                     nodesString += f'  <!-- BEL output: {cOutput} -->\n'
 
                     nodesString += f'  <node id="{curNodeId}" type="OPIN" capacity="1">\n' #Generate tag for each node
-                    nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="{thisPtc}" side="BOTTOM"/>\n' #Add loc tag
+                    nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{tile.y + 1}" xhigh="{tile.x + 1}" yhigh="{tile.y + 1}" ptc="{thisPtc}" side="BOTTOM"/>\n' #Add loc tag
                     nodesString += '  </node>\n' #Close node tag
                     destToWireIDMap[tileLoc + "." + cOutput] = curNodeId #Add to dest map as equivalent to a wire destination                    
                     curNodeId += 1 #Increment id so all nodes have different ids
 
                     nodesString += f'  <node id="{curNodeId}" type="SOURCE" capacity="1">\n' #Generate tag for each node
-                    nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="{thisPtc}"/>\n' #Add loc tag
+                    nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{tile.y + 1}" xhigh="{tile.x + 1}" yhigh="{tile.y + 1}" ptc="{thisPtc}"/>\n' #Add loc tag
                     nodesString += '  </node>\n' #Close node tag
                     srcToOpinStr += f'  <edge src_node="{curNodeId}" sink_node="{curNodeId - 1}" switch_id="1"/>\n'
                     curNodeId += 1 #Increment id so all nodes have different ids
@@ -5597,13 +5597,13 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                 nodesString += f'  <!-- Source: {tile.genTileLoc()}.{source} -->\n'
 
                 nodesString += f'  <node id="{curNodeId}" type="SOURCE" capacity="1">\n' #Generate tag for each node
-                nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="{thisPtc}"/>\n' #Add loc tag
+                nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{tile.y + 1}" xhigh="{tile.x + 1}" yhigh="{tile.y + 1}" ptc="{thisPtc}"/>\n' #Add loc tag
                 nodesString += '  </node>\n' #Close node tag
 
                 curNodeId += 1 #Increment id so all nodes have different ids
 
                 nodesString += f'  <node id="{curNodeId}" type="OPIN" capacity="1">\n' #Generate tag for each node
-                nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="{thisPtc}" side="BOTTOM"/>\n' #Add loc tag
+                nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{tile.y + 1}" xhigh="{tile.x + 1}" yhigh="{tile.y + 1}" ptc="{thisPtc}" side="BOTTOM"/>\n' #Add loc tag
                 nodesString += '  </node>\n' #Close node tag
                 srcToOpinStr += f'  <edge src_node="{curNodeId - 1}" sink_node="{curNodeId}" switch_id="1"/>\n'
                 destToWireIDMap[tileLoc + "." + source] = curNodeId #Add to dest map as equivalent to a wire destination
@@ -5617,13 +5617,13 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                 nodesString += f'  <!-- Sink: {tile.genTileLoc()}.{sink} -->\n'
 
                 nodesString += f'  <node id="{curNodeId}" type="SINK" capacity="1">\n' #Generate tag for each node
-                nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="{thisPtc}"/>\n' #Add loc tag
+                nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{tile.y + 1}" xhigh="{tile.x + 1}" yhigh="{tile.y + 1}" ptc="{thisPtc}"/>\n' #Add loc tag
                 nodesString += '  </node>\n' #Close node tag
                 curNodeId += 1 #Increment id so all nodes have different ids                
 
 
                 nodesString += f'  <node id="{curNodeId}" type="IPIN" capacity="1">\n' #Generate tag for each node
-                nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{archObject.height - tile.y}" xhigh="{tile.x + 1}" yhigh="{archObject.height - tile.y}" ptc="{thisPtc}" side="BOTTOM"/>\n' #Add loc tag
+                nodesString += f'   <loc xlow="{tile.x + 1}" ylow="{tile.y + 1}" xhigh="{tile.x + 1}" yhigh="{tile.y + 1}" ptc="{thisPtc}" side="BOTTOM"/>\n' #Add loc tag
                 nodesString += '  </node>\n' #Close node tag
 
                 IpinToSinkStr += f'  <edge src_node="{curNodeId}" sink_node="{curNodeId - 1}" switch_id="1"/>\n'          
@@ -5684,9 +5684,9 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
             if tile.x == clockX and tile.y == clockY: #We add the clock tile at the end so ignore it for now
                 continue      
             if tile.tileType == "NULL": #The method that generates cellTypes ignores NULL, so it was never in our map - we'll just use EMPTY instead as we did for the main XML model
-                gridString += f'  <grid_loc x="{tile.x + 1}" y="{archObject.height - tile.y}" block_type_id="{blockIdMap["EMPTY"]}" width_offset="0" height_offset="0"/>\n'
+                gridString += f'  <grid_loc x="{tile.x + 1}" y="{tile.y + 1}" block_type_id="{blockIdMap["EMPTY"]}" width_offset="0" height_offset="0"/>\n'
                 continue
-            gridString += f'  <grid_loc x="{tile.x + 1}" y="{archObject.height - tile.y}" block_type_id="{blockIdMap[tile.tileType]}" width_offset="0" height_offset="0"/>\n'
+            gridString += f'  <grid_loc x="{tile.x + 1}" y="{tile.y + 1}" block_type_id="{blockIdMap[tile.tileType]}" width_offset="0" height_offset="0"/>\n'
 
     # Create padding of EMPTY tiles around chip
     gridString += '  <!-- EMPTY padding around chip -->\n'

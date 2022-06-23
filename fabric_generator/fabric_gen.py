@@ -4210,7 +4210,7 @@ sDelay = "8"
 GNDRE = re.compile("GND(\d*)")
 VCCRE = re.compile("VCC(\d*)")
 BracketAddingRE = re.compile(r"^(\S+?)(\d+)$")
-num_pbRE = re.compile("num_pb=\"(\d*)\"")
+num_pbRE = re.compile("num_pb(\s*)=(\s*)\"(\s*)(\d*)(\s*)\"")
 letters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W"] #For LUT labelling
 
 #This class represents individual tiles in the architecture
@@ -5000,7 +5000,7 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
                 pbSearch = num_pbRE.search(thisPbString) #And fetch the num_pb value (with regex)
                 if pbSearch: #If there is a num_pb value specified
                     try:
-                        fasm_prefix_count = int(pbSearch.group(1)) #Convert it to an int
+                        fasm_prefix_count = int(pbSearch.group(4)) #Convert it to an int
                     except:
                         raise ValueError("Non-integer num_pb specified in custom XML") #Or if that's not possible raise an exception
                 else:

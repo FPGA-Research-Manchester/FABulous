@@ -6,4 +6,4 @@ Definitions and abbreviations
     $FAB_ROOT
             The directory containing the root of the FABulous source tree.
 
-            For instance, if you cloned the VTR source into ``/home/myusername/FABulous``, your ``$VTR_ROOT`` would be ``/home/myusername/FABulous``.
+            For instance, if you cloned the FABulous repository into ``/home/myusername/FABulous``, your ``$FAB_ROOT`` would be ``/home/myusername/FABulous``.

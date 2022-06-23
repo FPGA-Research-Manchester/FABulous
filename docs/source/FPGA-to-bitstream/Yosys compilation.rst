@@ -3,7 +3,7 @@
 Yosys compilation
 =================
 
-Yosys is used for logic synthesis and technology mapping of the Verilog Hardware Description Language (HDL) into a JSON(Nextpnr) or BLIF(VPR) netlist.
+Yosys is used for logic synthesis and technology mapping of the Verilog Hardware Description Language (HDL) into a JSON (for nextpnr) or BLIF (for VPR) netlist.
 
 Building
 --------
@@ -13,7 +13,7 @@ To build you may use the Makefile wrapper in the clone repository (https://githu
 User guide
 ----------
 
-A pre-defined Yosys TCL script is under ``$FAB_ROOT/nextpnr/fabulous/synth/synth_fabulous_dffesr.tcl`` for fabuloud version3, 
+A pre-defined Yosys TCL script is under ``$FAB_ROOT/nextpnr/fabulous/synth/synth_fabulous_dffesr.tcl`` for FABulous version3, 
 
 .. code-block:: console
 
@@ -39,11 +39,11 @@ A pre-defined Yosys TCL script is under ``$FAB_ROOT/nextpnr/fabulous/synth/synth
 Example
 -------
 
-The following are simple command-line to synthesis the netlist ``sequential_16bit`` into JSON netlist.
+The following are simple commands to synthesise the netlist ``sequential_16bit_en`` into JSON netlist.
 
 .. code-block:: console
 
-	yosys -p "tcl ../synth/synth_fabulous_dffesr.tcl 4 sequential_16bit sequential_16bit.json" sequential_16bit.v
+	yosys -p "tcl ../synth/synth_fabulous_dffesr.tcl 4 sequential_16bit_en sequential_16bit_en.json" sequential_16bit_en.v
 
 
 

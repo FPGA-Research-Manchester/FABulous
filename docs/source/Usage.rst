@@ -7,7 +7,7 @@ Prerequisites
 
 The following packages need to be installed for generating fabric HDLs
 
-:Fabulous repository:
+:FABulous repository:
 
 .. code-block:: console
 
@@ -22,13 +22,13 @@ The following packages need to be installed for generating fabric HDLs
 
     pip3 install -r requirements.txt
 
-The following packages need to be installed for CAD toolchain
+The following packages need to be installed for the CAD toolchain
 
 :`Yosys <https://github.com/YosysHQ/yosys>`_:
  version > 0.10
 
 
-.. note:: IN the following :term:`$FAB_ROOT` means the root directory of the Fabulous source code tree.
+.. note:: In the following, :term:`$FAB_ROOT` means the root directory of the Fabulous source code tree.
 
 :nextpnr-fabulous:
 
@@ -51,7 +51,7 @@ Building Fabric
    #Both <number of columns> and <number of rows> are not including the terminal blocks. Ex. ./run_fab_flow.sh 8 14
    ./run_fab_flow.sh <number of columns> <number of rows>
 
-After the fabulous flow runing correctly, the RTL files can be found under ``$FAB_ROOT/fabric_generator/verilog_output`` or ``$FAB_ROOT/fabric_generator/vhdl_output``.
+After the fabulous flow has run successfully, the RTL files can be found under ``$FAB_ROOT/fabric_generator/verilog_output`` or ``$FAB_ROOT/fabric_generator/vhdl_output``.
 
 
 Generating Bitstream
@@ -79,14 +79,14 @@ VPR models can be found under ``/vproutput``
 Build options
 -------------
 
-User can choose the script to run for different models generation under ``$FAB_ROOT/fabric_generator``.
+Users can choose the script to run to generate different models under ``$FAB_ROOT/fabric_generator``.
 
 +------------------------------+------------------------------------------------------------------------------------------------+
 | run_fab_flow.sh              | Run FABulous flow and generate both Nexpnr and VPR model files (**default**)                   |
 +------------------------------+------------------------------------------------------------------------------------------------+
 | run_fab_flow_nextpnr.sh      | Run FABulous flow and generate Nexpnr model files                                              |
 +------------------------------+------------------------------------------------------------------------------------------------+
-| run_fab_flow_nextpnr_pair.sh | Run FABulous flow , generate Nexpnr model files and ``wirePairs.csv`` for timing model purpose |
+| run_fab_flow_nextpnr_pair.sh | Run FABulous flow , generate Nexpnr model files and ``wirePairs.csv`` for timing model purposes |
 +------------------------------+------------------------------------------------------------------------------------------------+
 | run_fab_flow_vpr.sh          | Run FABulous flow and generate VPR model files                                                 |
 +------------------------------+------------------------------------------------------------------------------------------------+

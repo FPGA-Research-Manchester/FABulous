@@ -6227,6 +6227,9 @@ if ('-GenVPRModel'.lower() in processedArguments) :
     archFile.write(archXML)
     rrFile.write(rrGraphXML)
 
+    archFile.close()
+    rrFile.close()
+
     if ('-debug'.lower() in str(sys.argv).lower()) : 
         print(archXML)
         print(rrGraphXML)

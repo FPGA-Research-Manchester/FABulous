@@ -54,7 +54,7 @@ Constraints for your architecture can be put in place using Absolute Placement C
 
         (* BEL="X7Y3.C" *) FABULOUS_LC #(.INIT(16'b1010101010101010), .DFF_ENABLE(1'b0)) constraint_test (.CLK(clk), .I0(enable), .O (enable_i));
 
-We can constrain which BEL to be used in the routing resource, LUT "C" is constrained to be used in Tile X7Y3, as shown in the example. With the same constraint method, we can also declare ``InPass4_frame_config, OutPass4_frame_config and IO_1_bidirectional_frame_config_pass`` for IO constraints.       
+We can constrain which BEL should be used - LUT "C" is constrained to be used in Tile X7Y3 in the example. With the same constraint method, we can also instantiate ``InPass4_frame_config, OutPass4_frame_config and IO_1_bidirectional_frame_config_pass`` blocks for IO constraints.       
 
 The following example is a 16-bit counter output to Block_RAM, and then Block_RAM to W_IO in a 10x10 fabric.
 

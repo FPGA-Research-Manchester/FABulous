@@ -7,7 +7,7 @@ Prerequisites
 
 The following packages need to be installed for generating fabric HDLs
 
-:Fabulous repository:
+:FABulous repository:
 
 .. code-block:: console
 
@@ -79,7 +79,7 @@ VPR models can be found under ``/vproutput``
 Build options
 -------------
 
-Users can choose the script to run for different models generation under ``$FAB_ROOT/fabric_generator``.
+Users can choose the script to run to generate different models under ``$FAB_ROOT/fabric_generator``.
 
 +------------------------------+------------------------------------------------------------------------------------------------+
 | run_fab_flow.sh              | Run FABulous flow and generate both Nexpnr and VPR model files (**default**)                   |

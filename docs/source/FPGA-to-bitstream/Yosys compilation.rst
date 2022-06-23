@@ -39,7 +39,7 @@ A pre-defined Yosys TCL script is under ``$FAB_ROOT/nextpnr/fabulous/synth/synth
 Example
 -------
 
-The following are simple command-line to synthesise the netlist ``sequential_16bit_en`` into JSON netlist.
+The following are simple commands to synthesise the netlist ``sequential_16bit_en`` into JSON netlist.
 
 .. code-block:: console
 

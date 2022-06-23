@@ -49,7 +49,7 @@ make -j$(nproc)
 sudo make install
 ```
 
-Fabric generator flow can be run using bash scripts based on the examples provided under ```/fabric_files```.
+The fabric generator flow can be run using bash scripts based on the examples provided under ```/fabric_files```.
 
 Before you run the flow for the first time, you must generate the basic files using the following commands:
 ```

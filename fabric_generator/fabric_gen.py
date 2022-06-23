@@ -4210,7 +4210,7 @@ sDelay = "8"
 GNDRE = re.compile("GND(\d*)")
 VCCRE = re.compile("VCC(\d*)")
 BracketAddingRE = re.compile(r"^(\S+?)(\d+)$")
-num_pbRE = re.compile("num_pb(\s*)=(\s*)\"(\s*)(\d*)(\s*)(\s*)\"")
+num_pbRE = re.compile("num_pb(\s*)=(\s*)\"(\s*)(\d*)(\s*)\"")
 letters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W"] #For LUT labelling
 
 #This class represents individual tiles in the architecture

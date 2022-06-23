@@ -1,7 +1,7 @@
 Nextpnr models
 ==============
 
-After fabulous flow running correctly, ``bel.txt`` and ``pips.txt`` are copied to ``$FAB_ROOT/nextpnr/fabulous/fab_arch``.
+After the FABulous flow has run successfully, ``bel.txt`` and ``pips.txt`` are copied to ``$FAB_ROOT/nextpnr/fabulous/fab_arch``.
 
 ``bel.txt`` is the primitive description file in order of tiles
 

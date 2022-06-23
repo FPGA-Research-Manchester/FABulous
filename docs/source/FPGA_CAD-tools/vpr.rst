@@ -18,7 +18,7 @@ The auto-generated XML that FABulous creates for different BELs cannot cover all
              <meta name="fasm_prefix"> {fasm_prefix_list} </meta>
         </metadata>
 
-and add any other desired metadata within the metadata tag. When producing the architecture specification, FABulous will automatically replace ``fasm_prefix_list`` with the necessary prefixes to meet the bitstream specification, using the ``num_pb`` value within your XML to decide how many prefixes are necessary (due to this, please avoid unnecessary whitespace when you set this attribute - it should be of the form ``num_pb="integer"``).
+and add any other desired metadata within the metadata tag. When producing the architecture specification, FABulous will automatically replace ``fasm_prefix_list`` with the necessary prefixes to meet the bitstream specification, using the ``num_pb`` value within your XML to decide how many prefixes are necessary.
 
 If a BEL is found in the specialBelDict, there are two other features that can be used to ensure everything fits together as desired. If this ``pb_type`` also requires custom model XML, this can be inserted into specialModelDict, once again with the name of the BEL as the key and including the model tag. Only model XML provided here will be added - the default is not to generate anything for special BELs. This may be useful if the BEL you are representing does not use a standard BLIF primitive, and still requires a matching model. 
 

@@ -13,11 +13,11 @@ To build you may use the Makefile wrapper in the clone repository (https://githu
 User guide
 ----------
 
-A pre-defined Yosys TCL script is under ``$FAB_ROOT/nextpnr/fabulous/synth/synth_fabulous_dffesr.tcl`` for FABulous version3, 
+A pre-defined Yosys TCL script is under ``$FAB_ROOT/nextpnr/fabulous/synth/synth_fabulous_dffesr.tcl`` for FABulous version3. If the output file, denoted below as ``<JSON_or_BLIF_file>``, has a ``.blif`` file extension, then output will be produced in the Berkeley Logic Interchange Format (BLIF) and will be synthesised appropriately for the VPR flow. Otherwise, output will be produced as JSON, synthesised for the nextpnr flow.
 
 .. code-block:: console
 
-	yosys -p "tcl <path/to/TCL/File>/synth_fabulous_dffesr.tcl <K-LUT> <top_module> <JSON_file>" <benchmark_netlist>
+	yosys -p "tcl <path/to/TCL/File>/synth_fabulous_dffesr.tcl <K-LUT> <top_module> <JSON_or_BLIF_file>" <benchmark_netlist>
 
 +---------------------+-------------------------------------------------------------------+
 | <K-LUT>             | Number of LUT inputs, 4 is for LUT4                               |

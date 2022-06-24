@@ -86,7 +86,7 @@ Users can choose the script to run to generate different models under ``$FAB_ROO
 +------------------------------+------------------------------------------------------------------------------------------------+
 | run_fab_flow_nextpnr.sh      | Run FABulous flow and generate Nexpnr model files                                              |
 +------------------------------+------------------------------------------------------------------------------------------------+
-| run_fab_flow_nextpnr_pair.sh | Run FABulous flow , generate Nexpnr model files and ``wirePairs.csv`` for timing model purposes |
+| run_fab_flow_nextpnr_pair.sh | Run FABulous flow , generate Nexpnr model files and ``wirePairs.csv`` for timing model purposes|
 +------------------------------+------------------------------------------------------------------------------------------------+
 | run_fab_flow_vpr.sh          | Run FABulous flow and generate VPR model files                                                 |
 +------------------------------+------------------------------------------------------------------------------------------------+

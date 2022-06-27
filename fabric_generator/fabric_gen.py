@@ -6027,9 +6027,9 @@ TileTypes = GetCellTypes(fabric)
 print('### Script command arguments are:\n' , str(sys.argv))
 
 #Strip arguments
-processedArguments = map(lambda x: x.strip(), sys.argv)
-processedArguments = list(map(lambda x: x.lower(), processedArguments))
-
+caseProcessedArguments = list(map(lambda x: x.strip(), sys.argv))
+processedArguments = list(map(lambda x: x.lower(), caseProcessedArguments))
+flagRE = re.compile("-\S*")
 
 if ('-GenTileSwitchMatrixCSV'.lower() in processedArguments) or ('-run_all'.lower() in processedArguments):
     print('### Generate initial switch matrix template (has to be bootstrapped first)')
@@ -6128,48 +6128,36 @@ if ('-GenFabricVerilog'.lower() in processedArguments) or ('-run_all'.lower() in
     #w.close()
 
 if ('-CSV2list'.lower() in processedArguments) or ('-AddList2CSV'.lower() in processedArguments):
-    arguments = re.split(' ',str(sys.argv))
-    # index was not working...
-    i = 0
-    for item in arguments:
-        # print('debug',item)
-        if re.search('-CSV2list', arguments[i], flags=re.IGNORECASE) or re.search('-AddList2CSV', arguments[i], flags=re.IGNORECASE):
-            break
-        i += 1
-    if arguments[i+2] == '':
-        raise ValueError('\nError: -CSV2list and -AddList2CSV expect two file names\n')
-    # stupid python adds quotes ' ' around the file name and a ',' -- bizarre
-    substitutions = {",": "", "\'": "", "\]": "", "\[": ""}
-    # InFileName  = (replace(arguments[i+1], substitutions))
-    # don't ask me why I have to delete the stupid '['...; but at least works now
-    InFileName  = re.sub('\]','',re.sub('\'','',(replace(arguments[i+1], substitutions))))
-    OutFileName = re.sub('\]','',re.sub('\'','',(replace(arguments[i+2], substitutions))))
+    if ('-CSV2list'.lower() in processedArguments):
+        argIndex = processedArguments.index('-CSV2list'.lower())
+    else:
+        argIndex = processedArguments.index('-AddList2CSV'.lower())
+
+    if len(processedArguments) <= argIndex + 2:
+        raise ValueError('\nError: -CSV2list and -AddList2CSV expect input and output file names but not enough arguments were provided.\n')
+    elif (flagRE.match(caseProcessedArguments[argIndex + 1]) or flagRE.match(caseProcessedArguments[argIndex + 2])):
+        raise ValueError(f'\nError: -CSV2list and -AddList2CSV expect input and output file names but instead found a flag: {caseProcessedArguments[argIndex + 1]}, {caseProcessedArguments[argIndex + 2]}.\n')        
+
+    InFileName  = caseProcessedArguments[argIndex + 1]
+    OutFileName  = caseProcessedArguments[argIndex + 2]
+
     if ('-CSV2list'.lower() in str(sys.argv).lower()):
         CSV2list(InFileName, OutFileName)
     if ('-AddList2CSV'.lower() in str(sys.argv).lower()):
         list2CSV(InFileName, OutFileName)
 
-if ('-PrintCSV_FileInfo'.lower() in processedArguments) :
-    arguments = re.split(' ',str(sys.argv))
-    # index was not working...
-    i = 0
-    for item in arguments:
-        # print('debug',item)
-        if re.search('-PrintCSV_FileInfo', arguments[i], flags=re.IGNORECASE):
-            break
-        i += 1
-    if arguments[i+1] == '':
-        raise ValueError('\nError: -PrintCSV_FileInfo expect a file name\n')
-    # stupid python adds quotes ' ' around the file name and a ',' -- bizarre
-    substitutions = {",": "", "\'": "", "\]": "", "\[": ""}
-    # InFileName  = (replace(arguments[i+1], substitutions))
-    # don't ask me why I have to delete the stupid '['...; but at least works now
-    InFileName  = re.sub('\]','',re.sub('\'','',(replace(arguments[i+1], substitutions))))
+if ('-PrintCSV_FileInfo'.lower() in processedArguments):
+    argIndex = processedArguments.index('-PrintCSV_FileInfo'.lower())
+    if len(processedArguments) <= argIndex + 1:
+        raise ValueError('\nError: -PrintCSV_FileInfo expects an input file name but not enough arguments were provided.\n')
+    elif (flagRE.match(caseProcessedArguments[argIndex + 1])):
+        raise ValueError(f'\nError: -PrintCSV_FileInfo expects an input file name but instead found a flag: {caseProcessedArguments[argIndex + 1]}.\n')        
+
+    InFileName  = caseProcessedArguments[argIndex + 1]
     if ('-PrintCSV_FileInfo'.lower() in processedArguments):
         PrintCSV_FileInfo(InFileName)
 
 if ('-GenNextpnrModel'.lower() in processedArguments) :
-    arguments = re.split(' ',str(sys.argv))
     fabricObject = genFabricObject(fabric)
     pipFile = open("npnroutput/pips.txt","w")
     belFile = open("npnroutput/bel.txt", "w")
@@ -6192,7 +6180,6 @@ if ('-GenNextpnrModel'.lower() in processedArguments) :
     #pairFile.close()
 
 if ('-GenNextpnrModel_pair'.lower() in processedArguments) :
-    arguments = re.split(' ',str(sys.argv))
     fabricObject = genFabricObject(fabric)
     pipFile = open("npnroutput/pips.txt","w")
     belFile = open("npnroutput/bel.txt", "w")
@@ -6215,7 +6202,6 @@ if ('-GenNextpnrModel_pair'.lower() in processedArguments) :
     pairFile.close()
 
 if ('-GenVPRModel'.lower() in processedArguments) :
-    arguments = re.split(' ',str(sys.argv))
     fabricObject = genFabricObject(fabric)
 
     archFile = open("vproutput/architecture.xml","w")
@@ -6236,30 +6222,21 @@ if ('-GenVPRModel'.lower() in processedArguments) :
 
 
 if ('-GenBitstreamSpec'.lower() in processedArguments) :
-	arguments = re.split(' ',str(sys.argv))
-	# index was not working...
-	i = 0
-	for item in arguments:
-		# print('debug',item)
-		if re.search('-genBitstreamSpec', arguments[i], flags=re.IGNORECASE):
-			break
-		i += 1
-	if arguments[i+1] == '':
-		raise ValueError('\nError: -genBitstreamSpec expect an output file name\n')
-	substitutions = {",": "", "\'": "", "\]": "", "\[": ""}
-	OutFileName  = re.sub('\]','',re.sub('\'','',(replace(arguments[i+1], substitutions))))
+    argIndex = processedArguments.index('-GenBitstreamSpec'.lower())
+    if len(processedArguments) <= argIndex + 1:
+        raise ValueError('\nError: -genBitstreamSpec expects an output file name but not enough arguments were provided.\n')
+    elif (flagRE.match(caseProcessedArguments[argIndex + 1])):
+        raise ValueError(f'\nError: -genBitstreamSpec expects an output file name but instead found a flag: {caseProcessedArguments[argIndex + 1]}.\n')        
 
-	print(arguments)
-	fabricObject = genFabricObject(fabric)
-	bitstreamSpecFile = open(OutFileName, "wb")
-	specObject = genBitstreamSpec(fabricObject)
-	pickle.dump(specObject, bitstreamSpecFile)
-	bitstreamSpecFile.close()
-	w = csv.writer(open(OutFileName.replace("txt","csv"), "w"))
-	for key1 in specObject["TileSpecs"]:
-		w.writerow([key1])
-		for key2, val in specObject["TileSpecs"][key1].items():
-		  w.writerow([key2,val])
+    OutFileName  = caseProcessedArguments[argIndex + 1]
+
+    fabricObject = genFabricObject(fabric)
+    specObject = genBitstreamSpec(fabricObject)
+    w = csv.writer(open(OutFileName.replace("txt","csv"), "w"))
+    for key1 in specObject["TileSpecs"]:
+        w.writerow([key1])
+        for key2, val in specObject["TileSpecs"][key1].items():
+            w.writerow([key2,val])
 
 if ('-help'.lower() in processedArguments) or ('-h' in processedArguments):
     print('')

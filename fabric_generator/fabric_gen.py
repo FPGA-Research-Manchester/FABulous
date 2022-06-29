@@ -4816,7 +4816,7 @@ specialInterconnectDict = {}
 clockX = 0
 clockY = 0
 
-def genVPRModelXML(archObject: Fabric, generatePairs = True):
+def genVPRModelXML(archObject: Fabric, customXmlFilename, generatePairs = True):
 
     ### STYLE NOTE: As this function uses f-strings so regularly, as a standard these f-strings should be denoted with single quotes ('...') instead of double quotes ("...")
     ### This is because the XML being generated uses double quotes to denote values, so every attribute set introduces a pair of quotes to escape
@@ -4826,7 +4826,6 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
 
 
     #First, load in the custom XML file
-    customXmlFilename = "custom_info.xml" #TODO: make this an argument
     tree = ET.parse(customXmlFilename)
 
     root = tree.getroot()
@@ -6118,13 +6117,20 @@ if ('-GenNextpnrModel_pair'.lower() in processedArguments) :
     constraintFile.close()
     pairFile.close()
 
-if ('-GenVPRModel'.lower() in processedArguments) :
-    fabricObject = genFabricObject(fabric)
+if ('-GenVPRModel'.lower() in processedArguments):
+    argIndex = processedArguments.index('-GenVPRModel'.lower())
+    if len(processedArguments) <= argIndex + 1:
+        raise ValueError('\nError: -GenVPRModel expects a custom XML file name but not enough arguments were provided.\n')
+    elif (flagRE.match(caseProcessedArguments[argIndex + 1])):
+        raise ValueError(f'\nError: -GenVPRModel expects a custom XML file name but instead found a flag: {caseProcessedArguments[argIndex + 1]}.\n')        
 
+    customXmlFilename = caseProcessedArguments[argIndex + 1]
+
+    fabricObject = genFabricObject(fabric)
     archFile = open("vproutput/architecture.xml","w")
     rrFile = open("vproutput/routing_resources.xml","w")
 
-    archXML = genVPRModelXML(fabricObject, False)
+    archXML = genVPRModelXML(fabricObject, customXmlFilename, False)
     rrGraphXML = genVPRModelRRGraph(fabricObject, False)
 
     archFile.write(archXML)

@@ -27,6 +27,7 @@ import configparser
 import pickle
 import csv
 from fasm import * #Remove this line if you do not have the fasm library installed and will not be generating a bitstream
+import xml.etree.ElementTree as ET
 
 #Default parameters (will be overwritten if defined in fabric between 'ParametersBegin' and 'ParametersEnd'
 #Parameters = [ 'ConfigBitMode', 'FrameBitsPerRow' ]
@@ -4909,11 +4910,11 @@ lut4InterconnectStr = """    <direct name="clock_top_to_pb0" input="LUT4AB.UserC
 <direct name="clock_top_to_pb6" input="LUT4AB.UserCLK" output="LUT4c_frame_config[6].clk"/>
 <direct name="clock_top_to_pb7" input="LUT4AB.UserCLK" output="LUT4c_frame_config[7].clk"/>
 """
-specialBelDict = {"LUT4c_frame_config": lut4cStr, "IO_1_bidirectional_frame_config_pass": IO_bidirStr} #This dict maps BEL names to the pb_type XML that should be substituted in when they are foun
+specialBelDict = {}#"LUT4c_frame_config": lut4cStr, "IO_1_bidirectional_frame_config_pass": IO_bidirStr} #This dict maps BEL names to the pb_type XML that should be substituted in when they are foun
 
 specialModelDict = {} # This dict maps BEL names to the model XML that should be substituted in when they are found (but it must also have special PB type XML)
 
-specialInterconnectDict = {"LUT4c_frame_config": lut4InterconnectStr} #This dict maps custom bels to the special top-level interconnect they need (e.g. for external connections)
+specialInterconnectDict = {}#"LUT4c_frame_config": lut4InterconnectStr} #This dict maps custom bels to the special top-level interconnect they need (e.g. for external connections)
 
 #Clock coordinates - these are relative to the fabric.csv fabric, and ignore the padding
 clockX = 0
@@ -4926,6 +4927,26 @@ def genVPRModelXML(archObject: Fabric, generatePairs = True):
     ### This is doable but frustrating and leaves room for error, so as standard single quotes are recommended. 
 
     ### A variable name of the form fooString means that it is a string which will be substituted directly into the output string - otherwise fooStr is used 
+
+
+    #First, load in the custom XML file
+    customXmlFilename = "custom_info.xml" #TODO: make this an argument
+    tree = ET.parse(customXmlFilename)
+
+    root = tree.getroot()
+
+    for bel_info in root:
+        bel_name = bel_info.attrib['name']
+        #TODO: check only one of each tag is present
+        if bel_info.find('bel_pb'):
+            for bel_pb in bel_info.find('bel_pb'):
+                specialBelDict[bel_name] = ET.tostring(bel_pb, encoding='unicode')
+        if bel_info.find('bel_model'):
+            for bel_model in bel_info.find('bel_model'):
+                specialModelDict[bel_name] = ET.tostring(bel_model, encoding='unicode')
+        if bel_info.find('bel_interconnect'):
+            for bel_interconnect in bel_info.find('bel_interconnect'):
+                specialInterconnectDict[bel_name] = ET.tostring(bel_interconnect, encoding='unicode')
 
     #Calculate clock X and Y coordinates considering variations in coordinate systems and EMPTY padding around VPR model
     newClockX = clockX + 1

@@ -4808,9 +4808,7 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
     else:
         return (pipsStr, belsStr, templateStr, constraintStr)
 
-specialBelDict = {}
-specialModelDict = {} 
-specialInterconnectDict = {}
+
 
 #Clock coordinates - these are relative to the fabric.csv fabric, and ignore the padding
 clockX = 0
@@ -4824,15 +4822,36 @@ def genVPRModelXML(archObject: Fabric, customXmlFilename, generatePairs = True):
 
     ### A variable name of the form fooString means that it is a string which will be substituted directly into the output string - otherwise fooStr is used 
 
+    specialBelDict = {}
+    specialModelDict = {} 
+    specialInterconnectDict = {}
 
     #First, load in the custom XML file
     tree = ET.parse(customXmlFilename)
 
+    #Get root XML tag
     root = tree.getroot()
 
+    #Iterate over children
     for bel_info in root:
+        #Check that the tag is valid
+        if bel_info.tag != "bel_info":
+            raise ValueError(f"Error: Unknown tag in custom XML file: {bel_info.tag}")
+
         bel_name = bel_info.attrib['name']
-        #TODO: check only one of each tag is present
+
+        #Check only one of each tag is present
+
+        if len(bel_info.findall('bel_pb')) > 1:
+            raise ValueError("Error: Found multiple bel_pb tags within one bel_info tag in custom XML file. Please provide only one.")
+
+        if len(bel_info.findall('bel_model')) > 1:
+            raise ValueError("Error: Found multiple bel_model tags within one bel_info tag in custom XML file. Please provide at most one.")
+
+        if len(bel_info.findall('bel_interconnect')) > 1:
+            raise ValueError("Error: Found multiple bel_interconnect tags within one bel_info tag in custom XML file. Please provide at most one.")
+
+        #Fetch data and store in appropriate dicts
         if bel_info.find('bel_pb'):
             for bel_pb in bel_info.find('bel_pb'):
                 specialBelDict[bel_name] = ET.tostring(bel_pb, encoding='unicode')

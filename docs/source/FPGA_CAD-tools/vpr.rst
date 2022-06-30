@@ -16,7 +16,7 @@ The custom XML file should open and close with ``<custom_xml_spec>`` and ``</cus
 
 **<bel_pb> content <\bel_pb>**
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-This tag should contain the exact XML that should be inserted to define the second-level ``pb_type`` that represents this bel, including the ``<pb_type>`` tag itself. In order to generate FASM, and therefore a bitstream, with your architecture, it may be necessary to add FASM prefixes if your BEL has more than one instance, corresponding to the prefixes defined in your ``fabric.csv`` file. This allows the bitstream generator to understand which BEL a certain feature is being enabled/set on. FABulous handles the actual prefixes itself, but the metadata tag itself must be provided by the user inside the ``pb_type`` declaration. Where you wish to insert the metadata, simply write:
+This tag should contain the exact XML that should be inserted to define the second-level ``pb_type`` that represents this bel, including the ``<pb_type>`` tag itself. In order to generate FASM, and therefore a bitstream, with your architecture, it may be necessary to add FASM prefixes if your BEL has more than one instance. This allows the bitstream generator to understand which BEL a certain feature is being enabled/set on. FABulous handles the actual prefixes itself, but the metadata tag itself must be provided by the user inside the ``pb_type`` declaration. Where you wish to insert the metadata, simply write:
 
 .. code-block:: xml
 

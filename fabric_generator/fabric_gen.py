@@ -27,6 +27,7 @@ import configparser
 import pickle
 import csv
 from fasm import * #Remove this line if you do not have the fasm library installed and will not be generating a bitstream
+import xml.etree.ElementTree as ET
 
 #Default parameters (will be overwritten if defined in fabric between 'ParametersBegin' and 'ParametersEnd'
 #Parameters = [ 'ConfigBitMode', 'FrameBitsPerRow' ]
@@ -4807,125 +4808,59 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
     else:
         return (pipsStr, belsStr, templateStr, constraintStr)
 
-IO_bidirStr = """   <pb_type name="IO_1_bidirectional_frame_config_pass" num_pb="2">
-    <mode name="pad_is_input">
-     <pb_type name="W_input" blif_model=".input" num_pb="1">
-      <output name="inpad" num_pins="1"/>
-     </pb_type>
-     <interconnect>
-      <direct name="input_interconnect" input="W_input.inpad" output="IO_1_bidirectional_frame_config_pass.O"/>
-     </interconnect>
-    </mode> 
-    <mode name="pad_is_output">
-     <pb_type name="W_output" blif_model=".output" num_pb="1">
-      <input name="outpad" num_pins="1"/>
-     </pb_type>
-     <interconnect>
-      <direct name="output_interconnect" input="IO_1_bidirectional_frame_config_pass.I" output="W_output.outpad"/>
-     </interconnect>
-    </mode>
 
-    <input name="I" num_pins="1"/>
-    <input name="T" num_pins="1"/>
-    <output name="O" num_pins="1"/>
-    <output name="Q" num_pins="1"/>
-    <metadata>
-     <meta name="fasm_prefix">A_ B_</meta>
-    </metadata>
-   </pb_type>"""
-
-#This string is set up to use the .format method to fill in the prefixes
-
-lut4cStr = """
-   <pb_type name="LUT4c_frame_config" num_pb="8">
-    <pb_type name="lut4" blif_model=".names" num_pb="1" class="lut">
-     <input name="in" num_pins="4" port_class="lut_in"/>
-     <output name="out" num_pins="1" port_class="lut_out"/>
-     <delay_matrix type="max" in_port="lut4.in" out_port="lut4.out">
-      2.690e-10
-      2.690e-10
-      2.690e-10
-      2.690e-10
-     </delay_matrix>
-     <metadata>
-       <meta name="fasm_type">LUT</meta>
-       <meta name="fasm_lut">
-         INIT[15:0]
-       </meta>
-     </metadata>
-    </pb_type>
-
-    <pb_type name="ff" blif_model=".latch" class="flipflop" num_pb="1">
-     <input name="D" num_pins="1" port_class="D"/>
-     <output name="Q" num_pins="1" port_class="Q"/>
-     <clock name="clk" num_pins="1" port_class="clock"/>
-     <T_setup value="2.448e-10" port="ff.D" clock="clk"/>
-     <T_clock_to_Q max="7.732e-11" port="ff.Q" clock="clk"/>                
-    </pb_type>
-
-    <input name="I0" num_pins="1"/>    
-    <input name="I1" num_pins="1"/>
-    <input name="I2" num_pins="1"/>
-    <input name="I3" num_pins="1"/>
-    <input name="Ci" num_pins="1"/>
-    <clock name="clk" num_pins="1"/>
-    <output name="O" num_pins="1"/>
-    <output name="Co" num_pins="1"/>
-    <input name="SR" num_pins="1"/>
-    <input name="EN" num_pins="1"/>
-    <interconnect>
-     <direct name="I0_to_LUT_in" input="LUT4c_frame_config.I0" output="lut4.in[0]"/>
-     <direct name="I1_to_LUT_in" input="LUT4c_frame_config.I1" output="lut4.in[1]"/>
-     <direct name="I2_to_LUT_in" input="LUT4c_frame_config.I2" output="lut4.in[2]"/>
-     <direct name="I3_to_LUT_in" input="LUT4c_frame_config.I3" output="lut4.in[3]"/>
-     <direct name="LUT_out_to_ff" input="lut4.out" output="ff.D">
-        <pack_pattern name="lut_with_ff" in_port="lut4.out" out_port="ff.D"/>
-     </direct>
-
-     <direct name="clock_pb_to_lut" input="LUT4c_frame_config.clk" output="ff.clk"/>
-
-     <mux name="lut4c_out_mux" input="ff.Q lut4.out" output="LUT4c_frame_config.O">
-      <delay_constant max="25e-12" in_port="lut4.out" out_port="LUT4c_frame_config.O"/>
-      <delay_constant max="45e-12" in_port="ff.Q" out_port="LUT4c_frame_config.O"/>
-      <metadata>
-       <meta name="fasm_mux">
-        ff.Q: FF
-        lut4.out: NULL
-       </meta>
-      </metadata>
-     </mux>
-    </interconnect> 
-    <metadata>
-     <meta name="fasm_prefix"> {fasm_prefix_list} </meta>
-    </metadata>       
-   </pb_type>"""
-
-lut4InterconnectStr = """    <direct name="clock_top_to_pb0" input="LUT4AB.UserCLK" output="LUT4c_frame_config[0].clk"/>
-<direct name="clock_top_to_pb1" input="LUT4AB.UserCLK" output="LUT4c_frame_config[1].clk"/>
-<direct name="clock_top_to_pb2" input="LUT4AB.UserCLK" output="LUT4c_frame_config[2].clk"/>
-<direct name="clock_top_to_pb3" input="LUT4AB.UserCLK" output="LUT4c_frame_config[3].clk"/>
-<direct name="clock_top_to_pb4" input="LUT4AB.UserCLK" output="LUT4c_frame_config[4].clk"/>
-<direct name="clock_top_to_pb5" input="LUT4AB.UserCLK" output="LUT4c_frame_config[5].clk"/>
-<direct name="clock_top_to_pb6" input="LUT4AB.UserCLK" output="LUT4c_frame_config[6].clk"/>
-<direct name="clock_top_to_pb7" input="LUT4AB.UserCLK" output="LUT4c_frame_config[7].clk"/>
-"""
-specialBelDict = {"LUT4c_frame_config": lut4cStr, "IO_1_bidirectional_frame_config_pass": IO_bidirStr} #This dict maps BEL names to the pb_type XML that should be substituted in when they are foun
-
-specialModelDict = {} # This dict maps BEL names to the model XML that should be substituted in when they are found (but it must also have special PB type XML)
-
-specialInterconnectDict = {"LUT4c_frame_config": lut4InterconnectStr} #This dict maps custom bels to the special top-level interconnect they need (e.g. for external connections)
 
 #Clock coordinates - these are relative to the fabric.csv fabric, and ignore the padding
 clockX = 0
 clockY = 0
 
-def genVPRModelXML(archObject: Fabric, generatePairs = True):
+def genVPRModelXML(archObject: Fabric, customXmlFilename, generatePairs = True):
 
     ### STYLE NOTE: As this function uses f-strings so regularly, as a standard these f-strings should be denoted with single quotes ('...') instead of double quotes ("...")
     ### This is because the XML being generated uses double quotes to denote values, so every attribute set introduces a pair of quotes to escape
     ### This is doable but frustrating and leaves room for error, so as standard single quotes are recommended. 
 
     ### A variable name of the form fooString means that it is a string which will be substituted directly into the output string - otherwise fooStr is used 
+
+    specialBelDict = {}
+    specialModelDict = {} 
+    specialInterconnectDict = {}
+
+    #First, load in the custom XML file
+    tree = ET.parse(customXmlFilename)
+
+    #Get root XML tag
+    root = tree.getroot()
+
+    #Iterate over children
+    for bel_info in root:
+        #Check that the tag is valid
+        if bel_info.tag != "bel_info":
+            raise ValueError(f"Error: Unknown tag in custom XML file: {bel_info.tag}")
+
+        bel_name = bel_info.attrib['name']
+
+        #Check only one of each tag is present
+
+        if len(bel_info.findall('bel_pb')) > 1:
+            raise ValueError("Error: Found multiple bel_pb tags within one bel_info tag in custom XML file. Please provide only one.")
+
+        if len(bel_info.findall('bel_model')) > 1:
+            raise ValueError("Error: Found multiple bel_model tags within one bel_info tag in custom XML file. Please provide at most one.")
+
+        if len(bel_info.findall('bel_interconnect')) > 1:
+            raise ValueError("Error: Found multiple bel_interconnect tags within one bel_info tag in custom XML file. Please provide at most one.")
+
+        #Fetch data and store in appropriate dicts
+        if bel_info.find('bel_pb'):
+            for bel_pb in bel_info.find('bel_pb'):
+                specialBelDict[bel_name] = ET.tostring(bel_pb, encoding='unicode')
+        if bel_info.find('bel_model'):
+            for bel_model in bel_info.find('bel_model'):
+                specialModelDict[bel_name] = ET.tostring(bel_model, encoding='unicode')
+        if bel_info.find('bel_interconnect'):
+            for bel_interconnect in bel_info.find('bel_interconnect'):
+                specialInterconnectDict[bel_name] = ET.tostring(bel_interconnect, encoding='unicode')
 
     #Calculate clock X and Y coordinates considering variations in coordinate systems and EMPTY padding around VPR model
     newClockX = clockX + 1
@@ -6201,13 +6136,20 @@ if ('-GenNextpnrModel_pair'.lower() in processedArguments) :
     constraintFile.close()
     pairFile.close()
 
-if ('-GenVPRModel'.lower() in processedArguments) :
-    fabricObject = genFabricObject(fabric)
+if ('-GenVPRModel'.lower() in processedArguments):
+    argIndex = processedArguments.index('-GenVPRModel'.lower())
+    if len(processedArguments) <= argIndex + 1:
+        raise ValueError('\nError: -GenVPRModel expects a custom XML file name but not enough arguments were provided.\n')
+    elif (flagRE.match(caseProcessedArguments[argIndex + 1])):
+        raise ValueError(f'\nError: -GenVPRModel expects a custom XML file name but instead found a flag: {caseProcessedArguments[argIndex + 1]}.\n')        
 
+    customXmlFilename = caseProcessedArguments[argIndex + 1]
+
+    fabricObject = genFabricObject(fabric)
     archFile = open("vproutput/architecture.xml","w")
     rrFile = open("vproutput/routing_resources.xml","w")
 
-    archXML = genVPRModelXML(fabricObject, False)
+    archXML = genVPRModelXML(fabricObject, customXmlFilename, False)
     rrGraphXML = genVPRModelRRGraph(fabricObject, False)
 
     archFile.write(archXML)

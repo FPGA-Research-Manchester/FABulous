@@ -1,7 +1,7 @@
 VPR models
 ==========
 
-To generate the necessary materials to program using VPR, run ``$FAB_ROOT/fabric_generator/fabric_gen.py`` with the -genVPRModel flag. In the ``$FAB_ROOT/fabric_generator/vproutput`` directory, two files will be created - ``architecture.xml`` and ``routing_resources.xml``. 
+To generate the necessary materials to program using VPR, run ``$FAB_ROOT/fabric_generator/fabric_gen.py`` with the -genVPRModel flag followed by the location of your custom information XML file (an description an example of which can be found below). In the ``$FAB_ROOT/fabric_generator/vproutput`` directory, two files will be created: ``architecture.xml`` and ``routing_resources.xml``. 
 
 architecture.xml contains a description of the various tiles, ports and BELs - everything in the architecture except for the routing resources. 
 
@@ -10,7 +10,13 @@ routing_resources.xml contains the specifications of these routing resources, in
 Adding custom XML
 -----------------
 
-The auto-generated XML that FABulous creates for different BELs cannot cover all cases - for example, a BEL might depend on special functionality within VPR or require use of standard BLIF primitives, making it impractical to use as a blackbox. In this case, custom XML can be inserted when certain BELs are encountered, using the `VTR Architecture Description language <https://vtr-docs.readthedocs.io/en/latest/arch/index.html>`_. To do this, store the corresponding XML for the pb\_type, including the opening and closing tags, in the structure specialBelDict, with the key being the name of the BEL that should be replaced. This is particularly flexible as the XML doesn't have to be inserted directly into the code - extra code can be added to generate this XML if desired. In order to generate FASM, and therefore a bitstream, with your architecture, it may be necessary to add FASM prefixes if your BEL has more than one instance. This allows the bitstream generator to understand which BEL a certain feature is being enabled/set on. FABulous handles the actual prefixes itself, but the metadata tag itself must be provided by the user in case there is other metadata to be supplied. Where you wish to insert the metadata, simply write:
+The auto-generated XML that FABulous creates for different BELs cannot cover all cases - for example, a BEL might depend on special functionality within VPR or require use of standard BLIF primitives, making it impractical to use as a blackbox. In this case, custom XML can be inserted when certain BELs are encountered, using the `VTR Architecture Description language <https://vtr-docs.readthedocs.io/en/latest/arch/index.html>`_. This is handled by the provision of a custom XML file, which can contain custom XML that will be directly inserted into the architecture file to describe certain logical elements. This is currently a mandatory argument, as at time of writing VPR algorithms rely on BLIF primitive IO pads that FABulous is not able to reliably derive. For each BEL in the architecture (equivalent to a second-level ``pb_type``), custom XML for the ``pb_type``, ``model`` and interconnect specification can be provided.
+
+The custom XML file should open and close with ``<custom_xml_spec>`` and ``</custom_xml_spec>`` tags. For each BEL that requires custom XML, a ``<bel_info name="string"> content <\bel_info>`` tag should be added, where ``name`` is the name of the BEL as specified by the name of the HDL file. The children of this tag then contain the XML to be inserted. Each of these child tags should occur only once, and the contents of the tags should be as follows:
+
+**<bel_pb> content <\bel_pb>**
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+This tag should contain the exact XML that should be inserted to define the second-level ``pb_type`` that represents this bel, including the ``<pb_type>`` tag itself. In order to generate FASM, and therefore a bitstream, with your architecture, it may be necessary to add FASM prefixes if your BEL has more than one instance. This allows the bitstream generator to understand which BEL a certain feature is being enabled/set on. FABulous handles the actual prefixes itself, but the metadata tag itself must be provided by the user inside the ``pb_type`` declaration. Where you wish to insert the metadata, simply write:
 
 .. code-block:: xml
 
@@ -18,12 +24,125 @@ The auto-generated XML that FABulous creates for different BELs cannot cover all
              <meta name="fasm_prefix"> {fasm_prefix_list} </meta>
         </metadata>
 
-and add any other desired metadata within the metadata tag. When producing the architecture specification, FABulous will automatically replace ``fasm_prefix_list`` with the necessary prefixes to meet the bitstream specification, using the ``num_pb`` value within your XML to decide how many prefixes are necessary.
+and add any other desired metadata within the metadata tag. When producing the architecture specification, FABulous will automatically replace ``{fasm_prefix_list}`` with the necessary prefixes to meet the bitstream specification, using the ``num_pb`` value within your ``pb_type`` declaration to decide how many prefixes are necessary.
 
-If a BEL is found in the specialBelDict, there are two other features that can be used to ensure everything fits together as desired. If this ``pb_type`` also requires custom model XML, this can be inserted into specialModelDict, once again with the name of the BEL as the key and including the model tag. Only model XML provided here will be added - the default is not to generate anything for special BELs. This may be useful if the BEL you are representing does not use a standard BLIF primitive, and still requires a matching model. 
+**<bel_model> content <\bel_model>**
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+This tag should contain the exact XML that should be inserted to define any models that you require for your description, including the ``model`` tag - a model will typically represent a leaf ``pb_type`` - i.e. a ``pb_type`` tag with no children. This tag does not need to be provided if you are only using BLIF standard primitives such as ``.names``, ``.input`` and ``.output``, as these models are available by default and do not need to be specified. If the tag is not provided or is left empty, no model XML will be generated at all for the BEL.
 
-Similarly, there is a specialInterconnectDict, which can be used to insert special interconnect XML into the interconnect tag of the top-level ``pb_type`` that houses the BEL. Note that in this case, you should not include the interconnect tag in your XML, as it will be inserted within an interconnect tag. This may be useful, for example, when generating custom XML for BELs that require a clock input, so that the clock signal can be routed into the BEL. The key in the dict should be the name of the BEL that the corresponding custom ``pb_type`` XML is for. Please note that the clock is NOT automatically routed from the top ``pb_type``'s UserCLK port to the clock port of the BEL, and this must be done with custom interconnect XML - this is to provide more flexibility with clock interconnection e.g. different port names or multiple connections.
+**<bel_interconnect> content <\bel_interconnect>**
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+This tag allows the user to insert custom interconnect into the top level ``pb_type``, which represents the tile (excluding routing resources) as a whole and houses the BEL. Note that unlike the other tags, the ``interconnect`` tag should **NOT** be included within this tag - the contents will be inserted directly into an existing ``interconnect`` tag so that other BELs that do not require custom XML can make use of generated interconnect XML. Please note that the clock is NOT automatically routed from the top ``pb_type``'s UserCLK port to the clock port of the BEL, and this must be done with custom interconnect XML - this is to provide more flexibility with clock interconnection e.g. different port names or multiple connections.
 
+Example Custom XML File
+-----------------------
+The following is the custom XML file used for the generic architecture.
+
+.. code-block:: xml
+
+          <custom_xml_spec>
+               <bel_info name="LUT4c_frame_config">
+                    <bel_pb>
+                         <pb_type name="LUT4c_frame_config" num_pb="8">
+                              <pb_type name="lut4" blif_model=".names" num_pb="1" class="lut">
+                                   <input name="in" num_pins="4" port_class="lut_in"/>
+                                   <output name="out" num_pins="1" port_class="lut_out"/>
+                                   <delay_matrix type="max" in_port="lut4.in" out_port="lut4.out">
+                                        2.690e-10
+                                        2.690e-10
+                                        2.690e-10
+                                        2.690e-10
+                                   </delay_matrix>
+                                   <metadata>
+                                        <meta name="fasm_type">LUT</meta>
+                                        <meta name="fasm_lut">
+                                        INIT[15:0]
+                                        </meta>
+                                   </metadata>
+                              </pb_type>
+                              <pb_type name="ff" blif_model=".latch" class="flipflop" num_pb="1">
+                                   <input name="D" num_pins="1" port_class="D"/>
+                                   <output name="Q" num_pins="1" port_class="Q"/>
+                                   <clock name="clk" num_pins="1" port_class="clock"/>
+                                   <T_setup value="2.448e-10" port="ff.D" clock="clk"/>
+                                   <T_clock_to_Q max="7.732e-11" port="ff.Q" clock="clk"/>
+                              </pb_type>
+                              <input name="I0" num_pins="1"/>
+                              <input name="I1" num_pins="1"/>
+                              <input name="I2" num_pins="1"/>
+                              <input name="I3" num_pins="1"/>
+                              <input name="Ci" num_pins="1"/>
+                              <clock name="clk" num_pins="1"/>
+                              <output name="O" num_pins="1"/>
+                              <output name="Co" num_pins="1"/>
+                              <input name="SR" num_pins="1"/>
+                              <input name="EN" num_pins="1"/>
+                              <interconnect>
+                                   <direct name="I0_to_LUT_in" input="LUT4c_frame_config.I0" output="lut4.in[0]"/>
+                                   <direct name="I1_to_LUT_in" input="LUT4c_frame_config.I1" output="lut4.in[1]"/>
+                                   <direct name="I2_to_LUT_in" input="LUT4c_frame_config.I2" output="lut4.in[2]"/>
+                                   <direct name="I3_to_LUT_in" input="LUT4c_frame_config.I3" output="lut4.in[3]"/>
+                                   <direct name="LUT_out_to_ff" input="lut4.out" output="ff.D">
+                                        <pack_pattern name="lut_with_ff" in_port="lut4.out" out_port="ff.D"/>
+                                   </direct>
+                                   <direct name="clock_pb_to_lut" input="LUT4c_frame_config.clk" output="ff.clk"/>
+                                   <mux name="lut4c_out_mux" input="ff.Q lut4.out" output="LUT4c_frame_config.O">
+                                        <delay_constant max="25e-12" in_port="lut4.out" out_port="LUT4c_frame_config.O"/>
+                                        <delay_constant max="45e-12" in_port="ff.Q" out_port="LUT4c_frame_config.O"/>
+                                        <metadata>
+                                             <meta name="fasm_mux">
+                                             ff.Q: FF
+                                             lut4.out: NULL
+                                             </meta>
+                                        </metadata>
+                                   </mux>
+                              </interconnect>
+                              <metadata>
+                                   <meta name="fasm_prefix"> {fasm_prefix_list} </meta>
+                              </metadata>
+                         </pb_type>
+                    </bel_pb>
+                    <bel_interconnect>
+                         <direct name="clock_top_to_pb0" input="LUT4AB.UserCLK" output="LUT4c_frame_config[0].clk"/>
+                         <direct name="clock_top_to_pb1" input="LUT4AB.UserCLK" output="LUT4c_frame_config[1].clk"/>
+                         <direct name="clock_top_to_pb2" input="LUT4AB.UserCLK" output="LUT4c_frame_config[2].clk"/>
+                         <direct name="clock_top_to_pb3" input="LUT4AB.UserCLK" output="LUT4c_frame_config[3].clk"/>
+                         <direct name="clock_top_to_pb4" input="LUT4AB.UserCLK" output="LUT4c_frame_config[4].clk"/>
+                         <direct name="clock_top_to_pb5" input="LUT4AB.UserCLK" output="LUT4c_frame_config[5].clk"/>
+                         <direct name="clock_top_to_pb6" input="LUT4AB.UserCLK" output="LUT4c_frame_config[6].clk"/>
+                         <direct name="clock_top_to_pb7" input="LUT4AB.UserCLK" output="LUT4c_frame_config[7].clk"/>
+                    </bel_interconnect>
+               </bel_info>
+               <bel_info name="IO_1_bidirectional_frame_config_pass">
+                    <bel_pb>
+                         <pb_type name="IO_1_bidirectional_frame_config_pass" num_pb="2">
+                              <mode name="pad_is_input">
+                                   <pb_type name="W_input" blif_model=".input" num_pb="1">
+                                        <output name="inpad" num_pins="1"/>
+                                   </pb_type>
+                                   <interconnect>
+                                        <direct name="input_interconnect" input="W_input.inpad" output="IO_1_bidirectional_frame_config_pass.O"/>
+                                   </interconnect>
+                              </mode>
+                              <mode name="pad_is_output">
+                                   <pb_type name="W_output" blif_model=".output" num_pb="1">
+                                        <input name="outpad" num_pins="1"/>
+                                   </pb_type>
+                                   <interconnect>
+                                        <direct name="output_interconnect" input="IO_1_bidirectional_frame_config_pass.I" output="W_output.outpad"/>
+                                   </interconnect>
+                              </mode>
+                              <input name="I" num_pins="1"/>
+                              <input name="T" num_pins="1"/>
+                              <output name="O" num_pins="1"/>
+                              <output name="Q" num_pins="1"/>
+                              <metadata>
+                                   <meta name="fasm_prefix">A_ B_</meta>
+                              </metadata>
+                         </pb_type>
+                    </bel_pb>
+               </bel_info>
+          </custom_xml_spec>
 
 Notes for developers
 --------------------

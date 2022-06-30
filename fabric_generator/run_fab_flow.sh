@@ -56,7 +56,7 @@ python3 fabulous_top_wrapper_temp/top_wrapper_generator_with_BRAM.py -c $1 -r $2
 python3 fabric_gen.py -GenNextpnrModel
 
 #REM STEP 9 : generate the VPR model
-python3 fabric_gen.py -GenVPRModel
+python3 fabric_gen.py -GenVPRModel custom_info.xml
 
 #REM STRP 10 : generate the meta data list for FASM -> bitstream
 python3 fabric_gen.py -GenBitstreamSpec npnroutput/meta_data.txt

@@ -4889,38 +4889,98 @@ def genVPRModelXML(archObject: Fabric, customXmlFilename, generatePairs = True):
     ### COMPLEX BLOCKS, MODELS & TILES
 
 
-    pb_typesString = "" #String to store all the different kinds of pb_types needed
+    #String to store all the different kinds of pb_types needed - first we populate it with a dummy for tiles without BELs (as they still require a subtile)
+    pb_typesString = '''<pb_type name="reserved_dummy">
+    <interconnect>
+    </interconnect>
+    </pb_type>
+    '''
+
 
     modelsString = "" #String to store different models
 
     tilesString = "" #String to store tiles
 
-    sourceSinkMap = getFabricSourcesAndSinks(archObject)
+    #sourceSinkMap = getFabricSourcesAndSinks(archObject)
     
     doneBels = [] # List to track bels that we've already created a pb_type for (by type)
     for cellType in archObject.cellTypes: 
         cTile = getTileByType(archObject, cellType)
 
         tilesString += f'  <tile name="{cellType}">\n' #Add tiles and appropriate equivalent site
-        tilesString += f'   <sub_tile name="{cellType}_sub">' #Add sub_tile declaration to meet VTR 8.1.0 requirements
-        tilesString += '    <equivalent_sites>\n'
-        tilesString += f'     <site pb_type="{cellType}" pin_mapping="direct"/>\n'
-        tilesString += '    </equivalent_sites>\n'
+        # tilesString += f'   <sub_tile name="{cellType}_sub">' #Add sub_tile declaration to meet VTR 8.1.0 requirements
+        # tilesString += '    <equivalent_sites>\n'
+        # tilesString += f'     <site pb_type="{cellType}" pin_mapping="direct"/>\n'
+        # tilesString += '    </equivalent_sites>\n'
 
-        pb_typesString += f'  <pb_type name="{cellType}">\n' #Top layer block
+        # pb_typesString += f'  <pb_type name="{cellType}">\n' #Top layer block
 
         tileInputs = [] #Track the tile's top level inputs and outputs for the top pb_type definition
         tileOutputs = [] 
 
         customInterconnectStr = "" #Create empty string to store custom interconnect XML
 
+        if cTile.belsWithIO == []: #VPR requires a sub-tile tag, so if we can't create one for a BEL we make a dummy one
+            tilesString += f'<sub_tile name="{cellType}_dummy" capacity="1">\n'
+            tilesString += f'  <equivalent_sites>\n'
+            tilesString += f'    <site pb_type="reserved_dummy" pin_mapping="direct"/>\n'
+            tilesString += f'  </equivalent_sites>\n'
+            tilesString += f'</sub_tile>\n'
+
+
+
         for bel in cTile.belsWithIO: #Create second layer (leaf) blocks for each bel
             tileInputs.extend(bel[2]) #Add the inputs and outputs of this BEL to the top level tile inputs/outputs list
             tileOutputs.extend(bel[3])
 
 
-            if bel[0] in doneBels: #We only want one tag for each kind of bel so we track which ones we have already done
+            #We generate a separate subtile for each BEL instance (so that we can wire them differently)
+            #Therefore we do this before the doneBels check
+
+            # Add subtile to represent this BEL (specific instance)
+            tilesString += f'   <sub_tile name="{bel[1]}{bel[0]}" capacity="1">\n' #Add sub_tile declaration to meet VTR 8.1.0 requirements
+            tilesString += '    <equivalent_sites>\n'
+
+            pinMappingStr = ''
+            #Generate interconnect from wrapper pb_type to primitive
+            for cInput in bel[2]:  #Add direct connections from top level tile to the corresponding child port
+                pinMappingStr += f'    <direct from="{bel[1]}{bel[0]}.{cInput}" to="{bel[0]}_wrapper.{removeStringPrefix(cInput, bel[1])}"/>\n'
+
+
+            for cOutput in bel[3]: #Add direct connections from child port to top level tile
+                pinMappingStr += f'    <direct to="{bel[0]}_wrapper.{removeStringPrefix(cOutput, bel[1])}" from="{bel[1]}{bel[0]}.{cOutput}"/>\n'
+
+            #TODO: FIX THIS WHEN FIXING CUSTOM XML
+            if bel[4]:# and bel[0] not in specialBelDict: #If the BEL has a clock input then route it in - we don't do this for custom XML so the user is not restricted in terms of clock port presence or naming
+                pinMappingStr += f'    <direct from="{bel[1]}{bel[0]}.UserCLK" to="{bel[0]}_wrapper.UserCLK"/>\n'
+
+            if pinMappingStr == '': #If no connections then direct mapping so VPR doesn't insist on subchildren that clarify mapping
+                tilesString += f'     <site pb_type="{bel[0]}_wrapper" pin_mapping="direct">\n'
+            else:
+                tilesString += f'     <site pb_type="{bel[0]}_wrapper" pin_mapping="custom">\n'           
+                tilesString += pinMappingStr
+
+            tilesString += f'     </site>\n'
+            tilesString += '    </equivalent_sites>\n'
+
+            #If the BEL has an external clock connection then add this to the tile string
+            if bel[4]:
+                tilesString += f'    <input name="UserCLK" num_pins="1"/>\n'
+
+
+            #Add ports to BEL subtile
+            for cInput in bel[2]:
+                tilesString += f'    <input name="{cInput}" num_pins="1"/>\n'
+
+            for cOutput in bel[3]:
+                tilesString += f'    <output name="{cOutput}" num_pins="1"/>\n'
+
+            tilesString += f'   </sub_tile>\n' #Close subtile tag for this BEL
+
+
+            if bel[0] in doneBels: #We only want one pb_type for each kind of bel so we track which ones we have already done
                 continue
+
 
             count = 0
             prefixList = []
@@ -4928,6 +4988,29 @@ def genVPRModelXML(archObject: Fabric, customXmlFilename, generatePairs = True):
                 if innerBel[0] == bel[0]: #Count how many of the current bel we have
                     count += 1
                     prefixList.append(innerBel[1]) #Add the prefix of this bel to our list of prefixes
+
+
+            #Prepare custom passthrough interconnect from wrapper to primitive pb_type
+
+            unprefixedInputs = [removeStringPrefix(cInput, bel[1]) for cInput in bel[2]] #Create lists of ports without prefixes for our generic modelling
+            unprefixedOutputs = [removeStringPrefix(cOutput, bel[1]) for cOutput in bel[3]]
+
+            passthroughInterconnectStr = '' #String to connect ports in primitive pb to same-named ports on top-level pb
+            pbPortsStr = ''
+
+
+            for cInput in unprefixedInputs:
+                pbPortsStr += f'    <input name="{cInput}" num_pins="1"/>\n' #Add input and outputs
+                passthroughInterconnectStr += f'<direct name="{bel[0]}_{cInput}_top_to_child" input="{bel[0]}_wrapper.{cInput}" output="{bel[0]}.{cInput}"/>\n'
+
+            if bel[4]: #If the spec of the bel has an external clock connection
+                pbPortsStr += f'    <input name="UserCLK" num_pins="1"/>\n' #Create an input to represent this
+                passthroughInterconnectStr += f'<direct name="{bel[0]}_UserCLK_top_to_child" input="{bel[0]}_wrapper.UserCLK" output="{bel[0]}.UserCLK"/>\n'
+
+            for cOutput in unprefixedOutputs:
+                pbPortsStr += f'    <output name="{cOutput}" num_pins="1"/>\n' #Add outputs to pb
+                passthroughInterconnectStr += f'<direct name="{bel[0]}_{cOutput}_child_to_top" input="{bel[0]}.{cOutput}" output="{bel[0]}_wrapper.{cOutput}"/>\n'
+
 
 
             if bel[0] in specialBelDict: #If the bel has custom pb_type XML
@@ -4946,7 +5029,14 @@ def genVPRModelXML(archObject: Fabric, customXmlFilename, generatePairs = True):
                 for i in range(fasm_prefix_count):
                     fasm_prefix_list += letters[i] + " " # Get a space separated list of the first <num_pb> letters
 
+                pb_typesString += f'   <pb_type name="{bel[0]}_wrapper">\n'
                 pb_typesString += thisPbString.format(fasm_prefix_list = fasm_prefix_list) #Add the custom pb_type XML with the list inserted
+                pb_typesString += pbPortsStr
+                pb_typesString += '   <interconnect>\n'
+                pb_typesString += customInterconnectStr
+                pb_typesString += passthroughInterconnectStr
+                pb_typesString += '   </interconnect>\n'
+                pb_typesString += f'   </pb_type>\n'
 
                 if bel[0] in specialModelDict: #If it also has custom model XML
                     modelsString += specialModelDict[bel[0]] #Then add in this XML
@@ -4954,35 +5044,38 @@ def genVPRModelXML(archObject: Fabric, customXmlFilename, generatePairs = True):
                 if bel[0] in specialInterconnectDict: #And if it has any custom interconnects
                     customInterconnectStr += specialInterconnectDict[bel[0]] #Add them to this string to be added in at the end of the pb_type
 
+                # Also add in interconnect to pass signals through from the wrapper
+
             else: #Otherwise we generate the pb_type and model text
 
-     
-                pb_typesString += f'   <pb_type name="{bel[0]}" num_pb="{count}" blif_model=".subckt {bel[0]}">\n' #Add inner pb_type tag opener
+                pb_typesString += f'   <pb_type name="{bel[0]}_wrapper">\n' #Add inner pb_type tag opener
+                pb_typesString += f'   <pb_type name="{bel[0]}" num_pb="1" blif_model=".subckt {bel[0]}">\n' #Add inner pb_type tag opener
 
                 modelsString += f'  <model name="{bel[0]}">\n' #Add model tag
                 modelsString += '   <input_ports>\n' #open tag for input ports in model list
 
 
-                unprefixedInputs = [removeStringPrefix(cInput, bel[1]) for cInput in bel[2]] #Create lists of ports without prefixes for our generic modelling
-                unprefixedOutputs = [removeStringPrefix(cOutput, bel[1]) for cOutput in bel[3]]
+
+
 
                 allOutsStr = " ".join(unprefixedOutputs) #Generate space-separated list of all outputs for combinational sink ports
 
+
+
                 for cInput in unprefixedInputs:
-                    pb_typesString += f'    <input name="{cInput}" num_pins="1"/>\n' #Add input and outputs
                     modelsString += f'    <port name="{cInput}" combinational_sink_ports="{allOutsStr}"/>\n' #Add all outputs as combinational sinks
 
                 if bel[4]: #If the spec of the bel has an external clock connection
-                    pb_typesString += f'    <input name="UserCLK" num_pins="1"/>\n' #Create an input to represent this
                     modelsString += f'    <port name="UserCLK"/>\n' #Add all outputs as combinational sinks
+
 
                 modelsString += '   </input_ports>\n' #close input ports tag
                 modelsString += '   <output_ports>\n' #open output ports tag
 
 
                 for cOutput in unprefixedOutputs:
-                    pb_typesString += f'    <output name="{cOutput}" num_pins="1"/>\n' #Add outputs to pb and model
                     modelsString += f'    <port name="{cOutput}"/>\n'
+
 
                 modelsString += f'   </output_ports>\n' #close output ports tag
                 modelsString += '  </model>\n'
@@ -5003,93 +5096,100 @@ def genVPRModelXML(archObject: Fabric, customXmlFilename, generatePairs = True):
                         pb_typesString += f'    <delay_constant max="300e-12" in_port="{bel[0]}.{cInput}" out_port="{bel[0]}.{cOutput}"/>\n'
 
 
-
+                pb_typesString += pbPortsStr
                 pb_typesString += '   </pb_type>\n' #Close inner tag
-                
+                pb_typesString += '   <interconnect>\n'
+                pb_typesString += passthroughInterconnectStr
+                pb_typesString += '   </interconnect>\n'
+                pb_typesString += pbPortsStr
+                pb_typesString += f'   </pb_type>\n' #Close wrapper tag
+
             doneBels.append(bel[0]) #Make sure we don't repeat similar BELs
-            
+
+
+
         pinlocationsAndInputsStr = ''
 
         pinlocationsAndInputsStr += '   <pinlocations pattern="custom">\n' #Custom pinlocations allow us to set all pins to the bottom of the tile - this just makes RR graph accuracy easier
         
-        totalList = f'{cellType}_sub.UserCLK' #Add UserCLK to the list of pins
-        for cPin in (tileInputs + tileOutputs + list(sourceSinkMap[cTile.genTileLoc()][0]) + list(sourceSinkMap[cTile.genTileLoc()][1])): #List all pins 
-            totalList += f' {cellType}_sub.{cPin}' #And add them to the pinlocation list
+        # totalList = f'{cellType}_sub.UserCLK' #Add UserCLK to the list of pins
+        # for cPin in (tileInputs + tileOutputs + list(sourceSinkMap[cTile.genTileLoc()][0]) + list(sourceSinkMap[cTile.genTileLoc()][1])): #List all pins 
+        #     totalList += f' {cellType}_sub.{cPin}' #And add them to the pinlocation list
 
-        pinlocationsAndInputsStr += f'    <loc side ="bottom"> {totalList} </loc>\n' #Set all to bottom of tile
+        # pinlocationsAndInputsStr += f'    <loc side ="bottom"> {totalList} </loc>\n' #Set all to bottom of tile
 
-        pinlocationsAndInputsStr += '   </pinlocations>\n'
-
-
-        pb_typesString += '   <interconnect>\n' #We now need interconnect to link every bel to the top pb_type
-
-        belCountDict = {} #Use dict to track how many of each bel we have seen
-        belIndexList = [] #Shows what index the bel at the relevant index has
-
-        for bel in cTile.belsWithIO:
-            if bel[0] in belCountDict: #If we've already seen one of the bel
-                i = belCountDict[bel[0]] #Then our index is the number we've already seen (indexing starts at 0)
-                belCountDict[bel[0]] = i + 1 #And we increment our seen count by 1
-            else:
-                i = 0
-                belCountDict[bel[0]] = 1 #Otherwise we set our seen count to 1 and set i to 0
-
-            belIndexList.append(i) #Update list to map current bel to its index
-
-            for cInput in bel[2]:  #Add direct connections from top level tile to the corresponding child port
-                pb_typesString += f'    <direct name="{cTile.tileType}_{cInput}_top_to_child" input="{cellType}.{cInput}" output="{bel[0]}[{i}].{removeStringPrefix(cInput, bel[1])}"/>\n'
+        # pinlocationsAndInputsStr += '   </pinlocations>\n'
 
 
-            for cOutput in bel[3]: #Add direct connections from child port to top level tile
-                pb_typesString += f'    <direct name="{cTile.tileType}_{cOutput}_child_to_top" input="{bel[0]}[{i}].{removeStringPrefix(cOutput, bel[1])}" output="{cellType}.{cOutput}"/>\n'
+        # pb_typesString += '   <interconnect>\n' #We now need interconnect to link every bel to the top pb_type
 
-            if bel[4] and bel[0] not in specialBelDict: #If the BEL has a clock input then route it in - we don't do this for custom XML so the user is not restricted in terms of clock port presence or naming
-                pb_typesString += f'    <direct name="{cTile.tileType}_{bel[0]}_{i}_clock_in" input="{cellType}.UserCLK" output="{bel[0]}[{i}].UserCLK"/>\n'
+        # belCountDict = {} #Use dict to track how many of each bel we have seen
+        # belIndexList = [] #Shows what index the bel at the relevant index has
+
+        # for bel in cTile.belsWithIO:
+        #     if bel[0] in belCountDict: #If we've already seen one of the bel
+        #         i = belCountDict[bel[0]] #Then our index is the number we've already seen (indexing starts at 0)
+        #         belCountDict[bel[0]] = i + 1 #And we increment our seen count by 1
+        #     else:
+        #         i = 0
+        #         belCountDict[bel[0]] = 1 #Otherwise we set our seen count to 1 and set i to 0
+
+        #     belIndexList.append(i) #Update list to map current bel to its index
+
+        #     for cInput in bel[2]:  #Add direct connections from top level tile to the corresponding child port
+        #         pb_typesString += f'    <direct name="{cTile.tileType}_{cInput}_top_to_child" input="{cellType}.{cInput}" output="{bel[0]}[{i}].{removeStringPrefix(cInput, bel[1])}"/>\n'
 
 
-        for pip in cTile.pips: 
-            if (pip[0] in tileOutputs) and (pip[1] in tileInputs): #If we have a pip connecting a bel output to a bel input we add it as a direct connection
-                for i, bel in enumerate(cTile.belsWithIO): 
-                    if pip[0] in bel[3]: #If the pip's source is the same as the bel's output then we note it as the source of the pip
-                        sourceBel = bel #Note which bel it is
-                        sourceIndex = belIndexList[i] #And what index it has (in terms of its own type e.g. LUT4[2])
-                    if pip[1] in bel[2]: #And if the pip's sink is the same as the bel's input then we note it as the sink
-                        sinkBel = bel #Note the same again
-                        sinkIndex = belIndexList[i]
-                sourceStr = f'{sourceBel[0]}[{sourceIndex}].{removeStringPrefix(pip[0], sourceBel[1])}' #Generate the source
-                sinkStr = f'{sinkBel[0]}[{sinkIndex}].{removeStringPrefix(pip[1], sinkBel[1])}' #And sink port names
-                pb_typesString += f'    <direct name="{pip[0]}_{pip[1]}_pip" input="{sourceStr}" output="{sinkStr}"/>\n' #And add the direct tag
+        #     for cOutput in bel[3]: #Add direct connections from child port to top level tile
+        #         pb_typesString += f'    <direct name="{cTile.tileType}_{cOutput}_child_to_top" input="{bel[0]}[{i}].{removeStringPrefix(cOutput, bel[1])}" output="{cellType}.{cOutput}"/>\n'
+
+        #     if bel[4] and bel[0] not in specialBelDict: #If the BEL has a clock input then route it in - we don't do this for custom XML so the user is not restricted in terms of clock port presence or naming
+        #         pb_typesString += f'    <direct name="{cTile.tileType}_{bel[0]}_{i}_clock_in" input="{cellType}.UserCLK" output="{bel[0]}[{i}].UserCLK"/>\n'
+
+        # TODO: REFACTOR THIS
+        # for pip in cTile.pips: 
+        #     if (pip[0] in tileOutputs) and (pip[1] in tileInputs): #If we have a pip connecting a bel output to a bel input we add it as a direct connection
+        #         for i, bel in enumerate(cTile.belsWithIO): 
+        #             if pip[0] in bel[3]: #If the pip's source is the same as the bel's output then we note it as the source of the pip
+        #                 sourceBel = bel #Note which bel it is
+        #                 sourceIndex = belIndexList[i] #And what index it has (in terms of its own type e.g. LUT4[2])
+        #             if pip[1] in bel[2]: #And if the pip's sink is the same as the bel's input then we note it as the sink
+        #                 sinkBel = bel #Note the same again
+        #                 sinkIndex = belIndexList[i]
+        #         sourceStr = f'{sourceBel[0]}[{sourceIndex}].{removeStringPrefix(pip[0], sourceBel[1])}' #Generate the source
+        #         sinkStr = f'{sinkBel[0]}[{sinkIndex}].{removeStringPrefix(pip[1], sinkBel[1])}' #And sink port names
+        #         pb_typesString += f'    <direct name="{pip[0]}_{pip[1]}_pip" input="{sourceStr}" output="{sinkStr}"/>\n' #And add the direct tag
  
 
-        pb_typesString += customInterconnectStr
-        pb_typesString += '   </interconnect>\n'
+        # pb_typesString += customInterconnectStr
+        # pb_typesString += '   </interconnect>\n'
 
-        tilesString += f'   <input name="UserCLK" num_pins="1"/>\n'
-        pb_typesString += f'   <input name="UserCLK" num_pins="1"/>\n'
-
-
-        #Now we add tile and top-level pb_type inputs and outputs
-        for cInput in tileInputs:
-            pb_typesString += f'   <input name="{cInput}" num_pins="1"/>\n' #Add top level inputs and outputs
-            pinlocationsAndInputsStr += f'   <input name="{cInput}" num_pins="1"/>\n'
+        # tilesString += f'   <input name="UserCLK" num_pins="1"/>\n'
+        # pb_typesString += f'   <input name="UserCLK" num_pins="1"/>\n'
 
 
-        for cOutput in tileOutputs:
-            pb_typesString += f'   <output name="{cOutput}" num_pins="1"/>\n'
-            pinlocationsAndInputsStr += f'   <output name="{cOutput}" num_pins="1"/>\n'
+        # #Now we add tile and top-level pb_type inputs and outputs
+        # for cInput in tileInputs:
+        #     pb_typesString += f'   <input name="{cInput}" num_pins="1"/>\n' #Add top level inputs and outputs
+        #     pinlocationsAndInputsStr += f'   <input name="{cInput}" num_pins="1"/>\n'
 
 
-        for source in sourceSinkMap[cTile.genTileLoc()][0]:
-            pb_typesString += f'   <output name="{source}" num_pins="1"/>\n' #Add top level inputs and outputs
-            pinlocationsAndInputsStr += f'   <output name="{source}" num_pins="1"/>\n'            
+        # for cOutput in tileOutputs:
+        #     pb_typesString += f'   <output name="{cOutput}" num_pins="1"/>\n'
+        #     pinlocationsAndInputsStr += f'   <output name="{cOutput}" num_pins="1"/>\n'
 
-        for sink in sourceSinkMap[cTile.genTileLoc()][1]:
-            pb_typesString += f'   <input name="{sink}" num_pins="1"/>\n' #Add top level inputs and outputs
-            pinlocationsAndInputsStr += f'   <input name="{sink}" num_pins="1"/>\n'    
 
-        #And close final tile & pb_type string
-        pb_typesString += f'  </pb_type>\n'
-        tilesString += pinlocationsAndInputsStr + '</sub_tile>\n' + pinlocationsAndInputsStr
+        # for source in sourceSinkMap[cTile.genTileLoc()][0]:
+        #     pb_typesString += f'   <output name="{source}" num_pins="1"/>\n' #Add top level inputs and outputs
+        #     pinlocationsAndInputsStr += f'   <output name="{source}" num_pins="1"/>\n'            
+
+        # for sink in sourceSinkMap[cTile.genTileLoc()][1]:
+        #     pb_typesString += f'   <input name="{sink}" num_pins="1"/>\n' #Add top level inputs and outputs
+        #     pinlocationsAndInputsStr += f'   <input name="{sink}" num_pins="1"/>\n'    
+
+        # #And close final tile & pb_type string
+        # pb_typesString += f'  </pb_type>\n'
+        # tilesString += pinlocationsAndInputsStr + '</sub_tile>\n' 
         tilesString += '  </tile>\n'
 
 

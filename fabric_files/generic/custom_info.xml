@@ -1,7 +1,7 @@
 <custom_xml_spec>
 	<bel_info name="LUT4c_frame_config">
 		<bel_pb>
-			<pb_type name="LUT4c_frame_config" num_pb="8">
+			<pb_type name="LUT4c_frame_config" num_pb="1">
 				<pb_type name="lut4" blif_model=".names" num_pb="1" class="lut">
 					<input name="in" num_pins="4" port_class="lut_in"/>
 					<output name="out" num_pins="1" port_class="lut_out"/>
@@ -30,7 +30,7 @@
 				<input name="I2" num_pins="1"/>
 				<input name="I3" num_pins="1"/>
 				<input name="Ci" num_pins="1"/>
-				<clock name="clk" num_pins="1"/>
+				<clock name="UserCLK" num_pins="1"/>
 				<output name="O" num_pins="1"/>
 				<output name="Co" num_pins="1"/>
 				<input name="SR" num_pins="1"/>
@@ -43,7 +43,7 @@
 					<direct name="LUT_out_to_ff" input="lut4.out" output="ff.D">
 						<pack_pattern name="lut_with_ff" in_port="lut4.out" out_port="ff.D"/>
 					</direct>
-					<direct name="clock_pb_to_lut" input="LUT4c_frame_config.clk" output="ff.clk"/>
+					<direct name="clock_pb_to_lut" input="LUT4c_frame_config.UserCLK" output="ff.clk"/>
 					<mux name="lut4c_out_mux" input="ff.Q lut4.out" output="LUT4c_frame_config.O">
 						<delay_constant max="25e-12" in_port="lut4.out" out_port="LUT4c_frame_config.O"/>
 						<delay_constant max="45e-12" in_port="ff.Q" out_port="LUT4c_frame_config.O"/>
@@ -73,7 +73,7 @@
 	</bel_info>
 	<bel_info name="IO_1_bidirectional_frame_config_pass">
 		<bel_pb>
-			<pb_type name="IO_1_bidirectional_frame_config_pass" num_pb="2">
+			<pb_type name="IO_1_bidirectional_frame_config_pass" num_pb="1">
 				<mode name="pad_is_input">
 					<pb_type name="W_input" blif_model=".input" num_pb="1">
 						<output name="inpad" num_pins="1"/>
@@ -90,6 +90,7 @@
 						<direct name="output_interconnect" input="IO_1_bidirectional_frame_config_pass.I" output="W_output.outpad"/>
 					</interconnect>
 				</mode>
+				<input name="UserCLK" num_pins="1"/>
 				<input name="I" num_pins="1"/>
 				<input name="T" num_pins="1"/>
 				<output name="O" num_pins="1"/>

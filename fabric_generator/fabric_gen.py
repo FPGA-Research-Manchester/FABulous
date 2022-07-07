@@ -4893,6 +4893,7 @@ def genVPRModelXML(archObject: Fabric, customXmlFilename, generatePairs = True):
     pb_typesString = '''<pb_type name="reserved_dummy">
     <interconnect>
     </interconnect>
+    <input name="dummy_pin" num_pins="1"/>
     </pb_type>
     '''
 
@@ -4925,6 +4926,7 @@ def genVPRModelXML(archObject: Fabric, customXmlFilename, generatePairs = True):
             tilesString += f'  <equivalent_sites>\n'
             tilesString += f'    <site pb_type="reserved_dummy" pin_mapping="direct"/>\n'
             tilesString += f'  </equivalent_sites>\n'
+            tilesString += f'<input name="dummy_pin" num_pins="1"/>'
             tilesString += f'</sub_tile>\n'
 
 
@@ -4932,6 +4934,15 @@ def genVPRModelXML(archObject: Fabric, customXmlFilename, generatePairs = True):
         for bel in cTile.belsWithIO: #Create second layer (leaf) blocks for each bel
             tileInputs.extend(bel[2]) #Add the inputs and outputs of this BEL to the top level tile inputs/outputs list
             tileOutputs.extend(bel[3])
+
+            if bel[2] == bel[3] == []:
+                tilesString += f'<sub_tile name="{bel[1]}{bel[0]}_dummy" capacity="1">\n'
+                tilesString += f'  <equivalent_sites>\n'
+                tilesString += f'    <site pb_type="reserved_dummy" pin_mapping="direct"/>\n'
+                tilesString += f'  </equivalent_sites>\n'
+                tilesString += f'<input name="dummy_pin" num_pins="1"/>'
+                tilesString += f'</sub_tile>\n'
+                continue
 
 
             #We generate a separate subtile for each BEL instance (so that we can wire them differently)

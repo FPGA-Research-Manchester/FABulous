@@ -4893,7 +4893,7 @@ def genVPRModelXML(archObject: Fabric, customXmlFilename, generatePairs = True):
     pb_typesString = '''<pb_type name="reserved_dummy">
     <interconnect>
     </interconnect>
-    <input name="dummy_pin" num_pins="1"/>
+    <input name="UserCLK" num_pins="1"/>
     </pb_type>
     '''
 
@@ -4926,7 +4926,7 @@ def genVPRModelXML(archObject: Fabric, customXmlFilename, generatePairs = True):
             tilesString += f'  <equivalent_sites>\n'
             tilesString += f'    <site pb_type="reserved_dummy" pin_mapping="direct"/>\n'
             tilesString += f'  </equivalent_sites>\n'
-            tilesString += f'<input name="dummy_pin" num_pins="1"/>'
+            tilesString += f'<input name="UserCLK" num_pins="1"/>'
             tilesString += f'</sub_tile>\n'
 
 
@@ -4940,7 +4940,7 @@ def genVPRModelXML(archObject: Fabric, customXmlFilename, generatePairs = True):
                 tilesString += f'  <equivalent_sites>\n'
                 tilesString += f'    <site pb_type="reserved_dummy" pin_mapping="direct"/>\n'
                 tilesString += f'  </equivalent_sites>\n'
-                tilesString += f'<input name="dummy_pin" num_pins="1"/>'
+                tilesString += f'<input name="UserCLK" num_pins="1"/>'
                 tilesString += f'</sub_tile>\n'
                 continue
 

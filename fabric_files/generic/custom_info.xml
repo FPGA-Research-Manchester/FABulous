@@ -57,16 +57,6 @@
 				</interconnect>
 			</pb_type>
 		</bel_pb>
-		<bel_interconnect>
-			<direct name="clock_top_to_pb0" input="LUT4AB.UserCLK" output="LUT4c_frame_config[0].clk"/>
-			<direct name="clock_top_to_pb1" input="LUT4AB.UserCLK" output="LUT4c_frame_config[1].clk"/>
-			<direct name="clock_top_to_pb2" input="LUT4AB.UserCLK" output="LUT4c_frame_config[2].clk"/>
-			<direct name="clock_top_to_pb3" input="LUT4AB.UserCLK" output="LUT4c_frame_config[3].clk"/>
-			<direct name="clock_top_to_pb4" input="LUT4AB.UserCLK" output="LUT4c_frame_config[4].clk"/>
-			<direct name="clock_top_to_pb5" input="LUT4AB.UserCLK" output="LUT4c_frame_config[5].clk"/>
-			<direct name="clock_top_to_pb6" input="LUT4AB.UserCLK" output="LUT4c_frame_config[6].clk"/>
-			<direct name="clock_top_to_pb7" input="LUT4AB.UserCLK" output="LUT4c_frame_config[7].clk"/>
-		</bel_interconnect>
 	</bel_info>
 	<bel_info name="IO_1_bidirectional_frame_config_pass">
 		<bel_pb>

@@ -4919,8 +4919,6 @@ def genVPRModelXML(archObject: Fabric, customXmlFilename, generatePairs = True):
         tileInputs = [] #Track the tile's top level inputs and outputs for the top pb_type definition
         tileOutputs = [] 
 
-        customInterconnectStr = "" #Create empty string to store custom interconnect XML
-
         if cTile.belsWithIO == []: #VPR requires a sub-tile tag, so if we can't create one for a BEL we make a dummy one
             tilesString += f'<sub_tile name="{cellType}_dummy" capacity="1">\n'
             tilesString += f'  <equivalent_sites>\n'
@@ -5026,6 +5024,10 @@ def genVPRModelXML(archObject: Fabric, customXmlFilename, generatePairs = True):
             if bel[0] in specialBelDict: #If the bel has custom pb_type XML
                 thisPbString = specialBelDict[bel[0]] #Get the custom XML string
 
+                customInterconnectStr = "" #Just so it's defined if there's no custom interconnect
+                if bel[0] in specialInterconnectDict: #And if it has any custom interconnects
+                    customInterconnectStr = specialInterconnectDict[bel[0]] #Add them to this string to be added in at the end of the pb_type
+
                 pb_typesString += f'   <pb_type name="{bel[0]}_wrapper">\n'
                 pb_typesString += thisPbString #Add the custom pb_type XML with the list inserted
                 pb_typesString += pbPortsStr
@@ -5037,9 +5039,6 @@ def genVPRModelXML(archObject: Fabric, customXmlFilename, generatePairs = True):
 
                 if bel[0] in specialModelDict: #If it also has custom model XML
                     modelsString += specialModelDict[bel[0]] #Then add in this XML
-
-                if bel[0] in specialInterconnectDict: #And if it has any custom interconnects
-                    customInterconnectStr += specialInterconnectDict[bel[0]] #Add them to this string to be added in at the end of the pb_type
 
                 # Also add in interconnect to pass signals through from the wrapper
 

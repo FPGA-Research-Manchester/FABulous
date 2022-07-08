@@ -5024,12 +5024,6 @@ def genVPRModelXML(archObject: Fabric, customXmlFilename, generatePairs = True):
                 pbPortsStr += f'    <output name="{cOutput}" num_pins="1"/>\n' #Add outputs to pb
                 passthroughInterconnectStr += f'<direct name="{bel[0]}_{cOutput}_child_to_top" input="{bel[0]}.{cOutput}" output="{bel[0]}_wrapper.{cOutput}"/>\n'
 
-            # for source in sourceSinkMap[cTile.genTileLoc()][0]:
-            #     pbPortsStr += f'   <output name="{source}" num_pins="1"/>\n' #Add top level inputs and outputs
-
-            # for sink in sourceSinkMap[cTile.genTileLoc()][1]:
-            #     pbPortsStr += f'   <input name="{sink}" num_pins="1"/>\n' #Add top level inputs and outputs
-
 
 
             if bel[0] in specialBelDict: #If the bel has custom pb_type XML
@@ -5114,7 +5108,6 @@ def genVPRModelXML(archObject: Fabric, customXmlFilename, generatePairs = True):
                     for cOutput in unprefixedOutputs: #Add a constant delay between every pair of input and output ports (as currently we say they are all combinationally linked)
                         pb_typesString += f'    <delay_constant max="300e-12" in_port="{bel[0]}.{cInput}" out_port="{bel[0]}.{cOutput}"/>\n'
 
-
                 pb_typesString += pbPortsStr
                 pb_typesString += '   </pb_type>\n' #Close inner tag
                 pb_typesString += '   <interconnect>\n'
@@ -5159,89 +5152,6 @@ def genVPRModelXML(archObject: Fabric, customXmlFilename, generatePairs = True):
 
             pb_typesString += f'</pb_type>\n'
 
-
-        pinlocationsAndInputsStr = ''
-
-        pinlocationsAndInputsStr += '   <pinlocations pattern="custom">\n' #Custom pinlocations allow us to set all pins to the bottom of the tile - this just makes RR graph accuracy easier
-        
-        totalList = f'{cellType}_sub.UserCLK' #Add UserCLK to the list of pins
-        for cPin in (tileInputs + tileOutputs + list(sourceSinkMap[cTile.genTileLoc()][0]) + list(sourceSinkMap[cTile.genTileLoc()][1])): #List all pins 
-            totalList += f' {cellType}_sub.{cPin}' #And add them to the pinlocation list
-
-        pinlocationsAndInputsStr += f'    <loc side ="bottom"> {totalList} </loc>\n' #Set all to bottom of tile
-
-        # pinlocationsAndInputsStr += '   </pinlocations>\n'
-
-
-        # pb_typesString += '   <interconnect>\n' #We now need interconnect to link every bel to the top pb_type
-
-        # belCountDict = {} #Use dict to track how many of each bel we have seen
-        # belIndexList = [] #Shows what index the bel at the relevant index has
-
-        # for bel in cTile.belsWithIO:
-        #     if bel[0] in belCountDict: #If we've already seen one of the bel
-        #         i = belCountDict[bel[0]] #Then our index is the number we've already seen (indexing starts at 0)
-        #         belCountDict[bel[0]] = i + 1 #And we increment our seen count by 1
-        #     else:
-        #         i = 0
-        #         belCountDict[bel[0]] = 1 #Otherwise we set our seen count to 1 and set i to 0
-
-        #     belIndexList.append(i) #Update list to map current bel to its index
-
-        #     for cInput in bel[2]:  #Add direct connections from top level tile to the corresponding child port
-        #         pb_typesString += f'    <direct name="{cTile.tileType}_{cInput}_top_to_child" input="{cellType}.{cInput}" output="{bel[0]}[{i}].{removeStringPrefix(cInput, bel[1])}"/>\n'
-
-
-        #     for cOutput in bel[3]: #Add direct connections from child port to top level tile
-        #         pb_typesString += f'    <direct name="{cTile.tileType}_{cOutput}_child_to_top" input="{bel[0]}[{i}].{removeStringPrefix(cOutput, bel[1])}" output="{cellType}.{cOutput}"/>\n'
-
-        #     if bel[4] and bel[0] not in specialBelDict: #If the BEL has a clock input then route it in - we don't do this for custom XML so the user is not restricted in terms of clock port presence or naming
-        #         pb_typesString += f'    <direct name="{cTile.tileType}_{bel[0]}_{i}_clock_in" input="{cellType}.UserCLK" output="{bel[0]}[{i}].UserCLK"/>\n'
-
-        # TODO: REFACTOR THIS
-        # for pip in cTile.pips: 
-        #     if (pip[0] in tileOutputs) and (pip[1] in tileInputs): #If we have a pip connecting a bel output to a bel input we add it as a direct connection
-        #         for i, bel in enumerate(cTile.belsWithIO): 
-        #             if pip[0] in bel[3]: #If the pip's source is the same as the bel's output then we note it as the source of the pip
-        #                 sourceBel = bel #Note which bel it is
-        #                 sourceIndex = belIndexList[i] #And what index it has (in terms of its own type e.g. LUT4[2])
-        #             if pip[1] in bel[2]: #And if the pip's sink is the same as the bel's input then we note it as the sink
-        #                 sinkBel = bel #Note the same again
-        #                 sinkIndex = belIndexList[i]
-        #         sourceStr = f'{sourceBel[0]}[{sourceIndex}].{removeStringPrefix(pip[0], sourceBel[1])}' #Generate the source
-        #         sinkStr = f'{sinkBel[0]}[{sinkIndex}].{removeStringPrefix(pip[1], sinkBel[1])}' #And sink port names
-        #         pb_typesString += f'    <direct name="{pip[0]}_{pip[1]}_pip" input="{sourceStr}" output="{sinkStr}"/>\n' #And add the direct tag
- 
-
-        # pb_typesString += customInterconnectStr
-        # pb_typesString += '   </interconnect>\n'
-
-        # tilesString += f'   <input name="UserCLK" num_pins="1"/>\n'
-        # pb_typesString += f'   <input name="UserCLK" num_pins="1"/>\n'
-
-
-        # #Now we add tile and top-level pb_type inputs and outputs
-        # for cInput in tileInputs:
-        #     pb_typesString += f'   <input name="{cInput}" num_pins="1"/>\n' #Add top level inputs and outputs
-        #     pinlocationsAndInputsStr += f'   <input name="{cInput}" num_pins="1"/>\n'
-
-
-        # for cOutput in tileOutputs:
-        #     pb_typesString += f'   <output name="{cOutput}" num_pins="1"/>\n'
-        #     pinlocationsAndInputsStr += f'   <output name="{cOutput}" num_pins="1"/>\n'
-
-
-        # for source in sourceSinkMap[cTile.genTileLoc()][0]:
-        #     pb_typesString += f'   <output name="{source}" num_pins="1"/>\n' #Add top level inputs and outputs
-        #     pinlocationsAndInputsStr += f'   <output name="{source}" num_pins="1"/>\n'            
-
-        # for sink in sourceSinkMap[cTile.genTileLoc()][1]:
-        #     pb_typesString += f'   <input name="{sink}" num_pins="1"/>\n' #Add top level inputs and outputs
-        #     pinlocationsAndInputsStr += f'   <input name="{sink}" num_pins="1"/>\n'    
-
-        # #And close final tile & pb_type string
-        # pb_typesString += f'  </pb_type>\n'
-        # tilesString += pinlocationsAndInputsStr + '</sub_tile>\n' 
         tilesString += '  </tile>\n'
 
 
@@ -5396,16 +5306,12 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
         
         cTile = getTileByType(archObject, cellType) #Fetch tile of this type
         
+
+        # Following sections are deliberately ordered (based on comparison with VPR's generated RR graph)
+        # as the PTC numbers have to match those that VPR would generate for its own RR graph
+        # Pattern should be one subtile at a time, all subtile inputs then all subtile outputs (in order of declaration in architecture)
+
         ptc = 0
-
-        # blocksString += f'   <pin_class type="INPUT">\n' #Generate the tags 
-        # blocksString += f'    <pin ptc="{ptc}">{cellType}.UserCLK[0]</pin>\n'
-        # blocksString += f'   </pin_class>\n'
-
-        # ptc += 1        
-
-        # blockInputString = "" #String to hold all input declarations
-        # blockOutputString = "" #String to hold all output declarations
 
         if cTile.belsWithIO == []: #If no BELs then we need UserCLK as a dummy pin
             blocksString += f'   <pin_class type="INPUT">\n' #Generate the tags 
@@ -5419,7 +5325,6 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
                 blocksString += f'    <pin ptc="{ptc}">{cellType}.UserCLK[0]</pin>\n'
                 blocksString += f'   </pin_class>\n'    
                 ptc += 1 #And increment the ptc            
-
 
             for cInput in bel[2]: #Take each input and output
                 blocksString += f'   <pin_class type="INPUT">\n' #Generate the tags 
@@ -5450,11 +5355,6 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
             blocksString += f'   </pin_class>\n'
             tilePtcMap[source] = ptc
             ptc += 1     
-
-      
-
-        # blocksString += blockInputString
-        # blocksString += blockOutputString
 
         blocksString += '  </block_type>\n'
 

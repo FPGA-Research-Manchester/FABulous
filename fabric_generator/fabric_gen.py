@@ -1991,6 +1991,7 @@ def GenTileSwitchMatrixVerilog( tile, CSV_FileName, file ):
     # CSVFile[0][1:]:   starts in the first row from the second element
     for port in CSVFile[0][1:]:
         # the following conditional is used to capture GND and VDD to not sow up in the switch matrix port list
+        #NOTE: if you change this to allow more hanging ports like this, you'll need to update the PnR flows (at time of writing, just search for occurences of 'GNDRE' to find these bits)
         if re.search('^GND', port, flags=re.IGNORECASE) or re.search('^VCC', port, flags=re.IGNORECASE) or re.search('^VDD', port, flags=re.IGNORECASE):
             pass # maybe needed one day
         else:

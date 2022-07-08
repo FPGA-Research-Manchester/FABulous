@@ -5153,8 +5153,10 @@ def genVPRModelXML(archObject: Fabric, customXmlFilename, generatePairs = True):
                     prefixList = tileLoc + ".dummy "
                 else:
                     prefixList = ""
+                    i = 0
                     for bel in tile.belsWithIO:
-                        prefixList += tileLoc + "." + bel[1] + " "
+                        prefixList += tileLoc + "." + letters[i] + " "
+                        i += 1
                 hangingSources = sourceSinkMap[tileLoc][0]
                 hangingSinks = sourceSinkMap[tileLoc][1]
 

@@ -4210,6 +4210,7 @@ def GetVerilogDeclarationForFile(VHDL_file_name):
 sDelay = "8"
 GNDRE = re.compile("GND(\d*)")
 VCCRE = re.compile("VCC(\d*)")
+VDDRE = re.compile("VDD(\d*)")
 BracketAddingRE = re.compile(r"^(\S+?)(\d+)$")
 letters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W"] #For LUT labelling
 
@@ -4363,7 +4364,7 @@ def getFabricSourcesAndSinks(archObject: Fabric, assumeSourceSinkNames = True):
             sinkSet = set()
             for pip in tile.pips:
                 if assumeSourceSinkNames:
-                    if GNDRE.match(pip[0]) or VCCRE.match(pip[0]):
+                    if GNDRE.match(pip[0]) or VCCRE.match(pip[0]) or VDDRE.match(pip[0]):
                         sourceSet.add(pip[0])                 
                 else:
                     if (tileLoc + "." + pip[0]) not in allFabricOutputs:
@@ -4712,7 +4713,7 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
                                         if destPort in cTile.belPorts:
                                             foundPhysicalPairs = True #This means it's connected to a BEL
                                             continue
-                                        if GNDRE.match(destPort) or VCCRE.match(destPort):
+                                        if GNDRE.match(destPort) or VCCRE.match(destPort) or VDDRE.match(destPort):
                                             foundPhysicalPairs = True
                                             continue
                                         stopOffs.append(destLoc + "." + destPort)

@@ -4996,12 +4996,9 @@ def genVPRModelXML(archObject: Fabric, customXmlFilename, generatePairs = True):
 
 
             count = 0
-            prefixList = []
             for innerBel in cTile.belsWithIO:
                 if innerBel[0] == bel[0]: #Count how many of the current bel we have
                     count += 1
-                    prefixList.append(innerBel[1]) #Add the prefix of this bel to our list of prefixes
-
 
             #Prepare custom passthrough interconnect from wrapper to primitive pb_type
 
@@ -5028,22 +5025,9 @@ def genVPRModelXML(archObject: Fabric, customXmlFilename, generatePairs = True):
 
             if bel[0] in specialBelDict: #If the bel has custom pb_type XML
                 thisPbString = specialBelDict[bel[0]] #Get the custom XML string
-                pbSearch = num_pbRE.search(thisPbString) #And fetch the num_pb value (with regex)
-                if pbSearch: #If there is a num_pb value specified
-                    try:
-                        fasm_prefix_count = int(pbSearch.group(4)) #Convert it to an int
-                    except:
-                        raise ValueError("Non-integer num_pb specified in custom XML") #Or if that's not possible raise an exception
-                else:
-                    fasm_prefix_count = 1 #Default in case of no num_pb specification is 1
-
-                fasm_prefix_list = ""
-
-                for i in range(fasm_prefix_count):
-                    fasm_prefix_list += letters[i] + " " # Get a space separated list of the first <num_pb> letters
 
                 pb_typesString += f'   <pb_type name="{bel[0]}_wrapper">\n'
-                pb_typesString += thisPbString.format(fasm_prefix_list = fasm_prefix_list) #Add the custom pb_type XML with the list inserted
+                pb_typesString += thisPbString #Add the custom pb_type XML with the list inserted
                 pb_typesString += pbPortsStr
                 pb_typesString += '   <interconnect>\n'
                 pb_typesString += customInterconnectStr
@@ -5092,14 +5076,6 @@ def genVPRModelXML(archObject: Fabric, customXmlFilename, generatePairs = True):
 
                 modelsString += f'   </output_ports>\n' #close output ports tag
                 modelsString += '  </model>\n'
-
-                #Add metadata using prefixes gathered earlier
-                prefixStr = " ".join(prefixList) #Str instead of string used for variable name as it is not to be injected directly into output
-
-                if prefixStr != "": 
-                    pb_typesString += '    <metadata>\n' #Add metadata tag to represent FASM prefix for genfasm tool
-                    pb_typesString += f'     <meta name="fasm_prefix">{prefixStr}</meta>\n'
-                    pb_typesString += '    </metadata>\n'
 
 
                 #Generate delay constants - for the time being, we will assume that all inputs are combinatorially connected to all outputs
@@ -5170,7 +5146,22 @@ def genVPRModelXML(archObject: Fabric, customXmlFilename, generatePairs = True):
                 layoutString += f'   <single type="{tile.tileType}" priority="1" x="{tile.x + 1}" y="{tile.y + 1}">\n' #Add single tag for each tile - add 1 to x and y (cancels out in y conversion) for padding
                 #Now add metadata for fasm generation
                 layoutString += '    <metadata>\n' 
-                layoutString += f'     <meta name="fasm_prefix"> {tile.genTileLoc()} </meta>\n' #Only metadata required is the tile name for the prefix
+
+                #We need different numbers of prefixes depending on the subtiles
+                tileLoc = tile.genTileLoc()
+                if tile.belsWithIO == []:
+                    prefixList = tileLoc + ".dummy "
+                else:
+                    prefixList = ""
+                    for bel in tile.belsWithIO:
+                        prefixList += tileLoc + "." + bel[1] + " "
+                hangingSources = sourceSinkMap[tileLoc][0]
+                hangingSinks = sourceSinkMap[tileLoc][1]
+
+                if not (len(hangingSources) == len(hangingSinks) == 0): #only do this if there actually are any hanging sources or sinks
+                    prefixList += tileLoc + ".hanging "
+
+                layoutString += f'     <meta name="fasm_prefix"> {prefixList} </meta>\n' #Only metadata required is the tile name for the prefix
                 layoutString += '    </metadata>\n'
                 layoutString += '   </single>\n'
 

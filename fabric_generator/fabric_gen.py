@@ -6230,7 +6230,10 @@ if ('-GenBitstreamSpec'.lower() in processedArguments) :
     OutFileName  = caseProcessedArguments[argIndex + 1]
 
     fabricObject = genFabricObject(fabric)
+    bitstreamSpecFile = open(OutFileName, "wb")
     specObject = genBitstreamSpec(fabricObject)
+    pickle.dump(specObject, bitstreamSpecFile)
+    bitstreamSpecFile.close()
     w = csv.writer(open(OutFileName.replace("txt","csv"), "w"))
     for key1 in specObject["TileSpecs"]:
         w.writerow([key1])

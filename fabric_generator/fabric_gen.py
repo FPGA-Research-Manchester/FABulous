@@ -1991,6 +1991,7 @@ def GenTileSwitchMatrixVerilog( tile, CSV_FileName, file ):
     # CSVFile[0][1:]:   starts in the first row from the second element
     for port in CSVFile[0][1:]:
         # the following conditional is used to capture GND and VDD to not sow up in the switch matrix port list
+        #NOTE: if you change this to allow more hanging ports like this, you'll need to update the PnR flows (at time of writing, just search for occurences of 'GNDRE' to find these bits)
         if re.search('^GND', port, flags=re.IGNORECASE) or re.search('^VCC', port, flags=re.IGNORECASE) or re.search('^VDD', port, flags=re.IGNORECASE):
             pass # maybe needed one day
         else:
@@ -4210,6 +4211,7 @@ def GetVerilogDeclarationForFile(VHDL_file_name):
 sDelay = "8"
 GNDRE = re.compile("GND(\d*)")
 VCCRE = re.compile("VCC(\d*)")
+VDDRE = re.compile("VDD(\d*)")
 BracketAddingRE = re.compile(r"^(\S+?)(\d+)$")
 letters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W"] #For LUT labelling
 
@@ -4325,31 +4327,32 @@ def removeStringPrefix(mainStr: str, prefix: str):
 
 #Method to find all 'hanging' sources and sinks in a fabric (i.e. ports with connections to pips in only one direction e.g. VCC, GND)
 #Returns dict mapping tileLoc to hanging pins
-def getFabricSourcesAndSinks(archObject: Fabric): 
+def getFabricSourcesAndSinks(archObject: Fabric, assumeSourceSinkNames = True): 
     allFabricInputs = [] #First, build a list of all fabric inputs/outputs (bel ports and wires) with the tile address
     allFabricOutputs = []
     returnDict = {}
 
-    for row in archObject.tiles:
-        for tile in row:
-            tileLoc = tile.genTileLoc()
+    if not assumeSourceSinkNames:
+        for row in archObject.tiles:
+            for tile in row:
+                tileLoc = tile.genTileLoc()
 
-            for bel in tile.belsWithIO:
-                allFabricInputs.extend([(tileLoc + "." + cInput) for cInput in bel[2]])
-                allFabricOutputs.extend([(tileLoc + "." + cOutput) for cOutput in bel[3]])
+                for bel in tile.belsWithIO:
+                    allFabricInputs.extend([(tileLoc + "." + cInput) for cInput in bel[2]])
+                    allFabricOutputs.extend([(tileLoc + "." + cOutput) for cOutput in bel[3]])
 
-            for wire in tile.wires:
-                desty = tile.y + int(wire["yoffset"]) #Calculate destination location of the wire at hand
-                destx = tile.x + int(wire["xoffset"])
-                desttileLoc = f"X{destx}Y{desty}"
+                for wire in tile.wires:
+                    desty = tile.y + int(wire["yoffset"]) #Calculate destination location of the wire at hand
+                    destx = tile.x + int(wire["xoffset"])
+                    desttileLoc = f"X{destx}Y{desty}"
 
-                for i in range(int(wire["wire-count"])): #For every individual wire
-                    allFabricInputs.append(tileLoc + "." + wire["source"] + str(i))
-                    allFabricOutputs.append(desttileLoc + "." + wire["destination"] + str(i))
+                    for i in range(int(wire["wire-count"])): #For every individual wire
+                        allFabricInputs.append(tileLoc + "." + wire["source"] + str(i))
+                        allFabricOutputs.append(desttileLoc + "." + wire["destination"] + str(i))
 
-            for wire in tile.atomicWires:
-                allFabricInputs.append(wire["sourceTile"] + "." + wire["source"]) #Generate location strings for the source and destination
-                allFabricOutputs.append(wire["destTile"] + "." + wire["destination"])
+                for wire in tile.atomicWires:
+                    allFabricInputs.append(wire["sourceTile"] + "." + wire["source"]) #Generate location strings for the source and destination
+                    allFabricOutputs.append(wire["destTile"] + "." + wire["destination"])
 
 
 
@@ -4361,10 +4364,14 @@ def getFabricSourcesAndSinks(archObject: Fabric):
             sourceSet = set()
             sinkSet = set()
             for pip in tile.pips:
-                if (tileLoc + "." + pip[0]) not in allFabricOutputs:
-                    sourceSet.add(pip[0])
-                if (tileLoc + "." + pip[1]) not in allFabricInputs:
-                    sinkSet.add(pip[1])
+                if assumeSourceSinkNames:
+                    if GNDRE.match(pip[0]) or VCCRE.match(pip[0]) or VDDRE.match(pip[0]):
+                        sourceSet.add(pip[0])                 
+                else:
+                    if (tileLoc + "." + pip[0]) not in allFabricOutputs:
+                        sourceSet.add(pip[0])
+                    if (tileLoc + "." + pip[1]) not in allFabricInputs:
+                        sinkSet.add(pip[1])
             returnDict[tileLoc] = (sourceSet, sinkSet)
 
     return returnDict
@@ -4707,7 +4714,7 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
                                         if destPort in cTile.belPorts:
                                             foundPhysicalPairs = True #This means it's connected to a BEL
                                             continue
-                                        if GNDRE.match(destPort) or VCCRE.match(destPort):
+                                        if GNDRE.match(destPort) or VCCRE.match(destPort) or VDDRE.match(destPort):
                                             foundPhysicalPairs = True
                                             continue
                                         stopOffs.append(destLoc + "." + destPort)

@@ -4325,31 +4325,32 @@ def removeStringPrefix(mainStr: str, prefix: str):
 
 #Method to find all 'hanging' sources and sinks in a fabric (i.e. ports with connections to pips in only one direction e.g. VCC, GND)
 #Returns dict mapping tileLoc to hanging pins
-def getFabricSourcesAndSinks(archObject: Fabric): 
+def getFabricSourcesAndSinks(archObject: Fabric, assumeSourceSinkNames = True): 
     allFabricInputs = [] #First, build a list of all fabric inputs/outputs (bel ports and wires) with the tile address
     allFabricOutputs = []
     returnDict = {}
 
-    for row in archObject.tiles:
-        for tile in row:
-            tileLoc = tile.genTileLoc()
+    if not assumeSourceSinkNames:
+        for row in archObject.tiles:
+            for tile in row:
+                tileLoc = tile.genTileLoc()
 
-            for bel in tile.belsWithIO:
-                allFabricInputs.extend([(tileLoc + "." + cInput) for cInput in bel[2]])
-                allFabricOutputs.extend([(tileLoc + "." + cOutput) for cOutput in bel[3]])
+                for bel in tile.belsWithIO:
+                    allFabricInputs.extend([(tileLoc + "." + cInput) for cInput in bel[2]])
+                    allFabricOutputs.extend([(tileLoc + "." + cOutput) for cOutput in bel[3]])
 
-            for wire in tile.wires:
-                desty = tile.y + int(wire["yoffset"]) #Calculate destination location of the wire at hand
-                destx = tile.x + int(wire["xoffset"])
-                desttileLoc = f"X{destx}Y{desty}"
+                for wire in tile.wires:
+                    desty = tile.y + int(wire["yoffset"]) #Calculate destination location of the wire at hand
+                    destx = tile.x + int(wire["xoffset"])
+                    desttileLoc = f"X{destx}Y{desty}"
 
-                for i in range(int(wire["wire-count"])): #For every individual wire
-                    allFabricInputs.append(tileLoc + "." + wire["source"] + str(i))
-                    allFabricOutputs.append(desttileLoc + "." + wire["destination"] + str(i))
+                    for i in range(int(wire["wire-count"])): #For every individual wire
+                        allFabricInputs.append(tileLoc + "." + wire["source"] + str(i))
+                        allFabricOutputs.append(desttileLoc + "." + wire["destination"] + str(i))
 
-            for wire in tile.atomicWires:
-                allFabricInputs.append(wire["sourceTile"] + "." + wire["source"]) #Generate location strings for the source and destination
-                allFabricOutputs.append(wire["destTile"] + "." + wire["destination"])
+                for wire in tile.atomicWires:
+                    allFabricInputs.append(wire["sourceTile"] + "." + wire["source"]) #Generate location strings for the source and destination
+                    allFabricOutputs.append(wire["destTile"] + "." + wire["destination"])
 
 
 
@@ -4361,10 +4362,14 @@ def getFabricSourcesAndSinks(archObject: Fabric):
             sourceSet = set()
             sinkSet = set()
             for pip in tile.pips:
-                if (tileLoc + "." + pip[0]) not in allFabricOutputs:
-                    sourceSet.add(pip[0])
-                if (tileLoc + "." + pip[1]) not in allFabricInputs:
-                    sinkSet.add(pip[1])
+                if assumeSourceSinkNames:
+                    if GNDRE.match(pip[0]) or VCCRE.match(pip[0]):
+                        sourceSet.add(pip[0])                 
+                else:
+                    if (tileLoc + "." + pip[0]) not in allFabricOutputs:
+                        sourceSet.add(pip[0])
+                    if (tileLoc + "." + pip[1]) not in allFabricInputs:
+                        sinkSet.add(pip[1])
             returnDict[tileLoc] = (sourceSet, sinkSet)
 
     return returnDict

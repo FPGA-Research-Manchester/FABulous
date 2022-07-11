@@ -6210,16 +6210,15 @@ if ('-GenVPRModel'.lower() in processedArguments):
     customXmlFilename = caseProcessedArguments[argIndex + 1]
 
     fabricObject = genFabricObject(fabric)
+
     archFile = open("vproutput/architecture.xml","w")
-    rrFile = open("vproutput/routing_resources.xml","w")
-
     archXML = genVPRModelXML(fabricObject, customXmlFilename, False)
-    rrGraphXML = genVPRModelRRGraph(fabricObject, False)
-
     archFile.write(archXML)
-    rrFile.write(rrGraphXML)
-
     archFile.close()
+
+    rrFile = open("vproutput/routing_resources.xml","w")
+    rrGraphXML = genVPRModelRRGraph(fabricObject, False)
+    rrFile.write(rrGraphXML)
     rrFile.close()
 
     if ('-debug'.lower() in str(sys.argv).lower()) : 

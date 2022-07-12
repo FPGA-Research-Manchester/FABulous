@@ -1,6 +1,3 @@
-# This workflow will install Python dependencies, run tests and lint with a single version of Python
-# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
-
 name: Test fabric_gen.py
 
 on:
@@ -35,7 +32,11 @@ jobs:
         flake8 fabric_generator --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Run fabric generator flow
       run: |
-        ls -R / | grep boost
         cd fabric_generator
         ./create_basic_files.sh
         ./run_fab_flow.sh
+    - name: Check pair generation
+      run: |
+        cd fabric_generator
+        ./create_basic_files.sh
+        ./run_fab_flow_nextpnr_pair.sh

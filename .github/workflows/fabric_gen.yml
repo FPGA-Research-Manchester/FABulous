@@ -34,6 +34,7 @@ jobs:
       run: |
         cd fabric_generator
         ./create_basic_files.sh ../fabric_files/generic/fabric.csv
+        ls
         python3 fabric_gen.py -GenTileSwitchMatrixCSV
         python3 fabric_gen.py -AddList2CSV LUT4AB_switch_matrix.list LUT4AB_switch_matrix.csv
         python3 fabric_gen.py -AddList2CSV N_term_single_switch_matrix.list N_term_single_switch_matrix.csv

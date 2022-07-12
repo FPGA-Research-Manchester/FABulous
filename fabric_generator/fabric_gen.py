@@ -4220,7 +4220,7 @@ class Tile:
     tileType = ""
     bels = []
     belsWithIO = [] #Currently the plan is to deprecate bels and replace it with this. However, this would require nextpnr model generation changes, so I won't do that until the VPR foundations are established
-    #Format for belsWithIO is [bel name, prefix, inputs, outputs, whether it has a clock input]
+    #Format for belsWithIO is [bel name, prefix, inputs, outputs, whether it has a clock i nput]
     #Format for bels is [bel name, prefix, ports, whether it has a clock input]
     wires = [] 
     atomicWires = [] #For storing single wires (to handle cascading and termination)
@@ -4591,7 +4591,6 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
     pipsStr = "" 
     belsStr = f"# BEL descriptions: bottom left corner Tile_X0Y0, top right {archObject.tiles[0][archObject.width - 1].genTileLoc()}\n" 
     pairStr = ""
-    templateStr = "module template ();\n"
     constraintStr = ""
     for line in archObject.tiles:
         for tile in line:
@@ -4640,37 +4639,13 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
                 belsStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)), let, cType, ",".join(nports))) + "\n"
                 #Add template - this just adds to a file to instantiate all IO as a primitive:
                 if bel == "IO_1_bidirectional_frame_config_pass":
-                    templateStr += f"wire "
-                    for i, port in enumerate(nports):
-                        templateStr += f"Tile_{tileLoc}_{port}"
-                        if i < len(nports) - 1:
-                            templateStr += ", "
-                        else:
-                            templateStr += ";\n"
                     belName = f"Tile_{tileLoc}_{let}"
-                    templateStr += f"(* keep *) IO_1_bidirectional_frame_config_pass {belName} (.O(Tile_{tileLoc}_{prefix}O), .Q(Tile_{tileLoc}_{prefix}Q), .I(Tile_{tileLoc}_{prefix}I));\n\n"
                     constraintStr += f"set_io {belName} {tileLoc}.{let}\n"
                 if bel == "InPass4_frame_config":
-                    templateStr += f"wire "
-                    for i, port in enumerate(nports):
-                        templateStr += f"Tile_{tileLoc}_{port}"
-                        if i < len(nports) - 1:
-                            templateStr += ", "
-                        else:
-                            templateStr += ";\n"
                     belName = f"Tile_{tileLoc}_{let}"
-                    templateStr += f"(* keep *) InPass4_frame_config {belName} (.O0(Tile_{tileLoc}_{prefix}O0), .O1(Tile_{tileLoc}_{prefix}O1), .O2(Tile_{tileLoc}_{prefix}O2), .O3(Tile_{tileLoc}_{prefix}O3));\n\n"
                     constraintStr += f"set_io {belName} {tileLoc}.{let}\n"
                 if bel == "OutPass4_frame_config":
-                    templateStr += f"wire "
-                    for i, port in enumerate(nports):
-                        templateStr += f"Tile_{tileLoc}_{port}"
-                        if i < len(nports) - 1:
-                            templateStr += ", "
-                        else:
-                            templateStr += ";\n"
                     belName = f"Tile_{tileLoc}_{let}"
-                    templateStr += f"(* keep *) OutPass4_frame_config {belName} (.I0(Tile_{tileLoc}_{prefix}I0), .I1(Tile_{tileLoc}_{prefix}I1), .I2(Tile_{tileLoc}_{prefix}I2), .I3(Tile_{tileLoc}_{prefix}I3));\n\n"
                     constraintStr += f"set_io {belName} {tileLoc}.{let}\n"                
             if generatePairs:
                 #Generate wire beginning to wire beginning pairs for timing analysis
@@ -4808,13 +4783,55 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
                         for i in range(4):
                             for inPip in tile.pipMuxes_MapSinkToSources[prefix + "I" + str(i)]:
                                 pairStr += tileLoc + "." + addBrackets(inPip, tile)  + "," + tileLoc + "." + prefix + f"I{i}" + "\n"                        
-    templateStr += "endmodule"
     if generatePairs:
-        return (pipsStr, belsStr, templateStr, constraintStr, pairStr)
+        return (pipsStr, belsStr, constraintStr, pairStr)
     else:
-        return (pipsStr, belsStr, templateStr, constraintStr)
+        return (pipsStr, belsStr, constraintStr, None) #Seems a little nicer to have a constant size tuple returned
 
 
+def genVerilogTemplate(archObject: Fabric):
+    templateStr = "module template ();\n"
+    for line in archObject.tiles:
+        for tile in line:
+            for num, belpair in enumerate(tile.bels):
+                bel = belpair[0]
+                let = letters[num]
+                prefix = belpair[1]
+                nports = belpair[2]
+                tileLoc = tile.genTileLoc()
+                #Add template - this just adds to a file to instantiate all IO as a primitive:
+                if bel == "IO_1_bidirectional_frame_config_pass":
+                    templateStr += f"wire "
+                    for i, port in enumerate(nports):
+                        templateStr += f"Tile_{tileLoc}_{port}"
+                        if i < len(nports) - 1:
+                            templateStr += ", "
+                        else:
+                            templateStr += ";\n"
+                    belName = f"Tile_{tileLoc}_{let}"
+                    templateStr += f"(* keep *) IO_1_bidirectional_frame_config_pass {belName} (.O(Tile_{tileLoc}_{prefix}O), .Q(Tile_{tileLoc}_{prefix}Q), .I(Tile_{tileLoc}_{prefix}I));\n\n"
+                if bel == "InPass4_frame_config":
+                    templateStr += f"wire "
+                    for i, port in enumerate(nports):
+                        templateStr += f"Tile_{tileLoc}_{port}"
+                        if i < len(nports) - 1:
+                            templateStr += ", "
+                        else:
+                            templateStr += ";\n"
+                    belName = f"Tile_{tileLoc}_{let}"
+                    templateStr += f"(* keep *) InPass4_frame_config {belName} (.O0(Tile_{tileLoc}_{prefix}O0), .O1(Tile_{tileLoc}_{prefix}O1), .O2(Tile_{tileLoc}_{prefix}O2), .O3(Tile_{tileLoc}_{prefix}O3));\n\n"
+                if bel == "OutPass4_frame_config":
+                    templateStr += f"wire "
+                    for i, port in enumerate(nports):
+                        templateStr += f"Tile_{tileLoc}_{port}"
+                        if i < len(nports) - 1:
+                            templateStr += ", "
+                        else:
+                            templateStr += ";\n"
+                    belName = f"Tile_{tileLoc}_{let}"
+                    templateStr += f"(* keep *) OutPass4_frame_config {belName} (.I0(Tile_{tileLoc}_{prefix}I0), .I1(Tile_{tileLoc}_{prefix}I1), .I2(Tile_{tileLoc}_{prefix}I2), .I3(Tile_{tileLoc}_{prefix}I3));\n\n"
+    templateStr += "endmodule"
+    return templateStr
 
 #Clock coordinates - these are relative to the fabric.csv fabric, and ignore the padding
 clockX = 0
@@ -6161,21 +6178,23 @@ if ('-GenNextpnrModel'.lower() in processedArguments) :
     pipFile = open("npnroutput/pips.txt","w")
     belFile = open("npnroutput/bel.txt", "w")
     #pairFile = open("npnroutput/wirePairs.csv", "w")
-    templateFile = open("npnroutput/template.v", "w")
     constraintFile = open("npnroutput/template.pcf", "w")
 
     npnrModel = genNextpnrModel(fabricObject, False)
 
     pipFile.write(npnrModel[0])
     belFile.write(npnrModel[1])
-    templateFile.write(npnrModel[2])
-    constraintFile.write(npnrModel[3])
+    constraintFile.write(npnrModel[2])
     #pairFile.write(npnrModel[4])
 
     pipFile.close()
     belFile.close()
-    templateFile.close()
     constraintFile.close()
+
+    with open("npnroutput/template.v", "w") as templateFile:
+        templateFile.write(genVerilogTemplate(fabricObject))
+
+
     #pairFile.close()
 
 if ('-GenNextpnrModel_pair'.lower() in processedArguments) :
@@ -6183,22 +6202,23 @@ if ('-GenNextpnrModel_pair'.lower() in processedArguments) :
     pipFile = open("npnroutput/pips.txt","w")
     belFile = open("npnroutput/bel.txt", "w")
     pairFile = open("npnroutput/wirePairs.csv", "w")
-    templateFile = open("npnroutput/template.v", "w")
     constraintFile = open("npnroutput/template.pcf", "w")
 
     npnrModel = genNextpnrModel(fabricObject)
 
     pipFile.write(npnrModel[0])
     belFile.write(npnrModel[1])
-    templateFile.write(npnrModel[2])
     constraintFile.write(npnrModel[3])
     pairFile.write(npnrModel[4])
 
     pipFile.close()
     belFile.close()
-    templateFile.close()
     constraintFile.close()
     pairFile.close()
+
+    with open("npnroutput/template.v", "w") as templateFile:
+        templateFile.write(genVerilogTemplate(fabricObject))
+ 
 
 if ('-GenVPRModel'.lower() in processedArguments):
     argIndex = processedArguments.index('-GenVPRModel'.lower())
@@ -6220,6 +6240,13 @@ if ('-GenVPRModel'.lower() in processedArguments):
     rrGraphXML = genVPRModelRRGraph(fabricObject, False)
     rrFile.write(rrGraphXML)
     rrFile.close()
+
+    with open("vproutput/template.v", "w") as templateFile:
+        templateFile.write(genVerilogTemplate(fabricObject))
+
+    constraintFile = open("vproutput/template.pcf", "w")
+    constraintFile.close()
+
 
     if ('-debug'.lower() in str(sys.argv).lower()) : 
         print(archXML)

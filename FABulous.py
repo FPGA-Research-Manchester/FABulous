@@ -35,19 +35,25 @@ def create_project(project_dir):
 # Generate the switch matrix of the fabric
 def switch_matrix_generation(project_dir):
     cmd = ["python3",
-           f"{FABulous_root}/fabric_generator/fabric_gen.py"]
+           f"{FABulous_root}/fabric_generator/fabric_gen.py",
+           "-f", f"{project_dir}/src/fabric.csv"]
 
     # Generate the empty switch matrix
     cmd.append("-GenTileSwitchMatrixCSV")
+    cmd.append("-s")
+    cmd.append(f"{project_dir}/src")
     sp.run(cmd, check=True)
+
+    cmd.pop()
+    cmd.pop()
     cmd.pop()
 
     # populate the the switch matrix with all the ".list" file in the src directory
     cmd.append("-AddList2CSV")
-    for f in os.listdir(f"./"):
+    for f in os.listdir(f"{project_dir}/src"):
         if f.endswith(".list") and not f.startswith("debug"):
-            cmd.append(f"./{f}")
-            cmd.append(f"./{f.replace('.list', '.csv')}")
+            cmd.append(f"{project_dir}/src/{f}")
+            cmd.append(f"{project_dir}/src/{f.replace('.list', '.csv')}")
             sp.run(cmd, check=True)
             cmd.pop()
             cmd.pop()
@@ -56,15 +62,17 @@ def switch_matrix_generation(project_dir):
 # Generate the RTL code of the fabric
 def RTL_generation(project_dir, VHDL=False):
     cmd = ["python3",
-           f"{FABulous_root}/fabric_generator/fabric_gen.py"]
+           f"{FABulous_root}/fabric_generator/fabric_gen.py",
+           "-f", f"{project_dir}/src/fabric.csv",
+           "-s", f"{project_dir}/src"]
 
-    if os.path.exists("../fabric_vhdl"):
-        shutil.rmtree("../fabric_vhdl")
-    os.makedirs("../fabric_vhdl")
+    if os.path.exists(f"{project_dir}/fabric_vhdl"):
+        shutil.rmtree(f"{project_dir}/fabric_vhdl")
+    os.makedirs(f"{project_dir}/fabric_vhdl")
 
-    if os.path.exists("../fabric_verilog"):
-        shutil.rmtree("../fabric_verilog")
-    os.makedirs("../fabric_verilog")
+    if os.path.exists(f"{project_dir}/fabric_verilog"):
+        shutil.rmtree(f"{project_dir}/fabric_verilog")
+    os.makedirs(f"{project_dir}/fabric_verilog")
 
     # Generate Switch Matrix
     cmd.append("-GenTileSwitchMatrixVHDL")
@@ -94,7 +102,7 @@ def RTL_generation(project_dir, VHDL=False):
     cmd.pop()
 
     # Generate Fabric
-    cmd.append("-GenFabricHDL")
+    cmd.append("-GenFabricVHDL")
     sp.run(cmd, check=True)
     cmd.pop()
 
@@ -103,13 +111,13 @@ def RTL_generation(project_dir, VHDL=False):
     cmd.pop()
 
     # clean up
-    for f in os.listdir(f"."):
+    for f in os.listdir(f"{project_dir}/src"):
         if f.endswith("_ConfigMem.v"):
-            os.remove(f"./{f}")
+            os.remove(f"{project_dir}/src/{f}")
 
     fabric_def = []
     fabric_flag = False
-    with open(f"./fabric.csv") as f:
+    with open(f"{project_dir}/src/fabric.csv") as f:
         for line in f:
             if fabric_flag:
                 fabric_def.append(line)
@@ -135,7 +143,8 @@ def RTL_generation(project_dir, VHDL=False):
 def model_generation(project_dir, VPR=False):
     # os.chdir(project_dir)
     cmd = ["python3",
-           f"{FABulous_root}/fabric_generator/fabric_gen.py"]
+           f"{FABulous_root}/fabric_generator/fabric_gen.py",
+           "-f", f"{project_dir}/src/fabric.csv"]
 
     if os.path.exists("vproutput"):
         shutil.rmtree("vproutput")
@@ -163,7 +172,8 @@ def model_generation(project_dir, VPR=False):
 def bit_stream_meta_data_generation(project_dir):
     # os.chdir(project_dir)
     cmd = ["python3",
-           f"{FABulous_root}/fabric_generator/fabric_gen.py"]
+           f"{FABulous_root}/fabric_generator/fabric_gen.py",
+           "-f", f"{project_dir}/src/fabric.csv"]
     cmd.append("-GenBitstreamSpec")
     cmd.append(f"../npnroutput/meta_data.txt")
 
@@ -245,7 +255,7 @@ if __name__ == "__main__":
     parser.add_argument('-c', '--create_project', action='store_true', default=False,
                         help='Create a new FABulous project')
 
-    parser.add_argument('-rf', '--run_fabulous_fabric', action='store_true', default=False,
+    parser.add_argument('-rf', '--generate_fabulous_fabric', action='store_true', default=False,
                         help='Generate a FABulous fabric')
 
     parser.add_argument('-r', '--run_fabulous_flow', action='store_true', default=False,
@@ -276,12 +286,12 @@ if __name__ == "__main__":
     if args.bitstream:
         generate_bitstream(args.project_dir, args.top)
 
-    if args.run_fabulous_fabric:
-        os.chdir(f"{args.project_dir}/src")
+    if args.generate_fabulous_fabric:
+        # os.chdir(f"{args.project_dir}/src")
         switch_matrix_generation(args.project_dir)
         RTL_generation(args.project_dir)
-        model_generation(args.project_dir)
-        bit_stream_meta_data_generation(args.project_dir)
+        # model_generation(args.project_dir)
+        # bit_stream_meta_data_generation(args.project_dir)
 
     if args.run_fabulous_flow:
         synthesis(args.project_dir, args.top)

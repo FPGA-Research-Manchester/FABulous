@@ -135,8 +135,17 @@ def RTL_generation(project_dir, VHDL=False):
     cmd.append(str(row))
     cmd.append("-c")
     cmd.append(str(col))
+    cmd.append("-o")
+    cmd.append(f"{project_dir}/src")
 
     sp.run(cmd, check=True)
+
+    # collect all the file
+    for f in os.listdir("."):
+        if f.endswith(".vhdl"):
+            shutil.copy(f"./{f}", f"../fabric_vhdl/{f}")
+        if f.endswith(".v"):
+            shutil.copy(f"./{f}", f"../fabric_verilog/{f}")
 
 
 # Generate the model for place and route
@@ -144,46 +153,41 @@ def model_generation(project_dir, VPR=False):
     # os.chdir(project_dir)
     cmd = ["python3",
            f"{FABulous_root}/fabric_generator/fabric_gen.py",
-           "-f", f"{project_dir}/src/fabric.csv"]
+           "-f", f"{project_dir}/src/fabric.csv",
+           "-s", f"{project_dir}/src"]
 
-    if os.path.exists("vproutput"):
-        shutil.rmtree("vproutput")
-    os.makedirs("vproutput")
+    if os.path.exists(f"{project_dir}/vproutput"):
+        shutil.rmtree(f"{project_dir}/vproutput")
+    os.makedirs(f"{project_dir}/vproutput")
 
-    if os.path.exists("npnroutput"):
-        shutil.rmtree("npnroutput")
-    os.makedirs("npnroutput")
+    if os.path.exists(f"{project_dir}/npnroutput"):
+        shutil.rmtree(f"{project_dir}/npnroutput")
+    os.makedirs(f"{project_dir}/npnroutput")
 
+    cmd.append("-o")
+    cmd.append(f"{project_dir}/npnroutput")
     cmd.append("-GenNextpnrModel")
+
     sp.run(cmd, check=True)
     cmd.pop()
+    cmd.pop()
 
+    cmd.append(f"{project_dir}/vproutput")
     cmd.append("-GenVPRModel")
-    cmd.append(f"./custom_info.xml")
+    cmd.append(f"{project_dir}/src/custom_info.xml")
     sp.run(cmd, check=True)
-
-    cmd.pop()
-    cmd.pop()
-
-    shutil.copytree("npnroutput/", "../npnroutput", dirs_exist_ok=True)
-    shutil.copytree("vproutput/", "../vproutput", dirs_exist_ok=True)
 
 
 def bit_stream_meta_data_generation(project_dir):
     # os.chdir(project_dir)
     cmd = ["python3",
            f"{FABulous_root}/fabric_generator/fabric_gen.py",
-           "-f", f"{project_dir}/src/fabric.csv"]
+           "-f", f"{project_dir}/src/fabric.csv",
+           "-s", f"{project_dir}/src"]
+
     cmd.append("-GenBitstreamSpec")
-    cmd.append(f"../npnroutput/meta_data.txt")
-
+    cmd.append(f"{project_dir}/npnroutput/meta_data.txt")
     sp.run(cmd, check=True)
-
-    for f in os.listdir("."):
-        if f.endswith(".vhdl"):
-            shutil.copy(f"./{f}", f"../fabric_vhdl/{f}")
-        if f.endswith(".v"):
-            shutil.copy(f"./{f}", f"../fabric_verilog/{f}")
 
 
 # Run synthesis
@@ -287,11 +291,10 @@ if __name__ == "__main__":
         generate_bitstream(args.project_dir, args.top)
 
     if args.generate_fabulous_fabric:
-        # os.chdir(f"{args.project_dir}/src")
         switch_matrix_generation(args.project_dir)
         RTL_generation(args.project_dir)
-        # model_generation(args.project_dir)
-        # bit_stream_meta_data_generation(args.project_dir)
+        model_generation(args.project_dir)
+        bit_stream_meta_data_generation(args.project_dir)
 
     if args.run_fabulous_flow:
         synthesis(args.project_dir, args.top)

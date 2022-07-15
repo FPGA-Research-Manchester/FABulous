@@ -44,7 +44,7 @@ MultiplexerStyle = 'custom'
 SwitchMatrixDebugSignals = True
 SuperTileEnable = True		# enable SuperTile generation
 
-file_dir = "./"
+src_dir = "./"
 
 # TILE field aliases
 direction = 0
@@ -198,7 +198,7 @@ def replace(string, substitutions):
 def PrintComponentDeclarationForFile(VHDL_file_name, file):
     ConfigPortUsed = 0  # 1 means is used
     VHDLfile = [line.rstrip('\n')
-                for line in open(f"{file_dir}/{VHDL_file_name}")]
+                for line in open(f"{src_dir}/{VHDL_file_name}")]
     templist = []
     marker = False
     # for item in VHDLfile:
@@ -228,7 +228,7 @@ def PrintComponentDeclarationForFile(VHDL_file_name, file):
 
 def GetComponentPortsFromFile(VHDL_file_name, filter='ALL', port='internal', BEL_Prefix=''):
     VHDLfile = [line.rstrip('\n')
-                for line in open(f"{file_dir}/{VHDL_file_name}")]
+                for line in open(f"{src_dir}/{VHDL_file_name}")]
     Inputs = []
     Outputs = []
     ExternalPorts = []
@@ -403,7 +403,7 @@ def GetComponentPortsFromVerilog(Verilog_file_name, filter='ALL', port='internal
 
 def GetNoConfigBitsFromFile(VHDL_file_name):
     VHDLfile = [line.rstrip('\n')
-                for line in open(f"{file_dir}/{VHDL_file_name}")]
+                for line in open(f"{src_dir}/{VHDL_file_name}")]
     result = 'NULL'
     for line in VHDLfile:
         # the order of the if-statements is important
@@ -416,7 +416,7 @@ def GetNoConfigBitsFromFile(VHDL_file_name):
 
 def GetComponentEntityNameFromFile(VHDL_file_name):
     VHDLfile = [line.rstrip('\n')
-                for line in open(f"{file_dir}/{VHDL_file_name}")]
+                for line in open(f"{src_dir}/{VHDL_file_name}")]
     for line in VHDLfile:
         # the order of the if-statements is important
         if re.search('^entity', line, flags=re.IGNORECASE):
@@ -427,7 +427,7 @@ def GetComponentEntityNameFromFile(VHDL_file_name):
 
 def GetComponentEntityNameFromVerilog(Verilog_file_name):
     Verilogfile = [line.rstrip('\n') for line in open(
-        f"{file_dir}/{Verilog_file_name}")]
+        f"{src_dir}/{Verilog_file_name}")]
     for line in Verilogfile:
         # the order of the if-statements is important
         if re.search('^module', line, flags=re.IGNORECASE):
@@ -4897,7 +4897,8 @@ def GenerateVerilog_Conf_Instantiation(file, counter, close=True):
 
 def GetVerilogDeclarationForFile(VHDL_file_name):
     ConfigPortUsed = 0  # 1 means is used
-    VHDLfile = [line.rstrip('\n') for line in open(f"{file_dir}/{VHDL_file_name}")]
+    VHDLfile = [line.rstrip('\n')
+                for line in open(f"{src_dir}/{VHDL_file_name}")]
     templist = []
     # for item in VHDLfile:
     # print(item)
@@ -5146,7 +5147,7 @@ def genFabricObject(fabric: list):
                     cTile.matrixFileName = csvLoc
                     try:
                         csvFile = RemoveComments(
-                            [i.strip('\n').split(',') for i in open(csvLoc)])
+                            [i.strip('\n').split(',') for i in open(f"{src_dir}/{csvLoc}")])
                         cTile.pips = findPipList(csvFile)
 
                         cTile.pipMuxes_MapSourceToSinks = findPipList(
@@ -6758,10 +6759,10 @@ def genBitstreamSpec(archObject: Fabric):
             # Add frame masks to the dictionary
             try:
                 # This may need to be .init.csv, not just .csv
-                configCSV = open(cellType + "_ConfigMem.csv")
+                configCSV = open(f"{src_dir}/{cellType}_ConfigMem.csv")
             except:
                 try:
-                    configCSV = open(cellType + "_ConfigMem.init.csv")
+                    configCSV = open(f"{src_dir}/{cellType}_ConfigMem.init.csv")
                 except:
                     print(
                         f"No Config Mem csv file found for {cellType}. Assuming no config memory.")
@@ -6827,7 +6828,7 @@ def genBitstreamSpec(archObject: Fabric):
                 # if(belType == 'Config_access'):
                 # print(curBitOffset)
             csvFile = [i.strip('\n').split(',')
-                       for i in open(curTile.matrixFileName)]
+                       for i in open(f"{src_dir}/{curTile.matrixFileName}")]
             pipCounts = [int(row[-1]) for row in csvFile[1::]]
             csvFile = RemoveComments(csvFile)
             sinks = [line[0] for line in csvFile]
@@ -6914,6 +6915,7 @@ def CheckExt(choices):
 steps = """
 Steps to use this script to produce an FPGA fabric:
     1) create/modify a fabric description (see fabric.csv as an example)
+
     2) create BEL primitives as VHDL code. 
        Use std_logic (not std_logic_vector) ports
        Follow the example in clb_slice_4xLUT4.vhdl
@@ -6924,11 +6926,15 @@ Steps to use this script to produce an FPGA fabric:
 
     3) run the script with the -GenTileSwitchMatrixCSV switch
        This will eventually overwrite all old switch matrix csv-files!!!
+
     4) Edit the switch matrix adjacency (the switch matrix csv-files). 
+
     5) run the script with the -GenTileSwitchMatrixVHDL switch
        This will generate switch matrix VHDL files
+
     6) run the script with the -GenTileHDL switch
        This will generate all tile VHDL files
+
     Note that the only manual VHDL code is implemented in 2) the rest is autogenerated!
 """
 
@@ -6936,12 +6942,17 @@ parser = argparse.ArgumentParser(description=steps)
 
 parser.add_argument('-f', "--fabric_csv",
                     default="fabric.csv",
+                    action=CheckExt({'csv'}),
                     help="Specifiy Fabric CSV file, if not specified will use the fabric.csv in the current directory")
 
 parser.add_argument('-s', "--src",
                     default=".",
-                    dest="file_dir",
-                    help="Specify the src directory of the fabric design")
+                    dest="src_dir",
+                    help="Specify the source directory of the fabric design")
+
+parser.add_argument('-o', "--out",
+                    dest="out_dir",
+                    help="Specify the output directory of the files. If not set will be default to be the same as source directory. This option do not affect -CSV2list and -AddList2CSV output directory")
 
 parser.add_argument('-GenTileSwitchMatrixCSV',
                     default=False,
@@ -6984,7 +6995,8 @@ parser.add_argument('-GenFabricVerilog',
 
 parser.add_argument('-run_all',
                     default=False,
-                    action='store_true')
+                    action='store_true',
+                    help="run -GenTileSwitchMatrixCSV, -GenTileSwitchMatrixVHDL, -GenTileVHDL in one go")
 
 parser.add_argument('-CSV2list',
                     nargs=2,
@@ -7011,7 +7023,11 @@ parser.add_argument('-GenNextpnrModel_pair',
                     action='store_true')
 
 parser.add_argument('-GenVPRModel',
-                    action=CheckExt({'xml'}))
+                    action=CheckExt({'xml'}),
+                    metavar=('custom_info.xml'))
+
+parser.add_argument('-debug', default=False,
+                    action='store_true', help='debug mode')
 
 parser.add_argument('-GenBitstreamSpec',
                     metavar=("meta_data.txt"),
@@ -7020,7 +7036,11 @@ parser.add_argument('-GenBitstreamSpec',
 
 args = parser.parse_args()
 
-file_dir = args.file_dir
+src_dir = args.src_dir
+if args.out_dir:
+    out_dir = args.out_dir
+else:
+    out_dir = src_dir
 
 # read fabric description as a csv file (Excel uses tabs '\t' instead of ',')
 print('### Read Fabric csv file ###')
@@ -7079,71 +7099,71 @@ if args.GenTileSwitchMatrixCSV or args.run_all:
     print('### Generate initial switch matrix template (has to be bootstrapped first)')
     for tile in TileTypes:
         print(
-            f'### generate csv for tile {tile} # filename: {file_dir}/{str(tile)}_switch_matrix.csv')
+            f'### generate csv for tile {tile} # filename: {out_dir}/{str(tile)}_switch_matrix.csv')
         TileFileHandler = open(
-            f"{file_dir}/{str(tile)}_switch_matrix.csv", 'w')
+            f"{out_dir}/{str(tile)}_switch_mat_switch_matrix.csv", 'w')
         TileInformation = GetTileFromFile(FabricFile, str(tile))
         BootstrapSwitchMatrix(TileInformation, str(
-            tile), (f"{file_dir}/{str(tile)}_switch_matrix.csv"))
+            tile), (f"{src_dir}/{str(tile)}_switch_matrix.csv"))
         TileFileHandler.close()
 
 if args.GenTileSwitchMatrixVHDL or args.run_all:
     print('### Generate initial switch matrix VHDL code')
     for tile in TileTypes:
         print(
-            f'### generate VHDL for tile {tile} # filename: {file_dir}/{str(tile)}_switch_matrix.vhdl)')
+            f'### generate VHDL for tile {tile} # filename: {out_dir}/{str(tile)}_switch_matrix.vhdl)')
         TileFileHandler = open(
-            f"{file_dir}/{str(tile)}_switch_matrix.vhdl", 'w+')
+            f"{out_dir}/{str(tile)}_switch_matrix.vhdl", 'w+')
         GenTileSwitchMatrixVHDL(
-            tile, (f"{file_dir}/{str(tile)}_switch_matrix.csv"), TileFileHandler)
+            tile, (f"{src_dir}/{str(tile)}_switch_matrix.csv"), TileFileHandler)
         TileFileHandler.close()
 
 if args.GenTileSwitchMatrixVerilog or args.run_all:
     print('### Generate initial switch matrix Verilog code')
     for tile in TileTypes:
         print(
-            f"### generate Verilog for tile {tile} # filename: {file_dir}/{str(tile)}_switch_matrix.v")
-        TileFileHandler = open(f"{file_dir}/{str(tile)}_switch_matrix.v", 'w+')
+            f"### generate Verilog for tile {tile} # filename: {out_dir}/{str(tile)}_switch_matrix.v")
+        TileFileHandler = open(f"{out_dir}/{str(tile)}_switch_matrix.v", 'w+')
         GenTileSwitchMatrixVerilog(
-            tile, (f"{file_dir}/{str(tile)}_switch_matrix.csv"), TileFileHandler)
+            tile, (f"{src_dir}/{str(tile)}_switch_matrix.csv"), TileFileHandler)
         TileFileHandler.close()
 
 if args.GenTileConfigMemVHDL or args.run_all:
     print('### Generate all tile HDL descriptions')
     for tile in TileTypes:
         print(
-            f"### generate configuration bitstream storage VHDL for tile {tile} # filename: {file_dir}/{str(tile)}_ConfigMem.vhdl")
+            f"### generate configuration bitstream storage VHDL for tile {tile} # filename: {out_dir}/{str(tile)}_ConfigMem.vhdl")
         # TileDescription = GetTileFromFile(FabricFile,str(tile))
         # TileVHDL_list = GenerateTileVHDL_list(FabricFile,str(tile))
         # I tried various "from StringIO import StringIO" all not working - gave up
-        TileFileHandler = open(f"{file_dir}/{str(tile)}_ConfigMem.vhdl", 'w+')
+        TileFileHandler = open(f"{out_dir}/{str(tile)}_ConfigMem.vhdl", 'w+')
         TileInformation = GetTileFromFile(FabricFile, str(tile))
         GenerateConfigMemVHDL(
-            TileInformation, f"{file_dir}/{str(tile)}_ConfigMem", TileFileHandler)
+            TileInformation, f"{src_dir}/{str(tile)}_ConfigMem", TileFileHandler)
         TileFileHandler.close()
 
 if args.GenTileConfigMemVerilog or args.run_all:
     for tile in TileTypes:
         print(
-            f"### generate configuration bitstream storage Verilog for tile {tile} # filename: {file_dir}/{str(tile)}_ConfigMem.v')")
+            f"### generate configuration bitstream storage Verilog for tile {tile} # filename: {out_dir}/{str(tile)}_ConfigMem.v')")
         # TileDescription = GetTileFromFile(FabricFile,str(tile))
         # TileVHDL_list = GenerateTileVHDL_list(FabricFile,str(tile))
         # I tried various "from StringIO import StringIO" all not working - gave up
-        TileFileHandler = open(f"{file_dir}/{str(tile)}_ConfigMem.v", 'w+')
+        TileFileHandler = open(f"{out_dir}/{str(tile)}_ConfigMem.v", 'w+')
         TileInformation = GetTileFromFile(FabricFile, str(tile))
         GenerateConfigMemVerilog(
-            TileInformation, f"{file_dir}/{str(tile)}_ConfigMem", TileFileHandler)
+            TileInformation, f"{src_dir}/{str(tile)}_ConfigMem", TileFileHandler)
         TileFileHandler.close()
 
 if args.GenTileHDL or args.run_all:
     print('### Generate all tile HDL descriptions')
     for tile in TileTypes:
         print(
-            f"### generate VHDL for tile {tile} # filename:', {file_dir}/{str(tile)}_tile.vhdl")
+            f"### generate VHDL for tile {tile} # filename:', {out_dir}/{str(tile)}_tile.vhdl")
         # TileDescription = GetTileFromFile(FabricFile,str(tile))
         # TileVHDL_list = GenerateTileVHDL_list(FabricFile,str(tile))
         # I tried various "from StringIO import StringIO" all not working - gave up
-        TileFileHandler = open(f"{file_dir}/{str(tile)}_tile.vhdl", 'w+')
+        TileFileHandler = open(f"{out_dir}/{str(tile)}_tile.vhdl", 'w+')
         TileInformation = GetTileFromFile(FabricFile, str(tile))
         GenerateTileVHDL(TileInformation, str(tile), TileFileHandler)
         TileFileHandler.close()
@@ -7151,11 +7171,11 @@ if args.GenTileHDL or args.run_all:
 if args.GenTileVerilog or args.run_all:
     for tile in TileTypes:
         print(
-            f"### generate Verilog for tile {tile} # filename: {file_dir}/{str(tile)}_tile.v")
+            f"### generate Verilog for tile {tile} # filename: {out_dir}/{str(tile)}_tile.v")
         # TileDescription = GetTileFromFile(FabricFile,str(tile))
         # TileVHDL_list = GenerateTileVHDL_list(FabricFile,str(tile))
         # I tried various "from StringIO import StringIO" all not working - gave up
-        TileFileHandler = open(f"{file_dir}/{str(tile)}_tile.v", 'w+')
+        TileFileHandler = open(f"{out_dir}/{str(tile)}_tile.v", 'w+')
         TileInformation = GetTileFromFile(FabricFile, str(tile))
         GenerateTileVerilog(TileInformation, str(tile), TileFileHandler)
         TileFileHandler.close()
@@ -7164,22 +7184,22 @@ if args.GenTileVerilog or args.run_all:
         for SuperTile in SuperTileDict:
             if any(item in SuperTileDict[SuperTile][0] for item in TileTypes):
                 print(
-                    f"### generate Verilog for SuperTile {SuperTile} # filename: {str(SuperTile)}_tile.v")
+                    f"### generate Verilog for SuperTile {SuperTile} # filename: {out_dir}/{str(SuperTile)}_tile.v")
                 TileFileHandler = open(
-                    f"{file_dir}/{str(SuperTile)}_tile.v", 'w+')
+                    f"{out_dir}/{str(SuperTile)}_tile.v", 'w+')
                 GenerateSuperTileVerilog(
                     SuperTileDict[SuperTile], str(SuperTile), TileFileHandler)
                 TileFileHandler.close()
 
 if args.GenFabricVHDL or args.run_all:
-    print('### Generate the Fabric VHDL descriptions')
-    FileHandler = open(f'{file_dir}/fabric.vhdl', 'w+')
+    print('### Generate the Fabric VHDL descriptions ')
+    FileHandler = open(f'{out_dir}/fabric.vhdl', 'w+')
     GenerateFabricVHDL(FabricFile, FileHandler)
     FileHandler.close()
 
 if args.GenFabricVerilog or args.run_all:
     print('### Generate the Fabric Verilog descriptions')
-    FileHandler = open(f'{file_dir}/fabric.v', 'w+')
+    FileHandler = open(f'{out_dir}/fabric.v', 'w+')
     fabric_top = GenerateFabricVerilog(FabricFile, FileHandler)
     FileHandler.close()
 
@@ -7198,11 +7218,11 @@ if args.PrintCSV_FileInfo:
 
 if args.GenNextpnrModel:
     fabricObject = genFabricObject(fabric)
-    pipFile = open(f"{file_dir}/npnroutput/pips.txt", "w")
-    belFile = open(f"{file_dir}/npnroutput/bel.txt", "w")
+    pipFile = open(f"{out_dir}/pips.txt", "w")
+    belFile = open(f"{out_dir}/bel.txt", "w")
     #pairFile = open("npnroutput/wirePairs.csv", "w")
-    templateFile = open(f"{file_dir}/npnroutput/template.v", "w")
-    constraintFile = open(f"{file_dir}/npnroutput/template.pcf", "w")
+    templateFile = open(f"{out_dir}/template.v", "w")
+    constraintFile = open(f"{out_dir}/template.pcf", "w")
 
     npnrModel = genNextpnrModel(fabricObject, False)
 
@@ -7220,11 +7240,11 @@ if args.GenNextpnrModel:
 
 if args.GenNextpnrModel_pair:
     fabricObject = genFabricObject(fabric)
-    pipFile = open(f"{file_dir}/npnroutput/pips.txt", "w")
-    belFile = open(f"{file_dir}/npnroutput/bel.txt", "w")
-    pairFile = open(f"{file_dir}/npnroutput/wirePairs.csv", "w")
-    templateFile = open(f"{file_dir}/npnroutput/template.v", "w")
-    constraintFile = open(f"{file_dir}/npnroutput/template.pcf", "w")
+    pipFile = open(f"{out_dir}/pips.txt", "w")
+    belFile = open(f"{out_dir}/bel.txt", "w")
+    pairFile = open(f"{out_dir}/wirePairs.csv", "w")
+    templateFile = open(f"{out_dir}/template.v", "w")
+    constraintFile = open(f"{out_dir}/template.pcf", "w")
 
     npnrModel = genNextpnrModel(fabricObject)
 
@@ -7243,8 +7263,8 @@ if args.GenNextpnrModel_pair:
 if args.GenVPRModel:
     customXmlFilename = args.GenVPRModel
     fabricObject = genFabricObject(fabric)
-    archFile = open(f"{file_dir}/vproutput/architecture.xml", "w")
-    rrFile = open(f"{file_dir}/vproutput/routing_resources.xml", "w")
+    archFile = open(f"{out_dir}/architecture.xml", "w")
+    rrFile = open(f"{out_dir}/routing_resources.xml", "w")
 
     archXML = genVPRModelXML(fabricObject, customXmlFilename, False)
     rrGraphXML = genVPRModelRRGraph(fabricObject, False)

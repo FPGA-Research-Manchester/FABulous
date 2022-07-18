@@ -1,6 +1,3 @@
-# This workflow will install Python dependencies, run tests and lint with a single version of Python
-# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
-
 name: Test fabric_gen.py
 
 on:
@@ -36,10 +33,97 @@ jobs:
     - name: Run fabric generator flow
       run: |
         cd fabric_generator
-        ./create_basic_files.sh
-        ./run_fab_flow.sh
+        ./create_basic_files.sh ../fabric_files/generic/fabric.csv
+        ls
+        python3 fabric_gen.py -GenTileSwitchMatrixCSV
+        python3 fabric_gen.py -AddList2CSV LUT4AB_switch_matrix.list LUT4AB_switch_matrix.csv
+        python3 fabric_gen.py -AddList2CSV N_term_single_switch_matrix.list N_term_single_switch_matrix.csv
+        python3 fabric_gen.py -AddList2CSV S_term_single_switch_matrix.list S_term_single_switch_matrix.csv
+        python3 fabric_gen.py -AddList2CSV N_term_RAM_IO_switch_matrix.list N_term_RAM_IO_switch_matrix.csv
+        python3 fabric_gen.py -AddList2CSV S_term_RAM_IO_switch_matrix.list S_term_RAM_IO_switch_matrix.csv
+        python3 fabric_gen.py -AddList2CSV N_term_single2_switch_matrix.list N_term_single2_switch_matrix.csv
+        python3 fabric_gen.py -AddList2CSV S_term_single2_switch_matrix.list S_term_single2_switch_matrix.csv
+        python3 fabric_gen.py -AddList2CSV N_term_DSP_switch_matrix.list N_term_DSP_switch_matrix.csv
+        python3 fabric_gen.py -AddList2CSV S_term_DSP_switch_matrix.list S_term_DSP_switch_matrix.csv
+        python3 fabric_gen.py -AddList2CSV RAM_IO_switch_matrix.list RAM_IO_switch_matrix.csv
+        python3 fabric_gen.py -AddList2CSV W_IO_switch_matrix.list W_IO_switch_matrix.csv
+        python3 fabric_gen.py -AddList2CSV RegFile_switch_matrix.list RegFile_switch_matrix.csv
+        python3 fabric_gen.py -AddList2CSV DSP_top_switch_matrix.list DSP_top_switch_matrix.csv
+        python3 fabric_gen.py -AddList2CSV DSP_bot_switch_matrix.list DSP_bot_switch_matrix.csv
+        python3 fabric_gen.py -GenTileSwitchMatrixVHDL
+        python3 fabric_gen.py -GenTileSwitchMatrixVerilog
+        python3 fabric_gen.py -GenTileConfigMemVHDL
+        python3 fabric_gen.py -GenTileConfigMemVerilog
+        python3 fabric_gen.py -GenTileHDL
+        python3 fabric_gen.py -GenTileVerilog
+        python3 fabric_gen.py -GenFabricHDL
+        python3 fabric_gen.py -GenFabricVerilog
+        rm N_term_DSP_ConfigMem.v
+        rm N_term_RAM_IO_ConfigMem.v
+        rm N_term_single_ConfigMem.v
+        rm N_term_single2_ConfigMem.v
+        rm S_term_DSP_ConfigMem.v
+        rm S_term_RAM_IO_ConfigMem.v
+        rm S_term_single_ConfigMem.v
+        rm S_term_single2_ConfigMem.v
+        python3 fabulous_top_wrapper_temp/top_wrapper_generator_with_BRAM.py -c 10 -r 16
+        python3 fabric_gen.py -GenNextpnrModel
+        python3 fabric_gen.py -GenVPRModel custom_info.xml
+        python3 fabric_gen.py -GenBitstreamSpec npnroutput/meta_data.txt
+        mkdir -p verilog_output
+        mv -f *.v ./verilog_output
+        mkdir -p vhdl_output
+        mv -f *.vhdl ./vhdl_output
+        mkdir -p list_files
+        mv -f *.list ./list_files
+        mkdir -p csv_output
+        mv -f *.csv ./csv_output
+        cp ./npnroutput/{bel.txt,pips.txt,meta_data.txt} ../nextpnr/fabulous/fab_arch/
+        cp ./csv_output/fabric.csv ../nextpnr/fabulous/fab_arch/
     - name: Check pair generation
       run: |
         cd fabric_generator
-        ./create_basic_files.sh
-        ./run_fab_flow_nextpnr_pair.sh
+        ./create_basic_files.sh ../fabric_files/generic/fabric.csv
+        python3 fabric_gen.py -GenTileSwitchMatrixCSV
+        python3 fabric_gen.py -AddList2CSV LUT4AB_switch_matrix.list LUT4AB_switch_matrix.csv
+        python3 fabric_gen.py -AddList2CSV N_term_single_switch_matrix.list N_term_single_switch_matrix.csv
+        python3 fabric_gen.py -AddList2CSV S_term_single_switch_matrix.list S_term_single_switch_matrix.csv
+        python3 fabric_gen.py -AddList2CSV N_term_RAM_IO_switch_matrix.list N_term_RAM_IO_switch_matrix.csv
+        python3 fabric_gen.py -AddList2CSV S_term_RAM_IO_switch_matrix.list S_term_RAM_IO_switch_matrix.csv
+        python3 fabric_gen.py -AddList2CSV N_term_single2_switch_matrix.list N_term_single2_switch_matrix.csv
+        python3 fabric_gen.py -AddList2CSV S_term_single2_switch_matrix.list S_term_single2_switch_matrix.csv
+        python3 fabric_gen.py -AddList2CSV N_term_DSP_switch_matrix.list N_term_DSP_switch_matrix.csv
+        python3 fabric_gen.py -AddList2CSV S_term_DSP_switch_matrix.list S_term_DSP_switch_matrix.csv
+        python3 fabric_gen.py -AddList2CSV RAM_IO_switch_matrix.list RAM_IO_switch_matrix.csv
+        python3 fabric_gen.py -AddList2CSV W_IO_switch_matrix.list W_IO_switch_matrix.csv
+        python3 fabric_gen.py -AddList2CSV RegFile_switch_matrix.list RegFile_switch_matrix.csv
+        python3 fabric_gen.py -AddList2CSV DSP_top_switch_matrix.list DSP_top_switch_matrix.csv
+        python3 fabric_gen.py -AddList2CSV DSP_bot_switch_matrix.list DSP_bot_switch_matrix.csv
+        python3 fabric_gen.py -GenTileSwitchMatrixVHDL
+        python3 fabric_gen.py -GenTileSwitchMatrixVerilog
+        python3 fabric_gen.py -GenTileConfigMemVHDL
+        python3 fabric_gen.py -GenTileConfigMemVerilog
+        python3 fabric_gen.py -GenTileHDL
+        python3 fabric_gen.py -GenTileVerilog
+        python3 fabric_gen.py -GenFabricHDL
+        python3 fabric_gen.py -GenFabricVerilog
+        rm N_term_DSP_ConfigMem.v
+        rm N_term_RAM_IO_ConfigMem.v
+        rm N_term_single_ConfigMem.v
+        rm N_term_single2_ConfigMem.v
+        rm S_term_DSP_ConfigMem.v
+        rm S_term_RAM_IO_ConfigMem.v
+        rm S_term_single_ConfigMem.v
+        rm S_term_single2_ConfigMem.v
+        python3 fabulous_top_wrapper_temp/top_wrapper_generator_with_BRAM.py -c 10 -r 16
+        python3 fabric_gen.py -GenNextpnrModel_pair
+        mkdir -p verilog_output
+        mv -f *.v ./verilog_output
+        mkdir -p vhdl_output
+        mv -f *.vhdl ./vhdl_output
+        mkdir -p list_files
+        mv -f *.list ./list_files
+        mkdir -p csv_output
+        mv -f *.csv ./csv_output
+        cp ./npnroutput/{bel.txt,pips.txt,meta_data.txt} ../nextpnr/fabulous/fab_arch/
+        cp ./csv_output/fabric.csv ../nextpnr/fabulous/fab_arch/

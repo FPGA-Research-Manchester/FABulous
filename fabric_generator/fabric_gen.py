@@ -4637,16 +4637,11 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
                 else:
                     cType = bel
                 belsStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)), let, cType, ",".join(nports))) + "\n"
-                #Add template - this just adds to a file to instantiate all IO as a primitive:
-                if bel == "IO_1_bidirectional_frame_config_pass":
+                #Add constraints to fix pin location (based on template generated in genVerilogTemplate)
+                if bel == "IO_1_bidirectional_frame_config_pass" or "InPass4_frame_config" or "OutPass4_frame_config":
                     belName = f"Tile_{tileLoc}_{let}"
                     constraintStr += f"set_io {belName} {tileLoc}.{let}\n"
-                if bel == "InPass4_frame_config":
-                    belName = f"Tile_{tileLoc}_{let}"
-                    constraintStr += f"set_io {belName} {tileLoc}.{let}\n"
-                if bel == "OutPass4_frame_config":
-                    belName = f"Tile_{tileLoc}_{let}"
-                    constraintStr += f"set_io {belName} {tileLoc}.{let}\n"                
+            
             if generatePairs:
                 #Generate wire beginning to wire beginning pairs for timing analysis
                 print("Generating pairs for: " + tile.genTileLoc())
@@ -5780,6 +5775,38 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
     print(f'Max Width: {max_width}')
     return outputString
 
+def genVPRModelConstraints(archObject: Fabric):
+    constraintString = '<vpr_constraints tool_name="vpr">\n'
+    constraintString += '  <partition_list>\n'
+
+    for row in archObject.tiles:
+        for tile in row:
+            for num, belpair in enumerate(tile.bels):
+                bel = belpair[0]
+                let = letters[num]
+                prefix = belpair[1]
+                tileLoc = tile.genTileLoc()
+
+                if bel == "IO_1_bidirectional_frame_config_pass":
+                    # Seems that VPR automatically names primitives after the first wire connected to them
+                    # So we use the wire names assigned in genVerilogTemplate
+                    constraintString += f'    <partition name="Tile_{tileLoc}_{let}">\n'
+                    constraintString += f'      <add_atom name_pattern="Tile_{tileLoc}_{prefix}O"/>\n'
+                    constraintString += f'    </partition>\n'
+
+                if bel == "InPass4_frame_config":
+                    constraintString += f'    <partition name="Tile_{tileLoc}_{let}">\n'
+                    constraintString += f'      <add_atom name_pattern="Tile_{tileLoc}_{prefix}O0"/>\n'
+                    constraintString += f'    </partition>\n'
+
+                if bel == "OutPass4_frame_config":
+                    constraintString += f'    <partition name="Tile_{tileLoc}_{let}">\n'
+                    constraintString += f'      <add_atom name_pattern="Tile_{tileLoc}_{prefix}I0"/>\n'
+                    constraintString += f'    </partition>\n' 
+
+    constraintString += '    </partition_list>\n'
+    constraintString += '</vpr_constraints>'
+    return constraintString
 
 def genBitstreamSpec(archObject: Fabric):
 	specData = {"TileMap":{}, "TileSpecs":{}, "TileSpecs_No_Mask":{}, "FrameMap":{}, "FrameMapEncode":{}, "ArchSpecs":{"MaxFramesPerCol":MaxFramesPerCol, "FrameBitsPerRow":FrameBitsPerRow}}
@@ -6244,9 +6271,8 @@ if ('-GenVPRModel'.lower() in processedArguments):
     with open("vproutput/template.v", "w") as templateFile:
         templateFile.write(genVerilogTemplate(fabricObject))
 
-    constraintFile = open("vproutput/template.pcf", "w")
-    constraintFile.close()
-
+    with open("vproutput/fab_constraints.xml", "w") as constraintFile:
+        constraintFile.write(genVPRModelConstraints(fabricObject))
 
     if ('-debug'.lower() in str(sys.argv).lower()) : 
         print(archXML)

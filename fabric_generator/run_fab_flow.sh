@@ -3,7 +3,7 @@
 # Check we have the correct argument count
 if [ $# -ne 2 ]
   then
-    echo "Expected 2 arguments: Number of columns in fabric.csv and number of rows in fabric.csv"
+    echo "Expected 2 arguments: Number of columns in fabric.csv and number of rows in fabric.csv (not including terminal blocks)"
     exit 1
 fi
 

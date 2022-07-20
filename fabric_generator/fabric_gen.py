@@ -5401,7 +5401,8 @@ def genNextpnrModel(archObject: Fabric, generatePairs=True):
             # Add BELs
             belsStr += "#Tile_" + tileLoc + "\n"  # Tile declaration as a comment
             for num, belpair in enumerate(tile.bels):
-                bel = belpair[0]
+                # To allow to read the bel type
+                bel = belpair[0].split("/")[-1]
                 let = letters[num]
                 # if bel == "LUT4c_frame_config":
                 #     cType = "LUT4"
@@ -6762,7 +6763,8 @@ def genBitstreamSpec(archObject: Fabric):
                 configCSV = open(f"{src_dir}/{cellType}_ConfigMem.csv")
             except:
                 try:
-                    configCSV = open(f"{src_dir}/{cellType}_ConfigMem.init.csv")
+                    configCSV = open(
+                        f"{src_dir}/{cellType}_ConfigMem.init.csv")
                 except:
                     print(
                         f"No Config Mem csv file found for {cellType}. Assuming no config memory.")
@@ -6815,7 +6817,8 @@ def genBitstreamSpec(archObject: Fabric):
                 tempOffset = 0
                 name = letters[i]
                 # print(belPair)
-                belType = belPair[0]
+                # to allow to read bel type
+                belType = belPair[0].split("/")[-1]
                 for featureKey in BelMap[belType]:
                     # We convert to the desired format like so
                     curTileMap[name + "." + featureKey] = {
@@ -7101,7 +7104,7 @@ if args.GenTileSwitchMatrixCSV or args.run_all:
         print(
             f'### generate csv for tile {tile} # filename: {out_dir}/{str(tile)}_switch_matrix.csv')
         TileFileHandler = open(
-            f"{out_dir}/{str(tile)}_switch_mat_switch_matrix.csv", 'w')
+            f"{out_dir}/{str(tile)}_switch_matrix.csv", 'w')
         TileInformation = GetTileFromFile(FabricFile, str(tile))
         BootstrapSwitchMatrix(TileInformation, str(
             tile), (f"{src_dir}/{str(tile)}_switch_matrix.csv"))
@@ -7205,13 +7208,11 @@ if args.GenFabricVerilog or args.run_all:
 
 if args.CSV2list:
     InFileName, OutFileName = args.CSV2list
-    if ('-CSV2list'.lower() in str(sys.argv).lower()):
-        CSV2list(InFileName, OutFileName)
+    CSV2list(InFileName, OutFileName)
 
 if args.AddList2CSV:
     InFileName, OutFileName = args.AddList2CSV
-    if ('-AddList2CSV'.lower() in str(sys.argv).lower()):
-        list2CSV(InFileName, OutFileName)
+    list2CSV(InFileName, OutFileName)
 
 if args.PrintCSV_FileInfo:
     PrintCSV_FileInfo(args.PrintCSV_FileInfo)

@@ -5792,7 +5792,7 @@ def genVPRModelXML(archObject: Fabric, customXmlFilename, generatePairs=True):
 
         # Create second layer (leaf) blocks for each bel
         for bel in cTile.belsWithIO:
-            bel[0] = bel[0].split('/')[-1] # Remove the path from the name
+            bel[0] = bel[0].split('/')[-1]  # Remove the path from the name
             # Add the inputs and outputs of this BEL to the top level tile inputs/outputs list
             tileInputs.extend(bel[2])
             tileOutputs.extend(bel[3])
@@ -7218,6 +7218,8 @@ if args.PrintCSV_FileInfo:
     PrintCSV_FileInfo(args.PrintCSV_FileInfo)
 
 if args.GenNextpnrModel:
+    if not out_dir:
+        out_dir = 'npnroutput'
     fabricObject = genFabricObject(fabric)
     pipFile = open(f"{out_dir}/pips.txt", "w")
     belFile = open(f"{out_dir}/bel.txt", "w")
@@ -7240,6 +7242,8 @@ if args.GenNextpnrModel:
     # pairFile.close()
 
 if args.GenNextpnrModel_pair:
+    if not out_dir:
+        out_dir = 'npnroutput'
     fabricObject = genFabricObject(fabric)
     pipFile = open(f"{out_dir}/pips.txt", "w")
     belFile = open(f"{out_dir}/bel.txt", "w")

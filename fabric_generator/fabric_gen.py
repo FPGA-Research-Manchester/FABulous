@@ -5775,6 +5775,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
     print(f'Max Width: {max_width}')
     return outputString
 
+#Generates constraint XML 
 def genVPRModelConstraints(archObject: Fabric):
     constraintString = '<vpr_constraints tool_name="vpr">\n'
     constraintString += '  <partition_list>\n'
@@ -5786,22 +5787,27 @@ def genVPRModelConstraints(archObject: Fabric):
                 let = letters[num]
                 prefix = belpair[1]
                 tileLoc = tile.genTileLoc()
+                cx = tile.x + 1
+                cy = tile.y + 1
 
                 if bel == "IO_1_bidirectional_frame_config_pass":
                     # Seems that VPR automatically names primitives after the first wire connected to them
                     # So we use the wire names assigned in genVerilogTemplate
                     constraintString += f'    <partition name="Tile_{tileLoc}_{let}">\n'
                     constraintString += f'      <add_atom name_pattern="Tile_{tileLoc}_{prefix}O"/>\n'
+                    constraintString += f'      <add_region x_low="{cx}" y_low="{cy}" x_high="{cx}" y_high="{cy}" subtile="{num}"/>\n'
                     constraintString += f'    </partition>\n'
 
                 if bel == "InPass4_frame_config":
                     constraintString += f'    <partition name="Tile_{tileLoc}_{let}">\n'
                     constraintString += f'      <add_atom name_pattern="Tile_{tileLoc}_{prefix}O0"/>\n'
+                    constraintString += f'      <add_region x_low="{cx}" y_low="{cy}" x_high="{cx}" y_high="{cy}" subtile="{num}"/>\n'
                     constraintString += f'    </partition>\n'
 
                 if bel == "OutPass4_frame_config":
                     constraintString += f'    <partition name="Tile_{tileLoc}_{let}">\n'
                     constraintString += f'      <add_atom name_pattern="Tile_{tileLoc}_{prefix}I0"/>\n'
+                    constraintString += f'      <add_region x_low="{cx}" y_low="{cy}" x_high="{cx}" y_high="{cy}" subtile="{num}"/>\n'
                     constraintString += f'    </partition>\n' 
 
     constraintString += '    </partition_list>\n'

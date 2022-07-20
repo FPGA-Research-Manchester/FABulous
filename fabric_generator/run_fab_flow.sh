@@ -1,3 +1,12 @@
+#!/bin/bash
+
+# Check we have the correct argument count
+if [ $# -ne 2 ]
+  then
+    echo "Expected 2 arguments: Number of columns in fabric.csv and number of rows in fabric.csv (not including terminal blocks)"
+    exit 1
+fi
+
 #REM STEP 1 : Generate the switch matrix as an empty CSV file containing the adjacency matrix (gets populated in Step 2)
 python3 fabric_gen.py -GenTileSwitchMatrixCSV
 

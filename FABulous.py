@@ -33,7 +33,7 @@ def create_project(project_dir):
         f"{FABulous_root}/fabric_generator/fabulous_top_wrapper_temp", f"{project_dir}/src/fabulous_top_wrapper_temp")
 
     with open(f"{project_dir}/user_design/{project_dir.split('/')[-1]}.v", "w") as f:
-        f.write(f"module {project_dir.split('/')[-1]}();\n")
+        f.write(f"module {project_dir.split('/')[-1]}(a);\n")
         f.write(f"output a;\n")
         f.write(f"assign a = 1;\n")
         f.write(f"endmodule\n")
@@ -286,18 +286,18 @@ def generate_verilog(project_dir):
 
 
 # Run synthesis using Yoysy with Nextpnr json backend
-def synthesis_Yosys(project_dir, top):
+def synthesis_Yosys_Nextpnr(project_dir, top):
     cmd = ["yosys",
-           "-p", f"tcl {FABulous_root}/nextpnr/fabulous/synth/synth_fabulous_dffesr.tcl 4 {top} ./{project_dir}/{top}.json",
-           f"{project_dir}/{top}.v",
+           "-p", f"tcl {FABulous_root}/nextpnr/fabulous/synth/synth_fabulous_dffesr.tcl 4 {top} ./{project_dir}/.FABulous/{top}.json",
+           f"{project_dir}/user_design/{top}.v",
            "-l", f"./{project_dir}/{top}_yosys_log.txt"]
     sp.run(cmd, check=True)
 
 
 # Run synthesis
-def synthesis_Yosys(project_dir, top):
+def synthesis_Yosys_blif(project_dir, top):
     cmd = ["yosys",
-           "-p", f"tcl {FABulous_root}/nextpnr/fabulous/synth/synth_fabulous_dffesr.tcl 4 {top} ./{project_dir}/{top}.blif",
+           "-p", f"tcl {FABulous_root}/nextpnr/fabulous/synth/synth_fabulous_dffesr.tcl 4 {top} ./{project_dir}/.FABulous/{top}.blif",
            f"{project_dir}/{top}.v",
            "-l", f"./{project_dir}/{top}_yosys_log.txt"]
     sp.run(cmd, check=True)
@@ -305,14 +305,14 @@ def synthesis_Yosys(project_dir, top):
 
 # Run place and route
 def place_and_route_Nextpnr(project_dir, top):
-    if f"{top}.json" in os.listdir(os.path.join(os.getcwd(), f"./{project_dir}")):
-        shutil.copy(f"{project_dir}/npnroutput/pips.txt", f".")
-        shutil.copy(f"{project_dir}/npnroutput/bel.txt", f".")
+    if f"{top}.json" in os.listdir(f"{project_dir}/.FABulous"):
+        shutil.copy(f"{project_dir}/.FABulous/pips.txt", f".")
+        shutil.copy(f"{project_dir}/.FABulous/bel.txt", f".")
 
         cmd = [f"{FABulous_root}/nextpnr/nextpnr-fabulous",
                "--pre-pack", f"{FABulous_root}/nextpnr/fabulous/fab_arch/fab_arch.py",
                "--pre-place", f"{FABulous_root}/nextpnr/fabulous/fab_arch/fab_timing.py",
-               "--json", f"{project_dir}/{top}.json",
+               "--json", f"{project_dir}/.FABulous/{top}.json",
                "--router", "router2",
                "--router2-heatmap", f"{project_dir}/{top}_heatmap",
                "--post-route", f"{FABulous_root}/nextpnr/fabulous/fab_arch/bitstream_temp.py",
@@ -356,13 +356,10 @@ def place_and_route_VPR(project_dir, top):
 
 # Generate the bitstream
 def generate_bitstream(project_dir, top):
-    if f"{top}.v" in os.listdir(os.path.join(os.getcwd(), f"./{project_dir}")):
-        dir = "./FABulous/nextpnr/fabulous/fab_arch"
-        cmd = ["python3", f"{FABulous_root}/nextpnr/fabulous/fab_arch/bit_gen.py", "-genBitstream", f"./{project_dir}/{top}.fasm",
-               f"{project_dir}/npnroutput/meta_data.txt", f"./{project_dir}/{top}.bin"]
-        sp.run(cmd, check=True)
-    else:
-        print("Haven't generated the verilog file yet")
+    cmd = ["python3", f"{FABulous_root}/nextpnr/fabulous/fab_arch/bit_gen.py", "-genBitstream", f"./{project_dir}/{top}.fasm",
+           f"{project_dir}/.FABulous/meta_data.txt", f"./{project_dir}/{top}.bin"]
+    sp.run(cmd, check=True)
+    print("Bitstream generated")
 
 
 if __name__ == "__main__":
@@ -416,7 +413,7 @@ if __name__ == "__main__":
         generate_verilog(args.project_dir)
 
     if args.synthesis:
-        synthesis_Yosys(args.project_dir, args.top)
+        synthesis_Yosys_Nextpnr(args.project_dir, args.top)
 
     if args.place_and_route:
         place_and_route_Nextpnr(args.project_dir, args.top)
@@ -431,7 +428,7 @@ if __name__ == "__main__":
         bit_stream_meta_data_generation(args.project_dir)
 
     if args.run_fabulous_flow:
-        synthesis_Yosys(args.project_dir, args.top)
+        synthesis_Yosys_Nextpnr(args.project_dir, args.top)
         place_and_route_Nextpnr(args.project_dir, args.top)
         generate_bitstream(args.project_dir, args.top)
 

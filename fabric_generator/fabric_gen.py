@@ -5696,7 +5696,6 @@ def genVPRModelXML(archObject: Fabric, customXmlFilename, generatePairs=True):
                 f"Error: Unknown tag in custom XML file: {bel_info.tag}")
 
         bel_name = bel_info.attrib['name']
-
         # Check only one of each tag is present
 
         if len(bel_info.findall('bel_pb')) > 1:
@@ -5793,6 +5792,7 @@ def genVPRModelXML(archObject: Fabric, customXmlFilename, generatePairs=True):
 
         # Create second layer (leaf) blocks for each bel
         for bel in cTile.belsWithIO:
+            bel[0] = bel[0].split('/')[-1] # Remove the path from the name
             # Add the inputs and outputs of this BEL to the top level tile inputs/outputs list
             tileInputs.extend(bel[2])
             tileOutputs.extend(bel[3])

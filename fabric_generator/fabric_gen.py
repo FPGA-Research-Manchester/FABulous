@@ -6988,7 +6988,7 @@ parser.add_argument('-GenTileVerilog',
                     default=False,
                     action='store_true')
 
-parser.add_argument('-GenFabricVHDL',
+parser.add_argument('-GenFabricHDL',
                     default=False,
                     action='store_true')
 
@@ -7194,7 +7194,7 @@ if args.GenTileVerilog or args.run_all:
                     SuperTileDict[SuperTile], str(SuperTile), TileFileHandler)
                 TileFileHandler.close()
 
-if args.GenFabricVHDL or args.run_all:
+if args.GenFabricHDL or args.run_all:
     print('### Generate the Fabric VHDL descriptions ')
     FileHandler = open(f'{out_dir}/fabric.vhdl', 'w+')
     GenerateFabricVHDL(FabricFile, FileHandler)

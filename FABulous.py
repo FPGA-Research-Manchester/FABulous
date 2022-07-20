@@ -111,7 +111,7 @@ def RTL_generation(project_dir, VHDL=False):
     cmd.pop()
 
     # Generate Fabric
-    cmd.append("-GenFabricVHDL")
+    cmd.append("-GenFabricHDL")
     sp.run(cmd, check=True)
     cmd.pop()
 

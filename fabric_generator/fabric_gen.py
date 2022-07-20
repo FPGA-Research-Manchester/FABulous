@@ -7218,7 +7218,7 @@ if args.PrintCSV_FileInfo:
     PrintCSV_FileInfo(args.PrintCSV_FileInfo)
 
 if args.GenNextpnrModel:
-    if not out_dir:
+    if out_dir == ".":
         out_dir = 'npnroutput'
     fabricObject = genFabricObject(fabric)
     pipFile = open(f"{out_dir}/pips.txt", "w")
@@ -7242,8 +7242,9 @@ if args.GenNextpnrModel:
     # pairFile.close()
 
 if args.GenNextpnrModel_pair:
-    if not out_dir:
+    if out_dir ==".":
         out_dir = 'npnroutput'
+    print(f"{out_dir}/pips.txt")
     fabricObject = genFabricObject(fabric)
     pipFile = open(f"{out_dir}/pips.txt", "w")
     belFile = open(f"{out_dir}/bel.txt", "w")

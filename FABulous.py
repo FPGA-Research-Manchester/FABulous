@@ -298,7 +298,7 @@ def synthesis_Yosys_Nextpnr(project_dir, top):
 def synthesis_Yosys_blif(project_dir, top):
     cmd = ["yosys",
            "-p", f"tcl {FABulous_root}/nextpnr/fabulous/synth/synth_fabulous_dffesr.tcl 4 {top} ./{project_dir}/.FABulous/{top}.blif",
-           f"{project_dir}/{top}.v",
+           f"{project_dir}/user_design/{top}.v",
            "-l", f"./{project_dir}/{top}_yosys_log.txt"]
     sp.run(cmd, check=True)
 
@@ -321,7 +321,7 @@ def place_and_route_Nextpnr(project_dir, top):
                "--log", f"{project_dir}/{top}_npnr_log.txt"]
 
         print(" ".join(cmd))
-        result = sp.run(cmd, stdout=sys.stdout, stderr=sp.STDOUT, check=True)
+        sp.run(cmd, stdout=sys.stdout, stderr=sp.STDOUT, check=True)
 
         shutil.move("./sequential_16bit.fasm",
                     f"./{project_dir}/{top}.fasm")
@@ -335,15 +335,17 @@ def place_and_route_Nextpnr(project_dir, top):
 
 
 def place_and_route_VPR(project_dir, top):
-    if f"{top}.blif" in os.listdir(os.path.join(os.getcwd(), f"./{project_dir}")):
+    if f"{top}.blif" in os.listdir(f"{project_dir}/.FABulous"):
         if not os.getenv('VTR_ROOT'):
             print("VTR_ROOT is not set, please set it to the VPR installation directory")
             exit(-1)
 
-        cmd = ["$VTR_ROOT/vpr/vpr",
-               f"{project_dir}/vproutput/architecture.xml",
-               f"{project_dir}/{top}.blif",
-               "--read_rr_graph", f"{project_dir}/vproutput/routing_resources.xml",
+        vtr_root = os.getenv('VTR_ROOT')
+
+        cmd = [f"{vtr_root}/vpr/vpr",
+               f"{project_dir}/.FABulous/architecture.xml",
+               f"{project_dir}/.FABulous/{top}.blif",
+               "--read_rr_graph", f"{project_dir}/.FABulous/routing_resources.xml",
                "--route_chan_width", "16"]
 
         sp.run(cmd, check=True)
@@ -387,14 +389,26 @@ if __name__ == "__main__":
     parser.add_argument('-rf', '--generate_fabulous_fabric', action='store_true', default=False,
                         help='Generate a FABulous fabric with both VHDL and Verilog version. This will also generate VPR and Nextpnr model and all the relating files')
 
-    parser.add_argument('-r', '--run_fabulous_flow', action='store_true', default=False,
+    parser.add_argument('-r', '--run_fabulous_flow',
+                        default=False,
+                        nargs='?',
+                        choices=['vpr', 'nextpnr'],
+                        const='nextpnr',
                         help='Execute synthesis, place and route, and bitstream generation (Defualt using Yosys + Nextpnr)')
 
-    parser.add_argument('-s', '--synthesis', action='store_true',
-                        default=False, help='Run Synthesis with YOSYS')
+    parser.add_argument('-s', '--synthesis',
+                        default=False,
+                        nargs='?',
+                        choices=['json', 'blif'],
+                        const='json',
+                        help='Run Synthesis with Yosys. (Default using Nextpnr JSON backend)')
 
-    parser.add_argument('-pr', '--place_and_route', action='store_true',
-                        default=False, help="Run place and route")
+    parser.add_argument('-pr', '--place_and_route',
+                        default=False,
+                        nargs='?',
+                        choices=['nextpnr', 'vpr'],
+                        const='nextpnr',
+                        help="Run place and route. (Default using Nextpnr)")
 
     parser.add_argument('-b', '--bitstream', action='store_true',
                         default=False, help='Generate the bitstream')
@@ -413,10 +427,16 @@ if __name__ == "__main__":
         generate_verilog(args.project_dir)
 
     if args.synthesis:
-        synthesis_Yosys_Nextpnr(args.project_dir, args.top)
+        if args.synthesis == 'json':
+            synthesis_Yosys_Nextpnr(args.project_dir, args.top)
+        elif args.synthesis == 'blif':
+            synthesis_Yosys_blif(args.project_dir, args.top)
 
     if args.place_and_route:
-        place_and_route_Nextpnr(args.project_dir, args.top)
+        if args.place_and_route_Nextpnr == "nextpnr":
+            place_and_route_Nextpnr(args.project_dir, args.top)
+        elif args.place_and_route_Nextpnr == "vpr":
+            place_and_route_VPR(args.project_dir, args.top)
 
     if args.bitstream:
         generate_bitstream(args.project_dir, args.top)
@@ -428,9 +448,14 @@ if __name__ == "__main__":
         bit_stream_meta_data_generation(args.project_dir)
 
     if args.run_fabulous_flow:
-        synthesis_Yosys_Nextpnr(args.project_dir, args.top)
-        place_and_route_Nextpnr(args.project_dir, args.top)
-        generate_bitstream(args.project_dir, args.top)
+        if args.run_fabulous_flow == "nextpnr":
+            synthesis_Yosys_Nextpnr(args.project_dir, args.top)
+            place_and_route_Nextpnr(args.project_dir, args.top)
+            generate_bitstream(args.project_dir, args.top)
+        elif args.run_fabulous_flow == "vpr":
+            synthesis_Yosys_blif(args.project_dir, args.top)
+            place_and_route_VPR(args.project_dir, args.top)
+            generate_bitstream(args.project_dir, args.top)
 
     if len(sys.argv) == 2:
         parser.print_help()

@@ -49,4 +49,5 @@ Once your design is integrated into the template Verilog file, synthesise it usi
 
         vpr <architecture.xml> <circuit.blif> --read_rr_graph <routing_resources.xml> --route_chan_width <max_width> --read_vpr_constraints <fab_constraints.xml>
 
+In cases of circuits with no explicitly declared outputs, VPR may mistakenly optimise out the design itself, and produce an empty netlist. If this happens, VPR will throw the error ``Message: No routing loaded -- can not perform post-routing analysis``. This can easily be fixed by declaring one of your outputs explicitly as an output of your top module instead of as a blackbox - the placement of this can be constrained by constraining the atom named ``out:<output_variable_name>`` in your constraints file.
 

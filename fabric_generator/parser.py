@@ -1,14 +1,16 @@
 from fabric import Fabric, Port, Bel, Tile, SuperTile
 import re
 from copy import deepcopy
+import itertools
+import collections
 
 
-def parse_csv(file_name) -> Fabric:
+def parseFabricCSV(fileName: str) -> Fabric:
     """
     Parses a csv file and returns a Fabric object.
     """
 
-    with open(file_name, 'r') as f:
+    with open(fileName, 'r') as f:
         file = f.read()
         file = re.sub(r"#.*", "", file)
 
@@ -119,6 +121,61 @@ def parse_csv(file_name) -> Fabric:
                   package, generateDelayInSwitchMatrix, multiplexerStyle, superTileEnable, tileDic)
 
 
+def parseList(fileName: str) -> list:
+    """
+    Parses a list file and returns a list of tuples.
+    """
+    resultList = []
+    with open(fileName, 'r') as f:
+        file = f.read()
+        file = re.sub(r"#.*", "", file)
+
+    file = file.split("\n")
+    for i, line in enumerate(file):
+        line = line.strip(" ").strip("\t").split(",")
+        line = [i for i in line if i != ""]
+        if not line:
+            continue
+        if len(line) != 2:
+            print(line)
+            print(
+                f"Invalid list formatting in file: {fileName} at line {i}")
+            exit(-1)
+        left, right = line[0], line[1]
+
+        leftList = []
+        rightList = []
+        expandListPorts(left, leftList)
+        expandListPorts(right, rightList)
+        resultList += list(zip(leftList, rightList))
+    return list(set(resultList))
+
+
+def expandListPorts(port, PortList):
+    # a leading '[' tells us that we have to expand the list
+    if re.search('\[', port):
+        if not re.search('\]', port):
+            raise ValueError(
+                '\nError in function ExpandListPorts: cannot find closing ]\n')
+        # port.find gives us the first occurrence index in a string
+        left_index = port.find('[')
+        right_index = port.find(']')
+        before_left_index = port[0:left_index]
+        # right_index is the position of the ']' so we need everything after that
+        after_right_index = port[(right_index+1):]
+        ExpandList = []
+        ExpandList = re.split('\|', port[left_index+1:right_index])
+        for entry in ExpandList:
+            ExpandListItem = (before_left_index+entry+after_right_index)
+            expandListPorts(ExpandListItem, PortList)
+
+    else:
+        # print('DEBUG: else, just:',port)
+        PortList.append(port)
+    return
+
+
 if __name__ == '__main__':
-    result = parse_csv('fabric.csv')
-    print(result)
+    # result = parseFabricCSV('fabric.csv')
+    # print(result)
+    result = parseList('RegFile_switch_matrix.list')

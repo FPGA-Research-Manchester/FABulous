@@ -71,9 +71,9 @@ For further details of what the CLI can do run `python3 FABulous.py -h` to see f
 Command to run from project creation, fabric generation, and binary generation
 
 ```
-python3 FABulous.py -c demo
-python3 FABulous.py -rf demo
-python3 FABulous.py -r demo
+python3 FABulous.py demo -c
+python3 FABulous.py demo -rf
+python3 FABulous.py demo -r
 ```
 
 The fabric generator flow can also be run using bash scripts based on the examples provided under `/fabric_files`.

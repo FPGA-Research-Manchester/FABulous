@@ -71,8 +71,11 @@ class Bel():
     prefix: str
     inputs: List[str]
     outputs: List[str]
-    config: List[str]
-    external: List[str]
+    externalInput: List[str]
+    externalOutput: List[str]
+    configPort: List[str]
+    sharedPort: List[str]
+    configBit: int
 
 
 @dataclass
@@ -83,9 +86,10 @@ class Tile():
     matrixDir: str
     inputs: List[str]
     outputs: List[str]
+    globalConfigBits: int = 0
 
-    # def __repr__(self):
-    #     return f"\n{self.name}\n inputPorts:{self.inputs}\n outputPorts:{self.outputs}\n bels:{self.bels}\n Matrix_dir:{self.matrixDir}\n"
+    def __repr__(self):
+        return f"\n{self.name}\n inputPorts:{self.inputs}\n outputPorts:{self.outputs}\n bels:{self.bels}\n Matrix_dir:{self.matrixDir}\n"
 
     def __init__(self, name: str, ports: List[Port], bels: List[Bel], matrixDir: str):
         self.name = name
@@ -103,6 +107,9 @@ class Tile():
             self.inputs = self.inputs + port.outputs
             # IMPORTANT: the inputs to a BEL are the outputs of the switch matrix!
             self.outputs = self.outputs + port.inputs
+
+        for b in self.bels:
+            self.globalConfigBits += b.configBit
 
 
 @dataclass

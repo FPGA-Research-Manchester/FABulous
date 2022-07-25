@@ -376,16 +376,15 @@ def GetComponentPortsFromVerilog(Verilog_file_name, filter='ALL', port='internal
 
 
 def GetNoConfigBitsFromFile(VHDL_file_name):
-    VHDLfile = [line.rstrip('\n')
-                for line in open(f"{src_dir}/{VHDL_file_name}")]
-    result = 'NULL'
-    for line in VHDLfile:
-        # the order of the if-statements is important
-        # if re.search('Generic', line, flags=re.IGNORECASE) and re.search('NoConfigBits', line, flags=re.IGNORECASE):
-        if re.search('integer', line, flags=re.IGNORECASE) and re.search('NoConfigBits', line, flags=re.IGNORECASE):
-            result = (re.sub(' ', '', (re.sub('\).*', '', (re.sub('.*=',
-                      '', line, flags=re.IGNORECASE)), flags=re.IGNORECASE))))
-    return result
+    with open(VHDL_file_name, 'r') as f:
+        file = f.read()
+    result = re.search(
+        r"NoConfigBits\s*:\s*integer\s*:=\s*(\w+)", file, flags=re.IGNORECASE)
+    if result:
+        try:
+            return int(result.group(1))
+        except ValueError:
+            return 0
 
 
 def GetComponentEntityNameFromFile(VHDL_file_name):
@@ -409,36 +408,6 @@ def GetComponentEntityNameFromVerilog(Verilog_file_name):
                 ' (.*', '', line, flags=re.IGNORECASE)), flags=re.IGNORECASE))))
     return result
 
-
-def PrintTileComponentPort(tile_description, entity, direction, file):
-    print('\t-- ', direction, file=file)
-    for line in tile_description:
-        if line[0] == direction:
-            if line[source_name] != 'NULL':
-                print('\t\t', line[source_name],
-                      '\t: out \tSTD_LOGIC_VECTOR( ', end='', file=file)
-                print(((abs(int(line[X_offset]))+abs(int(line[Y_offset])))
-                      * int(line[wires]))-1, end='', file=file)
-                print(' downto 0 );', end='', file=file)
-                print('\t -- wires:'+line[wires], end=' ', file=file)
-                print('X_offset:'+line[X_offset], 'Y_offset:' +
-                      line[Y_offset], ' ', end='', file=file)
-                print('source_name:'+line[source_name], 'destination_name:' +
-                      line[destination_name], ' \n', end='', file=file)
-    for line in tile_description:
-        if line[0] == direction:
-            if line[destination_name] != 'NULL':
-                print('\t\t', line[destination_name],
-                      '\t: in \tSTD_LOGIC_VECTOR( ', end='', file=file)
-                print(((abs(int(line[X_offset]))+abs(int(line[Y_offset])))
-                      * int(line[wires]))-1, end='', file=file)
-                print(' downto 0 );', end='', file=file)
-                print('\t -- wires:'+line[wires], end=' ', file=file)
-                print('X_offset:'+line[X_offset], 'Y_offset:' +
-                      line[Y_offset], ' ', end='', file=file)
-                print('source_name:'+line[source_name], 'destination_name:' +
-                      line[destination_name], ' \n', end='', file=file)
-    return
 
 
 def GetTileComponentPorts(tile_description, mode='SwitchMatrix'):

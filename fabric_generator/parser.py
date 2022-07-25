@@ -48,10 +48,10 @@ def parseFabricCSV(fileName: str) -> Fabric:
                 ports.append(Port(temp[0], temp[1], int(
                     temp[2]), int(temp[3]), temp[4], int(temp[5])))
             elif temp[0] == "BEL":
-                input, output, external, config = parseFileHDL(
+                input, output, externalInput, externalOutput, configPort, sharedPort, configBit = parseFileHDL(
                     temp[1], temp[2])
                 bels.append(Bel(temp[1], temp[2], input,
-                            output, external, config))
+                            output, externalInput, externalOutput, configPort, sharedPort, configBit))
             elif temp[0] == "MATRIX":
                 matrixDir = temp[1]
             else:
@@ -179,21 +179,24 @@ def expandListPorts(port, PortList):
     return
 
 
-def parseFileHDL(filename, belPrefix="", filter="ALL") -> Tuple[List, List, List]:
+def parseFileHDL(filename, belPrefix="", filter="ALL"):
     inputs = []
     outputs = []
-    externalPorts = []
+    externalInput = []
+    externalOutput = []
     configPorts = []
+    sharedPort = []
     external = False
     config = False
+    shared = False
 
     with open(filename, "r") as f:
         file = f.read()
 
-    file = re.search(r"port.*?\((.*?)\);", file,
-                     re.MULTILINE | re.DOTALL | re.IGNORECASE).group(1)
+    portSection = re.search(r"port.*?\((.*?)\);", file,
+                            re.MULTILINE | re.DOTALL | re.IGNORECASE).group(1)
 
-    preGlobal, postGlobal = file.split("-- GLOBAL")
+    preGlobal, postGlobal = portSection.split("-- GLOBAL")
 
     for line in preGlobal.split("\n"):
         if "IMPORTANT" in line:
@@ -202,6 +205,8 @@ def parseFileHDL(filename, belPrefix="", filter="ALL") -> Tuple[List, List, List
             external = True
         if "CONFIG" in line:
             config = True
+        if "SHARED_PORT" in line:
+            sharedPort = True
 
         line = re.sub(r"STD_LOGIC.*", "", line, flags=re.IGNORECASE)
         line = re.sub(r";.*", "", line, flags=re.IGNORECASE)
@@ -212,23 +217,43 @@ def parseFileHDL(filename, belPrefix="", filter="ALL") -> Tuple[List, List, List
             continue
         portName = f"{belPrefix}{result.group(1)}"
 
-        if external:
-            externalPorts.append(portName)
-        elif config:
-            configPorts.append(portName)
-        else:
+        def addToInOut(port, inList, outList):
             if result.group(2) == "IN" or result.group(2) == "in" or result.group(2) == "In":
-                inputs.append(portName)
+                inList.append(port)
             elif result.group(2) == "OUT" or result.group(2) == "out" or result.group(2) == "Out":
-                outputs.append(portName)
+                outList.append(port)
             else:
                 print(f"Unknown port type {result.group(2)}")
                 exit(-1)
 
+        if external:
+            addToInOut(portName, externalInput, externalOutput)
+        elif config:
+            configPorts.append(portName)
+        else:
+            addToInOut(portName, inputs, outputs)
+
+        if shared:
+            sharedPort.append(portName)
+
         external = False
         config = False
 
-    return inputs, outputs, externalPorts, configPorts
+    result = re.search(
+        r"NoConfigBits\s*:\s*integer\s*:=\s*(\w+)", file, re.IGNORECASE | re.DOTALL)
+    if result:
+        try:
+            noConfigBits = int(result.group(1))
+        except ValueError:
+            print(f"NoConfigBits is not an integer: {result.group(1)}")
+            print("Assume the number of configBits is 0")
+            noConfigBits = 0
+    else:
+        print(f"Cannot find NoConfigBits in {filename}")
+        print("Assume the number of configBits is 0")
+        noConfigBits = 0
+
+    return inputs, outputs, externalInput, externalOutput, configPorts, sharedPort, noConfigBits
 
 
 if __name__ == '__main__':

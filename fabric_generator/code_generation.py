@@ -1,3 +1,5 @@
+from fabric import Fabric, Tile, Port
+import os
 # Default parameters (will be overwritten if defined in fabric between 'ParametersBegin' and 'ParametersEnd'
 #Parameters = [ 'ConfigBitMode', 'FrameBitsPerRow' ]
 ConfigBitMode = 'FlipFlopChain'
@@ -41,54 +43,6 @@ Opposite_Directions = {"NORTH": "SOUTH",
                        "EAST": "WEST", "SOUTH": "NORTH", "WEST": "EAST"}
 
 
-def GenerateVHDL_EntityFooter(file, entity, ConfigPort=True, NumberOfConfigBits=''):
-    if ConfigPort == False:
-        # stupid VHDL doesn't allow us to finish the last port signal declaration with a ';',
-        # so we pragmatically delete that if we have no config port
-        # TODO - move this into a function, but only if we have a regression suite in place
-        # TODO - move this into a function, but only if we have a regression suite in place
-        # TODO - move this into a function, but only if we have a regression suite in place
-        file.seek(0)                      # seek to beginning of the file
-        last_pos = 0                    # we use this variable to find the position of last ';'
-        while True:
-            my_char = file.read(1)
-            if not my_char:
-                break
-            else:
-                if my_char == ';':        # scan character by character and look for ';'
-                    last_pos = file.tell()
-
-        # place seek pointer to last ';' position and overwrite with a space
-        file.seek(last_pos-1)
-        print(' ', end='', file=file)
-        file.seek(0, os.SEEK_END)          # go back to usual...
-        # file.seek(interupt_pos)
-
-        # file.seek(0, os.SEEK_END)                      # seek to end of file; f.seek(0, 2) is legal
-        # file.seek(file.tell() - 3, os.SEEK_SET)     # go backwards 3 bytes
-        # file.truncate()
-
-        print('', file=file)
-    print('\t-- global', file=file)
-    if ConfigPort == True:
-        if ConfigBitMode == 'FlipFlopChain':
-            print(
-                '\t\t MODE\t: in \t STD_LOGIC;\t -- global signal 1: configuration, 0: operation', file=file)
-            print('\t\t CONFin\t: in \t STD_LOGIC;', file=file)
-            print('\t\t CONFout\t: out \t STD_LOGIC;', file=file)
-            print('\t\t CLK\t: in \t STD_LOGIC', file=file)
-        if ConfigBitMode == 'frame_based':
-            print(
-                '\t\t ConfigBits : in \t STD_LOGIC_VECTOR( NoConfigBits -1 downto 0 )', file=file)
-    print('\t);', file=file)
-    print('end entity', entity, ';', file=file)
-    print('', file=file)
-    #   architecture
-    print('architecture Behavioral of ', entity, ' is ', file=file)
-    print('', file=file)
-    return
-
-
 def GenerateVHDL_Conf_Instantiation(file, counter, close=True):
     print('\t -- GLOBAL all primitive pins for configuration (not further parsed)  ', file=file)
     print('\t\t MODE    => Mode,  ', file=file)
@@ -120,4 +74,134 @@ def GenerateVHDL_Header(file, entity, package='', NoConfigBits='0', MaxFramesPer
               FrameBitsPerRow+';', file=file)
     print('\t\t\t NoConfigBits : integer := '+NoConfigBits+' );', file=file)
     print('\tPort (', file=file)
+    return
+
+
+def PrintTileComponentPort(tile_description, entity, direction, file):
+    print('\t-- ', direction, file=file)
+    for line in tile_description:
+        if line[0] == direction:
+            if line[source_name] != 'NULL':
+                print('\t\t', line[source_name],
+                      '\t: out \tSTD_LOGIC_VECTOR( ', end='', file=file)
+                print(((abs(int(line[X_offset]))+abs(int(line[Y_offset])))
+                      * int(line[wires]))-1, end='', file=file)
+                print(' downto 0 );', end='', file=file)
+                print('\t -- wires:'+line[wires], end=' ', file=file)
+                print('X_offset:'+line[X_offset], 'Y_offset:' +
+                      line[Y_offset], ' ', end='', file=file)
+                print('source_name:'+line[source_name], 'destination_name:' +
+                      line[destination_name], ' \n', end='', file=file)
+
+    for line in tile_description:
+        if line[0] == direction:
+            if line[destination_name] != 'NULL':
+                print('\t\t', line[destination_name],
+                      '\t: in \tSTD_LOGIC_VECTOR( ', end='', file=file)
+                print(((abs(int(line[X_offset]))+abs(int(line[Y_offset])))
+                      * int(line[wires]))-1, end='', file=file)
+                print(' downto 0 );', end='', file=file)
+                print('\t -- wires:'+line[wires], end=' ', file=file)
+                print('X_offset:'+line[X_offset], 'Y_offset:' +
+                      line[Y_offset], ' ', end='', file=file)
+                print('source_name:'+line[source_name], 'destination_name:' +
+                      line[destination_name], ' \n', end='', file=file)
+    return
+
+
+def generateTileComponentPort(tile: Tile, file, configBitMode="frame_based", globalConfigBitsCounter=1):
+    portTemplate = "{portName:<8}:{inout:<8}STD_LOGIC_VECTOR( {wireLength} downto 0 );".rjust(
+        8)
+    commentTemplate = "-- wires:{wires} X_offset:{X_offset} Y_offset:{Y_offset} source_name:{sourceName} destination_name:{destinationName}".rjust(
+        4)
+
+    wireLength = (abs(p.xOffset)+abs(p.yOffset)) * p.wires-1
+
+    # holder for each direction of port string
+    n, e, s, w = [], [], [], []
+
+    # generate normal out port
+    for p in tile.portsInfo:
+        if p.sourceName == "NULL":
+            a = portTemplate.format(portName=p.sourceName, inout="out",
+                                    wireLength=wireLength)
+            b = commentTemplate.format(wires=p.wires, X_offset=p.X_offset, Y_offset=p.Y_offset,
+                                       sourceName=p.sourceName, destinationName=p.destinationName)
+            result = a + b
+            if p.direction == "NORTH":
+                n.append(result)
+            elif p.direction == "EAST":
+                e.append(result)
+            elif p.direction == "SOUTH":
+                s.append(result)
+            elif p.direction == "WEST":
+                w.append(result)
+
+    # generate normal in port
+    for p in tile.portsInfo:
+        if p.destinationName != "NULL":
+            a = portTemplate.format(portName=p.destinationName, inout="in",
+                                    wireLength=wireLength)
+            b = commentTemplate.format(wires=p.wires, X_offset=p.X_offset, Y_offset=p.Y_offset,
+                                       sourceName=p.sourceName, destinationName=p.destinationName)
+
+            result = a + b
+            if p.direction == "NORTH":
+                n.append(result)
+            elif p.direction == "EAST":
+                e.append(result)
+            elif p.direction == "SOUTH":
+                s.append(result)
+            elif p.direction == "WEST":
+                w.append(result)
+
+    print("\t-- NORTH\n"+"\n".join(n), file=file)
+    print("\t-- EAST\n"+"\n".join(e), file=file)
+    print("\t-- SOUTH\n"+"\n".join(s), file=file)
+    print("\t-- WEST\n"+"\n".join(w), file=file)
+
+    belPortTemplate = "\t\t{portName:<8}:{inout:<8}STD_LOGIC"
+    belPortHolder = []
+    addedExternalPort = set()
+    print('\t-- Tile IO ports from BELs', file=file)
+    for b in tile.bels:
+        for p in b.externalInput:
+            if p not in addedExternalPort:
+                belPortHolder.append(
+                    belPortTemplate.format(portName=p, inout="in"))
+                addedExternalPort.add(p)
+        for p in b.externalOutput:
+            if p not in addedExternalPort:
+                belPortHolder.append(
+                    belPortTemplate.format(portName=p, inout="out"))
+                addedExternalPort.add(p)
+
+    if configBitMode == 'frame_based':
+        print(";\n".join(belPortHolder) + ";", file=file)
+        if globalConfigBitsCounter > 0:
+            print('\t\t FrameData:     in  STD_LOGIC_VECTOR( FrameBitsPerRow -1 downto 0 );   -- CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register', file=file)
+            print('\t\t FrameStrobe:   in  STD_LOGIC_VECTOR( MaxFramesPerCol -1 downto 0 );   -- CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register ', file=file)
+    else:
+        print(";\n".join(belPortHolder), file=file)
+    return
+
+
+def GenerateVHDL_EntityFooter(file, entity, ConfigPort=True, NumberOfConfigBits=''):
+    print('\t-- global', file=file)
+    if ConfigPort == True:
+        if ConfigBitMode == 'FlipFlopChain':
+            print(
+                '\t\t MODE\t: in \t STD_LOGIC;\t -- global signal 1: configuration, 0: operation', file=file)
+            print('\t\t CONFin\t: in \t STD_LOGIC;', file=file)
+            print('\t\t CONFout\t: out \t STD_LOGIC;', file=file)
+            print('\t\t CLK\t: in \t STD_LOGIC', file=file)
+        if ConfigBitMode == 'frame_based':
+            print(
+                '\t\t ConfigBits : in \t STD_LOGIC_VECTOR( NoConfigBits -1 downto 0 )', file=file)
+    print('\t);', file=file)
+    print('end entity', entity, ';', file=file)
+    print('', file=file)
+    #   architecture
+    print('architecture Behavioral of ', entity, ' is ', file=file)
+    print('', file=file)
     return

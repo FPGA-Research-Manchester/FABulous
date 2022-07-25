@@ -4785,7 +4785,12 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
 
 
 def genVerilogTemplate(archObject: Fabric):
-    templateStr = "module template ();\n"
+    templateStr = '// IMPORTANT NOTE: if using VPR, any instantiated BELs with no outputs MUST be instantiated after IO\n'
+    templateStr += '// This is because VPR auto-generates names for primitives with no outputs, and we assume OutPass BELs\n'
+    templateStr += '// are the first BELs to be auto-named in our constraints file.\n\n'
+
+
+    templateStr += "module template ();\n"
     for line in archObject.tiles:
         for tile in line:
             for num, belpair in enumerate(tile.bels):
@@ -5775,7 +5780,7 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs = True):
     print(f'Max Width: {max_width}')
     return outputString
 
-#Generates constraint XML 
+#Generates constraint XML for VPR flow
 def genVPRModelConstraints(archObject: Fabric):
     constraintString = '<vpr_constraints tool_name="vpr">\n'
     constraintString += '  <partition_list>\n'
@@ -5789,9 +5794,10 @@ def genVPRModelConstraints(archObject: Fabric):
                 tileLoc = tile.genTileLoc()
                 cx = tile.x + 1
                 cy = tile.y + 1
+                unnamedCount = 0
 
                 if bel == "IO_1_bidirectional_frame_config_pass":
-                    # Seems that VPR automatically names primitives after the first wire connected to them
+                    # VPR names primitives after the first wire they drive
                     # So we use the wire names assigned in genVerilogTemplate
                     constraintString += f'    <partition name="Tile_{tileLoc}_{let}">\n'
                     constraintString += f'      <add_atom name_pattern="Tile_{tileLoc}_{prefix}O"/>\n'
@@ -5804,9 +5810,13 @@ def genVPRModelConstraints(archObject: Fabric):
                     constraintString += f'      <add_region x_low="{cx}" y_low="{cy}" x_high="{cx}" y_high="{cy}" subtile="{num}"/>\n'
                     constraintString += f'    </partition>\n'
 
+                # Frustratingly, since VPR names blocks after BELs they drive, BELs that drive no wires have auto-generated names
+                # These names are, at time of writing, generated with unique_subckt_name() in vpr/src/base/read_blif.cpp
                 if bel == "OutPass4_frame_config":
                     constraintString += f'    <partition name="Tile_{tileLoc}_{let}">\n'
-                    constraintString += f'      <add_atom name_pattern="Tile_{tileLoc}_{prefix}I0"/>\n'
+                    #constraintString += f'      <add_atom name_pattern="Tile_{tileLoc}_{prefix}I0"/>\n'
+                    constraintString += f'      <add_atom name_pattern="unnamed_subckt{unnamedCount}"/>\n'
+                    unnamedCount += 1
                     constraintString += f'      <add_region x_low="{cx}" y_low="{cy}" x_high="{cx}" y_high="{cy}" subtile="{num}"/>\n'
                     constraintString += f'    </partition>\n' 
 

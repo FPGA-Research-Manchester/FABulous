@@ -202,6 +202,7 @@ def PrintComponentDeclarationForFile(VHDL_file_name, file):
 def GetComponentPortsFromFile(VHDL_file_name, filter='ALL', port='internal', BEL_Prefix=''):
     VHDLfile = [line.rstrip('\n')
                 for line in open(f"{src_dir}/{VHDL_file_name}")]
+
     Inputs = []
     Outputs = []
     ExternalPorts = []
@@ -485,6 +486,7 @@ def GetTileComponentPorts(tile_description, mode='SwitchMatrix'):
                 if line[source_name] != 'NULL':
                     Outputs.append(line[source_name] +
                                    OpenIndex+str(i)+CloseIndex)
+
     return Inputs, Outputs
 
 
@@ -635,7 +637,6 @@ def list2CSV(InFileName, OutFileName):
 
         matrix[s_index][d_index] = 1
 
-
     # writing the matrix back to the given out file
     with open(OutFileName, "w") as f:
         f.write(file[0])
@@ -658,3 +659,7 @@ def list2CSV(InFileName, OutFileName):
             #     f.write(str(count) + ',')
             colCount.append(str(count))
         f.write(f"#,{','.join(colCount)}")
+
+
+if __name__ == '__main__':
+    print(GetComponentPortsFromFile("MULADD.vhdl", port="external"))

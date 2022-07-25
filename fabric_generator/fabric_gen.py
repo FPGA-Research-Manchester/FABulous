@@ -31,7 +31,9 @@ import xml.etree.ElementTree as ET
 import argparse
 
 from utilities import *
-from code_generation import * 
+from code_generation import *
+from fabric import *
+from parser import parseFabricCSV
 
 # Default parameters (will be overwritten if defined in fabric between 'ParametersBegin' and 'ParametersEnd'
 #Parameters = [ 'ConfigBitMode', 'FrameBitsPerRow' ]
@@ -75,74 +77,96 @@ All_Directions = ['NORTH', 'EAST', 'SOUTH', 'WEST']
 Opposite_Directions = {"NORTH": "SOUTH",
                        "EAST": "WEST", "SOUTH": "NORTH", "WEST": "EAST"}
 
+def BootstrapSwitchMatrix(fabric):
+    for tile in fabric.tileDic:
+        print(
+            f"### generate csv for {tile} # filename: {tile}_switch_matrix.csv")
+        with open(f"{tile}_switch_matrix.csv", "w") as f:
+            writer = csv.writer(f)
+            writer.writerow([tile] + fabric.tileDic[tile].outputs)
+            for p in fabric.tileDic[tile].inputs:
+                writer.writerow([p] + [0] * len(fabric.tileDic[tile].outputs))
+    
 
-def BootstrapSwitchMatrix(tile_description, TileType, filename):
-    Inputs = []
-    Outputs = []
-    result = []
-    # get the >>tile ports<< that connect to the outside world (these are from the NORTH EAST SOUTH WEST entries from the csv file section
-    # 'N1END0', 'N1END1' ... 'N1BEG0', 'N1BEG1', 'N1BEG2', 'N2BEG0',
-    # will only be WIRES ports as the rest is eventually used for cascading
-    Inputs, Outputs = GetTileComponentPorts(
-        tile_description, mode='AutoSwitchMatrix')
-    # Inputs, Outputs = GetTileComponentPorts(tile_description, mode='SwitchMatrix')
-    # get all >>BEL ports<<< as defined by the BELs from the VHDL files
-    for line in tile_description:
-        if line[0] == 'BEL':
-            tmp_Inputs = []
-            tmp_Outputs = []
-            if len(line) >= 3:        # we use the third column to specify an optional BEL prefix
-                BEL_prefix_string = line[BEL_prefix]
-            else:
-                BEL_prefix_string = ''
-            tmp_Inputs, tmp_Outputs = GetComponentPortsFromFile(
-                line[VHDL_file_position], BEL_Prefix=BEL_prefix_string)
-            # print('tmp_Inputs Inputs',tmp_Inputs)
-            # IMPORTANT: the outputs of a BEL are the inputs to the switch matrix!
-            Inputs = Inputs + tmp_Outputs
-            # print('next Inputs',Inputs)
-            # Outputs.append(tmp_Outputs)
-            # IMPORTANT: the inputs to a BEL are the outputs of the switch matrix!
-            Outputs = Outputs + tmp_Inputs
-    # get all >>JUMP ports<<< (stop over ports that are input and output and that stay in the tile) as defined by the JUMP entries in the CSV file
-    for line in tile_description:
-        if line[0] == 'JUMP':
-            # tmp_Inputs = []
-            # tmp_Outputs = []
-            for k in range(int(line[wires])):
-                # the NULL check in the following allows us to have just source ports, such as GND or VCC
-                if line[destination_name] != 'NULL':
-                    Inputs.append(str(line[destination_name])+str(k))
-                if line[source_name] != 'NULL':
-                    Outputs.append(str(line[source_name])+str(k))
-    # generate the matrix
-    NumberOfInputs = len(Inputs)
-    NumberOfOutputs = len(Outputs)
-    # initialize with 0
-    for output in range(NumberOfOutputs+1):
-        one_line = []
-        for input in range(NumberOfInputs+1):
-            # one_line.append(str(output)+'_'+str(input))
-            one_line.append(str(0))
-        result.append(one_line)
-    # annotate input and output names
-    result[0][0] = TileType
-    for k in range(0, NumberOfOutputs):
-        result[k+1][0] = Outputs[k]
-    for k in range(0, NumberOfInputs):
-        result[0][k+1] = Inputs[k]
-    # result     CLB,    N1END0, N1END1, N1END2, ...
-    # result     N1BEG0,    0,        0,        0, ...
-    # result     N1BEG1,    0,        0,        0, ...
-    # I found something that writes the csv file
-    # import numpy
-    # tmp = array.zeros((NumberOfInputs+1,NumberOfOutputs+1)) #np.zeros(20).reshape(NumberOfInputs,NumberOfOutputs)
-    # array = np.array([(1,2,3), (4,5,6)])
-    tmp = numpy.asarray(result)
-    if filename != '':
-        numpy.savetxt(filename, tmp, fmt='%s', delimiter=",")
-    return Inputs, Outputs
+# def BootstrapSwitchMatrix(tile_description, TileType, filename):
+    # Inputs = []
+    # Outputs = []
+    # result = []
+    # # get the >>tile ports<< that connect to the outside world (these are from the NORTH EAST SOUTH WEST entries from the csv file section
+    # # 'N1END0', 'N1END1' ... 'N1BEG0', 'N1BEG1', 'N1BEG2', 'N2BEG0',
+    # # will only be WIRES ports as the rest is eventually used for cascading
+    # Inputs, Outputs = GetTileComponentPorts(
+    #     tile_description, mode='AutoSwitchMatrix')
+    # # Inputs, Outputs = GetTileComponentPorts(tile_description, mode='SwitchMatrix')
+    # # get all >>BEL ports<<< as defined by the BELs from the VHDL files
+    # for line in tile_description:
+    #     if line[0] == 'BEL':
+    #         tmp_Inputs = []
+    #         tmp_Outputs = []
+    #         if len(line) >= 3:        # we use the third column to specify an optional BEL prefix
+    #             BEL_prefix_string = line[BEL_prefix]
+    #         else:
+    #             BEL_prefix_string = ''
+    #         tmp_Inputs, tmp_Outputs = GetComponentPortsFromFile(
+    #             line[VHDL_file_position], BEL_Prefix=BEL_prefix_string)
+    #         # print('tmp_Inputs Inputs',tmp_Inputs)
+    #         # IMPORTANT: the outputs of a BEL are the inputs to the switch matrix!
+    #         Inputs = Inputs + tmp_Outputs
+    #         # print('next Inputs',Inputs)
+    #         # Outputs.append(tmp_Outputs)
+    #         # IMPORTANT: the inputs to a BEL are the outputs of the switch matrix!
+    #         Outputs = Outputs + tmp_Inputs
+    # # get all >>JUMP ports<<< (stop over ports that are input and output and that stay in the tile) as defined by the JUMP entries in the CSV file
+    # for line in tile_description:
+    #     if line[0] == 'JUMP':
+    #         # tmp_Inputs = []
+    #         # tmp_Outputs = []
+    #         for k in range(int(line[wires])):
+    #             # the NULL check in the following allows us to have just source ports, such as GND or VCC
+    #             if line[destination_name] != 'NULL':
+    #                 Inputs.append(str(line[destination_name])+str(k))
+    #             if line[source_name] != 'NULL':
+    #                 Outputs.append(str(line[source_name])+str(k))
 
+    # fabric = parseFabricCSV("fabric.csv")
+    # print(len(fabric.tileDic[TileType].inputs),
+    #       len(fabric.tileDic[TileType].outputs))
+
+    # # generate the matrix
+    # NumberOfInputs = len(Inputs)
+    # NumberOfOutputs = len(Outputs)
+    # print(NumberOfInputs, NumberOfOutputs)
+
+    # # print(fabric.tileDic[TileType].inputs)
+    # # print(Inputs)
+
+    # # print(fabric.tileDic[TileType].outputs)
+    # # print(Outputs)
+
+    # # initialize with 0
+    # for output in range(NumberOfOutputs+1):
+    #     one_line = []
+    #     for input in range(NumberOfInputs+1):
+    #         # one_line.append(str(output)+'_'+str(input))
+    #         one_line.append(str(0))
+    #     result.append(one_line)
+    # # annotate input and output names
+    # result[0][0] = TileType
+    # for k in range(0, NumberOfOutputs):
+    #     result[k+1][0] = Outputs[k]
+    # for k in range(0, NumberOfInputs):
+    #     result[0][k+1] = Inputs[k]
+    # # result     CLB,    N1END0, N1END1, N1END2, ...
+    # # result     N1BEG0,    0,        0,        0, ...
+    # # result     N1BEG1,    0,        0,        0, ...
+    # # I found something that writes the csv file
+    # # import numpy
+    # # tmp = array.zeros((NumberOfInputs+1,NumberOfOutputs+1)) #np.zeros(20).reshape(NumberOfInputs,NumberOfOutputs)
+    # # array = np.array([(1,2,3), (4,5,6)])
+    # tmp = numpy.asarray(result)
+    # if filename != '':
+    #     numpy.savetxt(filename, tmp, fmt='%s', delimiter=",")
+    # return Inputs, Outputs
 
 
 def GenerateTileVHDL(tile_description, entity, file):
@@ -1439,14 +1463,10 @@ def GenerateFabricVHDL(FabricFile, file, entity='eFPGA'):
     return
 
 
-
-
 def takes_list(a_string, a_list):
     print('first debug (a_list):', a_list, 'string:', a_string)
     for item in a_list:
         print('hello debug:', item, 'string:', a_string)
-
-
 
 
 def GenTileSwitchMatrixVerilog(tile, CSV_FileName, file):
@@ -6366,6 +6386,7 @@ print('DEBUG Parameters: ', ConfigBitMode, FrameBitsPerRow)
 
 TileTypes = GetCellTypes(fabric)
 
+
 # The original plan was to do something super generic where tiles can be arbitrarily defined.
 # However, that would have let into a heterogeneous/flat FPGA fabric as each tile may have different sets of wires to route.
 # If we say that a wire is defined by/in its source cell then that implies how many wires get routed through adjacent neighbouring tiles.
@@ -6373,15 +6394,16 @@ TileTypes = GetCellTypes(fabric)
 
 if args.GenTileSwitchMatrixCSV or args.run_all:
     print('### Generate initial switch matrix template (has to be bootstrapped first)')
-    for tile in TileTypes:
-        print(
-            f'### generate csv for tile {tile} # filename: {out_dir}/{str(tile)}_switch_matrix.csv')
-        TileFileHandler = open(
-            f"{out_dir}/{str(tile)}_switch_matrix.csv", 'w')
-        TileInformation = GetTileFromFile(FabricFile, str(tile))
-        BootstrapSwitchMatrix(TileInformation, str(
-            tile), (f"{src_dir}/{str(tile)}_switch_matrix.csv"))
-        TileFileHandler.close()
+    fabric = parseFabricCSV(args.fabric_csv)
+    BootstrapSwitchMatrix(fabric)
+    # for tile in TileTypes:
+    #     print('### generate csv for tile ', tile,
+    #           ' # filename:', (str(tile)+'_switch_matrix.csv'))
+    #     TileFileHandler = open(str(tile)+'_switch_matrix.csv', 'w')
+    #     TileInformation = GetTileFromFile(FabricFile, str(tile))
+    #     BootstrapSwitchMatrix(TileInformation, str(
+    #         tile), (str(tile)+'_switch_matrix.csv'))
+    #     TileFileHandler.close()
 
 if args.GenTileSwitchMatrixVHDL or args.run_all:
     print('### Generate initial switch matrix VHDL code')

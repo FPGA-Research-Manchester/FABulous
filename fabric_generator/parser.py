@@ -3,6 +3,7 @@ import re
 from copy import deepcopy
 import itertools
 import collections
+from typing import List, Tuple
 
 
 def parseFabricCSV(fileName: str) -> Fabric:
@@ -21,10 +22,10 @@ def parseFabricCSV(fileName: str) -> Fabric:
     parameters = re.search(
         r"ParametersBegin(.*?)ParametersEnd", file, re.MULTILINE | re.DOTALL).group(1)
 
-    tilesData = re.findall(r"TILE.*?EndTILE", file,
+    tilesData = re.findall(r"TILE(.*?)EndTILE", file,
                            re.MULTILINE | re.DOTALL)
 
-    superTile = re.findall(r"SuperTILE.*?EndSuperTILE",
+    superTile = re.findall(r"SuperTILE(.*?)EndSuperTILE",
                            file, re.MULTILINE | re.DOTALL)
 
     # parse the tile description
@@ -41,19 +42,22 @@ def parseFabricCSV(fileName: str) -> Fabric:
         matrixDir = ""
         for item in t:
             temp = item.split(",")
-            temp = [i for i in temp if i != ""]
-            if not temp:
+            if not temp or temp[0] == "":
                 continue
             if temp[0] in ["NORTH", "SOUTH", "EAST", "WEST", "JUMP"]:
                 ports.append(Port(temp[0], temp[1], int(
                     temp[2]), int(temp[3]), temp[4], int(temp[5])))
             elif temp[0] == "BEL":
-                if len(temp) == 2:
-                    bels.append(Bel(temp[1], ""))
-                else:
-                    bels.append(Bel(temp[1], temp[2]))
+                input, output, external, config = parseFileHDL(
+                    temp[1], temp[2])
+                bels.append(Bel(temp[1], temp[2], input,
+                            output, external, config))
             elif temp[0] == "MATRIX":
                 matrixDir = temp[1]
+            else:
+                print("Error: unknown tile description")
+                print(f"Description: {temp[0]}")
+                exit(-1)
         tileDefs.append(Tile(tileName, ports, bels, matrixDir))
 
     fabricTiles = []
@@ -175,7 +179,62 @@ def expandListPorts(port, PortList):
     return
 
 
+def parseFileHDL(filename, belPrefix="", filter="ALL") -> Tuple[List, List, List]:
+    inputs = []
+    outputs = []
+    externalPorts = []
+    configPorts = []
+    external = False
+    config = False
+
+    with open(filename, "r") as f:
+        file = f.read()
+
+    file = re.search(r"port.*?\((.*?)\);", file,
+                     re.MULTILINE | re.DOTALL | re.IGNORECASE).group(1)
+
+    preGlobal, postGlobal = file.split("-- GLOBAL")
+
+    for line in preGlobal.split("\n"):
+        if "IMPORTANT" in line:
+            continue
+        if "EXTERNAL" in line:
+            external = True
+        if "CONFIG" in line:
+            config = True
+
+        line = re.sub(r"STD_LOGIC.*", "", line, flags=re.IGNORECASE)
+        line = re.sub(r";.*", "", line, flags=re.IGNORECASE)
+        line = re.sub(r"--*", "", line, flags=re.IGNORECASE)
+        line = line.replace(" ", "").replace("\t", "").replace(";", "")
+        result = re.search(r"(.*):(.*)", line)
+        if not result:
+            continue
+        portName = f"{belPrefix}{result.group(1)}"
+
+        if external:
+            externalPorts.append(portName)
+        elif config:
+            configPorts.append(portName)
+        else:
+            if result.group(2) == "IN" or result.group(2) == "in" or result.group(2) == "In":
+                inputs.append(portName)
+            elif result.group(2) == "OUT" or result.group(2) == "out" or result.group(2) == "Out":
+                outputs.append(portName)
+            else:
+                print(f"Unknown port type {result.group(2)}")
+                exit(-1)
+
+        external = False
+        config = False
+
+    return inputs, outputs, externalPorts, configPorts
+
+
 if __name__ == '__main__':
-    # result = parseFabricCSV('fabric.csv')
-    # print(result)
-    result = parseList('RegFile_switch_matrix.list')
+    result = parseFabricCSV('fabric.csv')
+    # result = parseList('RegFile_switch_matrix.list')
+    result = parseFileHDL('./OutPass4_frame_config.vhdl')
+    print(result)
+    # print(result.tile)
+    # print(result.tileDic["W_IO"].portsInfo)

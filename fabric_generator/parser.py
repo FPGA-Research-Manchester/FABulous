@@ -55,9 +55,8 @@ def parseFabricCSV(fileName: str) -> Fabric:
             elif temp[0] == "MATRIX":
                 matrixDir = temp[1]
             else:
-                print("Error: unknown tile description")
-                print(f"Description: {temp[0]}")
-                exit(-1)
+                raise ValueError(f"Error: unknown tile description {temp[0]}")
+
         tileDefs.append(Tile(tileName, ports, bels, matrixDir))
 
     fabricTiles = []
@@ -133,10 +132,9 @@ def parseList(fileName: str) -> list:
     with open(fileName, 'r') as f:
         file = f.read()
         file = re.sub(r"#.*", "", file)
-
     file = file.split("\n")
     for i, line in enumerate(file):
-        line = line.strip(" ").strip("\t").split(",")
+        line = line.replace(" ", "").replace("\t", "").split(",")
         line = [i for i in line if i != ""]
         if not line:
             continue
@@ -223,8 +221,7 @@ def parseFileHDL(filename, belPrefix="", filter="ALL"):
             elif result.group(2) == "OUT" or result.group(2) == "out" or result.group(2) == "Out":
                 outList.append(port)
             else:
-                print(f"Unknown port type {result.group(2)}")
-                exit(-1)
+                raise ValueError(f"Unknown port type {result.group(2)}")
 
         if external:
             addToInOut(portName, externalInput, externalOutput)
@@ -256,10 +253,54 @@ def parseFileHDL(filename, belPrefix="", filter="ALL"):
     return inputs, outputs, externalInput, externalOutput, configPorts, sharedPort, noConfigBits
 
 
+# convert the matrix csv into a dictionary from destination to source
+def parseMatrix(fileName, tileName):
+    connectionsDic = {}
+    with open(fileName, 'r') as f:
+        file = f.read()
+        file = re.sub(r"#.*", "", file)
+        file = file.split("\n")
+
+    if file[0].split(",")[0] != tileName:
+        raise ValueError(
+            'ERROR: tile name (top left element) in csv file does not match tile name in tile object')
+
+    destinationList = file[0].split(",")[1:]
+
+    for i in destinationList:
+        connectionsDic[i] = []
+
+    for line in file[1:]:
+        line = line.split(",")
+        portName, connections = line[0], line[1:]
+
+        if portName == "":
+            continue
+
+        keys = [destinationList[i]
+                for i, x in enumerate(connections) if x == "1"]
+
+        # if contains h or l, tide the connection to logical 0 or 1 then continue
+        if "h" in connections or "H" in connections:
+            connectionsDic[portName] = ["1"]
+            print(f"Tiding {portName} to 1")
+            continue
+        if "l" in connections or "L" in connections:
+            connectionsDic[portName] = ["0"]
+            print(f"Tiding {portName} to 0")
+            continue
+
+        for key in keys:
+            connectionsDic[key].append(portName)
+
+    return connectionsDic
+
+
 if __name__ == '__main__':
-    result = parseFabricCSV('fabric.csv')
+    # result = parseFabricCSV('fabric.csv')
     # result = parseList('RegFile_switch_matrix.list')
-    result = parseFileHDL('./OutPass4_frame_config.vhdl')
+    # result = parseFileHDL('./OutPass4_frame_config.vhdl')
+    result = parseMatrix('./LUT4AB_switch_matrix.csv', "LUT4AB")
     print(result)
     # print(result.tile)
     # print(result.tileDic["W_IO"].portsInfo)

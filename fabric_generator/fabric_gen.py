@@ -33,7 +33,7 @@ import argparse
 from utilities import *
 from code_generation import *
 from fabric import *
-from parser import parseFabricCSV
+from parser import parseFabricCSV, parseMatrix
 
 # Default parameters (will be overwritten if defined in fabric between 'ParametersBegin' and 'ParametersEnd'
 #Parameters = [ 'ConfigBitMode', 'FrameBitsPerRow' ]
@@ -77,6 +77,7 @@ All_Directions = ['NORTH', 'EAST', 'SOUTH', 'WEST']
 Opposite_Directions = {"NORTH": "SOUTH",
                        "EAST": "WEST", "SOUTH": "NORTH", "WEST": "EAST"}
 
+
 def BootstrapSwitchMatrix(fabric):
     for tile in fabric.tileDic:
         print(
@@ -86,7 +87,7 @@ def BootstrapSwitchMatrix(fabric):
             writer.writerow([tile] + fabric.tileDic[tile].outputs)
             for p in fabric.tileDic[tile].inputs:
                 writer.writerow([p] + [0] * len(fabric.tileDic[tile].outputs))
-    
+
 
 # def BootstrapSwitchMatrix(tile_description, TileType, filename):
     # Inputs = []
@@ -540,71 +541,6 @@ def GenerateTileVHDL(tile_description, entity, file):
     return
 
 
-def GenerateConfigMemInit(tile_description, entity, file, GlobalConfigBitsCounter):
-    # write configuration bits to frame mapping init file (e.g. 'LUT4AB_ConfigMem.init.csv')
-    # this file can be modified and saved as 'LUT4AB_ConfigMem.csv' (without the '.init')
-    BitsLeftToPackInFrames = GlobalConfigBitsCounter
-    initCSV = []
-    one_line = []
-    one_line.append('#frame_name')
-    one_line.append('frame_index')
-    one_line.append('bits_used_in_frame')
-    one_line.append('used_bits_mask')
-    one_line.append('ConfigBits_ranges')
-    initCSV.append(one_line)
-    for k in range(int(MaxFramesPerCol)):
-        one_line = []
-        # frame0, frame1, ...
-        one_line.append('frame'+str(k))
-        # and the index (0, 1, 2, ...), in case we need
-        one_line.append(str(k))
-        # size of the frame in bits
-        if BitsLeftToPackInFrames >= FrameBitsPerRow:
-            one_line.append(str(FrameBitsPerRow))
-            # generate a string encoding a '1' for each flop used
-            FrameBitsMask = ('1' * FrameBitsPerRow)
-            tmp_one_line = ''
-            for k in range(len(FrameBitsMask)):
-                tmp_one_line = tmp_one_line + FrameBitsMask[k]
-                # after every 4th character add a '_'
-                if ((k % 4) == 3) and (k != (len(FrameBitsMask)-1)):
-                    # some "pretty" printing, results in '1111_1111_1...'
-                    tmp_one_line = tmp_one_line + '_'
-            one_line.append(tmp_one_line)
-            one_line.append(str(BitsLeftToPackInFrames-1)+':' +
-                            str(BitsLeftToPackInFrames-FrameBitsPerRow))
-            BitsLeftToPackInFrames = BitsLeftToPackInFrames - FrameBitsPerRow
-        else:
-            one_line.append(str(BitsLeftToPackInFrames))
-            # generate a string encoding a '1' for each flop used
-            # this will allow us to kick out flops in the middle (e.g. for alignment padding)
-            FrameBitsMask = ('1' * BitsLeftToPackInFrames +
-                             '0' * (FrameBitsPerRow-BitsLeftToPackInFrames))
-            tmp_one_line = ''
-            for k in range(len(FrameBitsMask)):
-                tmp_one_line = tmp_one_line + FrameBitsMask[k]
-                # after every 4th character add a '_'
-                if ((k % 4) == 3) and (k != (len(FrameBitsMask)-1)):
-                    # some "pretty" printing, results in '1111_1111_1...'
-                    tmp_one_line = tmp_one_line + '_'
-            one_line.append(tmp_one_line)
-            if BitsLeftToPackInFrames > 0:
-                one_line.append(str(BitsLeftToPackInFrames-1)+':0')
-            else:
-                one_line.append('# NULL')
-            # will have to be 0 if already 0 or if we just allocate the last bits
-            BitsLeftToPackInFrames = 0
-        # The mapping into frames is described as a list of index ranges applied to the ConfigBits vector
-        # use '2' for a single bit; '5:0' for a downto range; multiple ranges can be specified in optional consecutive comma separated fields get concatenated)
-        # default is counting top down
-
-        # attach line to CSV
-        initCSV.append(one_line)
-    tmp = numpy.asarray(initCSV)
-    numpy.savetxt(entity+'.init.csv', tmp, fmt='%s', delimiter=",")
-    return initCSV
-
-
 def GenerateConfigMemVHDL(tile_description, entity, file):
     # count total number of configuration bits for tile
     GlobalConfigBitsCounter = 0
@@ -755,329 +691,488 @@ def GenerateConfigMemVHDL(tile_description, entity, file):
     return
 
 
-def GenTileSwitchMatrixVHDL(tile, CSV_FileName, file):
-    print('### Read ', str(tile), ' csv file ###')
-    CSVFile = [i.strip('\n').split(',') for i in open(CSV_FileName)]
-    # clean comments empty lines etc. in the mapping file
-    CSVFile = RemoveComments(CSVFile)
-    # sanity check if we have the right CSV file
-    if tile != CSVFile[0][0]:
-        raise ValueError(
-            'top left element in CSV file does not match tile type in function GenTileSwitchMatrixVHDL')
+# def GenTileSwitchMatrixVHDL(tile, CSV_FileName, file):
+#     print('### Read ', str(tile), ' csv file ###')
 
-    # we check if all columns contain at least one entry
-    # basically that a wire entering the switch matrix can also leave that switch matrix.
-    # When generating the actual multiplexers, we run the same test on the rows...
-    for x in range(1, len(CSVFile[0])):
-        ColBitCounter = 0
-        for y in range(1, len(CSVFile)):
-            if CSVFile[y][x] == '1':        # column-by-column scan
-                ColBitCounter += 1
-        if ColBitCounter == 0:                # if we never counted, it may point to a problem
-            print('WARNING: input port '+CSVFile[0][x]+' of switch matrix in Tile ' +
-                  CSVFile[0][0]+' is not used (from function GenTileSwitchMatrixVHDL)')
+#     CSVFile = [i.strip('\n').split(',') for i in open(CSV_FileName)]
+#     # clean comments empty lines etc. in the mapping file
+#     CSVFile = RemoveComments(CSVFile)
+#     # sanity check if we have the right CSV file
+#     if tile != CSVFile[0][0]:
+#         raise ValueError(
+#             'top left element in CSV file does not match tile type in function GenTileSwitchMatrixVHDL')
+
+#     # we check if all columns contain at least one entry
+#     # basically that a wire entering the switch matrix can also leave that switch matrix.
+#     # When generating the actual multiplexers, we run the same test on the rows...
+#     for x in range(1, len(CSVFile[0])):
+#         ColBitCounter = 0
+#         for y in range(1, len(CSVFile)):
+#             if CSVFile[y][x] == '1':        # column-by-column scan
+#                 ColBitCounter += 1
+#         if ColBitCounter == 0:                # if we never counted, it may point to a problem
+#             print('WARNING: input port '+CSVFile[0][x]+' of switch matrix in Tile ' +
+#                   CSVFile[0][0]+' is not used (from function GenTileSwitchMatrixVHDL)')
+
+#     # we pass the NumberOfConfigBits as a comment in the beginning of the file.
+#     # This simplifies it to generate the configuration port only if needed later when building the fabric where we are only working with the VHDL files
+#     GlobalConfigBitsCounter = 0
+#     mux_size_list = []
+#     for line in CSVFile[1:]:
+#         # we first count the number of multiplexer inputs
+#         mux_size = 0
+#         for port in line[1:]:
+#             if port != '0':
+#                 mux_size += 1
+#         mux_size_list.append(mux_size)
+#         if mux_size >= 2:
+#             GlobalConfigBitsCounter = GlobalConfigBitsCounter + \
+#                 int(math.ceil(math.log2(mux_size)))
+#     print('-- NumberOfConfigBits:'+str(GlobalConfigBitsCounter), file=file)
+#     # VHDL header
+#     entity = tile+'_switch_matrix'
+#     GenerateVHDL_Header(file, entity, package=Package,
+#                         NoConfigBits=str(GlobalConfigBitsCounter))
+#     # input ports
+#     print('\t\t -- switch matrix inputs', file=file)
+#     # CSVFile[0][1:]:   starts in the first row from the second element
+#     for port in CSVFile[0][1:]:
+#         # the following conditional is used to capture GND and VDD to not sow up in the switch matrix port list
+#         if re.search('^GND', port, flags=re.IGNORECASE) or re.search('^VCC', port, flags=re.IGNORECASE) or re.search('^VDD', port, flags=re.IGNORECASE):
+#             pass  # maybe needed one day
+#         else:
+#             print('\t\t ', port, '\t: in \t STD_LOGIC;', file=file)
+#     # output ports
+#     for line in CSVFile[1:]:
+#         print('\t\t ', line[0], '\t: out \t STD_LOGIC;', file=file)
+#     # this is a shared text block finishes the header and adds configuration port
+#     if GlobalConfigBitsCounter > 0:
+#         GenerateVHDL_EntityFooter(file, entity, ConfigPort=True)
+#     else:
+#         GenerateVHDL_EntityFooter(file, entity, ConfigPort=False)
+
+#     # constant declaration
+#     # we may use the following in the switch matrix for providing '0' and '1' to a mux input:
+#     print('constant GND0\t : std_logic := \'0\';', file=file)
+#     print('constant GND\t : std_logic := \'0\';', file=file)
+#     print('constant VCC0\t : std_logic := \'1\';', file=file)
+#     print('constant VCC\t : std_logic := \'1\';', file=file)
+#     print('constant VDD0\t : std_logic := \'1\';', file=file)
+#     print('constant VDD\t : std_logic := \'1\';', file=file)
+#     print('\t', file=file)
+
+#     # signal declaration
+#     for k in range(1, len(CSVFile), 1):
+#         print('signal \t ', CSVFile[k][0]+'_input', '\t:\t std_logic_vector(',
+#               str(mux_size_list[k-1]), '- 1 downto 0 );', file=file)
+
+#     ### SwitchMatrixDebugSignals ### SwitchMatrixDebugSignals ###
+#     ### SwitchMatrixDebugSignals ### SwitchMatrixDebugSignals ###
+#     if SwitchMatrixDebugSignals == True:
+#         print('', file=file)
+#         for line in CSVFile[1:]:
+#             # we first count the number of multiplexer inputs
+#             mux_size = 0
+#             for port in line[1:]:
+#                 if port != '0':
+#                     mux_size += 1
+#             if mux_size >= 2:
+#                 print('signal DEBUG_select_'+str(line[0])+'\t: STD_LOGIC_VECTOR ('+str(
+#                     int(math.ceil(math.log2(mux_size))))+' -1 downto 0);', file=file)
+#     ### SwitchMatrixDebugSignals ### SwitchMatrixDebugSignals ###
+#     ### SwitchMatrixDebugSignals ### SwitchMatrixDebugSignals ###
+
+# #    print('debug', file=file)
+# #
+# #    mux_size_list = []
+# #    ConfigBitsCounter = 0
+# #    for line in CSVFile[1:]:
+# #        # we first count the number of multiplexer inputs
+# #        mux_size=0
+# #        for port in line[1:]:
+# #            # print('debug: ',port)
+# #            if port != '0':
+# #                mux_size += 1
+# #        mux_size_list.append(mux_size)
+# #        if mux_size >= 2:
+# #            print('signal \t ',line[0]+'_input','\t:\t std_logic_vector(',str(mux_size),'- 1 downto 0 );', file=file)
+# #            # "mux_size" tells us the number of mux inputs and "int(math.ceil(math.log2(mux_size)))" the number of configuration bits
+# #            # we count all bits needed to declare a corresponding shift register
+# #            ConfigBitsCounter = ConfigBitsCounter + int(math.ceil(math.log2(mux_size)))
+#     print('\n-- The configuration bits (if any) are just a long shift register', file=file)
+#     print('\n-- This shift register is padded to an even number of flops/latches', file=file)
+#     # we are only generate configuration bits, if we really need configurations bits
+#     # for example in terminating switch matrices at the fabric borders, we may just change direction without any switching
+#     if GlobalConfigBitsCounter > 0:
+#         if ConfigBitMode == 'ff_chain':
+#             print('signal \t ConfigBits :\t unsigned( ' +
+#                   str(GlobalConfigBitsCounter)+'-1 downto 0 );', file=file)
+#         if ConfigBitMode == 'FlipFlopChain':
+#             # print('DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG ConfigBitMode == FlipFlopChain')
+#             # we pad to an even number of bits: (int(math.ceil(ConfigBitCounter/2.0))*2)
+#             print('signal \t ConfigBits :\t unsigned( ' +
+#                   str(int(math.ceil(GlobalConfigBitsCounter/2.0))*2)+'-1 downto 0 );', file=file)
+#             print('signal \t ConfigBitsInput :\t unsigned( ' +
+#                   str(int(math.ceil(GlobalConfigBitsCounter/2.0))*2)+'-1 downto 0 );', file=file)
+
+#     # begin architecture
+#     print('\nbegin\n', file=file)
+
+#     # the configuration bits shift register
+#     # again, we add this only if needed
+#     if GlobalConfigBitsCounter > 0:
+#         if ConfigBitMode == 'ff_chain':
+#             print(
+#                 '-- the configuration bits shift register                                    ', file=file)
+#             print(
+#                 'process(CLK)                                                                ', file=file)
+#             print(
+#                 'begin                                                                       ', file=file)
+#             print(
+#                 '\t' + 'if CLK\'event and CLK=\'1\' then                                        ', file=file)
+#             print(
+#                 '\t'+'\t' + 'if mode=\'1\' then    --configuration mode                             ', file=file)
+#             print('\t'+'\t'+'\t' +
+#                   'ConfigBits <= CONFin & ConfigBits(ConfigBits\'high downto 1);   ', file=file)
+#             print(
+#                 '\t'+'\t' + 'end if;                                                             ', file=file)
+#             print(
+#                 '\t' + 'end if;                                                                 ', file=file)
+#             print(
+#                 'end process;                                                                ', file=file)
+#             print(
+#                 'CONFout <= ConfigBits(ConfigBits\'high);                                    ', file=file)
+#             print(' \n', file=file)
+
+# # L:for k in 0 to 196 generate
+#         # inst_LHQD1a : LHQD1
+#         # Port Map(
+#         # D    => ConfigBitsInput(k*2),
+#         # E    => CLK,
+#         # Q    => ConfigBits(k*2) ) ;
+
+#         # inst_LHQD1b : LHQD1
+#             # Port Map(
+#             # D    => ConfigBitsInput((k*2)+1),
+#             # E    => MODE,
+#             # Q    => ConfigBits((k*2)+1) );
+# # end generate;
+#         if ConfigBitMode == 'FlipFlopChain':
+#             # print('DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG ConfigBitMode == FlipFlopChain')
+#             print(
+#                 'ConfigBitsInput <= ConfigBits(ConfigBitsInput\'high-1 downto 0) & CONFin; \n     ', file=file)
+#             print('-- for k in 0 to Conf/2 generate               ', file=file)
+#             print('L: for k in 0 to ' +
+#                   str(int(math.ceil(GlobalConfigBitsCounter/2.0))-1)+' generate ', file=file)
+#             print('\t' + '    inst_LHQD1a : LHQD1              ', file=file)
+#             print('\t' + '\t' + 'Port Map(              ', file=file)
+#             print('\t' + '\t' + 'D    => ConfigBitsInput(k*2),              ', file=file)
+#             print('\t' + '\t' + 'E    => CLK,               ', file=file)
+#             print('\t' + '\t' + 'Q    => ConfigBits(k*2) );                 ', file=file)
+#             print('              ', file=file)
+#             print('\t' + '    inst_LHQD1b : LHQD1              ', file=file)
+#             print('\t' + '\t' + 'Port Map(              ', file=file)
+#             print('\t' + '\t' + 'D    => ConfigBitsInput((k*2)+1),', file=file)
+#             print('\t' + '\t' + 'E    => MODE,', file=file)
+#             print('\t' + '\t' + 'Q    => ConfigBits((k*2)+1) ); ', file=file)
+#             print('end generate; \n        ', file=file)
+#             print(
+#                 'CONFout <= ConfigBits(ConfigBits\'high);                                    ', file=file)
+#             print(' \n', file=file)
+
+#     # the switch matrix implementation
+#     # we use the following variable to count the configuration bits of a long shift register which actually holds the switch matrix configuration
+#     ConfigBitstreamPosition = 0
+#     for line in CSVFile[1:]:
+#         # we first count the number of multiplexer inputs
+#         mux_size = 0
+#         for port in line[1:]:
+#             # print('debug: ',port)
+#             if port != '0':
+#                 mux_size += 1
+
+#         print('-- switch matrix multiplexer ',
+#               line[0], '\t\tMUX-'+str(mux_size), file=file)
+
+#         if mux_size == 0:
+#             print('-- WARNING unused multiplexer MUX-'+str(line[0]), file=file)
+#             print('WARNING: unused multiplexer MUX-' +
+#                   str(line[0])+' in tile '+str(CSVFile[0][0]))
+
+#         # just route through : can be used for auxiliary wires or diagonal routing (Manhattan, just go to a switch matrix when turning
+#         # can also be used to tap a wire. A double with a mid is nothing else as a single cascaded with another single where the second single has only one '1' to cascade from the first single
+#         if mux_size == 1:
+#             port_index = 0
+#             for port in line[1:]:
+#                 port_index += 1
+#                 if port == '1':
+#                     print(line[0], '\t <= \t', CSVFile[0]
+#                           [port_index], ';', file=file)
+#                 elif port == 'l' or port == 'L':
+#                     print(line[0], '\t <= \t \'0\';', file=file)
+#                 elif port == 'h' or port == 'H':
+#                     print(line[0], '\t <= \t \'1\';', file=file)
+#                 elif port == '0':
+#                     pass  # we add this for the following test to throw an error is an unexpected character is used
+#                 else:
+#                     raise ValueError(
+#                         'wrong symbol in CSV file (must be 0, 1, H, or L) when executing function GenTileSwitchMatrixVHDL')
+#         # this is the case for a configurable switch matrix multiplexer
+#         if mux_size >= 2:
+#             print(line[0]+'_input', '\t <= ', end='', file=file)
+#             port_index = 0
+#             inputs_so_far = 0
+#             # the reversed() changes the direction that we iterate over the line list.
+#             # I changed it such that the left-most entry is located at the end of the concatenated vector for the multiplexing
+#             # This was done such that the index from left-to-right in the adjacency matrix corresponds with the multiplexer select input (index)
+#             # remove "len(line)-" if you remove the reversed(..)
+#             for port in reversed(line[1:]):
+#                 port_index += 1
+#                 if port != '0':
+#                     inputs_so_far += 1
+#                     # again the "len(line)-" is needed as we iterate in reverse direction over the line list.
+#                     # remove "len(line)-" if you remove the reversed(..)
+#                     print(CSVFile[0][len(line)-port_index], end='', file=file)
+#                     if inputs_so_far == mux_size:
+#                         if int(GenerateDelayInSwitchMatrix) > 0:
+#                             print(
+#                                 ' after '+str(GenerateDelayInSwitchMatrix)+' ps;', file=file)
+#                         else:
+#                             print(';', file=file)
+#                     else:
+#                         print(' & ', end='', file=file)
+#             # int(math.ceil(math.log2(inputs_so_far))) tells us how many configuration bits a multiplexer takes
+#             old_ConfigBitstreamPosition = ConfigBitstreamPosition
+#             ConfigBitstreamPosition = ConfigBitstreamPosition + \
+#                 int(math.ceil(math.log2(inputs_so_far)))
+
+#             # we have full custom MUX-4 and MUX-16 for which we have to generate code like:
+# # VHDL example custom MUX4
+# # inst_MUX4PTv4_J_l_AB_BEG1 : MUX4PTv4
+#     # Port Map(
+#     # IN1  => J_l_AB_BEG1_input(0),
+#     # IN2  => J_l_AB_BEG1_input(1),
+#     # IN3  => J_l_AB_BEG1_input(2),
+#     # IN4  => J_l_AB_BEG1_input(3),
+#     # S1   => ConfigBits(low_362),
+#     # S2   => ConfigBits(low_362 + 1,
+#     # O    => J_l_AB_BEG1 );
+#     # CUSTOM Multiplexers for switch matrix
+#     # CUSTOM Multiplexers for switch matrix
+#     # CUSTOM Multiplexers for switch matrix
+#             if (MultiplexerStyle == 'custom') and (mux_size == 4):
+#                 MuxComponentName = 'MUX4PTv4'
+#             if (MultiplexerStyle == 'custom') and (mux_size == 16):
+#                 MuxComponentName = 'MUX16PTv2'
+#             if (MultiplexerStyle == 'custom') and (mux_size == 4 or mux_size == 16):
+#                 # inst_MUX4PTv4_J_l_AB_BEG1 : MUX4PTv4
+#                 print('inst_'+MuxComponentName+'_' +
+#                       line[0]+' : '+MuxComponentName+'\n', end='', file=file)
+#                 # Port Map(
+#                 print('\t'+' Port Map(\n', end='', file=file)
+#                 # IN1  => J_l_AB_BEG1_input(0),
+#                 # IN2  => J_l_AB_BEG1_input(1), ...
+#                 for k in range(0, mux_size):
+#                     print('\t'+'\t'+'IN'+str(k+1)+' \t=> ' +
+#                           line[0]+'_input('+str(k)+'),\n', end='', file=file)
+#                 # S1   => ConfigBits(low_362),
+#                 # S2   => ConfigBits(low_362 + 1, ...
+#                 for k in range(0, (math.ceil(math.log2(mux_size)))):
+#                     print('\t'+'\t'+'S'+str(k+1)+' \t=> ConfigBits(' +
+#                           str(old_ConfigBitstreamPosition)+' + '+str(k)+'),\n', end='', file=file)
+#                 print('\t'+'\t'+'O  \t=> ' +
+#                       line[0]+' );\n\n', end='', file=file)
+#             else:        # generic multiplexer
+#                 if MultiplexerStyle == 'custom':
+#                     print('HINT: creating a MUX-'+str(mux_size)+' for port ' +
+#                           line[0]+' in switch matrix for tile '+CSVFile[0][0])
+#                 # VHDL example arbitrary mux
+#                 # J_l_AB_BEG1    <= J_l_AB_BEG1_input(TO_INTEGER(ConfigBits(363 downto 362)));
+#                 print(line[0]+'\t<= '+line[0]+'_input(', end='', file=file)
+#                 print('TO_INTEGER(UNSIGNED(ConfigBits('+str(ConfigBitstreamPosition-1) +
+#                       ' downto '+str(old_ConfigBitstreamPosition)+'))));', file=file)
+#                 print(' ', file=file)
+
+#     ### SwitchMatrixDebugSignals ### SwitchMatrixDebugSignals ###
+#     ### SwitchMatrixDebugSignals ### SwitchMatrixDebugSignals ###
+#     if SwitchMatrixDebugSignals == True:
+#         print('\n', file=file)
+#         ConfigBitstreamPosition = 0
+#         for line in CSVFile[1:]:
+#             # we first count the number of multiplexer inputs
+#             mux_size = 0
+#             for port in line[1:]:
+#                 if port != '0':
+#                     mux_size += 1
+#             if mux_size >= 2:
+#                 old_ConfigBitstreamPosition = ConfigBitstreamPosition
+#                 ConfigBitstreamPosition = ConfigBitstreamPosition + \
+#                     int(math.ceil(math.log2(mux_size)))
+#                 print('DEBUG_select_'+line[0]+'\t<= ConfigBits('+str(
+#                     ConfigBitstreamPosition-1)+' downto '+str(old_ConfigBitstreamPosition)+');', file=file)
+#     ### SwitchMatrixDebugSignals ### SwitchMatrixDebugSignals ###
+#     ### SwitchMatrixDebugSignals ### SwitchMatrixDebugSignals ###
+
+#     # just the final end of architecture
+#     print('\n'+'end architecture Behavioral;'+'\n', file=file)
+#     return
+
+
+def GenTileSwitchMatrixVHDL(tile: Tile, csvFile, outputFile):
+    print(f"### Read {tile.name} csv file ###")
+
+    # convert the matrix to a dictionary map and performs entry check
+    connections = parseMatrix(csvFile, tile.name)
+
+    globalConfigBitsCounter = 0
+    for k in connections:
+        muxSize = len(connections[k])
+        if muxSize >= 2:
+            globalConfigBitsCounter += int(math.ceil(math.log2(muxSize)))
 
     # we pass the NumberOfConfigBits as a comment in the beginning of the file.
     # This simplifies it to generate the configuration port only if needed later when building the fabric where we are only working with the VHDL files
-    GlobalConfigBitsCounter = 0
-    mux_size_list = []
-    for line in CSVFile[1:]:
-        # we first count the number of multiplexer inputs
-        mux_size = 0
-        for port in line[1:]:
-            if port != '0':
-                mux_size += 1
-        mux_size_list.append(mux_size)
-        if mux_size >= 2:
-            GlobalConfigBitsCounter = GlobalConfigBitsCounter + \
-                int(math.ceil(math.log2(mux_size)))
-    print('-- NumberOfConfigBits:'+str(GlobalConfigBitsCounter), file=file)
+    print(f"-- NumberOfConfigBits: {globalConfigBitsCounter}", file=outputFile)
+
     # VHDL header
-    entity = tile+'_switch_matrix'
-    GenerateVHDL_Header(file, entity, package=Package,
-                        NoConfigBits=str(GlobalConfigBitsCounter))
+    GenerateVHDL_Header(outputFile, tile.name, package=Package,
+                        noConfigBits=str(globalConfigBitsCounter))
+
     # input ports
-    print('\t\t -- switch matrix inputs', file=file)
-    # CSVFile[0][1:]:   starts in the first row from the second element
-    for port in CSVFile[0][1:]:
-        # the following conditional is used to capture GND and VDD to not sow up in the switch matrix port list
-        if re.search('^GND', port, flags=re.IGNORECASE) or re.search('^VCC', port, flags=re.IGNORECASE) or re.search('^VDD', port, flags=re.IGNORECASE):
-            pass  # maybe needed one day
-        else:
-            print('\t\t ', port, '\t: in \t STD_LOGIC;', file=file)
+    print(f"{' ':<8} -- switch matrix inputs", file=outputFile)
+    for port in tile.inputs:
+        if "GND" in port or "VCC" in port or "VDD" in port:
+            continue
+        print(f"{' ':<8} {port} : in STD_LOGIC;", file=outputFile)
+
     # output ports
-    for line in CSVFile[1:]:
-        print('\t\t ', line[0], '\t: out \t STD_LOGIC;', file=file)
+    for port in tile.outputs:
+        print(f"{' ':<8} {port} : out STD_LOGIC;", file=outputFile)
+
     # this is a shared text block finishes the header and adds configuration port
-    if GlobalConfigBitsCounter > 0:
-        GenerateVHDL_EntityFooter(file, entity, ConfigPort=True)
+    if globalConfigBitsCounter > 0:
+        GenerateVHDL_EntityFooter(outputFile, tile.name, ConfigPort=True)
     else:
-        GenerateVHDL_EntityFooter(file, entity, ConfigPort=False)
+        GenerateVHDL_EntityFooter(outputFile, tile.name, ConfigPort=False)
 
     # constant declaration
     # we may use the following in the switch matrix for providing '0' and '1' to a mux input:
-    print('constant GND0\t : std_logic := \'0\';', file=file)
-    print('constant GND\t : std_logic := \'0\';', file=file)
-    print('constant VCC0\t : std_logic := \'1\';', file=file)
-    print('constant VCC\t : std_logic := \'1\';', file=file)
-    print('constant VDD0\t : std_logic := \'1\';', file=file)
-    print('constant VDD\t : std_logic := \'1\';', file=file)
-    print('\t', file=file)
+    print("constant GND0  : std_logic := '0';", file=outputFile)
+    print("constant GND   : std_logic := '0';", file=outputFile)
+    print("constant VCC0  : std_logic := '1';", file=outputFile)
+    print("constant VCC   : std_logic := '1';", file=outputFile)
+    print("constant VDD0  : std_logic := '1';", file=outputFile)
+    print("constant VDD   : std_logic := '1';", file=outputFile)
 
     # signal declaration
-    for k in range(1, len(CSVFile), 1):
-        print('signal \t ', CSVFile[k][0]+'_input', '\t:\t std_logic_vector(',
-              str(mux_size_list[k-1]), '- 1 downto 0 );', file=file)
+    for k in connections:
+        print(
+            f"signal {k:<7} : std_logic_vector({len(connections[k])-1} downto 0);", file=outputFile)
 
     ### SwitchMatrixDebugSignals ### SwitchMatrixDebugSignals ###
     ### SwitchMatrixDebugSignals ### SwitchMatrixDebugSignals ###
     if SwitchMatrixDebugSignals == True:
-        print('', file=file)
-        for line in CSVFile[1:]:
-            # we first count the number of multiplexer inputs
-            mux_size = 0
-            for port in line[1:]:
-                if port != '0':
-                    mux_size += 1
-            if mux_size >= 2:
-                print('signal DEBUG_select_'+str(line[0])+'\t: STD_LOGIC_VECTOR ('+str(
-                    int(math.ceil(math.log2(mux_size))))+' -1 downto 0);', file=file)
+        print('', file=outputFile)
+        for k in connections:
+            muxSize = len(connections[k])
+            if muxSize >= 2:
+                print(
+                    f"signal DEBUG_select_{k:<8} : STD_LOGIC_VECTOR ( {int(math.ceil(math.log2(muxSize)))} -1 downto 0);", file=outputFile)
     ### SwitchMatrixDebugSignals ### SwitchMatrixDebugSignals ###
     ### SwitchMatrixDebugSignals ### SwitchMatrixDebugSignals ###
 
-#    print('debug', file=file)
-#
-#    mux_size_list = []
-#    ConfigBitsCounter = 0
-#    for line in CSVFile[1:]:
-#        # we first count the number of multiplexer inputs
-#        mux_size=0
-#        for port in line[1:]:
-#            # print('debug: ',port)
-#            if port != '0':
-#                mux_size += 1
-#        mux_size_list.append(mux_size)
-#        if mux_size >= 2:
-#            print('signal \t ',line[0]+'_input','\t:\t std_logic_vector(',str(mux_size),'- 1 downto 0 );', file=file)
-#            # "mux_size" tells us the number of mux inputs and "int(math.ceil(math.log2(mux_size)))" the number of configuration bits
-#            # we count all bits needed to declare a corresponding shift register
-#            ConfigBitsCounter = ConfigBitsCounter + int(math.ceil(math.log2(mux_size)))
-    print('\n-- The configuration bits (if any) are just a long shift register', file=file)
-    print('\n-- This shift register is padded to an even number of flops/latches', file=file)
+    print('\n-- The configuration bits (if any) are just a long shift register', file=outputFile)
+    print('\n-- This shift register is padded to an even number of flops/latches', file=outputFile)
     # we are only generate configuration bits, if we really need configurations bits
     # for example in terminating switch matrices at the fabric borders, we may just change direction without any switching
-    if GlobalConfigBitsCounter > 0:
+    if globalConfigBitsCounter > 0:
         if ConfigBitMode == 'ff_chain':
-            print('signal \t ConfigBits :\t unsigned( ' +
-                  str(GlobalConfigBitsCounter)+'-1 downto 0 );', file=file)
+            print(
+                f"signal{' ':>4}ConfigBits : unsigned( {globalConfigBitsCounter} -1 downto 0 );", file=outputFile)
         if ConfigBitMode == 'FlipFlopChain':
             # print('DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG ConfigBitMode == FlipFlopChain')
             # we pad to an even number of bits: (int(math.ceil(ConfigBitCounter/2.0))*2)
-            print('signal \t ConfigBits :\t unsigned( ' +
-                  str(int(math.ceil(GlobalConfigBitsCounter/2.0))*2)+'-1 downto 0 );', file=file)
-            print('signal \t ConfigBitsInput :\t unsigned( ' +
-                  str(int(math.ceil(GlobalConfigBitsCounter/2.0))*2)+'-1 downto 0 );', file=file)
+            print(
+                f"signal{' ':>4}ConfigBits : unsigned( {int(math.ceil(globalConfigBitsCounter/2.0))*2} -1 downto 0 );", file=outputFile)
+            print(
+                f"signal{' ':>4}ConfigBitsInput : unsigned( {int(math.ceil(globalConfigBitsCounter/2.0))*2} -1 downto 0 );", file=outputFile)
 
     # begin architecture
-    print('\nbegin\n', file=file)
+    print('\nbegin\n', file=outputFile)
 
     # the configuration bits shift register
     # again, we add this only if needed
-    if GlobalConfigBitsCounter > 0:
+    if globalConfigBitsCounter > 0:
         if ConfigBitMode == 'ff_chain':
-            print(
-                '-- the configuration bits shift register                                    ', file=file)
-            print(
-                'process(CLK)                                                                ', file=file)
-            print(
-                'begin                                                                       ', file=file)
-            print(
-                '\t' + 'if CLK\'event and CLK=\'1\' then                                        ', file=file)
-            print(
-                '\t'+'\t' + 'if mode=\'1\' then    --configuration mode                             ', file=file)
-            print('\t'+'\t'+'\t' +
-                  'ConfigBits <= CONFin & ConfigBits(ConfigBits\'high downto 1);   ', file=file)
-            print(
-                '\t'+'\t' + 'end if;                                                             ', file=file)
-            print(
-                '\t' + 'end if;                                                                 ', file=file)
-            print(
-                'end process;                                                                ', file=file)
-            print(
-                'CONFout <= ConfigBits(ConfigBits\'high);                                    ', file=file)
-            print(' \n', file=file)
+            generateShiftRegister(outputFile)
 
-# L:for k in 0 to 196 generate
-        # inst_LHQD1a : LHQD1
-        # Port Map(
-        # D    => ConfigBitsInput(k*2),
-        # E    => CLK,
-        # Q    => ConfigBits(k*2) ) ;
-
-        # inst_LHQD1b : LHQD1
-            # Port Map(
-            # D    => ConfigBitsInput((k*2)+1),
-            # E    => MODE,
-            # Q    => ConfigBits((k*2)+1) );
-# end generate;
-        if ConfigBitMode == 'FlipFlopChain':
-            # print('DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG ConfigBitMode == FlipFlopChain')
-            print(
-                'ConfigBitsInput <= ConfigBits(ConfigBitsInput\'high-1 downto 0) & CONFin; \n     ', file=file)
-            print('-- for k in 0 to Conf/2 generate               ', file=file)
-            print('L: for k in 0 to ' +
-                  str(int(math.ceil(GlobalConfigBitsCounter/2.0))-1)+' generate ', file=file)
-            print('\t' + '    inst_LHQD1a : LHQD1              ', file=file)
-            print('\t' + '\t' + 'Port Map(              ', file=file)
-            print('\t' + '\t' + 'D    => ConfigBitsInput(k*2),              ', file=file)
-            print('\t' + '\t' + 'E    => CLK,               ', file=file)
-            print('\t' + '\t' + 'Q    => ConfigBits(k*2) );                 ', file=file)
-            print('              ', file=file)
-            print('\t' + '    inst_LHQD1b : LHQD1              ', file=file)
-            print('\t' + '\t' + 'Port Map(              ', file=file)
-            print('\t' + '\t' + 'D    => ConfigBitsInput((k*2)+1),', file=file)
-            print('\t' + '\t' + 'E    => MODE,', file=file)
-            print('\t' + '\t' + 'Q    => ConfigBits((k*2)+1) ); ', file=file)
-            print('end generate; \n        ', file=file)
-            print(
-                'CONFout <= ConfigBits(ConfigBits\'high);                                    ', file=file)
-            print(' \n', file=file)
+        elif ConfigBitMode == 'FlipFlopChain':
+            generateFlipFlopChain(outputFile, globalConfigBitsCounter)
+        elif ConfigBitMode == 'frame_based':
+            pass
+        else:
+            raise ValueError(f"{ConfigBitMode} is not a valid ConfigBitMode")
 
     # the switch matrix implementation
     # we use the following variable to count the configuration bits of a long shift register which actually holds the switch matrix configuration
-    ConfigBitstreamPosition = 0
-    for line in CSVFile[1:]:
-        # we first count the number of multiplexer inputs
-        mux_size = 0
-        for port in line[1:]:
-            # print('debug: ',port)
-            if port != '0':
-                mux_size += 1
+    configBitstreamPosition = 0
 
-        print('-- switch matrix multiplexer ',
-              line[0], '\t\tMUX-'+str(mux_size), file=file)
+    for k in connections:
+        print(
+            f"-- switch matrix multiplexer {k} MUX-{muxSize}", file=outputFile)
+        muxSize = len(connections[k])
+        if muxSize == 0:
+            print(
+                f"WARNING: input port {k} of switch matrix in Tile {tile.name} is not used")
+            print(f"-- WARNING unused multiplexer MUX-{k}", file=outputFile)
 
-        if mux_size == 0:
-            print('-- WARNING unused multiplexer MUX-'+str(line[0]), file=file)
-            print('WARNING: unused multiplexer MUX-' +
-                  str(line[0])+' in tile '+str(CSVFile[0][0]))
-
-        # just route through : can be used for auxiliary wires or diagonal routing (Manhattan, just go to a switch matrix when turning
-        # can also be used to tap a wire. A double with a mid is nothing else as a single cascaded with another single where the second single has only one '1' to cascade from the first single
-        if mux_size == 1:
-            port_index = 0
-            for port in line[1:]:
-                port_index += 1
-                if port == '1':
-                    print(line[0], '\t <= \t', CSVFile[0]
-                          [port_index], ';', file=file)
-                elif port == 'l' or port == 'L':
-                    print(line[0], '\t <= \t \'0\';', file=file)
-                elif port == 'h' or port == 'H':
-                    print(line[0], '\t <= \t \'1\';', file=file)
-                elif port == '0':
-                    pass  # we add this for the following test to throw an error is an unexpected character is used
-                else:
-                    raise ValueError(
-                        'wrong symbol in CSV file (must be 0, 1, H, or L) when executing function GenTileSwitchMatrixVHDL')
-        # this is the case for a configurable switch matrix multiplexer
-        if mux_size >= 2:
-            print(line[0]+'_input', '\t <= ', end='', file=file)
-            port_index = 0
-            inputs_so_far = 0
+        elif muxSize == 1:
+            # just route through : can be used for auxiliary wires or diagonal routing (Manhattan, just go to a switch matrix when turning
+            # can also be used to tap a wire. A double with a mid is nothing else as a single cascaded with another single where the second single has only one '1' to cascade from the first single
+            if connections[k][0] == '0':
+                print(f"{k:<4} <= '0';", file=outputFile)
+            elif connections[k][0] == '1':
+                print(f"{k:<4} <= '1';", file=outputFile)
+            else:
+                print(f"{k:<4} <= {connections[k]};", file=outputFile)
+            print("", file=outputFile)
+        elif muxSize >= 2:
+            # this is the case for a configurable switch matrix multiplexer
+            old_ConfigBitstreamPosition = configBitstreamPosition
+            # math.ceil(math.log2(len(connections[k]))) tells us how many configuration bits a multiplexer takes
+            configBitstreamPosition += (
+                math.ceil(math.log2(len(connections[k]))))
             # the reversed() changes the direction that we iterate over the line list.
-            # I changed it such that the left-most entry is located at the end of the concatenated vector for the multiplexing
+            # Changed it such that the left-most entry is located at the end of the concatenated vector for the multiplexing
             # This was done such that the index from left-to-right in the adjacency matrix corresponds with the multiplexer select input (index)
-            # remove "len(line)-" if you remove the reversed(..)
-            for port in reversed(line[1:]):
-                port_index += 1
-                if port != '0':
-                    inputs_so_far += 1
-                    # again the "len(line)-" is needed as we iterate in reverse direction over the line list.
-                    # remove "len(line)-" if you remove the reversed(..)
-                    print(CSVFile[0][len(line)-port_index], end='', file=file)
-                    if inputs_so_far == mux_size:
-                        if int(GenerateDelayInSwitchMatrix) > 0:
-                            print(
-                                ' after '+str(GenerateDelayInSwitchMatrix)+' ps;', file=file)
-                        else:
-                            print(';', file=file)
-                    else:
-                        print(' & ', end='', file=file)
-            # int(math.ceil(math.log2(inputs_so_far))) tells us how many configuration bits a multiplexer takes
-            old_ConfigBitstreamPosition = ConfigBitstreamPosition
-            ConfigBitstreamPosition = ConfigBitstreamPosition + \
-                int(math.ceil(math.log2(inputs_so_far)))
-
-            # we have full custom MUX-4 and MUX-16 for which we have to generate code like:
-# VHDL example custom MUX4
-# inst_MUX4PTv4_J_l_AB_BEG1 : MUX4PTv4
-    # Port Map(
-    # IN1  => J_l_AB_BEG1_input(0),
-    # IN2  => J_l_AB_BEG1_input(1),
-    # IN3  => J_l_AB_BEG1_input(2),
-    # IN4  => J_l_AB_BEG1_input(3),
-    # S1   => ConfigBits(low_362),
-    # S2   => ConfigBits(low_362 + 1,
-    # O    => J_l_AB_BEG1 );
-    # CUSTOM Multiplexers for switch matrix
-    # CUSTOM Multiplexers for switch matrix
-    # CUSTOM Multiplexers for switch matrix
-            if (MultiplexerStyle == 'custom') and (mux_size == 4):
-                MuxComponentName = 'MUX4PTv4'
-            if (MultiplexerStyle == 'custom') and (mux_size == 16):
-                MuxComponentName = 'MUX16PTv2'
-            if (MultiplexerStyle == 'custom') and (mux_size == 4 or mux_size == 16):
-                # inst_MUX4PTv4_J_l_AB_BEG1 : MUX4PTv4
-                print('inst_'+MuxComponentName+'_' +
-                      line[0]+' : '+MuxComponentName+'\n', end='', file=file)
-                # Port Map(
-                print('\t'+' Port Map(\n', end='', file=file)
-                # IN1  => J_l_AB_BEG1_input(0),
-                # IN2  => J_l_AB_BEG1_input(1), ...
-                for k in range(0, mux_size):
-                    print('\t'+'\t'+'IN'+str(k+1)+' \t=> ' +
-                          line[0]+'_input('+str(k)+'),\n', end='', file=file)
-                # S1   => ConfigBits(low_362),
-                # S2   => ConfigBits(low_362 + 1, ...
-                for k in range(0, (math.ceil(math.log2(mux_size)))):
-                    print('\t'+'\t'+'S'+str(k+1)+' \t=> ConfigBits(' +
-                          str(old_ConfigBitstreamPosition)+' + '+str(k)+'),\n', end='', file=file)
-                print('\t'+'\t'+'O  \t=> ' +
-                      line[0]+' );\n\n', end='', file=file)
-            else:        # generic multiplexer
-                if MultiplexerStyle == 'custom':
-                    print('HINT: creating a MUX-'+str(mux_size)+' for port ' +
-                          line[0]+' in switch matrix for tile '+CSVFile[0][0])
-                # VHDL example arbitrary mux
-                # J_l_AB_BEG1    <= J_l_AB_BEG1_input(TO_INTEGER(ConfigBits(363 downto 362)));
-                print(line[0]+'\t<= '+line[0]+'_input(', end='', file=file)
-                print('TO_INTEGER(UNSIGNED(ConfigBits('+str(ConfigBitstreamPosition-1) +
-                      ' downto '+str(old_ConfigBitstreamPosition)+'))));', file=file)
-                print(' ', file=file)
+            generateMux(file=outputFile,
+                        muxStyle=MultiplexerStyle,
+                        muxSize=muxSize,
+                        tileName=tile.name,
+                        portName=k,
+                        portList=reversed(connections[k]),
+                        oldConfigBitstreamPosition=old_ConfigBitstreamPosition,
+                        configBitstreamPosition=configBitstreamPosition,
+                        delay=GenerateDelayInSwitchMatrix)
 
     ### SwitchMatrixDebugSignals ### SwitchMatrixDebugSignals ###
     ### SwitchMatrixDebugSignals ### SwitchMatrixDebugSignals ###
     if SwitchMatrixDebugSignals == True:
-        print('\n', file=file)
-        ConfigBitstreamPosition = 0
-        for line in CSVFile[1:]:
-            # we first count the number of multiplexer inputs
-            mux_size = 0
-            for port in line[1:]:
-                if port != '0':
-                    mux_size += 1
-            if mux_size >= 2:
-                old_ConfigBitstreamPosition = ConfigBitstreamPosition
-                ConfigBitstreamPosition = ConfigBitstreamPosition + \
-                    int(math.ceil(math.log2(mux_size)))
-                print('DEBUG_select_'+line[0]+'\t<= ConfigBits('+str(
-                    ConfigBitstreamPosition-1)+' downto '+str(old_ConfigBitstreamPosition)+');', file=file)
+        print('\n', file=outputFile)
+        configBitstreamPosition = 0
+        for k in connections:
+            muxSize = len(connections[k])
+            if muxSize >= 2:
+                old_ConfigBitstreamPosition = configBitstreamPosition
+                configBitstreamPosition += int(math.ceil(math.log2(muxSize)))
+                print(
+                    f"DEBUG_select_'+line[0]+'\t<= ConfigBits( {configBitstreamPosition-1} downto {old_ConfigBitstreamPosition}", file=outputFile)
+
     ### SwitchMatrixDebugSignals ### SwitchMatrixDebugSignals ###
     ### SwitchMatrixDebugSignals ### SwitchMatrixDebugSignals ###
 
     # just the final end of architecture
-    print('\n'+'end architecture Behavioral;'+'\n', file=file)
+    print('\n'+'end architecture Behavioral;'+'\n', file=outputFile)
     return
 
 
@@ -4244,9 +4339,8 @@ class Tile:
             return("X" + str(self.x), "Y" + str(self.y))
         return "X" + str(self.x) + "Y" + str(self.y)
 
+
 # This class represents the fabric as a whole
-
-
 class Fabric:
     tiles = []
     height = 0
@@ -6407,13 +6501,14 @@ if args.GenTileSwitchMatrixCSV or args.run_all:
 
 if args.GenTileSwitchMatrixVHDL or args.run_all:
     print('### Generate initial switch matrix VHDL code')
-    for tile in TileTypes:
+    fabric = parseFabricCSV(args.fabric_csv)
+    for tile in fabric.tileDic:
         print(
             f'### generate VHDL for tile {tile} # filename: {out_dir}/{str(tile)}_switch_matrix.vhdl)')
         TileFileHandler = open(
             f"{out_dir}/{str(tile)}_switch_matrix.vhdl", 'w+')
         GenTileSwitchMatrixVHDL(
-            tile, (f"{src_dir}/{str(tile)}_switch_matrix.csv"), TileFileHandler)
+            fabric.tileDic[tile], (f"{src_dir}/{str(tile)}_switch_matrix.csv"), TileFileHandler)
         TileFileHandler.close()
 
 if args.GenTileSwitchMatrixVerilog or args.run_all:

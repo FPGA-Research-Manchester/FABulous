@@ -409,7 +409,6 @@ def GetComponentEntityNameFromVerilog(Verilog_file_name):
     return result
 
 
-
 def GetTileComponentPorts(tile_description, mode='SwitchMatrix'):
     Inputs = []
     Outputs = []
@@ -567,6 +566,9 @@ def list2CSV(InFileName, OutFileName):
     # this function is export a given list description into its equivalent CSV switch matrix description
     # format: source,destination (per line)
     # read CSV file into an array of strings
+
+    print(f"### Adding {InFileName} to {OutFileName}")
+
     connectionPair = parseList(InFileName)
 
     with open(OutFileName, "r") as f:
@@ -584,8 +586,8 @@ def list2CSV(InFileName, OutFileName):
             matrix[i-1][j-1] = int(file[i].split(',')[j])
 
     # get source and destination list in the csv
-    destination = file[0].strip("\n").split(',')[1:]
-    source = [file[i].split(",")[0] for i in range(1, len(file))]
+    source = file[0].strip("\n").split(',')[1:]
+    destination = [file[i].split(",")[0] for i in range(1, len(file))]
 
     # set the matrix value with the provided connection pair
     for (s, d) in connectionPair:
@@ -593,27 +595,29 @@ def list2CSV(InFileName, OutFileName):
             s_index = source.index(s)
         except ValueError:
             print(f"{s} is not in the source column of the matrix csv file")
+            print()
             exit(-1)
 
         try:
             d_index = destination.index(d)
         except ValueError:
             print(f"{d} is not in the destination row of the matrix csv file")
+            print()
+            exit(-1)
 
-        if matrix[s_index][d_index] != 0:
+        if matrix[d_index][s_index] != 0:
             print(
                 f"connection ({s}, {d}) already exists in the original matrix")
-
-        matrix[s_index][d_index] = 1
+        matrix[d_index][s_index] = 1
 
     # writing the matrix back to the given out file
     with open(OutFileName, "w") as f:
         f.write(file[0])
-        for i in range(len(source)):
-            f.write(f"{source[i]},")
-            for j in range(len(destination)):
+        for i in range(len(destination)):
+            f.write(f"{destination[i]},")
+            for j in range(len(source)):
                 f.write(str(matrix[i][j]))
-                if j != len(destination) - 1:
+                if j != len(source) - 1:
                     f.write(',')
                 else:
                     f.write(f",#,{matrix[i].count(1)}")
@@ -628,6 +632,72 @@ def list2CSV(InFileName, OutFileName):
             #     f.write(str(count) + ',')
             colCount.append(str(count))
         f.write(f"#,{','.join(colCount)}")
+    print("\n")
+
+
+def GenerateConfigMemInit(tile_description, entity, file, GlobalConfigBitsCounter):
+    # write configuration bits to frame mapping init file (e.g. 'LUT4AB_ConfigMem.init.csv')
+    # this file can be modified and saved as 'LUT4AB_ConfigMem.csv' (without the '.init')
+    BitsLeftToPackInFrames = GlobalConfigBitsCounter
+    initCSV = []
+    one_line = []
+    one_line.append('#frame_name')
+    one_line.append('frame_index')
+    one_line.append('bits_used_in_frame')
+    one_line.append('used_bits_mask')
+    one_line.append('ConfigBits_ranges')
+    initCSV.append(one_line)
+    for k in range(int(MaxFramesPerCol)):
+        one_line = []
+        # frame0, frame1, ...
+        one_line.append('frame'+str(k))
+        # and the index (0, 1, 2, ...), in case we need
+        one_line.append(str(k))
+        # size of the frame in bits
+        if BitsLeftToPackInFrames >= FrameBitsPerRow:
+            one_line.append(str(FrameBitsPerRow))
+            # generate a string encoding a '1' for each flop used
+            FrameBitsMask = ('1' * FrameBitsPerRow)
+            tmp_one_line = ''
+            for k in range(len(FrameBitsMask)):
+                tmp_one_line = tmp_one_line + FrameBitsMask[k]
+                # after every 4th character add a '_'
+                if ((k % 4) == 3) and (k != (len(FrameBitsMask)-1)):
+                    # some "pretty" printing, results in '1111_1111_1...'
+                    tmp_one_line = tmp_one_line + '_'
+            one_line.append(tmp_one_line)
+            one_line.append(str(BitsLeftToPackInFrames-1)+':' +
+                            str(BitsLeftToPackInFrames-FrameBitsPerRow))
+            BitsLeftToPackInFrames = BitsLeftToPackInFrames - FrameBitsPerRow
+        else:
+            one_line.append(str(BitsLeftToPackInFrames))
+            # generate a string encoding a '1' for each flop used
+            # this will allow us to kick out flops in the middle (e.g. for alignment padding)
+            FrameBitsMask = ('1' * BitsLeftToPackInFrames +
+                             '0' * (FrameBitsPerRow-BitsLeftToPackInFrames))
+            tmp_one_line = ''
+            for k in range(len(FrameBitsMask)):
+                tmp_one_line = tmp_one_line + FrameBitsMask[k]
+                # after every 4th character add a '_'
+                if ((k % 4) == 3) and (k != (len(FrameBitsMask)-1)):
+                    # some "pretty" printing, results in '1111_1111_1...'
+                    tmp_one_line = tmp_one_line + '_'
+            one_line.append(tmp_one_line)
+            if BitsLeftToPackInFrames > 0:
+                one_line.append(str(BitsLeftToPackInFrames-1)+':0')
+            else:
+                one_line.append('# NULL')
+            # will have to be 0 if already 0 or if we just allocate the last bits
+            BitsLeftToPackInFrames = 0
+        # The mapping into frames is described as a list of index ranges applied to the ConfigBits vector
+        # use '2' for a single bit; '5:0' for a downto range; multiple ranges can be specified in optional consecutive comma separated fields get concatenated)
+        # default is counting top down
+
+        # attach line to CSV
+        initCSV.append(one_line)
+    tmp = numpy.asarray(initCSV)
+    numpy.savetxt(entity+'.init.csv', tmp, fmt='%s', delimiter=",")
+    return initCSV
 
 
 if __name__ == '__main__':

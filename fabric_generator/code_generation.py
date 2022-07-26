@@ -1,5 +1,6 @@
 from fabric import Fabric, Tile, Port
 import os
+import math
 # Default parameters (will be overwritten if defined in fabric between 'ParametersBegin' and 'ParametersEnd'
 #Parameters = [ 'ConfigBitMode', 'FrameBitsPerRow' ]
 ConfigBitMode = 'FlipFlopChain'
@@ -55,7 +56,7 @@ def GenerateVHDL_Conf_Instantiation(file, counter, close=True):
     return
 
 
-def GenerateVHDL_Header(file, entity, package='', NoConfigBits='0', MaxFramesPerCol='NULL', FrameBitsPerRow='NULL'):
+def GenerateVHDL_Header(file, entity, package='', noConfigBits='0', maxFramesPerCol='NULL', frameBitsPerRow='NULL'):
     #   library template
     print('library IEEE;', file=file)
     print('use IEEE.STD_LOGIC_1164.ALL;', file=file)
@@ -64,17 +65,13 @@ def GenerateVHDL_Header(file, entity, package='', NoConfigBits='0', MaxFramesPer
         print(package, file=file)
     print('', file=file)
     #   entity
-    print('entity ', entity, ' is ', file=file)
-    print('\tGeneric ( ', file=file)
-    if MaxFramesPerCol != 'NULL':
-        print('\t\t\t MaxFramesPerCol : integer := ' +
-              MaxFramesPerCol+';', file=file)
-    if FrameBitsPerRow != 'NULL':
-        print('\t\t\t FrameBitsPerRow : integer := ' +
-              FrameBitsPerRow+';', file=file)
-    print('\t\t\t NoConfigBits : integer := '+NoConfigBits+' );', file=file)
-    print('\tPort (', file=file)
-    return
+    print(f"entity {entity} is Generic ( ", file=file)
+    if maxFramesPerCol != 'NULL':
+        print(f"{' ':<12}MaxFramesPerCol : integer := {maxFramesPerCol};", file=file)
+    if frameBitsPerRow != 'NULL':
+        print(f"{' ':<12}FrameBitsPerRow : integer := {frameBitsPerRow};", file=file)
+    print(f"{' ':<12}NoConfigBits : integer := {noConfigBits};", file=file)
+    print(f"{' ':<4} (", file=file)
 
 
 def PrintTileComponentPort(tile_description, entity, direction, file):
@@ -205,3 +202,122 @@ def GenerateVHDL_EntityFooter(file, entity, ConfigPort=True, NumberOfConfigBits=
     print('architecture Behavioral of ', entity, ' is ', file=file)
     print('', file=file)
     return
+
+
+def generateShiftRegister(file):
+    template = \
+        """
+-- the configuration bits shift register
+process(CLK)
+begin
+    if CLK'event and CLK='1' then
+        if mode='1' then    --configuration mode
+            ConfigBits <= CONFin & ConfigBits(ConfigBits'high downto 1);
+        end if;
+    end if;
+end process;
+CONFout <= ConfigBits(ConfigBits'high);
+
+"""
+    print(template, file=file)
+
+
+def generateFlipFlopChain(file, configBitCounter):
+    template = \
+        f"""
+ConfigBitsInput <= ConfigBits(ConfigBitsInput'high-1 downto 0) & CONFin;
+-- for k in 0 to Conf/2 generate
+L: for k in 0 to {int(math.ceil(configBitCounter/2.0))-1} generate
+        inst_LHQD1a : LHQD1
+        Port Map(
+            D    => ConfigBitsInput(k*2),
+            E    => CLK,
+            Q    => ConfigBits(k*2) );
+        inst_LHQD1b : LHQD1
+        Port Map(
+            D    => ConfigBitsInput((k*2)+1),
+            E    => MODE,
+            Q    => ConfigBits((k*2)+1) );
+end generate;
+CONFout <= ConfigBits(ConfigBits'high);
+
+"""
+    print(template, file=file)
+
+
+def generateMux(file, muxStyle, muxSize, tileName, portName, portList, oldConfigBitstreamPosition, configBitstreamPosition, delay):
+    # we have full custom MUX-4 and MUX-16 for which we have to generate code like:
+    # VHDL example custom MUX4
+    # inst_MUX4PTv4_J_l_AB_BEG1 : MUX4PTv4
+    # Port Map(
+    # IN1  => J_l_AB_BEG1_input(0),
+    # IN2  => J_l_AB_BEG1_input(1),
+    # IN3  => J_l_AB_BEG1_input(2),
+    # IN4  => J_l_AB_BEG1_input(3),
+    # S1   => ConfigBits(low_362),
+    # S2   => ConfigBits(low_362 + 1,
+    # O    => J_l_AB_BEG1 );
+    # CUSTOM Multiplexers for switch matrix
+    # CUSTOM Multiplexers for switch matrix
+    # CUSTOM Multiplexers for switch matrix
+
+    # -- switch matrix multiplexer  N1BEG0 		MUX-4
+    # N1BEG0_input <= J_l_CD_END1 & JW2END3 & J2MID_CDb_END3 & LC_O after 80 ps
+    # inst_MUX4PTv4_N1BEG0: MUX4PTv4
+    # Port Map(
+    #     IN1   =>  N1BEG0_input(0),
+    #     IN2   =>  N1BEG0_input(1),
+    #     IN3   =>  N1BEG0_input(2),
+    #     IN4   =>  N1BEG0_input(3),
+    #     S1    =>  ConfigBits(0 + 0),
+    #     S2    =>  ConfigBits(0 + 1),
+    #     O     =>  N1BEG0);
+
+    muxTemplate = \
+        """
+{portName}_input <= {portList} after {delay};
+inst_{muxComponentName}_{portName} : {muxComponentName}
+    Port Map(
+{inputList}
+{configBitsList}
+{outSignal}
+    );
+"""
+
+    muxComponentName = 'MUX4PTv4'
+    if (muxStyle == 'custom') and (muxSize == 4):
+        muxComponentName = 'MUX4PTv4'
+    if (muxStyle == 'custom') and (muxSize == 16):
+        muxComponentName = 'MUX16PTv2'
+
+    inputList, configBitsList, outSignal = [], [], ""
+
+    for k in range(0, muxSize):
+        inputList.append(f"{' ':<8}IN{k+1:<3} => {portName}_input({k}),")
+
+    for k in range(0, (math.ceil(math.log2(muxSize)))):
+        configBitsList.append(
+            f"{' ':<8}S{k+1:<4} => ConfigBits({oldConfigBitstreamPosition} + {k}),")
+
+    outSignal = f"{' ':<8}O{' ':<4} => {portName}"
+
+    outString = muxTemplate.format(portName=portName,
+                                   muxSize=muxSize,
+                                   muxComponentName=muxComponentName,
+                                   portList=' & '.join(portList),
+                                   delay=delay,
+                                   inputList="\n".join(inputList),
+                                   configBitsList="\n".join(configBitsList),
+                                   outSignal=outSignal)
+
+    if (MultiplexerStyle == 'custom') and (muxSize == 4 or muxSize == 16):
+        print(outString, file=file)
+    else:        # generic multiplexer
+        if MultiplexerStyle == 'custom':
+            print(
+                f"HINT: creating a MUX-{str(muxSize)} for port {portName} in switch matrix for tile {tileName}")
+        print(outString, file=file)
+        print(
+            f"{' ':<4}{portName:>4} <= {portName}_input(TO_INTEGER(UNSIGNED(ConfigBits( {str(configBitstreamPosition-1)} downto {str(oldConfigBitstreamPosition)}))));", file=file)
+
+    print("\n", file=file)

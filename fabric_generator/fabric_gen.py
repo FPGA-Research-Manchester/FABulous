@@ -1134,7 +1134,7 @@ def GenTileSwitchMatrixVHDL(tile: Tile, csvFile, outputFile):
             elif connections[k][0] == '1':
                 print(f"{k:<4} <= '1';", file=outputFile)
             else:
-                print(f"{k:<4} <= {connections[k]};", file=outputFile)
+                print(f"{k:<4} <= {connections[k][0]};", file=outputFile)
             print("", file=outputFile)
         elif muxSize >= 2:
             # this is the case for a configurable switch matrix multiplexer

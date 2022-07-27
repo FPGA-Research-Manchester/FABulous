@@ -6251,8 +6251,8 @@ if ('-GenNextpnrModel_pair'.lower() in processedArguments) :
 
     pipFile.write(npnrModel[0])
     belFile.write(npnrModel[1])
-    constraintFile.write(npnrModel[3])
-    pairFile.write(npnrModel[4])
+    constraintFile.write(npnrModel[2])
+    pairFile.write(npnrModel[3])
 
     pipFile.close()
     belFile.close()

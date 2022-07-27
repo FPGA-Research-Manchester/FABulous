@@ -178,7 +178,7 @@ def GenerateTileVHDL(tile_description, entity, file):
     BEL_Inputs = []
     BEL_Outputs = []
     AllJumpWireList = []
-    NuberOfSwitchMatricesWithConfigPort = 0
+    numberOfSwitchMatricesWithConfigPort = 0
 
     # We first check if we need a configuration port
     # Currently we assume that each primitive needs a configuration port
@@ -290,7 +290,7 @@ def GenerateTileVHDL(tile_description, entity, file):
             if MatrixMarker == True:
                 raise ValueError(
                     'More than one switch matrix defined for tile '+TileType+'; exeting GenerateTileVHDL')
-            NuberOfSwitchMatricesWithConfigPort = NuberOfSwitchMatricesWithConfigPort + \
+            numberOfSwitchMatricesWithConfigPort = numberOfSwitchMatricesWithConfigPort + \
                 PrintComponentDeclarationForFile(
                     line[VHDL_file_position], file)
             # we need the switch matrix ports (a little later)
@@ -342,7 +342,7 @@ def GenerateTileVHDL(tile_description, entity, file):
     # maybe even useful if we want to add a buffer here
     # if (Bel_Counter + NuberOfSwitchMatricesWithConfigPort) > 0
     print('signal\t'+'conf_data'+'\t:\t STD_LOGIC_VECTOR('+str(BEL_counter +
-          NuberOfSwitchMatricesWithConfigPort)+' downto 0);', file=file)
+          numberOfSwitchMatricesWithConfigPort)+' downto 0);', file=file)
     if GlobalConfigBitsCounter > 0:
         print('signal \t ConfigBits :\t STD_LOGIC_VECTOR (NoConfigBits -1 downto 0);', file=file)
 
@@ -512,13 +512,13 @@ def GenerateTileVHDL(tile_description, entity, file):
                 # note that the BEL outputs (e.g., from the slice component) are the switch matrix inputs
                 print((Inputs+All_BEL_Outputs+AllJumpWireList+TopOutputs +
                       All_BEL_Inputs+AllJumpWireList)[k], end='', file=file)
-                if NuberOfSwitchMatricesWithConfigPort > 0:
+                if numberOfSwitchMatricesWithConfigPort > 0:
                     print(',', file=file)
                 else:
                     # stupid VHDL does not allow us to have a ',' for the last port connection, so we need the following for NuberOfSwitchMatricesWithConfigPort==0
                     if k < ((len(BEL_Inputs+BEL_Outputs)) - 1):
                         print(',', file=file)
-            if NuberOfSwitchMatricesWithConfigPort > 0:
+            if numberOfSwitchMatricesWithConfigPort > 0:
                 if ConfigBitMode == 'FlipFlopChain':
                     GenerateVHDL_Conf_Instantiation(
                         file=file, counter=BEL_counter, close=False)
@@ -541,153 +541,307 @@ def GenerateTileVHDL(tile_description, entity, file):
     return
 
 
-def GenerateConfigMemVHDL(tile_description, entity, file):
-    # count total number of configuration bits for tile
-    GlobalConfigBitsCounter = 0
-    for line in tile_description:
-        if (line[0] == 'BEL') or (line[0] == 'MATRIX'):
-            if (GetNoConfigBitsFromFile(line[VHDL_file_position])) != 'NULL':
-                GlobalConfigBitsCounter = GlobalConfigBitsCounter + \
-                    int(GetNoConfigBitsFromFile(line[VHDL_file_position]))
+# def GenerateConfigMemVHDL(tile_description, entity, file):
+#     # count total number of configuration bits for tile
+#     GlobalConfigBitsCounter = 0
+#     for line in tile_description:
+#         if (line[0] == 'BEL') or (line[0] == 'MATRIX'):
+#             if (GetNoConfigBitsFromFile(line[VHDL_file_position])) != 'NULL':
+#                 GlobalConfigBitsCounter = GlobalConfigBitsCounter + \
+#                     int(GetNoConfigBitsFromFile(line[VHDL_file_position]))
+
+#     # we use a file to describe the exact configuration bits to frame mapping
+#     # the following command generates an init file with a simple enumerated default mapping (e.g. 'LUT4AB_ConfigMem.init.csv')
+#     # if we run this function again, but have such a file (without the .init), then that mapping will be used
+#     MappingFile = GenerateConfigMemInit(
+#         tile_description, entity, file, GlobalConfigBitsCounter)
+
+#     # test if we have a bitstream mapping file
+#     # if not, we will take the default, which was passed on from GenerateConfigMemInit
+#     if os.path.exists(entity+'.csv'):
+#         print('# found bitstream mapping file '+entity +
+#               '.csv'+' for tile '+tile_description[0][0])
+#         MappingFile = [i.strip('\n').split(',') for i in open(entity+'.csv')]
+
+#     # clean comments empty lines etc. in the mapping file
+#     MappingFile = RemoveComments(MappingFile)
+
+#     # clean the '_' symbols in the used_bits_mask field (had been introduced to allow for making that a little more readable
+#     for line in MappingFile:
+#         # TODO does not like white spaces tabs etc
+#         # print('DEBUG BEFORE line[used_bits_mask]:',entity ,line[frame_name] ,line[used_bits_mask])
+#         line[used_bits_mask] = re.sub('_', '', line[used_bits_mask])
+#         # print('DEBUG AFTER line[used_bits_mask]:',entity ,line[frame_name] ,line[used_bits_mask])
+
+#     # we should have as many lines as we have frames (=MaxFramesPerCol)
+#     if str(len(MappingFile)) != str(MaxFramesPerCol):
+#         print('WARNING: the bitstream mapping file has only '+str(len(MappingFile)
+#                                                                   )+' entries but MaxFramesPerCol is '+str(MaxFramesPerCol))
+
+#     # we should have as many lines as we have frames (=MaxFramesPerCol)
+#     # we also check used_bits_mask (is a vector that is as long as a frame and contains a '1' for a bit used and a '0' if not used (padded)
+#     UsedBitsCounter = 0
+#     for line in MappingFile:
+#         if line[used_bits_mask].count('1') > FrameBitsPerRow:
+#             raise ValueError('bitstream mapping file '+entity +
+#                              '.csv has to many 1-elements in bitmask for frame : '+line[frame_name])
+#         if (line[used_bits_mask].count('1') + line[used_bits_mask].count('0')) != FrameBitsPerRow:
+#             # print('DEBUG LINE: ', line)
+#             raise ValueError('bitstream mapping file '+entity +
+#                              '.csv has a too long or short bitmask for frame : '+line[frame_name])
+#         # we also count the used bits over all frames
+#         UsedBitsCounter += line[used_bits_mask].count('1')
+#     if UsedBitsCounter != GlobalConfigBitsCounter:
+#         raise ValueError('bitstream mapping file '+entity+'.csv has a bitmask missmatch; bitmask has in total ' +
+#                          str(UsedBitsCounter)+' 1-values for '+str(GlobalConfigBitsCounter)+' bits')
+
+#     # write entity
+#     # write entity
+#     # write entity
+#     GenerateVHDL_Header(file, entity, package=Package, NoConfigBits=str(
+#         GlobalConfigBitsCounter), MaxFramesPerCol=str(MaxFramesPerCol), FrameBitsPerRow=str(FrameBitsPerRow))
+
+#     # the port definitions are generic
+#     print('\t\t FrameData:     in  STD_LOGIC_VECTOR( FrameBitsPerRow -1 downto 0 );', file=file)
+#     print('\t\t FrameStrobe:   in  STD_LOGIC_VECTOR( MaxFramesPerCol -1 downto 0 );', file=file)
+#     print('\t\t ConfigBits :   out STD_LOGIC_VECTOR( NoConfigBits -1 downto 0 )', file=file)
+#     print('\t\t );', file=file)
+#     print('end entity;\n', file=file)
+
+#     # declare architecture
+#     print('architecture Behavioral of '+str(entity)+' is\n', file=file)
+
+#     # one_line('frame_name')('frame_index')('bits_used_in_frame')('used_bits_mask')('ConfigBits_ranges')
+
+#     # frame signal declaration ONLY for the bits actually used
+#     UsedFrames = []                # keeps track about the frames that are actually used
+#     # stores a list of ConfigBits indices in exactly the order defined in the rage statements in the frames
+#     AllConfigBitsOrder = []
+#     for line in MappingFile:
+#         bits_used_in_frame = line[used_bits_mask].count('1')
+#         if bits_used_in_frame > 0:
+#             print('signal '+line[frame_name]+' \t:\t STD_LOGIC_VECTOR( ' +
+#                   str(bits_used_in_frame)+' -1 downto 0);', file=file)
+#             UsedFrames.append(line[frame_index])
+
+#         # The actual ConfigBits are given as address ranges starting at position ConfigBits_ranges
+#         ConfigBitsOrder = []
+#         for RangeItem in line[ConfigBits_ranges:]:
+#             if ':' in RangeItem:        # we have a range
+#                 left, right = re.split(':', RangeItem)
+#                 left = int(left)
+#                 right = int(right)
+#                 if left < right:
+#                     step = 1
+#                 else:
+#                     step = -1
+#                 # this makes the python range inclusive, otherwise the last item (which is actually right) would be missing
+#                 right += step
+#                 for k in range(left, right, step):
+#                     if k in ConfigBitsOrder:
+#                         raise ValueError(
+#                             'Configuration bit index '+str(k)+' already allocated in ', entity, line[frame_name])
+#                     else:
+#                         ConfigBitsOrder.append(int(k))
+#             elif RangeItem.isdigit():
+#                 if int(RangeItem) in ConfigBitsOrder:
+#                     raise ValueError('Configuration bit index '+str(RangeItem) +
+#                                      ' already allocated in ', entity, line[frame_name])
+#                 else:
+#                     ConfigBitsOrder.append(int(RangeItem))
+#             else:
+#                 # raise ValueError('Range '+str(RangeItem)+' cannot be resolved for frame : '+line[frame_name])
+#                 print('Range '+str(RangeItem) +
+#                       ' cannot be resolved for frame : '+line[frame_name])
+#                 print('DEBUG:', line)
+#         if len(ConfigBitsOrder) != bits_used_in_frame:
+#             raise ValueError(
+#                 'ConfigBitsOrder definition misssmatch: number of 1s in mask do not match ConfigBits_ranges for frame : '+line[frame_name])
+#         AllConfigBitsOrder += ConfigBitsOrder
+
+#     # begin architecture body
+#     print('\nbegin\n', file=file)
+
+#     # instantiate latches for only the used frame bits
+#     print('-- instantiate frame latches', file=file)
+#     AllConfigBitsCounter = 0
+#     for frame in UsedFrames:
+#         used_bits = MappingFile[int(frame)][int(used_bits_mask)]
+#         # print('DEBUG: ',entity, used_bits,' : ',AllConfigBitsOrder)
+#         for k in range(FrameBitsPerRow):
+#             # print('DEBUG: ',entity, used_bits,' : ',k, used_bits[k],'AllConfigBitsCounter',AllConfigBitsCounter, str(AllConfigBitsOrder[AllConfigBitsCounter]))
+#             if used_bits[k] == '1':
+#                 print('Inst_'+MappingFile[int(frame)][int(frame_name)] +
+#                       '_bit'+str(FrameBitsPerRow-1-k)+'  : LHQD1', file=file)
+#                 print('Port Map (', file=file)
+#                 # The next one is a little tricky:
+#                 # k iterates over the bit_mask left to right from k=0..(FrameBitsPerRow-1) (k=0 is the most left (=first) character
+#                 # But that character represents the MSB inside the frame, which iterates FrameBitsPerRow-1..0
+#                 # bit_mask[0],                    bit_mask[1],                    bit_mask[2], ...
+#                 # FrameData[FrameBitsPerRow-1-0], FrameData[FrameBitsPerRow-1-1], FrameData[FrameBitsPerRow-1-2],
+#                 print('\t D \t=>\t FrameData(' +
+#                       str(FrameBitsPerRow-1-k)+'), ', file=file)
+#                 print('\t E \t=>\t FrameStrobe('+str(frame)+'), ', file=file)
+#                 print('\t Q \t=>\t ConfigBits (' +
+#                       str(AllConfigBitsOrder[AllConfigBitsCounter])+') ); \n ', file=file)
+#                 AllConfigBitsCounter += 1
+
+#     print('\nend architecture;\n', file=file)
+
+#     return
+
+
+def GenerateConfigMemVHDL(tile: Tile, configMemCsv, file):
+    # need to find a better way to handle data that is generated during the flow
+    # get switch matrix configuration bits
+    with open(tile.matrixDir, "r") as f:
+        f = f.read()
+        configBit = re.search(r"-- NumberOfConfigBits: (\d+)", f)
+        configBit = int(configBit.group(1))
+        tile.globalConfigBits += configBit
 
     # we use a file to describe the exact configuration bits to frame mapping
     # the following command generates an init file with a simple enumerated default mapping (e.g. 'LUT4AB_ConfigMem.init.csv')
     # if we run this function again, but have such a file (without the .init), then that mapping will be used
-    MappingFile = GenerateConfigMemInit(
-        tile_description, entity, file, GlobalConfigBitsCounter)
+    generateConfigMemInit(
+        f"{tile.name}_ConfigMem.init.csv", tile.globalConfigBits)
 
     # test if we have a bitstream mapping file
     # if not, we will take the default, which was passed on from GenerateConfigMemInit
-    if os.path.exists(entity+'.csv'):
-        print('# found bitstream mapping file '+entity +
-              '.csv'+' for tile '+tile_description[0][0])
-        MappingFile = [i.strip('\n').split(',') for i in open(entity+'.csv')]
+    if os.path.exists(configMemCsv):
+        print(
+            f"# found bitstream mapping file {tile.name}.csv for tile {tile.name}")
+        with open(f"{tile.name}_ConfigMem.csv") as f:
+            mappingFile = list(csv.DictReader(f))
+            csvFileName = f"{tile.name}_ConfigMem.csv"
 
-    # clean comments empty lines etc. in the mapping file
-    MappingFile = RemoveComments(MappingFile)
+    else:
+        with open(f"{tile.name}_ConfigMem.init.csv") as f:
+            mappingFile = list(csv.DictReader(f))
+            csvFileName = f"{tile.name}_ConfigMem.init.csv"
 
-    # clean the '_' symbols in the used_bits_mask field (had been introduced to allow for making that a little more readable
-    for line in MappingFile:
-        # TODO does not like white spaces tabs etc
-        # print('DEBUG BEFORE line[used_bits_mask]:',entity ,line[frame_name] ,line[used_bits_mask])
-        line[used_bits_mask] = re.sub('_', '', line[used_bits_mask])
-        # print('DEBUG AFTER line[used_bits_mask]:',entity ,line[frame_name] ,line[used_bits_mask])
+    # remove the pretty print from used_bits_mask
+    for i, _ in enumerate(mappingFile):
+        mappingFile[i]["used_bits_mask"] = mappingFile[i]["used_bits_mask"].replace(
+            "_", "")
 
+    # potential refactoring the check to to utilities or parser
     # we should have as many lines as we have frames (=MaxFramesPerCol)
-    if str(len(MappingFile)) != str(MaxFramesPerCol):
-        print('WARNING: the bitstream mapping file has only '+str(len(MappingFile)
-                                                                  )+' entries but MaxFramesPerCol is '+str(MaxFramesPerCol))
+    if len(mappingFile) != MaxFramesPerCol:
+        raise ValueError(
+            f"WARNING: the bitstream mapping file has only {len(mappingFile)} entries but MaxFramesPerCol is {MaxFramesPerCol}")
 
-    # we should have as many lines as we have frames (=MaxFramesPerCol)
+     # we should have as many lines as we have frames (=MaxFramesPerCol)
     # we also check used_bits_mask (is a vector that is as long as a frame and contains a '1' for a bit used and a '0' if not used (padded)
-    UsedBitsCounter = 0
-    for line in MappingFile:
-        if line[used_bits_mask].count('1') > FrameBitsPerRow:
-            raise ValueError('bitstream mapping file '+entity +
-                             '.csv has to many 1-elements in bitmask for frame : '+line[frame_name])
-        if (line[used_bits_mask].count('1') + line[used_bits_mask].count('0')) != FrameBitsPerRow:
-            # print('DEBUG LINE: ', line)
-            raise ValueError('bitstream mapping file '+entity +
-                             '.csv has a too long or short bitmask for frame : '+line[frame_name])
-        # we also count the used bits over all frames
-        UsedBitsCounter += line[used_bits_mask].count('1')
-    if UsedBitsCounter != GlobalConfigBitsCounter:
-        raise ValueError('bitstream mapping file '+entity+'.csv has a bitmask missmatch; bitmask has in total ' +
-                         str(UsedBitsCounter)+' 1-values for '+str(GlobalConfigBitsCounter)+' bits')
+    usedBitsCounter = 0
+    for entry in mappingFile:
+        if entry["used_bits_mask"].count("1") > FrameBitsPerRow:
+            raise ValueError(
+                f"bitstream mapping file {csvFileName} has to many 1-elements in bitmask for frame : {entry['frame_name']}")
+        if len(entry["used_bits_mask"]) != FrameBitsPerRow:
+            raise ValueError(
+                f"bitstream mapping file {csvFileName} has has a too long or short bitmask for frame : {entry['frame_name']}")
+        usedBitsCounter += entry["used_bits_mask"].count("1")
+
+    if usedBitsCounter != tile.globalConfigBits:
+        raise ValueError(
+            f"bitstream mapping file {csvFileName} has a bitmask miss match; bitmask has in total {usedBitsCounter} 1-values for {tile.globalConfigBits} bits")
 
     # write entity
     # write entity
     # write entity
-    GenerateVHDL_Header(file, entity, package=Package, NoConfigBits=str(
-        GlobalConfigBitsCounter), MaxFramesPerCol=str(MaxFramesPerCol), FrameBitsPerRow=str(FrameBitsPerRow))
+    entity = f"{tile.name}_ConfigMem"
+    GenerateVHDL_Header(file, entity, package=Package, noConfigBits=str(
+        tile.globalConfigBits), maxFramesPerCol=str(MaxFramesPerCol), frameBitsPerRow=str(FrameBitsPerRow))
 
     # the port definitions are generic
-    print('\t\t FrameData:     in  STD_LOGIC_VECTOR( FrameBitsPerRow -1 downto 0 );', file=file)
-    print('\t\t FrameStrobe:   in  STD_LOGIC_VECTOR( MaxFramesPerCol -1 downto 0 );', file=file)
-    print('\t\t ConfigBits :   out STD_LOGIC_VECTOR( NoConfigBits -1 downto 0 )', file=file)
-    print('\t\t );', file=file)
-    print('end entity;\n', file=file)
+    print(f"{' ':<8}FrameData   : in  STD_LOGIC_VECTOR( FrameBitsPerRow -1 downto 0 );", file=file)
+    print(f"{' ':<8}FrameStrobe : in  STD_LOGIC_VECTOR( MaxFramesPerCol -1 downto 0 );", file=file)
+    print(f"{' ':<8}ConfigBits  : out STD_LOGIC_VECTOR( NoConfigBits -1 downto 0 )", file=file)
+    print(f"{' ':<8});", file=file)
+    print("end entity;\n", file=file)
 
     # declare architecture
-    print('architecture Behavioral of '+str(entity)+' is\n', file=file)
+    print(f"architecture Behavioral of {entity} is"+"\n", file=file)
 
     # one_line('frame_name')('frame_index')('bits_used_in_frame')('used_bits_mask')('ConfigBits_ranges')
 
     # frame signal declaration ONLY for the bits actually used
-    UsedFrames = []                # keeps track about the frames that are actually used
+    usedFrame = []
     # stores a list of ConfigBits indices in exactly the order defined in the rage statements in the frames
-    AllConfigBitsOrder = []
-    for line in MappingFile:
-        bits_used_in_frame = line[used_bits_mask].count('1')
-        if bits_used_in_frame > 0:
-            print('signal '+line[frame_name]+' \t:\t STD_LOGIC_VECTOR( ' +
-                  str(bits_used_in_frame)+' -1 downto 0);', file=file)
-            UsedFrames.append(line[frame_index])
+    allConfigBitsOrder = []
+    for entry in mappingFile:
+        bitsUsedInFrame = entry["used_bits_mask"].count("1")
+        if bitsUsedInFrame > 0:
+            print(
+                f"signal {entry['frame_name']} : STD_LOGIC_VECTOR( {bitsUsedInFrame} - 1 downto 0);", file=file)
+            usedFrame.append(int(entry["frame_index"]))
 
         # The actual ConfigBits are given as address ranges starting at position ConfigBits_ranges
-        ConfigBitsOrder = []
-        for RangeItem in line[ConfigBits_ranges:]:
-            if ':' in RangeItem:        # we have a range
-                left, right = re.split(':', RangeItem)
-                left = int(left)
-                right = int(right)
-                if left < right:
-                    step = 1
+        configBitsOrder = []
+        for item in entry["ConfigBits_ranges"].split(";"):
+            item = item.replace(" ", "").replace("\t", "")
+            if ":" in item:
+                left, right = re.split(':', entry["ConfigBits_ranges"])
+                # check the order of the number, if right is smaller than left, then we swap them
+                left, right = int(left), int(right)
+                if right < left:
+                    left, right = right, left
+                    numList = list(reversed(range(left, right + 1)))
                 else:
-                    step = -1
-                # this makes the python range inclusive, otherwise the last item (which is actually right) would be missing
-                right += step
-                for k in range(left, right, step):
-                    if k in ConfigBitsOrder:
+                    numList = list(range(left, right + 1))
+                for i in numList:
+                    if i in configBitsOrder:
                         raise ValueError(
-                            'Configuration bit index '+str(k)+' already allocated in ', entity, line[frame_name])
-                    else:
-                        ConfigBitsOrder.append(int(k))
-            elif RangeItem.isdigit():
-                if int(RangeItem) in ConfigBitsOrder:
-                    raise ValueError('Configuration bit index '+str(RangeItem) +
-                                     ' already allocated in ', entity, line[frame_name])
-                else:
-                    ConfigBitsOrder.append(int(RangeItem))
+                            f"Configuration bit index {k} already allocated in {entity}, {entry['frame_name']}")
+                    configBitsOrder.append(i)
+            elif item.isdigit():
+                if int(item) in configBitsOrder:
+                    raise ValueError(
+                        f"Configuration bit index {item} already allocated in {entity}, {entry['frame_name']}")
+                configBitsOrder.append(int(item))
+            elif "NULL" in item:
+                continue
             else:
-                # raise ValueError('Range '+str(RangeItem)+' cannot be resolved for frame : '+line[frame_name])
-                print('Range '+str(RangeItem) +
-                      ' cannot be resolved for frame : '+line[frame_name])
-                print('DEBUG:', line)
-        if len(ConfigBitsOrder) != bits_used_in_frame:
+                raise ValueError(
+                    f"Range {entry['ConfigBits_ranges']} is not a valid format. It should be in the form [int]:[int] or [int]. If there are multiple ranges it should be separated by ';'")
+        if len(configBitsOrder) != bitsUsedInFrame:
+            print(left, right)
+            print(len(configBitsOrder))
+            print(configBitsOrder)
+            print(bitsUsedInFrame)
             raise ValueError(
-                'ConfigBitsOrder definition misssmatch: number of 1s in mask do not match ConfigBits_ranges for frame : '+line[frame_name])
-        AllConfigBitsOrder += ConfigBitsOrder
+                f"ConfigBitsOrder definition miss match: number of 1s in mask do not match ConfigBits_ranges for frame : {entry['frame_name']} in {csvFileName}")
 
-    # begin architecture body
-    print('\nbegin\n', file=file)
+        allConfigBitsOrder += configBitsOrder
 
+    print("\nbegin\n", file=file)
     # instantiate latches for only the used frame bits
-    print('-- instantiate frame latches', file=file)
-    AllConfigBitsCounter = 0
-    for frame in UsedFrames:
-        used_bits = MappingFile[int(frame)][int(used_bits_mask)]
-        # print('DEBUG: ',entity, used_bits,' : ',AllConfigBitsOrder)
+    allConfigBitsCounter = 0
+
+    latchTemplate = \
+        """
+-- instantiate frame latches
+Inst_{frameName}_bit{frameBitsPerRow} : LHQD1'
+    PortMap(
+        D => FrameData({frameBitsPerRow}),
+        E => FrameStrobe({frame}),
+        Q => ConfigBits({configBit})
+    );
+"""
+
+    for frame in usedFrame:
+        usedBits = mappingFile[frame]["used_bits_mask"]
         for k in range(FrameBitsPerRow):
-            # print('DEBUG: ',entity, used_bits,' : ',k, used_bits[k],'AllConfigBitsCounter',AllConfigBitsCounter, str(AllConfigBitsOrder[AllConfigBitsCounter]))
-            if used_bits[k] == '1':
-                print('Inst_'+MappingFile[int(frame)][int(frame_name)] +
-                      '_bit'+str(FrameBitsPerRow-1-k)+'  : LHQD1', file=file)
-                print('Port Map (', file=file)
-                # The next one is a little tricky:
-                # k iterates over the bit_mask left to right from k=0..(FrameBitsPerRow-1) (k=0 is the most left (=first) character
-                # But that character represents the MSB inside the frame, which iterates FrameBitsPerRow-1..0
-                # bit_mask[0],                    bit_mask[1],                    bit_mask[2], ...
-                # FrameData[FrameBitsPerRow-1-0], FrameData[FrameBitsPerRow-1-1], FrameData[FrameBitsPerRow-1-2],
-                print('\t D \t=>\t FrameData(' +
-                      str(FrameBitsPerRow-1-k)+'), ', file=file)
-                print('\t E \t=>\t FrameStrobe('+str(frame)+'), ', file=file)
-                print('\t Q \t=>\t ConfigBits (' +
-                      str(AllConfigBitsOrder[AllConfigBitsCounter])+') ); \n ', file=file)
-                AllConfigBitsCounter += 1
-
-    print('\nend architecture;\n', file=file)
-
+            if usedBits[k] == "1":
+                print(latchTemplate.format(
+                    frameName=mappingFile[frame]["frame_name"],
+                    frameBitsPerRow=FrameBitsPerRow-1-k,
+                    frame=frame,
+                    configBit=allConfigBitsOrder[allConfigBitsCounter]
+                ), file=file)
+                allConfigBitsCounter += 1
+    print("end architecture;", file=file)
     return
 
 
@@ -6523,16 +6677,13 @@ if args.GenTileSwitchMatrixVerilog or args.run_all:
 
 if args.GenTileConfigMemVHDL or args.run_all:
     print('### Generate all tile HDL descriptions')
-    for tile in TileTypes:
+    fabric = parseFabricCSV(args.fabric_csv)
+    for tile in fabric.tileDic:
         print(
             f"### generate configuration bitstream storage VHDL for tile {tile} # filename: {out_dir}/{str(tile)}_ConfigMem.vhdl")
-        # TileDescription = GetTileFromFile(FabricFile,str(tile))
-        # TileVHDL_list = GenerateTileVHDL_list(FabricFile,str(tile))
-        # I tried various "from StringIO import StringIO" all not working - gave up
         TileFileHandler = open(f"{out_dir}/{str(tile)}_ConfigMem.vhdl", 'w+')
-        TileInformation = GetTileFromFile(FabricFile, str(tile))
         GenerateConfigMemVHDL(
-            TileInformation, f"{src_dir}/{str(tile)}_ConfigMem", TileFileHandler)
+            fabric.tileDic[tile], f"{src_dir}/{str(tile)}_ConfigMem.csv", TileFileHandler)
         TileFileHandler.close()
 
 if args.GenTileConfigMemVerilog or args.run_all:

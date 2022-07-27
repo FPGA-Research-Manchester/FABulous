@@ -62,6 +62,7 @@ def parseFabricCSV(fileName: str) -> Fabric:
     fabricTiles = []
     tileDic = dict(zip(tileTypes, tileDefs))
 
+    usedTile = set()
     for f in fabricDescription:
         fabricLineTmp = f.split(",")
         fabricLineTmp = [i for i in fabricLineTmp if i != ""]
@@ -71,6 +72,7 @@ def parseFabricCSV(fileName: str) -> Fabric:
         for i in fabricLineTmp:
             if i in tileDic:
                 fabricLine.append(deepcopy(tileDic[i]))
+                usedTile.add(i)
             elif i == "Null" or i == "NULL" or i == "None":
                 fabricLine.append(None)
             else:
@@ -81,6 +83,12 @@ def parseFabricCSV(fileName: str) -> Fabric:
                 print(list(tileDic.keys()))
                 exit(-1)
         fabricTiles.append(fabricLine)
+
+    for i in list(tileDic.keys()):
+        if i not in usedTile:
+            print(
+                f"Tile {i} is not used in the fabric. Removing from tile dictionary.")
+            del tileDic[i]
 
     height = 0
     width = 0

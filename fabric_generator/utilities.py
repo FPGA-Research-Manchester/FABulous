@@ -641,7 +641,7 @@ def generateConfigMemInit(file, globalConfigBitsCounter):
     # this file can be modified and saved as 'LUT4AB_ConfigMem.csv' (without the '.init')
     bitsLeftToPackInFrames = globalConfigBitsCounter
 
-    fieldName = ["frame_name", "frame_index", "bits_used_in_frame",
+    fieldName = ["#frame_name", "frame_index", "bits_used_in_frame",
                  "used_bits_mask", "ConfigBits_ranges"]
 
     with open(file, "w") as f:
@@ -657,18 +657,18 @@ def generateConfigMemInit(file, globalConfigBitsCounter):
             if bitsLeftToPackInFrames >= FrameBitsPerRow:
                 entry.append(str(FrameBitsPerRow))
                 # generate a string encoding a '1' for each flop used
-                frameBitsMask = f"{2**len(FrameBitsPerRow)-1:_b}"
+                frameBitsMask = f"{2**FrameBitsPerRow-1:_b}"
                 entry.append(frameBitsMask)
                 entry.append(
-                    f"{bitsLeftToPackInFrames}:{bitsLeftToPackInFrames-FrameBitsPerRow}")
+                    f"{bitsLeftToPackInFrames-1}:{bitsLeftToPackInFrames-FrameBitsPerRow}")
                 bitsLeftToPackInFrames -= FrameBitsPerRow
             else:
                 entry.append(str(bitsLeftToPackInFrames))
                 # generate a string encoding a '1' for each flop used
                 # this will allow us to kick out flops in the middle (e.g. for alignment padding)
-                frameBitsMask = (2**len(frameBitsMask)-1) - \
+                frameBitsMask = (2**FrameBitsPerRow-1) - \
                     (2**(FrameBitsPerRow-bitsLeftToPackInFrames)-1)
-                frameBitsMask = f"{frameBitsMask:_b}"
+                frameBitsMask = f"{frameBitsMask:0{FrameBitsPerRow+7}_b}"
                 entry.append(frameBitsMask)
                 if bitsLeftToPackInFrames > 0:
                     entry.append(f"{bitsLeftToPackInFrames-1}:0")

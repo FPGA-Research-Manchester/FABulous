@@ -111,7 +111,6 @@ class Tile():
         for b in self.bels:
             self.globalConfigBits += b.configBit
 
-
 @dataclass
 class SuperTile():
     name: str

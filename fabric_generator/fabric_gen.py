@@ -4220,7 +4220,7 @@ class Tile:
     tileType = ""
     bels = []
     belsWithIO = [] #Currently the plan is to deprecate bels and replace it with this. However, this would require nextpnr model generation changes, so I won't do that until the VPR foundations are established
-    #Format for belsWithIO is [bel name, prefix, inputs, outputs, whether it has a clock i nput]
+    #Format for belsWithIO is [bel name, prefix, inputs, outputs, whether it has a clock input]
     #Format for bels is [bel name, prefix, ports, whether it has a clock input]
     wires = [] 
     atomicWires = [] #For storing single wires (to handle cascading and termination)
@@ -5785,6 +5785,7 @@ def genVPRModelConstraints(archObject: Fabric):
     constraintString = '<vpr_constraints tool_name="vpr">\n'
     constraintString += '  <partition_list>\n'
 
+    unnamedCount = 0
     for row in archObject.tiles:
         for tile in row:
             for num, belpair in enumerate(tile.bels):
@@ -5794,7 +5795,6 @@ def genVPRModelConstraints(archObject: Fabric):
                 tileLoc = tile.genTileLoc()
                 cx = tile.x + 1
                 cy = tile.y + 1
-                unnamedCount = 0
 
                 if bel == "IO_1_bidirectional_frame_config_pass":
                     # VPR names primitives after the first wire they drive

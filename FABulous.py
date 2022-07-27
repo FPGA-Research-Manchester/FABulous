@@ -46,9 +46,7 @@ def switch_matrix_generation(project_dir):
            "-f", f"{project_dir}/src/fabric.csv"]
 
     # Generate the empty switch matrix
-    cmd.append("-GenTileSwitchMatrixCSV")
-    cmd.append("-s")
-    cmd.append(f"{project_dir}/src")
+    cmd += ["-GenTileSwitchMatrixCSV", "-s", f"{project_dir}/src"]
     sp.run(cmd, check=True)
 
     cmd.pop()
@@ -140,13 +138,8 @@ def RTL_generation(project_dir, VHDL=False):
 
     cmd = ["python3",
            f"{FABulous_root}/fabric_generator/fabulous_top_wrapper_temp/top_wrapper_generator_with_BRAM.py"]
-    cmd.append(f"-r")
-    cmd.append(str(row))
-    cmd.append("-c")
-    cmd.append(str(col))
-    cmd.append("-o")
-    cmd.append(f"{project_dir}/src")
 
+    cmd += ["-r", str(row), "-c", str(col), f"{project_dir}/src"]
     sp.run(cmd, check=True)
 
     # collect all the file

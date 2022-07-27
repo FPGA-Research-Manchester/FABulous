@@ -22,9 +22,7 @@ The following paper can be used to cite FABulous:
 
 Dirk Koch, Nguyen Dao, Bea Healy, Jing Yu, and Andrew Attwood. 2021. FABulous: An Embedded FPGA Framework. In <i>The 2021 ACM/SIGDA International Symposium on Field-Programmable Gate Arrays</i> (<i>FPGA '21</i>). Association for Computing Machinery, New York, NY, USA, 45–56. DOI: https://doi.org/10.1145/3431920.3439302
 
-[link of paper]
-
-[link to paper]: https://dl.acm.org/doi/pdf/10.1145/3431920.3439302
+[Link to Paper](https://dl.acm.org/doi/pdf/10.1145/3431920.3439302)
 
 ## Prerequisites
 

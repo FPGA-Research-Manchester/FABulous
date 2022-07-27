@@ -6,9 +6,9 @@ FABulous is designed to fulfill the objectives of ease of use, maximum portabili
 
 The FABulous ecosystem generates the embedded FPGA fabric for chip fabrication, integrates 
 [SymbiFlow](https://symbiflow.github.io/) 
-toolchain release packages, deals with the bitstream generation and after fabrication tests. Additionally, we will provide an emulation path for system development.
+toolchain release packages, deals with the bitstream generation and provides after-fabrication tests. Additionally, we plan to provide an emulation path for system development.
 
-This guide describes everything you need to set up your system to develop for FABulous ecosystem.
+This guide describes everything you need to set up your system to use the FABulous ecosystem.
 
 Ways to run Symbiflow on these devices will be explained in the near future.
 
@@ -23,8 +23,8 @@ Dirk Koch, Nguyen Dao, Bea Healy, Jing Yu, and Andrew Attwood. 2021. FABulous: A
 [Link to Paper](https://dl.acm.org/doi/pdf/10.1145/3431920.3439302)
 
 ## Prerequisites
-The following packages need to be installed for generating fabric HDLs
- - Python 3.5 or later
+The following packages need to be installed for generating fabric HDL models:
+ - Python 3.6 or later
 
 Install python dependencies
 ```
@@ -59,7 +59,7 @@ Then use the following command to build the entire FPGA fabric in both VHDL and 
 ```
 You are now ready to emulate or synthesise with the netlists in ```/vhdl_output``` or ```/verilog_output```.
 
-A simple example that runs to generate bitstream can be found under ```nextpnr/fabulous/fab_arch/```
+A simple example that runs to generate a bitstream can be found under ```nextpnr/fabulous/fab_arch/```
 
 Usage example:
 

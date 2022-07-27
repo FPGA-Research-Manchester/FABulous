@@ -36,3 +36,18 @@ To generate FASM, you should then use the command:
 
 The genfasm utility is part of the VTR flow, so should be installed alongside VPR. While the two commands are very similar, both must be called in sequence.
 
+Placement Constraints
+---------------------
+
+VPR accepts placement constraints in the form of an XML file, documented `here <https://docs.verilogtorouting.org/en/latest/vpr/placement_constraints/>`_. FABulous generates one of these automatically for you, constraining the placement of IO BELs (``InPass4_frame_config``, ``OutPass4_frame_config`` and ``IO_1_bidirectional_frame_config_pass`` blocks). This can be found in ``$FAB_ROOT/fabric_generator/vprout/fab_constraints.xml``, and is designed to constrain an automatically generated template file found at ``$FAB_ROOT/fabric_generator/vprout/template.v``. Other BELs can also be constrained using this technique, but these constraints are not automatically generated.
+
+To make use of these constraints, first add your design to ``$FAB_ROOT/fabric_generator/vprout/template.v``, where all IO BELs are instantiated and their connected wires can be used. The BEL instances within this file are intuitively named - the first BEL (in order of declaration in ``fabric.csv``) on tile X0Y1, for example, is instantiated with the name ``Tile_X0Y1_A``. The second is named ``Tile_X0Y1_B``, and so on. The elements are instantiated explicitly, so it should be clear which wires in the template file correspond to which BEL ports. Any inputs or outputs you do not connect to the instantiated BELs (i.e. leave as explicit HDL ``inputs`` and ``output``\s) will be mapped to free IO primitives. Removing unused input BEL instances from the template file will not have any adverse effects, but **removing output BEL instances will lead to incorrect placement of your instantiated BELs**. This is because VPR generates its own name for BEL instances, and usually uses the name of the first net driven by a BEL to generate this name. However, BELs that do not drive anything are enumerated - the first is named ``unnamed_subckt0``, the second is ``unnamed_subckt1`` and so on. This means that removing non-driving instantiations will change the names given to the BELs, and so they will be assigned to the wrong constraint region.
+
+Once your design is integrated into the template Verilog file, synthesise it using Yosys as normal, and run VPR with the command:
+
+.. code-block:: console
+
+        vpr <architecture.xml> <circuit.blif> --read_rr_graph <routing_resources.xml> --route_chan_width <max_width> --read_vpr_constraints <fab_constraints.xml> --timing_analysis on --sweep_dangling_blocks off
+
+
+If you are not instantiating any outputs then the ``--timing_analysis on --sweep_dangling_blocks off`` arguments are not required. These are used because VPR's timing analysis is unable to infer timing information from nets that end in a connection to a blackbox module (so we disable it), and without setting the ``--sweep_dangling_blocks`` VPR's optimisations will try and remove blocks that do not drive anything (such as output BELs).

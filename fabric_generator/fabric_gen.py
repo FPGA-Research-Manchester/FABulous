@@ -5369,7 +5369,6 @@ def genNextpnrModel(archObject: Fabric, generatePairs=True):
     pipsStr = ""
     belsStr = f"# BEL descriptions: bottom left corner Tile_X0Y0, top right {archObject.tiles[0][archObject.width - 1].genTileLoc()}\n"
     pairStr = ""
-    templateStr = "module template ();\n"
     constraintStr = ""
     for line in archObject.tiles:
         for tile in line:
@@ -5422,40 +5421,11 @@ def genNextpnrModel(archObject: Fabric, generatePairs=True):
                     cType = bel
                 belsStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)),
                                     let, cType, ",".join(nports))) + "\n"
-                # Add template - this just adds to a file to instantiate all IO as a primitive:
-                if bel == "IO_1_bidirectional_frame_config_pass":
-                    templateStr += f"wire "
-                    for i, port in enumerate(nports):
-                        templateStr += f"Tile_{tileLoc}_{port}"
-                        if i < len(nports) - 1:
-                            templateStr += ", "
-                        else:
-                            templateStr += ";\n"
+                # Add constraints to fix pin location (based on template generated in genVerilogTemplate)
+                if bel == "IO_1_bidirectional_frame_config_pass" or "InPass4_frame_config" or "OutPass4_frame_config":
                     belName = f"Tile_{tileLoc}_{let}"
-                    templateStr += f"(* keep *) IO_1_bidirectional_frame_config_pass {belName} (.O(Tile_{tileLoc}_{prefix}O), .Q(Tile_{tileLoc}_{prefix}Q), .I(Tile_{tileLoc}_{prefix}I));\n\n"
                     constraintStr += f"set_io {belName} {tileLoc}.{let}\n"
-                if bel == "InPass4_frame_config":
-                    templateStr += f"wire "
-                    for i, port in enumerate(nports):
-                        templateStr += f"Tile_{tileLoc}_{port}"
-                        if i < len(nports) - 1:
-                            templateStr += ", "
-                        else:
-                            templateStr += ";\n"
-                    belName = f"Tile_{tileLoc}_{let}"
-                    templateStr += f"(* keep *) InPass4_frame_config {belName} (.O0(Tile_{tileLoc}_{prefix}O0), .O1(Tile_{tileLoc}_{prefix}O1), .O2(Tile_{tileLoc}_{prefix}O2), .O3(Tile_{tileLoc}_{prefix}O3));\n\n"
-                    constraintStr += f"set_io {belName} {tileLoc}.{let}\n"
-                if bel == "OutPass4_frame_config":
-                    templateStr += f"wire "
-                    for i, port in enumerate(nports):
-                        templateStr += f"Tile_{tileLoc}_{port}"
-                        if i < len(nports) - 1:
-                            templateStr += ", "
-                        else:
-                            templateStr += ";\n"
-                    belName = f"Tile_{tileLoc}_{let}"
-                    templateStr += f"(* keep *) OutPass4_frame_config {belName} (.I0(Tile_{tileLoc}_{prefix}I0), .I1(Tile_{tileLoc}_{prefix}I1), .I2(Tile_{tileLoc}_{prefix}I2), .I3(Tile_{tileLoc}_{prefix}I3));\n\n"
-                    constraintStr += f"set_io {belName} {tileLoc}.{let}\n"
+
             if generatePairs:
                 # Generate wire beginning to wire beginning pairs for timing analysis
                 print("Generating pairs for: " + tile.genTileLoc())
@@ -5658,11 +5628,60 @@ def genNextpnrModel(archObject: Fabric, generatePairs=True):
                                 pairStr += tileLoc + "." + \
                                     addBrackets(inPip, tile) + "," + \
                                     tileLoc + "." + prefix + f"I{i}" + "\n"
-    templateStr += "endmodule"
     if generatePairs:
-        return (pipsStr, belsStr, templateStr, constraintStr, pairStr)
+        return (pipsStr, belsStr, constraintStr, pairStr)
     else:
-        return (pipsStr, belsStr, templateStr, constraintStr)
+        # Seems a little nicer to have a constant size tuple returned
+        return (pipsStr, belsStr, constraintStr, None)
+
+
+def genVerilogTemplate(archObject: Fabric):
+    templateStr = '// IMPORTANT NOTE: if using VPR, any instantiated BELs with no outputs MUST be instantiated after IO\n'
+    templateStr += '// This is because VPR auto-generates names for primitives with no outputs, and we assume OutPass BELs\n'
+    templateStr += '// are the first BELs to be auto-named in our constraints file.\n\n'
+
+    templateStr += "module template ();\n"
+    for line in archObject.tiles:
+        for tile in line:
+            for num, belpair in enumerate(tile.bels):
+                bel = belpair[0]
+                let = letters[num]
+                prefix = belpair[1]
+                nports = belpair[2]
+                tileLoc = tile.genTileLoc()
+                # Add template - this just adds to a file to instantiate all IO as a primitive:
+                if bel == "IO_1_bidirectional_frame_config_pass":
+                    templateStr += f"wire "
+                    for i, port in enumerate(nports):
+                        templateStr += f"Tile_{tileLoc}_{port}"
+                        if i < len(nports) - 1:
+                            templateStr += ", "
+                        else:
+                            templateStr += ";\n"
+                    belName = f"Tile_{tileLoc}_{let}"
+                    templateStr += f"(* keep *) IO_1_bidirectional_frame_config_pass {belName} (.O(Tile_{tileLoc}_{prefix}O), .Q(Tile_{tileLoc}_{prefix}Q), .I(Tile_{tileLoc}_{prefix}I));\n\n"
+                if bel == "InPass4_frame_config":
+                    templateStr += f"wire "
+                    for i, port in enumerate(nports):
+                        templateStr += f"Tile_{tileLoc}_{port}"
+                        if i < len(nports) - 1:
+                            templateStr += ", "
+                        else:
+                            templateStr += ";\n"
+                    belName = f"Tile_{tileLoc}_{let}"
+                    templateStr += f"(* keep *) InPass4_frame_config {belName} (.O0(Tile_{tileLoc}_{prefix}O0), .O1(Tile_{tileLoc}_{prefix}O1), .O2(Tile_{tileLoc}_{prefix}O2), .O3(Tile_{tileLoc}_{prefix}O3));\n\n"
+                if bel == "OutPass4_frame_config":
+                    templateStr += f"wire "
+                    for i, port in enumerate(nports):
+                        templateStr += f"Tile_{tileLoc}_{port}"
+                        if i < len(nports) - 1:
+                            templateStr += ", "
+                        else:
+                            templateStr += ";\n"
+                    belName = f"Tile_{tileLoc}_{let}"
+                    templateStr += f"(* keep *) OutPass4_frame_config {belName} (.I0(Tile_{tileLoc}_{prefix}I0), .I1(Tile_{tileLoc}_{prefix}I1), .I2(Tile_{tileLoc}_{prefix}I2), .I3(Tile_{tileLoc}_{prefix}I3));\n\n"
+    templateStr += "endmodule"
+    return templateStr
 
 
 # Clock coordinates - these are relative to the fabric.csv fabric, and ignore the padding
@@ -6659,6 +6678,52 @@ def genVPRModelRRGraph(archObject: Fabric, generatePairs=True):
     print(f'Max Width: {max_width}')
     return outputString
 
+# Generates constraint XML for VPR flow
+
+
+def genVPRModelConstraints(archObject: Fabric):
+    constraintString = '<vpr_constraints tool_name="vpr">\n'
+    constraintString += '  <partition_list>\n'
+
+    unnamedCount = 0
+    for row in archObject.tiles:
+        for tile in row:
+            for num, belpair in enumerate(tile.bels):
+                bel = belpair[0]
+                let = letters[num]
+                prefix = belpair[1]
+                tileLoc = tile.genTileLoc()
+                cx = tile.x + 1
+                cy = tile.y + 1
+
+                if bel == "IO_1_bidirectional_frame_config_pass":
+                    # VPR names primitives after the first wire they drive
+                    # So we use the wire names assigned in genVerilogTemplate
+                    constraintString += f'    <partition name="Tile_{tileLoc}_{let}">\n'
+                    constraintString += f'      <add_atom name_pattern="Tile_{tileLoc}_{prefix}O"/>\n'
+                    constraintString += f'      <add_region x_low="{cx}" y_low="{cy}" x_high="{cx}" y_high="{cy}" subtile="{num}"/>\n'
+                    constraintString += f'    </partition>\n'
+
+                if bel == "InPass4_frame_config":
+                    constraintString += f'    <partition name="Tile_{tileLoc}_{let}">\n'
+                    constraintString += f'      <add_atom name_pattern="Tile_{tileLoc}_{prefix}O0"/>\n'
+                    constraintString += f'      <add_region x_low="{cx}" y_low="{cy}" x_high="{cx}" y_high="{cy}" subtile="{num}"/>\n'
+                    constraintString += f'    </partition>\n'
+
+                # Frustratingly, since VPR names blocks after BELs they drive, BELs that drive no wires have auto-generated names
+                # These names are, at time of writing, generated with unique_subckt_name() in vpr/src/base/read_blif.cpp
+                if bel == "OutPass4_frame_config":
+                    constraintString += f'    <partition name="Tile_{tileLoc}_{let}">\n'
+                    #constraintString += f'      <add_atom name_pattern="Tile_{tileLoc}_{prefix}I0"/>\n'
+                    constraintString += f'      <add_atom name_pattern="unnamed_subckt{unnamedCount}"/>\n'
+                    unnamedCount += 1
+                    constraintString += f'      <add_region x_low="{cx}" y_low="{cy}" x_high="{cx}" y_high="{cy}" subtile="{num}"/>\n'
+                    constraintString += f'    </partition>\n'
+
+    constraintString += '    </partition_list>\n'
+    constraintString += '</vpr_constraints>'
+    return constraintString
+
 
 def genBitstreamSpec(archObject: Fabric):
     specData = {"TileMap": {}, "TileSpecs": {}, "TileSpecs_No_Mask": {}, "FrameMap": {}, "FrameMapEncode": {
@@ -7224,45 +7289,43 @@ if args.GenNextpnrModel:
     pipFile = open(f"{out_dir}/pips.txt", "w")
     belFile = open(f"{out_dir}/bel.txt", "w")
     #pairFile = open("npnroutput/wirePairs.csv", "w")
-    templateFile = open(f"{out_dir}/template.v", "w")
     constraintFile = open(f"{out_dir}/template.pcf", "w")
 
     npnrModel = genNextpnrModel(fabricObject, False)
 
     pipFile.write(npnrModel[0])
     belFile.write(npnrModel[1])
-    templateFile.write(npnrModel[2])
-    constraintFile.write(npnrModel[3])
+    constraintFile.write(npnrModel[2])
     # pairFile.write(npnrModel[4])
 
     pipFile.close()
     belFile.close()
-    templateFile.close()
     constraintFile.close()
+
+    with open(f"{out_dir}/template.v", "w") as templateFile:
+        templateFile.write(genVerilogTemplate(fabricObject))
+
     # pairFile.close()
 
 if args.GenNextpnrModel_pair:
-    if out_dir ==".":
+    if out_dir == ".":
         out_dir = 'npnroutput'
     print(f"{out_dir}/pips.txt")
     fabricObject = genFabricObject(fabric)
     pipFile = open(f"{out_dir}/pips.txt", "w")
     belFile = open(f"{out_dir}/bel.txt", "w")
     pairFile = open(f"{out_dir}/wirePairs.csv", "w")
-    templateFile = open(f"{out_dir}/template.v", "w")
     constraintFile = open(f"{out_dir}/template.pcf", "w")
 
     npnrModel = genNextpnrModel(fabricObject)
 
     pipFile.write(npnrModel[0])
     belFile.write(npnrModel[1])
-    templateFile.write(npnrModel[2])
-    constraintFile.write(npnrModel[3])
-    pairFile.write(npnrModel[4])
+    constraintFile.write(npnrModel[2])
+    pairFile.write(npnrModel[3])
 
     pipFile.close()
     belFile.close()
-    templateFile.close()
     constraintFile.close()
     pairFile.close()
 
@@ -7272,16 +7335,23 @@ if args.GenVPRModel:
     archFile = open(f"{out_dir}/architecture.xml", "w")
     rrFile = open(f"{out_dir}/routing_resources.xml", "w")
 
+    archFile = open(f"{out_dir}/architecture.xml", "w")
     archXML = genVPRModelXML(fabricObject, customXmlFilename, False)
-    rrGraphXML = genVPRModelRRGraph(fabricObject, False)
-
     archFile.write(archXML)
-    rrFile.write(rrGraphXML)
-
     archFile.close()
+
+    rrFile = open(f"{out_dir}/routing_resources.xml", "w")
+    rrGraphXML = genVPRModelRRGraph(fabricObject, False)
+    rrFile.write(rrGraphXML)
     rrFile.close()
 
     if args.debug:
+        with open(f"{out_dir}/template.v", "w") as templateFile:
+            templateFile.write(genVerilogTemplate(fabricObject))
+
+        with open(f"{out_dir}/fab_constraints.xml", "w") as constraintFile:
+            constraintFile.write(genVPRModelConstraints(fabricObject))
+
         print(archXML)
         print(rrGraphXML)
 

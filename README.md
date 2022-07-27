@@ -12,8 +12,7 @@ This guide describes everything you need to set up your system to develop for FA
 
 Ways to run Symbiflow on these devices will be explained in the near future.
 
-<img src="https://www.dropbox.com/s/g6wrtom681nr7tb/fabulous_ecosystem.png?raw=1" width="600"/>
-
+![FABulous Ecosystem Diagram](docs/source/figs/fabulous_ecosystem.png)
 
 ## How to cite
 

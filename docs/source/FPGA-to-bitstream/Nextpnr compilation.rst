@@ -39,7 +39,7 @@ Example,
 Primitive instantiation
 -----------------------
 
-As described in more detail in the yosys documentation, the (*keep*) attribute can be used to instantiate a component and clarify that yosys should not try to optimise it away. This can be used to directly instantiate components as blackbox models, and is done in the format
+As described in more detail in the yosys documentation, the (\* keep \*) attribute can be used to instantiate a component and clarify that yosys should not try to optimise it away. This can be used to directly instantiate components as blackbox models, and is done in the format
 
 .. code-block:: none
 

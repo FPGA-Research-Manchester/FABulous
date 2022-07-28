@@ -1,5 +1,4 @@
-<img src="https://www.dropbox.com/s/frnugxm1kjvv947/FABulous_flow2.png?raw=1" width="500"/>
-
+![FABulous Ecosystem Diagram](docs/source/figs/FABulous_flow2.png)
 
 The user can run the flow step by step as well (see below for instructions on building HDLs):
 

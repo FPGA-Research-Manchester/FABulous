@@ -1,9 +1,9 @@
 Simulation setup
 ================
 
-User can find a simulation example under ``$FAB_ROOT/fabric_files/fabric_simulation_example/``. (This has been tested under Vivado simulator)
+A simulation example can be found under ``$FAB_ROOT/fabric_files/fabric_simulation_example/``. This has been tested using the Vivado simulator.
 
-To setup simulation enviroment, the user should has a eFPGA top module to instantiate the fabric and the `configuration module`_ , as the example ``eFPGA_v2_top_sky130_sim.v``
+To setup the simulation enviroment, an eFPGA top module to instantiate the fabric and the `configuration module`_ are required, as in the example ``eFPGA_v2_top_sky130_sim.v``
 
 .. code-block:: verilog
         
@@ -43,7 +43,7 @@ To setup simulation enviroment, the user should has a eFPGA top module to instan
         );
         endmodule
 
-And then under the testbench ``tb_eFPGA_verilog.v``, user can assign the input signals to ``tb_O_top`` and the output signals to ``tb_I_top``. If user has not set the IO constraints in the benchmark netlist, nextpnr will assign inputs and outputs automatically. To find out the specific inputs and outputs of the benchmark netlist, user can use the fasm file and eFPGA top module for referencing.
+Next, you can assign the input signals to ``tb_O_top`` and the output signals to ``tb_I_top`` under the ``tb_eFPGA_verilog.v`` testbench. If you have not set the IO constraints in the benchmark netlist, nextpnr will assign inputs and outputs automatically. To find out the specific inputs and outputs of the benchmark netlist, the fasm file and eFPGA top module can be used for reference.
 
 FASM example
 
@@ -82,7 +82,7 @@ FASM example
         # Cell counter[9]$iob at X0Y16.B
         X0Y16.GND0.B_T
 
-FABulous is coming with 3 different simulation methods _`configuration module`,
+FABulous comes with 3 different simulation methods _`configuration module`,
 
 #. Serial (Mode 0)
 
@@ -94,16 +94,16 @@ FABulous is coming with 3 different simulation methods _`configuration module`,
 
 #. Bitbang configuration port (To be supported in the testbench)
 
-   We did a quick asynchronous serial configuration port interface that is ideal for microcontroller configuration. It uses the original CPU interface that we have in our TSMC chip. The idea of the protocol is as follows:
+   We have produced a quick asynchronous serial configuration port interface that is ideal for microcontroller configuration. It uses the original CPU interface that we have in our TSMC chip. The idea of the protocol is as follows:
 
    .. figure:: ../figs/bitbang1.*
        :alt: Bitbang description
        :align: center
 
 
-   We drive s_clk and s_data, on each rising edge of s_clock, we sample data and on the falling edge, we sample control.
+   We drive s_clk and s_data. On each rising edge of s_clock, we sample data and on the falling edge, we sample control.
 
-   Both values get shifted in a separate register. If the control register ses the bit-pattern x”FAB0” it samples the data shift register into a hold register and issues a one-cycle strobe output (active 1).
+   Both values get shifted in a separate register. If the control register sees the bit-pattern x”FAB0” it samples the data shift register into a hold register and issues a one-cycle strobe output (active 1).
 
    The next figure shows the enable generation (and input sampling) for generating the enable signals for 
 

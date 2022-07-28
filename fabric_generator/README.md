@@ -1,4 +1,4 @@
-![FABulous Ecosystem Diagram](docs/source/figs/FABulous_flow2.png)
+![FABulous Ecosystem Diagram](../docs/source/figs/FABulous_flow2.png)
 
 The user can run the flow step by step as well (see below for instructions on building HDLs):
 

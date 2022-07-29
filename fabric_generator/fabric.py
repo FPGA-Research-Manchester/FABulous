@@ -55,12 +55,12 @@ class Port():
             thisRange = 1
         for i in range(startIndex, thisRange):
             if self.destinationName != "NULL":
-                inputs.append(
+                outputs.append(
                     f"{self.destinationName}{openIndex}{str(i)}{closeIndex}")
             # if self.sourceName == "NULL":
             #     print(self)
             if self.sourceName != "NULL":
-                outputs.append(
+                inputs.append(
                     f"{self.sourceName}{openIndex}{str(i)}{closeIndex}")
         return inputs, outputs
 
@@ -76,6 +76,17 @@ class Bel():
     configPort: List[str]
     sharedPort: List[str]
     configBit: int
+
+    def __init__(self, src, prefix, internal, external, configPort, sharedPort, configBit):
+        self.src = src
+        self.prefix = prefix
+        self.inputs = [p for p, io in internal if io == "in"]
+        self.outputs = [p for p, io in internal if io == "out"]
+        self.externalInput = [p for p, io in external if io == "in"]
+        self.externalOutput = [p for p, io in external if io == "out"]
+        self.configPort = configPort
+        self.sharedPort = sharedPort
+        self.configBit = configBit
 
 
 @dataclass
@@ -98,18 +109,30 @@ class Tile():
         self.matrixDir = matrixDir
         self.inputs = []
         self.outputs = []
+
+        # adding ports in the order of normal port, bel port, jump port
         for port in self.portsInfo:
-            self.inputs += port.expandPortInfo(mode="AutoSwitchMatrix")[0]
-            self.outputs += port.expandPortInfo(mode="AutoSwitchMatrix")[1]
+            if port.direction != "JUMP":
+                input, output = port.expandPortInfo(mode="AutoSwitchMatrix")
+                self.inputs += input
+                self.outputs += output
 
         for port in self.bels:
             # IMPORTANT: the outputs of a BEL are the inputs to the switch matrix!
-            self.inputs = self.inputs + port.outputs
+            self.inputs = self.inputs + port.inputs
+
             # IMPORTANT: the inputs to a BEL are the outputs of the switch matrix!
-            self.outputs = self.outputs + port.inputs
+            self.outputs = self.outputs + port.outputs
+
+        for port in self.portsInfo:
+            if port.direction == "JUMP":
+                input, output = port.expandPortInfo(mode="AutoSwitchMatrix")
+                self.inputs += input
+                self.outputs += output
 
         for b in self.bels:
             self.globalConfigBits += b.configBit
+
 
 @dataclass
 class SuperTile():

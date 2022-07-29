@@ -45,17 +45,21 @@ def parseFabricCSV(fileName: str) -> Fabric:
             if not temp or temp[0] == "":
                 continue
             if temp[0] in ["NORTH", "SOUTH", "EAST", "WEST", "JUMP"]:
+                if temp[1] == '' or temp[4] == '':
+                    raise ValueError(
+                        f"Either source or destination port for JUMP wire missing in tile {t}")
                 ports.append(Port(temp[0], temp[1], int(
                     temp[2]), int(temp[3]), temp[4], int(temp[5])))
             elif temp[0] == "BEL":
-                input, output, externalInput, externalOutput, configPort, sharedPort, configBit = parseFileHDL(
+                internal, external, config, shared, configBit = parseFileHDL(
                     temp[1], temp[2])
-                bels.append(Bel(temp[1], temp[2], input,
-                            output, externalInput, externalOutput, configPort, sharedPort, configBit))
+                bels.append(Bel(temp[1], temp[2], internal,
+                            external, config, shared, configBit))
             elif temp[0] == "MATRIX":
                 matrixDir = temp[1]
             else:
-                raise ValueError(f"Error: unknown tile description {temp[0]}")
+                raise ValueError(
+                    f"Error: unknown tile description {temp[0]} in tile {t}")
 
         tileDefs.append(Tile(tileName, ports, bels, matrixDir))
 
@@ -186,15 +190,13 @@ def expandListPorts(port, PortList):
 
 
 def parseFileHDL(filename, belPrefix="", filter="ALL"):
-    inputs = []
-    outputs = []
-    externalInput = []
-    externalOutput = []
-    configPorts = []
-    sharedPort = []
-    external = False
-    config = False
-    shared = False
+    internal = []
+    external = []
+    config = []
+    shared = []
+    isExternal = False
+    isConfig = False
+    isShared = False
 
     with open(filename, "r") as f:
         file = f.read()
@@ -208,11 +210,11 @@ def parseFileHDL(filename, belPrefix="", filter="ALL"):
         if "IMPORTANT" in line:
             continue
         if "EXTERNAL" in line:
-            external = True
+            isExternal = True
         if "CONFIG" in line:
-            config = True
+            isConfig = True
         if "SHARED_PORT" in line:
-            sharedPort = True
+            isShared = True
 
         line = re.sub(r"STD_LOGIC.*", "", line, flags=re.IGNORECASE)
         line = re.sub(r";.*", "", line, flags=re.IGNORECASE)
@@ -223,26 +225,19 @@ def parseFileHDL(filename, belPrefix="", filter="ALL"):
             continue
         portName = f"{belPrefix}{result.group(1)}"
 
-        def addToInOut(port, inList, outList):
-            if result.group(2) == "IN" or result.group(2) == "in" or result.group(2) == "In":
-                inList.append(port)
-            elif result.group(2) == "OUT" or result.group(2) == "out" or result.group(2) == "Out":
-                outList.append(port)
-            else:
-                raise ValueError(f"Unknown port type {result.group(2)}")
-
-        if external:
-            addToInOut(portName, externalInput, externalOutput)
-        elif config:
-            configPorts.append(portName)
+        if isExternal and not isShared:
+            external.append((portName, result.group(2).lower()))
+        elif isConfig:
+            config.append((portName, result.group(2).lower()))
+        elif isShared:
+            # shared port do not have a prefix
+            shared.append((result.group(1), result.group(2).lower()))
         else:
-            addToInOut(portName, inputs, outputs)
+            internal.append((portName, result.group(2).lower()))
 
-        if shared:
-            sharedPort.append(portName)
-
-        external = False
-        config = False
+        isExternal = False
+        isConfig = False
+        isShared = False
 
     result = re.search(
         r"NoConfigBits\s*:\s*integer\s*:=\s*(\w+)", file, re.IGNORECASE | re.DOTALL)
@@ -258,7 +253,7 @@ def parseFileHDL(filename, belPrefix="", filter="ALL"):
         print("Assume the number of configBits is 0")
         noConfigBits = 0
 
-    return inputs, outputs, externalInput, externalOutput, configPorts, sharedPort, noConfigBits
+    return internal, external, config, shared, noConfigBits
 
 
 # convert the matrix csv into a dictionary from destination to source
@@ -273,33 +268,15 @@ def parseMatrix(fileName, tileName):
         raise ValueError(
             'ERROR: tile name (top left element) in csv file does not match tile name in tile object')
 
-    destinationList = file[0].split(",")[1:]
+    destList = file[0].split(",")[1:]
 
-    for i in destinationList:
-        connectionsDic[i] = []
-
-    for line in file[1:]:
-        line = line.split(",")
-        portName, connections = line[0], line[1:]
-
+    for i in file[1:]:
+        i = i.split(",")
+        portName, connections = i[0], i[1:]
         if portName == "":
             continue
-
-        keys = [destinationList[i]
-                for i, x in enumerate(connections) if x == "1"]
-
-        # if contains h or l, tide the connection to logical 0 or 1 then continue
-        if "h" in connections or "H" in connections:
-            connectionsDic[portName] = ["1"]
-            print(f"Tiding {portName} to 1")
-            continue
-        if "l" in connections or "L" in connections:
-            connectionsDic[portName] = ["0"]
-            print(f"Tiding {portName} to 0")
-            continue
-
-        for key in keys:
-            connectionsDic[key].append(portName)
+        indices = [k for k, v in enumerate(connections) if v == "1"]
+        connectionsDic[portName] = [destList[j] for j in indices]
 
     return connectionsDic
 

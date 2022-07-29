@@ -169,37 +169,6 @@ def replace(string, substitutions):
     return regex.sub(lambda match: substitutions[match.group(0)], string)
 
 
-def PrintComponentDeclarationForFile(VHDL_file_name, file):
-    ConfigPortUsed = 0  # 1 means is used
-    VHDLfile = [line.rstrip('\n')
-                for line in open(f"{src_dir}/{VHDL_file_name}")]
-    templist = []
-    marker = False
-    # for item in VHDLfile:
-    # print(item)
-    for line in VHDLfile:
-        # NumberOfConfigBits:0 means no configuration port
-        if re.search('NumberOfConfigBits', line, flags=re.IGNORECASE):
-            # NumberOfConfigBits appears, so we may have a config port
-            ConfigPortUsed = 1
-            # but only if the following is not true
-            if re.search('NumberOfConfigBits:0', line, flags=re.IGNORECASE):
-                ConfigPortUsed = 0
-        if marker == True:
-            print(re.sub('entity', 'component', line,
-                  flags=re.IGNORECASE), file=file)
-        if re.search('^entity', line, flags=re.IGNORECASE):
-            # print(str.replace('^entity', line))
-            # re.sub('\$noun\$', 'the heck', 'What $noun$ is $verb$?')
-            print(re.sub('entity', 'component', line,
-                  flags=re.IGNORECASE), file=file)
-            marker = True
-        if re.search('^end ', line, flags=re.IGNORECASE):
-            marker = False
-    print('', file=file)
-    return ConfigPortUsed
-
-
 def GetComponentPortsFromFile(VHDL_file_name, filter='ALL', port='internal', BEL_Prefix=''):
     VHDLfile = [line.rstrip('\n')
                 for line in open(f"{src_dir}/{VHDL_file_name}")]
@@ -587,8 +556,8 @@ def list2CSV(InFileName, OutFileName):
             matrix[i-1][j-1] = int(file[i].split(',')[j])
 
     # get source and destination list in the csv
-    source = file[0].strip("\n").split(',')[1:]
-    destination = [file[i].split(",")[0] for i in range(1, len(file))]
+    destination = file[0].strip("\n").split(',')[1:]
+    source = [file[i].split(",")[0] for i in range(1, len(file))]
 
     # set the matrix value with the provided connection pair
     for (s, d) in connectionPair:
@@ -606,19 +575,19 @@ def list2CSV(InFileName, OutFileName):
             print()
             exit(-1)
 
-        if matrix[d_index][s_index] != 0:
+        if matrix[s_index][d_index] != 0:
             print(
                 f"connection ({s}, {d}) already exists in the original matrix")
-        matrix[d_index][s_index] = 1
+        matrix[s_index][d_index] = 1
 
     # writing the matrix back to the given out file
     with open(OutFileName, "w") as f:
         f.write(file[0])
-        for i in range(len(destination)):
-            f.write(f"{destination[i]},")
-            for j in range(len(source)):
+        for i in range(len(source)):
+            f.write(f"{source[i]},")
+            for j in range(len(destination)):
                 f.write(str(matrix[i][j]))
-                if j != len(source) - 1:
+                if j != len(destination) - 1:
                     f.write(',')
                 else:
                     f.write(f",#,{matrix[i].count(1)}")
@@ -641,7 +610,7 @@ def generateConfigMemInit(file, globalConfigBitsCounter):
     # this file can be modified and saved as 'LUT4AB_ConfigMem.csv' (without the '.init')
     bitsLeftToPackInFrames = globalConfigBitsCounter
 
-    fieldName = ["#frame_name", "frame_index", "bits_used_in_frame",
+    fieldName = ["frame_name", "frame_index", "bits_used_in_frame",
                  "used_bits_mask", "ConfigBits_ranges"]
 
     with open(file, "w") as f:

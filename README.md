@@ -8,9 +8,7 @@ The FABulous ecosystem generates the embedded FPGA fabric for chip fabrication, 
 [SymbiFlow](https://symbiflow.github.io/) 
 toolchain release packages, deals with the bitstream generation and provides after-fabrication tests. Additionally, we plan to provide an emulation path for system development.
 
-This guide describes everything you need to set up your system to use the FABulous ecosystem.
-
-Ways to run Symbiflow on these devices will be explained in the near future.
+This guide describes everything you need to set up your system to use the FABulous ecosystem, and the full project documentation can be found [here](https://fabulous.readthedocs.io/en/latest/).
 
 ![FABulous Ecosystem Diagram](docs/source/figs/fabulous_ecosystem.png)
 
@@ -31,9 +29,11 @@ Install python dependencies
 pip3 install -r requirements.txt
 ```
 
-The following packages need to be installed for CAD toolchain
+The following packages need to be installed for the CAD toolchain
  - [Yosys](https://github.com/YosysHQ/yosys)
  - FABulous' nextpnr fork (covered in instructions below)
+ 
+ A [VPR](https://github.com/verilog-to-routing/vtr-verilog-to-routing) flow is also available. However, this still requires the FABulous nextpnr fork, as it contains files for design synthesis.
 
 ## Getting started
 ```

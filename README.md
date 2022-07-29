@@ -33,7 +33,7 @@ The following packages need to be installed for the CAD toolchain
  - [Yosys](https://github.com/YosysHQ/yosys)
  - FABulous' nextpnr fork (covered in instructions below)
  
- A [VPR](https://github.com/verilog-to-routing/vtr-verilog-to-routing) flow is also available. However, this still requires the FABulous nextpnr fork, as it contains files for design synthesis.
+ A flow using VPR, the place and route tool from the [VTR project](https://github.com/verilog-to-routing/vtr-verilog-to-routing) is also available. However, this still requires Yosys, as well as the FABulous nextpnr fork, since this contains files for design synthesis.
 
 ## Getting started
 ```

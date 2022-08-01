@@ -46,14 +46,223 @@ Opposite_Directions = {"NORTH": "SOUTH",
                        "EAST": "WEST", "SOUTH": "NORTH", "WEST": "EAST"}
 
 
+class VHDLWriter():
+
+    @property
+    def outFileName(self):
+        return self._outFileName
+
+    @property
+    def content(self):
+        return self._content
+
+    @property
+    def tile(self):
+        return self._tile
+
+    def __init__(self, outFileName, tile: Tile):
+        self._outFileName = outFileName
+        self._content = []
+        self._tile = tile
+
+    def writeToFile(self):
+        with open(self._outFileName, 'w') as f:
+            f.write("\n".join(self._content))
+
+    def _add(self, line, indentLevel=0) -> None:
+        self._content.append(f"{' ':<{4*indentLevel}}" + line)
+
+    def addComment(self, comment, onNewLine=False, indentLevel=0) -> None:
+        if onNewLine:
+            self._add("")
+        self._add(f"{' ':<{indentLevel*4}}" + f"-- {comment}""\n")
+
+    def addHeader(self, postPad, package='', maxFramesPerCol='', frameBitsPerRow='', ConfigBitMode='FlipFlopChain', indentLevel=0):
+        #   library template
+        self._add("library IEEE;", indentLevel)
+        self._add("use IEEE.STD_LOGIC_1164.ALL;", indentLevel)
+        self._add("use IEEE.NUMERIC_STD.ALL", indentLevel)
+        if package != "":
+            self._add(package, indentLevel)
+        self._add(f"entity {self.tile.name}{postPad} is", indentLevel)
+
+    def addHeaderEnd(self, postPad, indentLevel=0):
+        self._add(f"end entity {self.tile.name}{postPad}", indentLevel)
+
+    def addParameterStart(self, indentLevel=0):
+        self._add("Generic(", indentLevel)
+
+    def addParameterEnd(self, indentLevel=0):
+        self._add(");", indentLevel)
+
+    def addParameter(self, name, type, value, indentLevel=0):
+        self._add(f"{name} : {type} := {value};", indentLevel)
+
+    def addPortStart(self, indentLevel=0):
+        self._add("Port (", indentLevel)
+
+    def addPortEnd(self, indentLevel=0):
+        self._add(");", indentLevel)
+
+    def addPortScalar(self, name, io, indentLevel=0):
+        self._add(f"{name:<20} : {io} STD_LOGIC;", indentLevel=indentLevel)
+
+    def addPortVector(self, name, io, width, indentLevel=0):
+        self._add(
+            f"{name:<20} : {io} STD_LOGIC_VECTOR( {width} downto 0 );", indentLevel=indentLevel)
+
+    def addDesignDescriptionStart(self, postPad, indentLevel=0):
+        self._add(
+            f"architecture Behavioral of {self.tile.name}{postPad} is", indentLevel)
+
+    def addDesignDescriptionEnd(self, indentLevel=0):
+        self._add(f"end architecture Behavioral;", indentLevel)
+
+    def addConstant(self, name, value, indentLevel=0):
+        self._add(f"constant {name} : STD_LOGIC := '{value}';", indentLevel)
+
+    def addNewLine(self):
+        self._add("")
+
+    def addConnectionVector(self, name, width, indentLevel=0):
+        self._add(
+            f"signal {name} : STD_LOGIC_VECTOR( { width } - 1 downto 0 );", indentLevel)
+
+    def addLogicStart(self, indentLevel=0):
+        self._add(f"begin", indentLevel)
+
+    def addLogicEnd(self, indentLevel=0):
+        self._add(f"end", indentLevel)
+
+    def addFlipFlopChain(self, configBitCounter):
+        template = f"""
+    ConfigBitsInput <= ConfigBits(ConfigBitsInput'high-1 downto 0) & CONFin;
+    -- for k in 0 to Conf/2 generate
+    L: for k in 0 to {int(math.ceil(configBitCounter/2.0))-1} generate
+            inst_LHQD1a : LHQD1
+            Port Map(
+                D    => ConfigBitsInput(k*2),
+                E    => CLK,
+                Q    => ConfigBits(k*2) );
+            inst_LHQD1b : LHQD1
+            Port Map(
+                D    => ConfigBitsInput((k*2)+1),
+                E    => MODE,
+                Q    => ConfigBits((k*2)+1) );
+    end generate;
+    CONFout <= ConfigBits(ConfigBits'high);
+
+    """
+        self._add(template)
+
+    def addShiftRegister(self, indentLevel=0):
+        template = """
+    -- the configuration bits shift register
+    process(CLK)
+    begin
+        if CLK'event and CLK='1' then
+            if mode='1' then    --configuration mode
+                ConfigBits <= CONFin & ConfigBits(ConfigBits'high downto 1);
+            end if;
+        end if;
+    end process;
+    CONFout <= ConfigBits(ConfigBits'high);
+
+    """
+        self._add(template, indentLevel)
+
+    def addAssign(self, left, right, indentLevel=0):
+        self._add(f"{left} <= {right};", indentLevel)
+
+    def addAssignVector(self, left, right, widthL, widthR, indentLevel=0):
+        self._add(
+            f"{left} <= {right}( {widthL} downto {widthR} );", indentLevel)
+
+    def addMux(self, muxStyle, muxSize, tileName, portName, portList, oldConfigBitstreamPosition, configBitstreamPosition, delay):
+        # we have full custom MUX-4 and MUX-16 for which we have to generate code like:
+        # VHDL example custom MUX4
+        # inst_MUX4PTv4_J_l_AB_BEG1 : MUX4PTv4
+        # Port Map(
+        # IN1  => J_l_AB_BEG1_input(0),
+        # IN2  => J_l_AB_BEG1_input(1),
+        # IN3  => J_l_AB_BEG1_input(2),
+        # IN4  => J_l_AB_BEG1_input(3),
+        # S1   => ConfigBits(low_362),
+        # S2   => ConfigBits(low_362 + 1,
+        # O    => J_l_AB_BEG1 );
+        # CUSTOM Multiplexers for switch matrix
+        # CUSTOM Multiplexers for switch matrix
+        # CUSTOM Multiplexers for switch matrix
+
+        # -- switch matrix multiplexer  N1BEG0 		MUX-4
+        # N1BEG0_input <= J_l_CD_END1 & JW2END3 & J2MID_CDb_END3 & LC_O after 80 ps
+        # inst_MUX4PTv4_N1BEG0: MUX4PTv4
+        # Port Map(
+        #     IN1   =>  N1BEG0_input(0),
+        #     IN2   =>  N1BEG0_input(1),
+        #     IN3   =>  N1BEG0_input(2),
+        #     IN4   =>  N1BEG0_input(3),
+        #     S1    =>  ConfigBits(0 + 0),
+        #     S2    =>  ConfigBits(0 + 1),
+        #     O     =>  N1BEG0);
+        delayTemplate = "{portName}_input <= {portList} after {delay} ps;"
+        muxTemplate = """
+    inst_{muxComponentName}_{portName} : {muxComponentName}
+        Port Map(
+    {inputList}
+    {configBitsList}
+    {outSignal}
+        );
+    """
+
+        muxComponentName = 'MUX4PTv4'
+        if (muxStyle == 'custom') and (muxSize == 4):
+            muxComponentName = 'MUX4PTv4'
+        if (muxStyle == 'custom') and (muxSize == 16):
+            muxComponentName = 'MUX16PTv2'
+
+        inputList, configBitsList, outSignal = [], [], ""
+
+        for k in range(0, muxSize):
+            inputList.append(f"{' ':<8}IN{k+1:<3} => {portName}_input({k}),")
+
+        for k in range(0, (math.ceil(math.log2(muxSize)))):
+            configBitsList.append(
+                f"{' ':<8}S{k+1:<4} => ConfigBits({oldConfigBitstreamPosition} + {k}),")
+
+        outSignal = f"{' ':<8}O{' ':<4} => {portName}"
+
+        muxString = muxTemplate.format(portName=portName,
+                                       muxSize=muxSize,
+                                       muxComponentName=muxComponentName,
+                                       inputList="\n".join(inputList),
+                                       configBitsList="\n".join(
+                                           configBitsList),
+                                       outSignal=outSignal)
+        delayString = delayTemplate.format(portName=portName,
+                                           portList=" & ".join(portList),
+                                           delay=delay)
+        self.addNewLine()
+        self._add(delayString)
+        if (MultiplexerStyle == 'custom') and (muxSize == 4 or muxSize == 16):
+            self._add(muxString)
+        else:        # generic multiplexer
+            if MultiplexerStyle == 'custom':
+                print(
+                    f"HINT: creating a MUX-{str(muxSize)} for port {portName} in switch matrix for tile {tileName}")
+            self.addNewLine()
+            self._add(f"{portName:>4} <= {portName}_input(TO_INTEGER(UNSIGNED(ConfigBits( {str(configBitstreamPosition-1)} downto {str(oldConfigBitstreamPosition)}))));")
+
+        self.addNewLine()
+
+
 def GenerateVHDL_Conf_Instantiation(file, counter, close=True):
-    confTemplate = \
-        """
+    confTemplate = """
     -- GLOBAL all primitive pins for configuration (not further parsed)
-        MODE    => Mode,  
+        MODE    => Mode,
         CONFin  => conf_data({counter}),
         CONFout => conf_data({counter2}),
-        CLK     => CLK 
+        CLK     => CLK
         {end}
 """
     print(confTemplate.format(counter=counter,
@@ -63,8 +272,7 @@ def GenerateVHDL_Conf_Instantiation(file, counter, close=True):
 
 def GenerateVHDL_Header(file, entity, package='', noConfigBits='0', maxFramesPerCol='', frameBitsPerRow=''):
     #   library template
-    headerTemplate = \
-        """
+    headerTemplate = """
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
@@ -242,151 +450,8 @@ def generateTileComponentPort(tile: Tile, file, configBitMode="frame_based", glo
     #             addedExternalPort.add(p)
 
 
-def GenerateVHDL_EntityFooter(file, entity, ConfigPort=True, NumberOfConfigBits=''):
-    print(f"{' ':<4}-- global", file=file)
-    if ConfigPort == True:
-        if ConfigBitMode == 'FlipFlopChain':
-            print(
-                '\t\t MODE\t: in \t STD_LOGIC;\t -- global signal 1: configuration, 0: operation', file=file)
-            print('\t\t CONFin\t: in \t STD_LOGIC;', file=file)
-            print('\t\t CONFout\t: out \t STD_LOGIC;', file=file)
-            print('\t\t CLK\t: in \t STD_LOGIC', file=file)
-        if ConfigBitMode == 'frame_based':
-            print(
-                f"{' ':<8}ConfigBits{' ':<11}: in STD_LOGIC_VECTOR( NoConfigBits -1 downto 0 )", file=file)
-    print('\t);', file=file)
-    print(f"end entity {entity};", file=file)
-    print('', file=file)
-    #   architecture
-    print(f"architecture Behavioral of {entity} is ", file=file)
-    print('', file=file)
-    return
-
-
-def generateShiftRegister(file):
-    template = \
-        """
--- the configuration bits shift register
-process(CLK)
-begin
-    if CLK'event and CLK='1' then
-        if mode='1' then    --configuration mode
-            ConfigBits <= CONFin & ConfigBits(ConfigBits'high downto 1);
-        end if;
-    end if;
-end process;
-CONFout <= ConfigBits(ConfigBits'high);
-
-"""
-    print(template, file=file)
-
-
-def generateFlipFlopChain(file, configBitCounter):
-    template = \
-        f"""
-ConfigBitsInput <= ConfigBits(ConfigBitsInput'high-1 downto 0) & CONFin;
--- for k in 0 to Conf/2 generate
-L: for k in 0 to {int(math.ceil(configBitCounter/2.0))-1} generate
-        inst_LHQD1a : LHQD1
-        Port Map(
-            D    => ConfigBitsInput(k*2),
-            E    => CLK,
-            Q    => ConfigBits(k*2) );
-        inst_LHQD1b : LHQD1
-        Port Map(
-            D    => ConfigBitsInput((k*2)+1),
-            E    => MODE,
-            Q    => ConfigBits((k*2)+1) );
-end generate;
-CONFout <= ConfigBits(ConfigBits'high);
-
-"""
-    print(template, file=file)
-
-
-def generateMux(file, muxStyle, muxSize, tileName, portName, portList, oldConfigBitstreamPosition, configBitstreamPosition, delay):
-    # we have full custom MUX-4 and MUX-16 for which we have to generate code like:
-    # VHDL example custom MUX4
-    # inst_MUX4PTv4_J_l_AB_BEG1 : MUX4PTv4
-    # Port Map(
-    # IN1  => J_l_AB_BEG1_input(0),
-    # IN2  => J_l_AB_BEG1_input(1),
-    # IN3  => J_l_AB_BEG1_input(2),
-    # IN4  => J_l_AB_BEG1_input(3),
-    # S1   => ConfigBits(low_362),
-    # S2   => ConfigBits(low_362 + 1,
-    # O    => J_l_AB_BEG1 );
-    # CUSTOM Multiplexers for switch matrix
-    # CUSTOM Multiplexers for switch matrix
-    # CUSTOM Multiplexers for switch matrix
-
-    # -- switch matrix multiplexer  N1BEG0 		MUX-4
-    # N1BEG0_input <= J_l_CD_END1 & JW2END3 & J2MID_CDb_END3 & LC_O after 80 ps
-    # inst_MUX4PTv4_N1BEG0: MUX4PTv4
-    # Port Map(
-    #     IN1   =>  N1BEG0_input(0),
-    #     IN2   =>  N1BEG0_input(1),
-    #     IN3   =>  N1BEG0_input(2),
-    #     IN4   =>  N1BEG0_input(3),
-    #     S1    =>  ConfigBits(0 + 0),
-    #     S2    =>  ConfigBits(0 + 1),
-    #     O     =>  N1BEG0);
-    delayTemplate = "{portName}_input <= {portList} after {delay} ps;"
-    muxTemplate = \
-        """
-inst_{muxComponentName}_{portName} : {muxComponentName}
-    Port Map(
-{inputList}
-{configBitsList}
-{outSignal}
-    );
-"""
-
-    muxComponentName = 'MUX4PTv4'
-    if (muxStyle == 'custom') and (muxSize == 4):
-        muxComponentName = 'MUX4PTv4'
-    if (muxStyle == 'custom') and (muxSize == 16):
-        muxComponentName = 'MUX16PTv2'
-
-    inputList, configBitsList, outSignal = [], [], ""
-
-    for k in range(0, muxSize):
-        inputList.append(f"{' ':<8}IN{k+1:<3} => {portName}_input({k}),")
-
-    for k in range(0, (math.ceil(math.log2(muxSize)))):
-        configBitsList.append(
-            f"{' ':<8}S{k+1:<4} => ConfigBits({oldConfigBitstreamPosition} + {k}),")
-
-    outSignal = f"{' ':<8}O{' ':<4} => {portName}"
-
-    muxString = muxTemplate.format(portName=portName,
-                                   muxSize=muxSize,
-                                   muxComponentName=muxComponentName,
-                                   inputList="\n".join(inputList),
-                                   configBitsList="\n".join(configBitsList),
-                                   outSignal=outSignal)
-    delayString = delayTemplate.format(portName=portName,
-                                       portList=" & ".join(portList),
-                                       delay=delay)
-
-    print("", file=file)
-    print(delayString, file=file)
-    if (MultiplexerStyle == 'custom') and (muxSize == 4 or muxSize == 16):
-        print(muxString, file=file)
-    else:        # generic multiplexer
-        if MultiplexerStyle == 'custom':
-            print(
-                f"HINT: creating a MUX-{str(muxSize)} for port {portName} in switch matrix for tile {tileName}")
-        print("", file=file)
-        print(
-            f"{portName:>4} <= {portName}_input(TO_INTEGER(UNSIGNED(ConfigBits( {str(configBitstreamPosition-1)} downto {str(oldConfigBitstreamPosition)}))));", file=file)
-
-    print("\n", file=file)
-
-
 def generateLatch(file, frameName, frameBitsPerRow, frameIndex, configBit):
-    latchTemplate = \
-        f"""
+    latchTemplate = f"""
 -- instantiate frame latches
 Inst_{frameName}_bit{frameBitsPerRow} : LHQD1'
     PortMap(
@@ -399,8 +464,7 @@ Inst_{frameName}_bit{frameBitsPerRow} : LHQD1'
 
 
 def generateBELInstantiations(file, bel: Bel, configBitCounter, mode="frame_based", belCounter=0):
-    belTemplate = \
-        """
+    belTemplate = """
 Inst_{prefix}{entity} : {entity}
         Port Map(
 {portList}
@@ -438,8 +502,7 @@ Inst_{prefix}{entity} : {entity}
 
 
 def generateSwitchMatrixInstruction(file, tile: Tile, configBitCounter, switchMatrixConfigPort, belCounter, mode='frame_based'):
-    switchTemplate = \
-        """
+    switchTemplate = """
 -- switch matrix component instantiation
 Inst_{tileName}_switch_matrix : {tileName}_switch_matrix
     Port Map(

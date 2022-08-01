@@ -10,6 +10,20 @@ class Port():
     yOffset: int
     destinationName: str
     wires: int
+    # totalWireAmount: int
+
+    # def __init__(self, direction, sourceName, xOffset, yOffset, destinationName, wires) -> None:
+    #     self.direction = direction
+    #     self.sourceName = sourceName
+    #     self.xOffset = xOffset
+    #     self.yOffset = yOffset
+    #     self.destinationName = destinationName
+    #     self.wires = wires
+    #     self.totalWireAmount = (
+    #         (abs(self.xOffset)+abs(self.yOffset))-1) * self.wires
+
+    def __repr__(self) -> str:
+        return f"{self.sourceName}->{self.destinationName}"
 
     def expandPortInfo(self, mode="SwitchMatrix"):
         inputs, outputs = [], []
@@ -53,6 +67,7 @@ class Port():
                     (abs(self.xOffset)+abs(self.yOffset))-1) * self.wires
         if startIndex == thisRange:
             thisRange = 1
+
         for i in range(startIndex, thisRange):
             if self.destinationName != "NULL":
                 outputs.append(
@@ -97,6 +112,11 @@ class Tile():
     matrixDir: str
     inputs: List[str]
     outputs: List[str]
+    internalInputs = List[str]
+    internalOutputs = List[str]
+    jumps: List[str]
+    belInputs: List[str]
+    belOutputs: List[str]
     globalConfigBits: int = 0
 
     def __repr__(self):
@@ -109,29 +129,54 @@ class Tile():
         self.matrixDir = matrixDir
         self.inputs = []
         self.outputs = []
+        self.internalInputs = []
+        self.internalOutputs = []
+        self.belInputs = []
+        self.belOutputs = []
+        self.jumps = []
 
         # adding ports in the order of normal port, bel port, jump port
         for port in self.portsInfo:
             if port.direction != "JUMP":
                 input, output = port.expandPortInfo(mode="AutoSwitchMatrix")
-                self.inputs += input
-                self.outputs += output
+                self.inputs = self.inputs + input
+                self.internalInputs = self.internalInputs + input
+                self.outputs = self.outputs + output
+                self.internalOutputs = self.internalOutputs + output
 
         for port in self.bels:
-            # IMPORTANT: the outputs of a BEL are the inputs to the switch matrix!
+            self.belInputs = self.belInputs + port.inputs
             self.inputs = self.inputs + port.inputs
-
-            # IMPORTANT: the inputs to a BEL are the outputs of the switch matrix!
+            self.belOutputs = self.belOutputs + port.outputs
             self.outputs = self.outputs + port.outputs
 
         for port in self.portsInfo:
             if port.direction == "JUMP":
                 input, output = port.expandPortInfo(mode="AutoSwitchMatrix")
-                self.inputs += input
-                self.outputs += output
+                self.jumps = input + output
+                self.inputs = self.inputs + input
+                self.outputs = self.outputs + output
 
         for b in self.bels:
             self.globalConfigBits += b.configBit
+
+    def getWestPorts(self) -> List[Port]:
+        return [p for p in self.portsInfo if p.direction == "WEST"]
+
+    def getEastPorts(self) -> List[Port]:
+        return [p for p in self.portsInfo if p.direction == "EAST"]
+
+    def getNorthPorts(self) -> List[Port]:
+        return [p for p in self.portsInfo if p.direction == "NORTH"]
+
+    def getSouthPorts(self) -> List[Port]:
+        return [p for p in self.portsInfo if p.direction == "SOUTH"]
+
+    def getTileInputNames(self) -> List[str]:
+        return [p.destinationName for p in self.portsInfo if p.destinationName != "NULL" and p.direction != "JUMP"]
+
+    def getTileOutputNames(self) -> List[str]:
+        return [p.sourceName for p in self.portsInfo if p.sourceName != "NULL" and p.direction != "JUMP"]
 
 
 @dataclass

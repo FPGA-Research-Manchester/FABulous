@@ -36,7 +36,7 @@ from fabric import *
 from parser import parseFabricCSV, parseMatrix
 
 # Default parameters (will be overwritten if defined in fabric between 'ParametersBegin' and 'ParametersEnd'
-#Parameters = [ 'ConfigBitMode', 'FrameBitsPerRow' ]
+# Parameters = [ 'ConfigBitMode', 'FrameBitsPerRow' ]
 ConfigBitMode = 'FlipFlopChain'
 FrameBitsPerRow = 32
 MaxFramesPerCol = 20
@@ -143,11 +143,11 @@ def GenerateTileVHDL(tile: Tile, entity, file):
     for b in tile.bels:
         for p in b.externalInput:
             if p not in sharedExternalPorts:
-                print(f"{'':<4}{p}:in STD_LOGIC -- EXTERNAL", file=file)
+                print(f"{'':<8}{p:<8}:{'in':<8} STD_LOGIC -- EXTERNAL", file=file)
 
         for p in b.externalOutput:
             if p not in sharedExternalPorts:
-                print(f"{'':<4}{p}:out STD_LOGIC -- EXTERNAL", file=file)
+                print(f"{'':<8}{p:<8}:{'out':<8} STD_LOGIC -- EXTERNAL", file=file)
 
     if ConfigBitMode == 'frame_based':
         if tile.globalConfigBits > 0:
@@ -947,76 +947,428 @@ def GenTileSwitchMatrixVHDL(tile: Tile, csvFile, outputFile):
     return
 
 
-def GenerateFabricVHDL(FabricFile, file, entity='eFPGA'):
+# def GenerateFabricVHDL(FabricFile, file, entity='eFPGA'):
+#     # There are of course many possibilities for generating the fabric.
+#     # I decided to generate a flat description as it may allow for a little easier debugging.
+#     # For larger fabrics, this may be an issue, but not for now.
+#     # We only have wires between two adjacent tiles in North, East, South, West direction.
+#     # So we use the output ports to generate wires.
+#     fabric = GetFabric(FabricFile)
+#     y_tiles = len(fabric)      # get the number of tiles in vertical direction
+#     # get the number of tiles in horizontal direction
+#     x_tiles = len(fabric[0])
+#     TileTypes = GetCellTypes(fabric)
+#     print('### Found the following tile types:\n', TileTypes)
+
+#     # VHDL header
+#     # entity hard-coded TODO
+
+#     GenerateVHDL_Header(file, entity,  MaxFramesPerCol=str(
+#         MaxFramesPerCol), FrameBitsPerRow=str(FrameBitsPerRow))
+#     # we first scan all tiles if those have IOs that have to go to top
+#     # the order of this scan is later maintained when instantiating the actual tiles
+#     print('\t-- External IO ports exported directly from the corresponding tiles', file=file)
+#     ExternalPorts = []
+#     SharedExternalPorts = []
+#     for y in range(y_tiles):
+#         for x in range(x_tiles):
+#             if (fabric[y][x]) != 'NULL':
+#                 # get the top dimension index that describes the tile type (given by fabric[y][x])
+#                 # for line in TileTypeOutputPorts[TileTypes.index(fabric[y][x])]:
+#                 CurrentTileExternalPorts = GetComponentPortsFromFile(
+#                     fabric[y][x]+'_tile.vhdl', port='external')
+#                 if CurrentTileExternalPorts != []:
+#                     for item in CurrentTileExternalPorts:
+#                         # we need the PortName and the PortDefinition (everything after the ':' separately
+#                         PortName = re.sub('\:.*', '', item)
+#                         substitutions = {" ": "", "\t": ""}
+#                         PortName = (replace(PortName, substitutions))
+#                         PortDefinition = re.sub('^.*\:', '', item)
+#                         if re.search('SHARED_PORT', item):
+#                             # for the entity, we define only the very first for all SHARED_PORTs of any name category
+#                             if PortName not in SharedExternalPorts:
+#                                 print('\t\t'+PortName+'\t:\t' +
+#                                       PortDefinition, file=file)
+#                                 SharedExternalPorts.append(PortName)
+#                             # we remember the used port name for the component instantiations to come
+#                             # for the instantiations, we have to keep track about all external ports
+#                             ExternalPorts.append(PortName)
+#                         else:
+#                             print('\t\t'+'Tile_X'+str(x)+'Y'+str(y)+'_' +
+#                                   PortName+'\t:\t'+PortDefinition, file=file)
+#                             # we remember the used port name for the component instantiations to come
+#                             # we are maintaining the here used Tile_XxYy prefix as a sanity check
+#                             # ExternalPorts = ExternalPorts + 'Tile_X'+str(x)+'Y'+str(y)+'_'+str(PortName)
+#                             ExternalPorts.append(
+#                                 'Tile_X'+str(x)+'Y'+str(y)+'_'+PortName)
+
+#     if ConfigBitMode == 'frame_based':
+#         print('\t\t FrameData:     in  STD_LOGIC_VECTOR( (FrameBitsPerRow * '+str(y_tiles) +
+#               ') -1 downto 0 );   -- CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register', file=file)
+#         print('\t\t FrameStrobe:   in  STD_LOGIC_VECTOR( (MaxFramesPerCol * '+str(x_tiles) +
+#               ') -1 downto 0 );   -- CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register ', file=file)
+#         GenerateVHDL_EntityFooter(file, entity, ConfigPort=False)
+#     else:
+#         GenerateVHDL_EntityFooter(file, entity)
+
+#     TileTypeOutputPorts = []
+#     for tile in TileTypes:
+#         PrintComponentDeclarationForFile(str(tile)+'_tile.vhdl', file)
+#         # we need the BEL ports (a little later)
+#         Inputs, Outputs = GetComponentPortsFromFile(str(tile)+'_tile.vhdl')
+#         TileTypeOutputPorts.append(Outputs)
+
+#     # VHDL signal declarations
+#     print('\n-- signal declarations\n', file=file)
+
+#     print('\n-- configuration signal declarations\n', file=file)
+
+#     if ConfigBitMode == 'FlipFlopChain':
+#         tile_counter = 0
+#         for y in range(y_tiles):
+#             for x in range(x_tiles):
+#                 # for the moment, we assume that all non "NULL" tiles are reconfigurable
+#                 # (i.e. are connected to the configuration shift register)
+#                 if (fabric[y][x]) != 'NULL':
+#                     tile_counter += 1
+#         print('signal\t'+'conf_data'+'\t:\tSTD_LOGIC_VECTOR(' +
+#               str(tile_counter)+' downto 0);', file=file)
+
+#     if ConfigBitMode == 'frame_based':
+#         #        for y in range(y_tiles):
+#         #            for x in range(x_tiles):
+#         #                if (fabric[y][x]) != 'NULL':
+#         #                    TileConfigBits = GetNoConfigBitsFromFile(str(fabric[y][x])+'_tile.vhdl')
+#         #                    if TileConfigBits != 'NULL' and int(TileConfigBits) != 0:
+#         #                        print('signal Tile_X'+str(x)+'Y'+str(y)+'_ConfigBits \t:\t std_logic_vector('+TileConfigBits+' -1 downto '+str(0)+' );', file=file)
+
+#         # FrameData       =>     Tile_Y3_FrameData,
+#         # FrameStrobe      =>     Tile_X1_FrameStrobe
+#         # MaxFramesPerCol : integer := 20;
+#         # FrameBitsPerRow : integer := 32;
+#         for y in range(y_tiles):
+#             print('signal Tile_Y'+str(y) +
+#                   '_FrameData \t:\t std_logic_vector(FrameBitsPerRow -1 downto 0);', file=file)
+#         for x in range(x_tiles):
+#             print('signal Tile_X'+str(x) +
+#                   '_FrameStrobe \t:\t std_logic_vector(MaxFramesPerCol -1 downto 0);', file=file)
+
+#     print('\n-- tile-to-tile signal declarations\n', file=file)
+#     for y in range(y_tiles):
+#         for x in range(x_tiles):
+#             if (fabric[y][x]) != 'NULL':
+#                 # get the top dimension index that describes the tile type (given by fabric[y][x])
+#                 # for line in TileTypeOutputPorts[TileTypes.index(fabric[y][x])]:
+#                 # for line in TileTypeOutputPorts[TileTypes.index(fabric[y][x])]:
+#                 # for line in TileTypeOutputPorts[TileTypes.index(fabric[y][x])]:
+#                 for line in TileTypeOutputPorts[TileTypes.index(fabric[y][x])]:
+#                     # line contains something like "E2BEG : std_logic_vector( 7 downto 0 )" so I use split on '('
+#                     SignalName, Vector = re.split('\(', line)
+#                     # print('DEBUG line: ', line, file=file)
+#                     # print('DEBUG SignalName: ', SignalName, file=file)
+#                     # print('DEBUG Vector: ', Vector, file=file)
+#                     # Vector = re.sub('--.*', '', Vector)
+
+#                     print('signal Tile_X'+str(x)+'Y'+str(y)+'_'+SignalName +
+#                           '\t:\t std_logic_vector('+Vector+';', file=file)
+
+#     # VHDL architecture body
+#     print('\nbegin\n', file=file)
+
+#     # top configuration data daisy chaining
+#     # this is copy and paste from tile code generation (so we can modify this here without side effects
+#     if ConfigBitMode == 'FlipFlopChain':
+#         print('-- top configuration data daisy chaining', file=file)
+#         print('conf_data(conf_data\'low) <= CONFin; -- conf_data\'low=0 and CONFin is from tile entity', file=file)
+#         print('CONFout <= conf_data(conf_data\'high); -- CONFout is from tile entity', file=file)
+
+#     if ConfigBitMode == 'frame_based':
+#         for y in range(y_tiles):
+#             print('Tile_Y'+str(y)+'_FrameData \t<=\t FrameData((FrameBitsPerRow*(' +
+#                   str(y)+'+1)) -1 downto FrameBitsPerRow*'+str(y)+');', file=file)
+#         for x in range(x_tiles):
+#             print('Tile_X'+str(x)+'_FrameStrobe \t<=\t FrameStrobe((MaxFramesPerCol*(' +
+#                   str(x)+'+1)) -1 downto MaxFramesPerCol*'+str(x)+');', file=file)
+
+#     # VHDL tile instantiations
+#     tile_counter = 0
+#     ExternalPorts_counter = 0
+#     print('-- tile instantiations\n', file=file)
+#     for y in range(y_tiles):
+#         for x in range(x_tiles):
+#             if (fabric[y][x]) != 'NULL':
+#                 EntityName = GetComponentEntityNameFromFile(
+#                     str(fabric[y][x])+'_tile.vhdl')
+#                 print('Tile_X'+str(x)+'Y'+str(y)+'_' +
+#                       EntityName+' : '+EntityName, file=file)
+#                 print('\tPort Map(', file=file)
+#                 TileInputs, TileOutputs = GetComponentPortsFromFile(
+#                     str(fabric[y][x])+'_tile.vhdl')
+#                 # print('DEBUG TileInputs: ', TileInputs)
+#                 # print('DEBUG TileOutputs: ', TileOutputs)
+#                 TilePorts = []
+#                 TilePortsDebug = []
+#                 # for connecting the instance, we write the tile ports in the order all inputs and all outputs
+#                 for port in TileInputs + TileOutputs:
+#                     # GetComponentPortsFromFile returns vector information that starts with "(..." and we throw that away
+#                     # However the vector information is still interesting for debug purpose
+#                     TilePorts.append(
+#                         re.sub(' ', '', (re.sub('\(.*', '', port, flags=re.IGNORECASE))))
+#                     TilePortsDebug.append(port)
+
+#                 # now we get the connecting input signals in the order NORTH EAST SOUTH WEST (order is given in fabric.csv)
+#                 # from the adjacent tiles. For example, a NorthEnd-port is connected to a SouthBeg-port on tile Y+1
+#                 # note that fabric[y][x] has its origin [0][0] in the top left corner
+#                 TileInputSignal = []
+#                 TileInputSignalCountPerDirection = []
+#                 # IMPORTANT: we have to go through the following in NORTH EAST SOUTH WEST order
+#                 # NORTH direction: get the NiBEG wires from tile y+1, because they drive NiEND
+#                 if y < (y_tiles-1):
+#                     if (fabric[y+1][x]) != 'NULL':
+#                         TileInputs, TileOutputs = GetComponentPortsFromFile(
+#                             str(fabric[y+1][x])+'_tile.vhdl', filter='NORTH')
+#                         for port in TileOutputs:
+#                             TileInputSignal.append(
+#                                 'Tile_X'+str(x)+'Y'+str(y+1)+'_'+port)
+#                         if TileOutputs == []:
+#                             TileInputSignalCountPerDirection.append(0)
+#                         else:
+#                             TileInputSignalCountPerDirection.append(
+#                                 len(TileOutputs))
+#                     else:
+#                         TileInputSignalCountPerDirection.append(0)
+#                 else:
+#                     TileInputSignalCountPerDirection.append(0)
+#                 # EAST direction: get the EiBEG wires from tile x-1, because they drive EiEND
+#                 if x > 0:
+#                     if (fabric[y][x-1]) != 'NULL':
+#                         TileInputs, TileOutputs = GetComponentPortsFromFile(
+#                             str(fabric[y][x-1])+'_tile.vhdl', filter='EAST')
+#                         for port in TileOutputs:
+#                             TileInputSignal.append(
+#                                 'Tile_X'+str(x-1)+'Y'+str(y)+'_'+port)
+#                         if TileOutputs == []:
+#                             TileInputSignalCountPerDirection.append(0)
+#                         else:
+#                             TileInputSignalCountPerDirection.append(
+#                                 len(TileOutputs))
+#                     else:
+#                         TileInputSignalCountPerDirection.append(0)
+#                 else:
+#                     TileInputSignalCountPerDirection.append(0)
+#                 # SOUTH direction: get the SiBEG wires from tile y-1, because they drive SiEND
+#                 if y > 0:
+#                     if (fabric[y-1][x]) != 'NULL':
+#                         TileInputs, TileOutputs = GetComponentPortsFromFile(
+#                             str(fabric[y-1][x])+'_tile.vhdl', filter='SOUTH')
+#                         for port in TileOutputs:
+#                             TileInputSignal.append(
+#                                 'Tile_X'+str(x)+'Y'+str(y-1)+'_'+port)
+#                         if TileOutputs == []:
+#                             TileInputSignalCountPerDirection.append(0)
+#                         else:
+#                             TileInputSignalCountPerDirection.append(
+#                                 len(TileOutputs))
+#                     else:
+#                         TileInputSignalCountPerDirection.append(0)
+#                 else:
+#                     TileInputSignalCountPerDirection.append(0)
+#                 # WEST direction: get the WiBEG wires from tile x+1, because they drive WiEND
+#                 if x < (x_tiles-1):
+#                     if (fabric[y][x+1]) != 'NULL':
+#                         TileInputs, TileOutputs = GetComponentPortsFromFile(
+#                             str(fabric[y][x+1])+'_tile.vhdl', filter='WEST')
+#                         for port in TileOutputs:
+#                             TileInputSignal.append(
+#                                 'Tile_X'+str(x+1)+'Y'+str(y)+'_'+port)
+#                         if TileOutputs == []:
+#                             TileInputSignalCountPerDirection.append(0)
+#                         else:
+#                             TileInputSignalCountPerDirection.append(
+#                                 len(TileOutputs))
+#                     else:
+#                         TileInputSignalCountPerDirection.append(0)
+#                 else:
+#                     TileInputSignalCountPerDirection.append(0)
+#                 # at this point, TileInputSignal is carrying all the driver signals from the surrounding tiles (the BEG signals of those tiles)
+#                 # for example when we are on Tile_X2Y2, the first entry could be "Tile_X2Y3_N1BEG( 3 downto 0 )"
+#                 # for element in TileInputSignal:
+#                     # print('DEBUG TileInputSignal :'+'Tile_X'+str(x)+'Y'+str(y), element)
+
+#                 # the output signals are named after the output ports
+#                 TileOutputSignal = []
+#                 TileInputsCountPerDirection = []
+#                 # as for the VHDL signal generation, we simply add a prefix like "Tile_X1Y0_" to the begin port
+#                 # for port in TileOutputs:
+#                 # TileOutputSignal.append('Tile_X'+str(x)+'Y'+str(y)+'_'+port)
+#                 if (fabric[y][x]) != 'NULL':
+#                     TileInputs, TileOutputs = GetComponentPortsFromFile(
+#                         str(fabric[y][x])+'_tile.vhdl', filter='NORTH')
+#                     for port in TileOutputs:
+#                         TileOutputSignal.append(
+#                             'Tile_X'+str(x)+'Y'+str(y)+'_'+port)
+#                     TileInputsCountPerDirection.append(len(TileInputs))
+#                     TileInputs, TileOutputs = GetComponentPortsFromFile(
+#                         str(fabric[y][x])+'_tile.vhdl', filter='EAST')
+#                     for port in TileOutputs:
+#                         TileOutputSignal.append(
+#                             'Tile_X'+str(x)+'Y'+str(y)+'_'+port)
+#                     TileInputsCountPerDirection.append(len(TileInputs))
+#                     TileInputs, TileOutputs = GetComponentPortsFromFile(
+#                         str(fabric[y][x])+'_tile.vhdl', filter='SOUTH')
+#                     for port in TileOutputs:
+#                         TileOutputSignal.append(
+#                             'Tile_X'+str(x)+'Y'+str(y)+'_'+port)
+#                     TileInputsCountPerDirection.append(len(TileInputs))
+#                     TileInputs, TileOutputs = GetComponentPortsFromFile(
+#                         str(fabric[y][x])+'_tile.vhdl', filter='WEST')
+#                     for port in TileOutputs:
+#                         TileOutputSignal.append(
+#                             'Tile_X'+str(x)+'Y'+str(y)+'_'+port)
+#                     TileInputsCountPerDirection.append(len(TileInputs))
+#                 # at this point, TileOutputSignal is carrying all the signal names that will be driven by the present tile
+#                 # for example when we are on Tile_X2Y2, the first entry could be "Tile_X2Y2_W1BEG( 3 downto 0 )"
+#                 # for element in TileOutputSignal:
+#                     # print('DEBUG TileOutputSignal :'+'Tile_X'+str(x)+'Y'+str(y), element)
+
+#                 if (fabric[y][x]) != 'NULL':    # looks like this conditional is redundant
+#                     TileInputs, TileOutputs = GetComponentPortsFromFile(
+#                         str(fabric[y][x])+'_tile.vhdl')
+#                 # example: W6END( 11 downto 0 ), N1BEG( 3 downto 0 ), ...
+#                 # meaning: the END-ports are the tile inputs followed by the actual tile output ports (typically BEG)
+#                 # this is essentially the left side (the component ports) of the component instantiation
+
+#                 CheckFailed = False
+#                 # sanity check: The number of input ports has to match the TileInputSignal per direction (N,E,S,W)
+#                 if (fabric[y][x]) != 'NULL':
+#                     for k in range(0, 4):
+
+#                         if TileInputsCountPerDirection[k] != TileInputSignalCountPerDirection[k]:
+#                             print('ERROR: component input missmatch in '+str(
+#                                 All_Directions[k])+' direction for Tile_X'+str(x)+'Y'+str(y)+' of type '+str(fabric[y][x]))
+#                             CheckFailed = True
+#                     if CheckFailed == True:
+#                         print('Error in function GenerateFabricVHDL')
+#                         print('DEBUG:TileInputs: ', TileInputs)
+#                         print('DEBUG:TileInputSignal: ', TileInputSignal)
+#                         print('DEBUG:TileOutputs: ', TileOutputs)
+#                         print('DEBUG:TileOutputSignal: ', TileOutputSignal)
+#                         # raise ValueError('Error in function GenerateFabricVHDL')
+#                 # the output ports are derived from the same list and should therefore match automatically
+
+#                 # for element in (TileInputs+TileOutputs):
+#                     # print('DEBUG TileInputs+TileOutputs :'+'Tile_X'+str(x)+'Y'+str(y)+'element:', element)
+
+#                 if (fabric[y][x]) != 'NULL':    # looks like this conditional is redundant
+#                     for k in range(0, len(TileInputs)):
+#                         PortName = re.sub('\(.*', '', TileInputs[k])
+#                         print('\t'+PortName+'\t=> ' +
+#                               TileInputSignal[k]+',', file=file)
+#                         # print('DEBUG_INPUT: '+PortName+'\t=> '+TileInputSignal[k]+',')
+#                     for k in range(0, len(TileOutputs)):
+#                         PortName = re.sub('\(.*', '', TileOutputs[k])
+#                         print('\t'+PortName+'\t=> ' +
+#                               TileOutputSignal[k]+',', file=file)
+#                         # print('DEBUG_OUTPUT: '+PortName+'\t=> '+TileOutputSignal[k]+',')
+
+#                 # Check if this tile uses IO-pins that have to be connected to the top-level entity
+#                 CurrentTileExternalPorts = GetComponentPortsFromFile(
+#                     fabric[y][x]+'_tile.vhdl', port='external')
+#                 if CurrentTileExternalPorts != []:
+#                     print(
+#                         '\t -- tile IO port which gets directly connected to top-level tile entity', file=file)
+#                     for item in CurrentTileExternalPorts:
+#                         # we need the PortName and the PortDefinition (everything after the ':' separately
+#                         PortName = re.sub('\:.*', '', item)
+#                         substitutions = {" ": "", "\t": ""}
+#                         PortName = (replace(PortName, substitutions))
+#                         PortDefinition = re.sub('^.*\:', '', item)
+#                         # ExternalPorts was populated when writing the fabric top level entity
+#                         print('\t\t'+PortName+' => ',
+#                               ExternalPorts[ExternalPorts_counter], ',', file=file)
+#                         ExternalPorts_counter += 1
+
+#                 if ConfigBitMode == 'FlipFlopChain':
+#                     GenerateVHDL_Conf_Instantiation(
+#                         file=file, counter=tile_counter, close=True)
+#                 if ConfigBitMode == 'frame_based':
+#                     if (fabric[y][x]) != 'NULL':
+#                         TileConfigBits = GetNoConfigBitsFromFile(
+#                             str(fabric[y][x])+'_tile.vhdl')
+#                         if TileConfigBits != 'NULL':
+#                             if int(TileConfigBits) == 0:
+
+#                                 # print('\t\t ConfigBits => (others => \'-\') );\n', file=file)
+
+#                                 # the next one is fixing the fact the the last port assignment in vhdl is not allowed to have a ','
+#                                 # this is a bit ugly, but well, vhdl is ugly too...
+#                                 last_pos = file.tell()
+#                                 for k in range(20):
+#                                     # scan character by character backwards and look for ','
+#                                     file.seek(last_pos - k)
+#                                     my_char = file.read(1)
+#                                     if my_char == ',':
+#                                         # place seek pointer to last ',' position and overwrite with a space
+#                                         file.seek(last_pos - k)
+#                                         print(' ', end='', file=file)
+#                                         break                            # stop scan
+
+#                                 # go back to usual...
+#                                 file.seek(0, os.SEEK_END)
+
+#                                 print('\t\t );\n', file=file)
+#                             else:
+#                                 print('\t\tFrameData  \t =>\t '+'Tile_Y' +
+#                                       str(y)+'_FrameData, ', file=file)
+#                                 print('\t\tFrameStrobe \t =>\t '+'Tile_X' +
+#                                       str(x)+'_FrameStrobe  ); \n', file=file)
+#                                 #print('\t\t ConfigBits => ConfigBits ( '+str(TileConfigBits)+' -1 downto '+str(0)+' ) );\n', file=file)
+#                                 ### BEL_ConfigBitsCounter = BEL_ConfigBitsCounter + int(BEL_ConfigBits)
+#                 tile_counter += 1
+#     print('\n'+'end Behavioral;'+'\n', file=file)
+#     return
+
+def GenerateFabricVHDL(fabric: Fabric, file, entity='eFPGA'):
     # There are of course many possibilities for generating the fabric.
     # I decided to generate a flat description as it may allow for a little easier debugging.
     # For larger fabrics, this may be an issue, but not for now.
     # We only have wires between two adjacent tiles in North, East, South, West direction.
     # So we use the output ports to generate wires.
-    fabric = GetFabric(FabricFile)
-    y_tiles = len(fabric)      # get the number of tiles in vertical direction
-    # get the number of tiles in horizontal direction
-    x_tiles = len(fabric[0])
-    TileTypes = GetCellTypes(fabric)
-    print('### Found the following tile types:\n', TileTypes)
 
     # VHDL header
-    # entity hard-coded TODO
-
-    GenerateVHDL_Header(file, entity,  MaxFramesPerCol=str(
-        MaxFramesPerCol), FrameBitsPerRow=str(FrameBitsPerRow))
+    GenerateVHDL_Header(file, entity,  maxFramesPerCol=str(
+        MaxFramesPerCol), frameBitsPerRow=str(FrameBitsPerRow))
     # we first scan all tiles if those have IOs that have to go to top
     # the order of this scan is later maintained when instantiating the actual tiles
-    print('\t-- External IO ports exported directly from the corresponding tiles', file=file)
-    ExternalPorts = []
-    SharedExternalPorts = []
-    for y in range(y_tiles):
-        for x in range(x_tiles):
-            if (fabric[y][x]) != 'NULL':
-                # get the top dimension index that describes the tile type (given by fabric[y][x])
-                # for line in TileTypeOutputPorts[TileTypes.index(fabric[y][x])]:
-                CurrentTileExternalPorts = GetComponentPortsFromFile(
-                    fabric[y][x]+'_tile.vhdl', port='external')
-                if CurrentTileExternalPorts != []:
-                    for item in CurrentTileExternalPorts:
-                        # we need the PortName and the PortDefinition (everything after the ':' separately
-                        PortName = re.sub('\:.*', '', item)
-                        substitutions = {" ": "", "\t": ""}
-                        PortName = (replace(PortName, substitutions))
-                        PortDefinition = re.sub('^.*\:', '', item)
-                        if re.search('SHARED_PORT', item):
-                            # for the entity, we define only the very first for all SHARED_PORTs of any name category
-                            if PortName not in SharedExternalPorts:
-                                print('\t\t'+PortName+'\t:\t' +
-                                      PortDefinition, file=file)
-                                SharedExternalPorts.append(PortName)
-                            # we remember the used port name for the component instantiations to come
-                            # for the instantiations, we have to keep track about all external ports
-                            ExternalPorts.append(PortName)
-                        else:
-                            print('\t\t'+'Tile_X'+str(x)+'Y'+str(y)+'_' +
-                                  PortName+'\t:\t'+PortDefinition, file=file)
-                            # we remember the used port name for the component instantiations to come
-                            # we are maintaining the here used Tile_XxYy prefix as a sanity check
-                            # ExternalPorts = ExternalPorts + 'Tile_X'+str(x)+'Y'+str(y)+'_'+str(PortName)
-                            ExternalPorts.append(
-                                'Tile_X'+str(x)+'Y'+str(y)+'_'+PortName)
 
-    if ConfigBitMode == 'frame_based':
-        print('\t\t FrameData:     in  STD_LOGIC_VECTOR( (FrameBitsPerRow * '+str(y_tiles) +
-              ') -1 downto 0 );   -- CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register', file=file)
-        print('\t\t FrameStrobe:   in  STD_LOGIC_VECTOR( (MaxFramesPerCol * '+str(x_tiles) +
-              ') -1 downto 0 );   -- CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register ', file=file)
+    portList = []
+    portTemplate = f"{' ':<8}""Tile_X{x}Y{y}_{portName} : {io} STD_LOGIC --EXTERNAL,"
+    for y, row in enumerate(fabric.tile):
+        for x, tile in enumerate(row):
+            if tile != None:
+                for bel in tile.bels:
+                    for i in bel.externalInput:
+                        portList.append(portTemplate.format(
+                            x=x, y=y, portName=i, io="in"))
+                    for i in bel.externalOutput:
+                        portList.append(portTemplate.format(
+                            x=x, y=y, portName=i, io="out"))
+
+    print(f"{' ':<4}Port (", file=file)
+    print(f"{' ':<4}-- External IO ports exported directly from the corresponding tiles", file=file)
+    print("\n".join(portList), file=file)
+
+    if ConfigBitMode == "frame_based":
+        print(
+            f"{' ':<8}FrameData   : in  STD_LOGIC_VECTOR( (FrameBitsPerRow * {len(fabric.tile[0])} -1 downto 0 ); -- CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register", file=file)
+        print(f"{' ':<8}FrameStrobe : in  STD_LOGIC_VECTOR( (MaxFramesPerCol * {len(fabric.tile)} ) -1 downto 0 );  -- CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register ", file=file)
         GenerateVHDL_EntityFooter(file, entity, ConfigPort=False)
     else:
         GenerateVHDL_EntityFooter(file, entity)
 
-    TileTypeOutputPorts = []
-    for tile in TileTypes:
-        PrintComponentDeclarationForFile(str(tile)+'_tile.vhdl', file)
-        # we need the BEL ports (a little later)
-        Inputs, Outputs = GetComponentPortsFromFile(str(tile)+'_tile.vhdl')
-        TileTypeOutputPorts.append(Outputs)
+    # TODO refactor
+    for t in fabric.tileDic:
+        generateComponentDeclarationForFile(f"{t}_tile.vhdl", file)
 
     # VHDL signal declarations
     print('\n-- signal declarations\n', file=file)
@@ -1024,53 +1376,36 @@ def GenerateFabricVHDL(FabricFile, file, entity='eFPGA'):
     print('\n-- configuration signal declarations\n', file=file)
 
     if ConfigBitMode == 'FlipFlopChain':
-        tile_counter = 0
-        for y in range(y_tiles):
-            for x in range(x_tiles):
-                # for the moment, we assume that all non "NULL" tiles are reconfigurable
-                # (i.e. are connected to the configuration shift register)
-                if (fabric[y][x]) != 'NULL':
-                    tile_counter += 1
-        print('signal\t'+'conf_data'+'\t:\tSTD_LOGIC_VECTOR(' +
-              str(tile_counter)+' downto 0);', file=file)
+        tileCounter = 0
+        for row in fabric.tile:
+            for t in row:
+                if t != None:
+                    tileCounter += 1
+        print(
+            f"signal conf_data :STD_LOGIC_VECTOR( {tileCounter} downto 0);", file=file)
 
     if ConfigBitMode == 'frame_based':
-        #        for y in range(y_tiles):
-        #            for x in range(x_tiles):
-        #                if (fabric[y][x]) != 'NULL':
-        #                    TileConfigBits = GetNoConfigBitsFromFile(str(fabric[y][x])+'_tile.vhdl')
-        #                    if TileConfigBits != 'NULL' and int(TileConfigBits) != 0:
-        #                        print('signal Tile_X'+str(x)+'Y'+str(y)+'_ConfigBits \t:\t std_logic_vector('+TileConfigBits+' -1 downto '+str(0)+' );', file=file)
-
         # FrameData       =>     Tile_Y3_FrameData,
         # FrameStrobe      =>     Tile_X1_FrameStrobe
         # MaxFramesPerCol : integer := 20;
         # FrameBitsPerRow : integer := 32;
-        for y in range(y_tiles):
-            print('signal Tile_Y'+str(y) +
-                  '_FrameData \t:\t std_logic_vector(FrameBitsPerRow -1 downto 0);', file=file)
-        for x in range(x_tiles):
-            print('signal Tile_X'+str(x) +
-                  '_FrameStrobe \t:\t std_logic_vector(MaxFramesPerCol -1 downto 0);', file=file)
+        for y in range(len(fabric.tile)):
+            print(
+                f"signal Tile_Y{y}_FrameData : STD_LOGIC_VECTOR (FrameBitsPerRow -1 downto 0);", file=file)
+        for x in range(len(fabric.tile[0])):
+            print(
+                f"signal Tile_X{x}_FrameStrobe : STD_LOGIC_VECTOR (MaxFramesPerCol -1 downto 0);", file=file)
 
     print('\n-- tile-to-tile signal declarations\n', file=file)
-    for y in range(y_tiles):
-        for x in range(x_tiles):
-            if (fabric[y][x]) != 'NULL':
-                # get the top dimension index that describes the tile type (given by fabric[y][x])
-                # for line in TileTypeOutputPorts[TileTypes.index(fabric[y][x])]:
-                # for line in TileTypeOutputPorts[TileTypes.index(fabric[y][x])]:
-                # for line in TileTypeOutputPorts[TileTypes.index(fabric[y][x])]:
-                for line in TileTypeOutputPorts[TileTypes.index(fabric[y][x])]:
-                    # line contains something like "E2BEG : std_logic_vector( 7 downto 0 )" so I use split on '('
-                    SignalName, Vector = re.split('\(', line)
-                    # print('DEBUG line: ', line, file=file)
-                    # print('DEBUG SignalName: ', SignalName, file=file)
-                    # print('DEBUG Vector: ', Vector, file=file)
-                    # Vector = re.sub('--.*', '', Vector)
-
-                    print('signal Tile_X'+str(x)+'Y'+str(y)+'_'+SignalName +
-                          '\t:\t std_logic_vector('+Vector+';', file=file)
+    for y, row in enumerate(fabric.tile):
+        for x, tile in enumerate(row):
+            if tile != None:
+                for p in tile.portsInfo:
+                    wireLength = (abs(p.xOffset)+abs(p.yOffset)) * p.wires-1
+                    if p.sourceName == "NULL" or p.destinationName == "NULL" or p.direction == "JUMP":
+                        continue
+                    print(
+                        f"signal Tile_X{x}Y{y}_{p.destinationName:<12} : STD_LOGIC_VECTOR ( {wireLength} downto 0 );", file=file)
 
     # VHDL architecture body
     print('\nbegin\n', file=file)
@@ -1078,255 +1413,130 @@ def GenerateFabricVHDL(FabricFile, file, entity='eFPGA'):
     # top configuration data daisy chaining
     # this is copy and paste from tile code generation (so we can modify this here without side effects
     if ConfigBitMode == 'FlipFlopChain':
-        print('-- top configuration data daisy chaining', file=file)
-        print('conf_data(conf_data\'low) <= CONFin; -- conf_data\'low=0 and CONFin is from tile entity', file=file)
-        print('CONFout <= conf_data(conf_data\'high); -- CONFout is from tile entity', file=file)
+        print("-- top configuration data daisy chaining", file=file)
+        print("conf_data(conf_data'low) <= CONFin; -- conf_data'low=0 and CONFin is from tile entity", file=file)
+        print("CONFout <= conf_data(conf_data'high); -- CONFout is from tile entity", file=file)
 
     if ConfigBitMode == 'frame_based':
-        for y in range(y_tiles):
-            print('Tile_Y'+str(y)+'_FrameData \t<=\t FrameData((FrameBitsPerRow*(' +
-                  str(y)+'+1)) -1 downto FrameBitsPerRow*'+str(y)+');', file=file)
-        for x in range(x_tiles):
-            print('Tile_X'+str(x)+'_FrameStrobe \t<=\t FrameStrobe((MaxFramesPerCol*(' +
-                  str(x)+'+1)) -1 downto MaxFramesPerCol*'+str(x)+');', file=file)
+        for y in range(len(fabric.tile)):
+            print(
+                f"Tile_Y{y}_FrameData <= FrameData((FrameBitsPerRow*({y}+1)) -1 downto FrameBitsPerRow*{y});", file=file)
+        for x in range(len(fabric.tile[0])):
+            print(
+                f"Tile_X{x}_FrameStrobe <= FrameStrobe((MaxFramesPerCol*({x}+1)) -1 downto MaxFramesPerCol*{x};", file=file)
 
     # VHDL tile instantiations
-    tile_counter = 0
-    ExternalPorts_counter = 0
+    tileCounter = 0
     print('-- tile instantiations\n', file=file)
-    for y in range(y_tiles):
-        for x in range(x_tiles):
-            if (fabric[y][x]) != 'NULL':
-                EntityName = GetComponentEntityNameFromFile(
-                    str(fabric[y][x])+'_tile.vhdl')
-                print('Tile_X'+str(x)+'Y'+str(y)+'_' +
-                      EntityName+' : '+EntityName, file=file)
-                print('\tPort Map(', file=file)
-                TileInputs, TileOutputs = GetComponentPortsFromFile(
-                    str(fabric[y][x])+'_tile.vhdl')
-                # print('DEBUG TileInputs: ', TileInputs)
-                # print('DEBUG TileOutputs: ', TileOutputs)
-                TilePorts = []
-                TilePortsDebug = []
-                # for connecting the instance, we write the tile ports in the order all inputs and all outputs
-                for port in TileInputs + TileOutputs:
-                    # GetComponentPortsFromFile returns vector information that starts with "(..." and we throw that away
-                    # However the vector information is still interesting for debug purpose
-                    TilePorts.append(
-                        re.sub(' ', '', (re.sub('\(.*', '', port, flags=re.IGNORECASE))))
-                    TilePortsDebug.append(port)
+    for y, row in enumerate(fabric.tile):
+        for x, tile in enumerate(row):
+            if tile == None:
+                continue
+            northTilePorts, southTilePorts, eastTilePorts, westTilePorts = [], [], [], []
+            northPorts, southPorts, eastPorts, westPorts = [], [], [], []
 
-                # now we get the connecting input signals in the order NORTH EAST SOUTH WEST (order is given in fabric.csv)
-                # from the adjacent tiles. For example, a NorthEnd-port is connected to a SouthBeg-port on tile Y+1
-                # note that fabric[y][x] has its origin [0][0] in the top left corner
-                TileInputSignal = []
-                TileInputSignalCountPerDirection = []
-                # IMPORTANT: we have to go through the following in NORTH EAST SOUTH WEST order
-                # NORTH direction: get the NiBEG wires from tile y+1, because they drive NiEND
-                if y < (y_tiles-1):
-                    if (fabric[y+1][x]) != 'NULL':
-                        TileInputs, TileOutputs = GetComponentPortsFromFile(
-                            str(fabric[y+1][x])+'_tile.vhdl', filter='NORTH')
-                        for port in TileOutputs:
-                            TileInputSignal.append(
-                                'Tile_X'+str(x)+'Y'+str(y+1)+'_'+port)
-                        if TileOutputs == []:
-                            TileInputSignalCountPerDirection.append(0)
-                        else:
-                            TileInputSignalCountPerDirection.append(
-                                len(TileOutputs))
-                    else:
-                        TileInputSignalCountPerDirection.append(0)
-                else:
-                    TileInputSignalCountPerDirection.append(0)
-                # EAST direction: get the EiBEG wires from tile x-1, because they drive EiEND
-                if x > 0:
-                    if (fabric[y][x-1]) != 'NULL':
-                        TileInputs, TileOutputs = GetComponentPortsFromFile(
-                            str(fabric[y][x-1])+'_tile.vhdl', filter='EAST')
-                        for port in TileOutputs:
-                            TileInputSignal.append(
-                                'Tile_X'+str(x-1)+'Y'+str(y)+'_'+port)
-                        if TileOutputs == []:
-                            TileInputSignalCountPerDirection.append(0)
-                        else:
-                            TileInputSignalCountPerDirection.append(
-                                len(TileOutputs))
-                    else:
-                        TileInputSignalCountPerDirection.append(0)
-                else:
-                    TileInputSignalCountPerDirection.append(0)
-                # SOUTH direction: get the SiBEG wires from tile y-1, because they drive SiEND
-                if y > 0:
-                    if (fabric[y-1][x]) != 'NULL':
-                        TileInputs, TileOutputs = GetComponentPortsFromFile(
-                            str(fabric[y-1][x])+'_tile.vhdl', filter='SOUTH')
-                        for port in TileOutputs:
-                            TileInputSignal.append(
-                                'Tile_X'+str(x)+'Y'+str(y-1)+'_'+port)
-                        if TileOutputs == []:
-                            TileInputSignalCountPerDirection.append(0)
-                        else:
-                            TileInputSignalCountPerDirection.append(
-                                len(TileOutputs))
-                    else:
-                        TileInputSignalCountPerDirection.append(0)
-                else:
-                    TileInputSignalCountPerDirection.append(0)
-                # WEST direction: get the WiBEG wires from tile x+1, because they drive WiEND
-                if x < (x_tiles-1):
-                    if (fabric[y][x+1]) != 'NULL':
-                        TileInputs, TileOutputs = GetComponentPortsFromFile(
-                            str(fabric[y][x+1])+'_tile.vhdl', filter='WEST')
-                        for port in TileOutputs:
-                            TileInputSignal.append(
-                                'Tile_X'+str(x+1)+'Y'+str(y)+'_'+port)
-                        if TileOutputs == []:
-                            TileInputSignalCountPerDirection.append(0)
-                        else:
-                            TileInputSignalCountPerDirection.append(
-                                len(TileOutputs))
-                    else:
-                        TileInputSignalCountPerDirection.append(0)
-                else:
-                    TileInputSignalCountPerDirection.append(0)
-                # at this point, TileInputSignal is carrying all the driver signals from the surrounding tiles (the BEG signals of those tiles)
-                # for example when we are on Tile_X2Y2, the first entry could be "Tile_X2Y3_N1BEG( 3 downto 0 )"
-                # for element in TileInputSignal:
-                    # print('DEBUG TileInputSignal :'+'Tile_X'+str(x)+'Y'+str(y), element)
+            inputSignalList = []
+            outputSignalList = []
+            if tile != None:
+                if 0 <= y - 1 < len(fabric.tile) - 1 and fabric.tile[y-1][x] != None:
+                    for p in fabric.tile[y-1][x].getSouthPorts():
+                        if p.sourceName != "NULL":
+                            wires = (abs(p.xOffset) +
+                                     abs(p.yOffset)) * p.wires - 1
+                            inputSignalList.append(
+                                (f"Tile_X{x}Y{y-1}_{p.sourceName}", wires))
+                if 0 <= x - 1 < len(fabric.tile[0]) - 1 and fabric.tile[y][x-1] != None:
+                    for p in fabric.tile[y][x-1].getEastPorts():
+                        if p.sourceName != "NULL":
+                            wires = (abs(p.xOffset) +
+                                     abs(p.yOffset)) * p.wires - 1
+                            inputSignalList.append(
+                                (f"Tile_X{x-1}Y{y}_{p.sourceName}", wires))
+                if 0 <= y + 1 < len(fabric.tile) and fabric.tile[y+1][x] != None:
+                    for p in fabric.tile[y+1][x].getNorthPorts():
+                        if p.sourceName != "NULL":
+                            wires = (abs(p.xOffset) +
+                                     abs(p.yOffset)) * p.wires - 1
+                            inputSignalList.append(
+                                (f"Tile_X{x}Y{y+1}_{p.sourceName}", wires))
 
-                # the output signals are named after the output ports
-                TileOutputSignal = []
-                TileInputsCountPerDirection = []
-                # as for the VHDL signal generation, we simply add a prefix like "Tile_X1Y0_" to the begin port
-                # for port in TileOutputs:
-                # TileOutputSignal.append('Tile_X'+str(x)+'Y'+str(y)+'_'+port)
-                if (fabric[y][x]) != 'NULL':
-                    TileInputs, TileOutputs = GetComponentPortsFromFile(
-                        str(fabric[y][x])+'_tile.vhdl', filter='NORTH')
-                    for port in TileOutputs:
-                        TileOutputSignal.append(
-                            'Tile_X'+str(x)+'Y'+str(y)+'_'+port)
-                    TileInputsCountPerDirection.append(len(TileInputs))
-                    TileInputs, TileOutputs = GetComponentPortsFromFile(
-                        str(fabric[y][x])+'_tile.vhdl', filter='EAST')
-                    for port in TileOutputs:
-                        TileOutputSignal.append(
-                            'Tile_X'+str(x)+'Y'+str(y)+'_'+port)
-                    TileInputsCountPerDirection.append(len(TileInputs))
-                    TileInputs, TileOutputs = GetComponentPortsFromFile(
-                        str(fabric[y][x])+'_tile.vhdl', filter='SOUTH')
-                    for port in TileOutputs:
-                        TileOutputSignal.append(
-                            'Tile_X'+str(x)+'Y'+str(y)+'_'+port)
-                    TileInputsCountPerDirection.append(len(TileInputs))
-                    TileInputs, TileOutputs = GetComponentPortsFromFile(
-                        str(fabric[y][x])+'_tile.vhdl', filter='WEST')
-                    for port in TileOutputs:
-                        TileOutputSignal.append(
-                            'Tile_X'+str(x)+'Y'+str(y)+'_'+port)
-                    TileInputsCountPerDirection.append(len(TileInputs))
-                # at this point, TileOutputSignal is carrying all the signal names that will be driven by the present tile
-                # for example when we are on Tile_X2Y2, the first entry could be "Tile_X2Y2_W1BEG( 3 downto 0 )"
-                # for element in TileOutputSignal:
-                    # print('DEBUG TileOutputSignal :'+'Tile_X'+str(x)+'Y'+str(y), element)
+                if 0 <= x + 1 < len(fabric.tile[0]) and fabric.tile[y][x-1] != None:
+                    for p in fabric.tile[y][x+1].getWestPorts():
+                        if p.sourceName != "NULL":
+                            wires = (abs(p.xOffset) +
+                                     abs(p.yOffset)) * p.wires - 1
+                            inputSignalList.append(
+                                (f"Tile_X{x+1}Y{y}_{p.sourceName}", wires))
 
-                if (fabric[y][x]) != 'NULL':    # looks like this conditional is redundant
-                    TileInputs, TileOutputs = GetComponentPortsFromFile(
-                        str(fabric[y][x])+'_tile.vhdl')
-                # example: W6END( 11 downto 0 ), N1BEG( 3 downto 0 ), ...
-                # meaning: the END-ports are the tile inputs followed by the actual tile output ports (typically BEG)
-                # this is essentially the left side (the component ports) of the component instantiation
+                for p in tile.getNorthPorts() + tile.getSouthPorts() + tile.getEastPorts() + tile.getWestPorts():
+                    if p.sourceName == "NULL":
+                        continue
+                    wires = (abs(p.xOffset) + abs(p.yOffset)) * p.wires - 1
+                    outputSignalList.append(
+                        (f"Tile_X{x}Y{y}_{p.sourceName}", wires))
 
-                CheckFailed = False
-                # sanity check: The number of input ports has to match the TileInputSignal per direction (N,E,S,W)
-                if (fabric[y][x]) != 'NULL':
-                    for k in range(0, 4):
+            tileInput = [n for n in tile.getTileInputNames(
+            ) if "GND" not in n and "VCC" not in n]
+            tileOutput = tile.getTileOutputNames()
+            portMap = []
+            portTemplate = f"{' ':<8}""{portFrom:<8} => {portTo} ( {wire} downto 0 )"
 
-                        if TileInputsCountPerDirection[k] != TileInputSignalCountPerDirection[k]:
-                            print('ERROR: component input missmatch in '+str(
-                                All_Directions[k])+' direction for Tile_X'+str(x)+'Y'+str(y)+' of type '+str(fabric[y][x]))
-                            CheckFailed = True
-                    if CheckFailed == True:
-                        print('Error in function GenerateFabricVHDL')
-                        print('DEBUG:TileInputs: ', TileInputs)
-                        print('DEBUG:TileInputSignal: ', TileInputSignal)
-                        print('DEBUG:TileOutputs: ', TileOutputs)
-                        print('DEBUG:TileOutputSignal: ', TileOutputSignal)
-                        # raise ValueError('Error in function GenerateFabricVHDL')
-                # the output ports are derived from the same list and should therefore match automatically
+            if len(inputSignalList) != len(tileInput):
+                raise ValueError(
+                    f"The internal input signal of tile {tile.name} is not the same length as the internal input signal of the tile it is connected to.\n")
 
-                # for element in (TileInputs+TileOutputs):
-                    # print('DEBUG TileInputs+TileOutputs :'+'Tile_X'+str(x)+'Y'+str(y)+'element:', element)
+            if len(outputSignalList) != len(tileOutput):
+                raise ValueError(
+                    f"The internal output signal of tile {tile.name} is not the same length as the internal output signal of the tile it is connected to.\n")
 
-                if (fabric[y][x]) != 'NULL':    # looks like this conditional is redundant
-                    for k in range(0, len(TileInputs)):
-                        PortName = re.sub('\(.*', '', TileInputs[k])
-                        print('\t'+PortName+'\t=> ' +
-                              TileInputSignal[k]+',', file=file)
-                        # print('DEBUG_INPUT: '+PortName+'\t=> '+TileInputSignal[k]+',')
-                    for k in range(0, len(TileOutputs)):
-                        PortName = re.sub('\(.*', '', TileOutputs[k])
-                        print('\t'+PortName+'\t=> ' +
-                              TileOutputSignal[k]+',', file=file)
-                        # print('DEBUG_OUTPUT: '+PortName+'\t=> '+TileOutputSignal[k]+',')
+            for iSignal, oSignal in zip(tileInput, inputSignalList):
+                portMap.append(portTemplate.format(
+                    portFrom=iSignal, portTo=oSignal[0], wire=oSignal[1]))
 
-                # Check if this tile uses IO-pins that have to be connected to the top-level entity
-                CurrentTileExternalPorts = GetComponentPortsFromFile(
-                    fabric[y][x]+'_tile.vhdl', port='external')
-                if CurrentTileExternalPorts != []:
-                    print(
-                        '\t -- tile IO port which gets directly connected to top-level tile entity', file=file)
-                    for item in CurrentTileExternalPorts:
-                        # we need the PortName and the PortDefinition (everything after the ':' separately
-                        PortName = re.sub('\:.*', '', item)
-                        substitutions = {" ": "", "\t": ""}
-                        PortName = (replace(PortName, substitutions))
-                        PortDefinition = re.sub('^.*\:', '', item)
-                        # ExternalPorts was populated when writing the fabric top level entity
-                        print('\t\t'+PortName+' => ',
-                              ExternalPorts[ExternalPorts_counter], ',', file=file)
-                        ExternalPorts_counter += 1
+            for iSignal, oSignal in zip(tileOutput, outputSignalList):
+                portMap.append(portTemplate.format(
+                    portFrom=iSignal, portTo=oSignal[0], wire=oSignal[1]))
 
+            externalPort = []
+            sharePort = set()
+
+            # getting the map for external signal of the tile
+            if tile != None:
+                for b in tile.bels:
+                    externalPort += b.externalInput
+                    externalPort += b.externalOutput
+                    sharePort.update(b.sharedPort)
+
+            portTemplate = f"{' ':<8}""{port:<10} => Tile_X{x}Y{y}_{port}"
+
+            if len(sharePort) + len(externalPort) > 0:
+                portMap.append(
+                    f"{' ':<8}-- tile IO port which gets directly connected to top-level tile entity")
+
+            for p in sharePort:
+                portMap.append(f"{' ':<8}{p[0]} => {p[0]}")
+
+            for p in externalPort:
+                portMap.append(portTemplate.format(port=p, x=x, y=y))
+
+            if tile != None:
                 if ConfigBitMode == 'FlipFlopChain':
                     GenerateVHDL_Conf_Instantiation(
-                        file=file, counter=tile_counter, close=True)
-                if ConfigBitMode == 'frame_based':
-                    if (fabric[y][x]) != 'NULL':
-                        TileConfigBits = GetNoConfigBitsFromFile(
-                            str(fabric[y][x])+'_tile.vhdl')
-                        if TileConfigBits != 'NULL':
-                            if int(TileConfigBits) == 0:
+                        file=file, counter=tileCounter, close=True)
+                elif ConfigBitMode == 'frame_based':
+                    if tile.globalConfigBits > 0:
+                        portMap.append(
+                            f"{' ':<8}FrameData   => Tile_Y{y}_FrameData")
+                        portMap.append(
+                            f"{' ':<8}FrameStrobe => Tile_X{x}_FrameStrobe")
 
-                                # print('\t\t ConfigBits => (others => \'-\') );\n', file=file)
+            print(f"Tile_X{x}Y{y}_{tile.name} : {tile.name}", file=file)
+            print(f"{' ':<4}Port Map (", file=file)
+            print(",\n".join(portMap), file=file)
+            print(f"{' ':<4});""\n", file=file)
+            tileCounter += 1
 
-                                # the next one is fixing the fact the the last port assignment in vhdl is not allowed to have a ','
-                                # this is a bit ugly, but well, vhdl is ugly too...
-                                last_pos = file.tell()
-                                for k in range(20):
-                                    # scan character by character backwards and look for ','
-                                    file.seek(last_pos - k)
-                                    my_char = file.read(1)
-                                    if my_char == ',':
-                                        # place seek pointer to last ',' position and overwrite with a space
-                                        file.seek(last_pos - k)
-                                        print(' ', end='', file=file)
-                                        break                            # stop scan
-
-                                # go back to usual...
-                                file.seek(0, os.SEEK_END)
-
-                                print('\t\t );\n', file=file)
-                            else:
-                                print('\t\tFrameData  \t =>\t '+'Tile_Y' +
-                                      str(y)+'_FrameData, ', file=file)
-                                print('\t\tFrameStrobe \t =>\t '+'Tile_X' +
-                                      str(x)+'_FrameStrobe  ); \n', file=file)
-                                #print('\t\t ConfigBits => ConfigBits ( '+str(TileConfigBits)+' -1 downto '+str(0)+' ) );\n', file=file)
-                                ### BEL_ConfigBitsCounter = BEL_ConfigBitsCounter + int(BEL_ConfigBits)
-                tile_counter += 1
-    print('\n'+'end Behavioral;'+'\n', file=file)
-    return
+    print("end Behavioral;", file=file)
 
 
 def takes_list(a_string, a_list):
@@ -1949,7 +2159,7 @@ def GenerateTileVerilog(tile_description, module, file):
         module_header_ports += ', UserCLK, UserCLKo'
     if ConfigBitMode == 'frame_based':
         if GlobalConfigBitsCounter > 0:
-            #module_header_ports += ', FrameData, FrameStrobe'
+            # module_header_ports += ', FrameData, FrameStrobe'
             module_header_ports += ', FrameData, FrameData_O, FrameStrobe, FrameStrobe_O'
         else:
             module_header_ports += ', FrameStrobe, FrameStrobe_O'
@@ -2056,8 +2266,8 @@ def GenerateTileVerilog(tile_description, module, file):
     # the rest is a shared text block
     if ConfigBitMode == 'frame_based':
         if GlobalConfigBitsCounter > 0:
-            #print('\tinput [FrameBitsPerRow-1:0] FrameData; //CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register', file=file)
-            #print('\tinput [MaxFramesPerCol-1:0] FrameStrobe; //CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register ', file=file)
+            # print('\tinput [FrameBitsPerRow-1:0] FrameData; //CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register', file=file)
+            # print('\tinput [MaxFramesPerCol-1:0] FrameStrobe; //CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register ', file=file)
             print('\tinput [FrameBitsPerRow-1:0] FrameData; //CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register', file=file)
             print('\toutput [FrameBitsPerRow-1:0] FrameData_O;', file=file)
             print('\tinput [MaxFramesPerCol-1:0] FrameStrobe; //CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register', file=file)
@@ -2109,7 +2319,7 @@ def GenerateTileVerilog(tile_description, module, file):
     # maybe even useful if we want to add a buffer here
     # if (Bel_Counter + NuberOfSwitchMatricesWithConfigPort) > 0
 
-    #print('\twire ['+str(BEL_counter+NuberOfSwitchMatricesWithConfigPort)+':0] conf_data;', file=file)
+    # print('\twire ['+str(BEL_counter+NuberOfSwitchMatricesWithConfigPort)+':0] conf_data;', file=file)
     if GlobalConfigBitsCounter > 0:
         print('\twire [NoConfigBits-1:0] ConfigBits;', file=file)
         print('\twire [NoConfigBits-1:0] ConfigBits_N;', file=file)
@@ -2129,13 +2339,13 @@ def GenerateTileVerilog(tile_description, module, file):
             print('\t);\n', file=file)
 
         for m in range(FrameBitsPerRow):
-            #print('\tgenvar m;', file=file)
-            #print('\tfor (m=0; m<FrameBitsPerRow; m=m+1) begin: data_buf', file=file)
+            # print('\tgenvar m;', file=file)
+            # print('\tfor (m=0; m<FrameBitsPerRow; m=m+1) begin: data_buf', file=file)
             print('\tmy_buf data_outbuf_'+str(m)+' (', file=file)
             print('\t.A(FrameData_O_i['+str(m)+']),', file=file)
             print('\t.X(FrameData_O['+str(m)+'])', file=file)
             print('\t);\n', file=file)
-            #print('\tend\n', file=file)
+            # print('\tend\n', file=file)
 
     print('\twire [MaxFramesPerCol-1:0] FrameStrobe_i;', file=file)
     print('\twire [MaxFramesPerCol-1:0] FrameStrobe_O_i;', file=file)
@@ -2149,13 +2359,13 @@ def GenerateTileVerilog(tile_description, module, file):
         print('\t)\n;', file=file)
 
     for n in range(MaxFramesPerCol):
-        #print('\tgenvar n;', file=file)
-        #print('\tfor (n=0; n<MaxFramesPerCol; n=n+1) begin: strobe_buf', file=file)
+        # print('\tgenvar n;', file=file)
+        # print('\tfor (n=0; n<MaxFramesPerCol; n=n+1) begin: strobe_buf', file=file)
         print('\tmy_buf strobe_outbuf_'+str(n)+' (', file=file)
         print('\t.A(FrameStrobe_O_i['+str(n)+']),', file=file)
         print('\t.X(FrameStrobe_O['+str(n)+'])', file=file)
         print('\t)\n;', file=file)
-        #print('\tend\n', file=file)
+        # print('\tend\n', file=file)
 
     for line in tile_description:
         if line[0] in ['NORTH', 'EAST', 'SOUTH', 'WEST']:
@@ -2174,8 +2384,8 @@ def GenerateTileVerilog(tile_description, module, file):
                       str(high_bound_index)+':'+str(line[wires])+'];\n', file=file)
 
                 for i in range(int(high_bound_index)-int(line[wires])+1):
-                    #print('\tgenvar '+line[0][0]+'_index;', file=file)
-                    #print('\tfor ('+line[0][0]+'_index=0; '+line[0][0]+'_index<='+str(high_bound_index)+'-'+str(line[wires])+'; '+line[0][0]+'_index='+line[0][0]+'_index+1) begin: '+line[0][0]+'_buf', file=file)
+                    # print('\tgenvar '+line[0][0]+'_index;', file=file)
+                    # print('\tfor ('+line[0][0]+'_index=0; '+line[0][0]+'_index<='+str(high_bound_index)+'-'+str(line[wires])+'; '+line[0][0]+'_index='+line[0][0]+'_index+1) begin: '+line[0][0]+'_buf', file=file)
                     print('\tmy_buf '+line[destination_name] +
                           '_inbuf_'+str(i)+' (', file=file)
                     print('\t.A('+line[destination_name] +
@@ -2183,18 +2393,18 @@ def GenerateTileVerilog(tile_description, module, file):
                     print(
                         '\t.X('+line[destination_name]+'_i['+str(i+int(line[wires]))+'])', file=file)
                     print('\t);\n', file=file)
-                #print('\tend\n', file=file)
+                # print('\tend\n', file=file)
 
                 for j in range(int(high_bound_index)-int(line[wires])+1):
-                    #print('\tgenvar '+line[0][0]+'_index;', file=file)
-                    #print('\tfor ('+line[0][0]+'_index=0; '+line[0][0]+'_index<='+str(high_bound_index)+'-'+str(line[wires])+'; '+line[0][0]+'_index='+line[0][0]+'_index+1) begin: '+line[0][0]+'_buf', file=file)
+                    # print('\tgenvar '+line[0][0]+'_index;', file=file)
+                    # print('\tfor ('+line[0][0]+'_index=0; '+line[0][0]+'_index<='+str(high_bound_index)+'-'+str(line[wires])+'; '+line[0][0]+'_index='+line[0][0]+'_index+1) begin: '+line[0][0]+'_buf', file=file)
                     print('\tmy_buf '+line[source_name] +
                           '_outbuf_'+str(j)+' (', file=file)
                     print('\t.A('+line[source_name] +
                           '_i['+str(j)+']),', file=file)
                     print('\t.X('+line[source_name]+'['+str(j)+'])', file=file)
                     print('\t);\n', file=file)
-                #print('\tend\n', file=file)
+                # print('\tend\n', file=file)
 
     print('\tclk_buf inst_clk_buf(.A(UserCLK), .X(UserCLKo));', file=file)
     # top configuration data daisy chaining
@@ -2281,7 +2491,7 @@ def GenerateTileVerilog(tile_description, module, file):
                     line[VHDL_file_position])
                 if BEL_ConfigBits != 'NULL':
                     if int(BEL_ConfigBits) == 0:
-                        #print('\t.ConfigBits(0)', file=file)
+                        # print('\t.ConfigBits(0)', file=file)
                         last_pos = file.tell()
                         for k in range(20):
                             # scan character by character backwards and look for ','
@@ -2299,7 +2509,7 @@ def GenerateTileVerilog(tile_description, module, file):
                     else:
                         print('\t.ConfigBits(ConfigBits['+str(BEL_ConfigBitsCounter + int(
                             BEL_ConfigBits))+'-1:'+str(BEL_ConfigBitsCounter)+'])', file=file)
-                        #print('\t.ConfigBits(ConfigBits_N['+str(BEL_ConfigBitsCounter + int(BEL_ConfigBits))+'-1:'+str(BEL_ConfigBitsCounter)+'])', file=file)
+                        # print('\t.ConfigBits(ConfigBits_N['+str(BEL_ConfigBitsCounter + int(BEL_ConfigBits))+'-1:'+str(BEL_ConfigBitsCounter)+'])', file=file)
                         print('\t);\n', file=file)
                         BEL_ConfigBitsCounter = BEL_ConfigBitsCounter + \
                             int(BEL_ConfigBits)
@@ -2564,7 +2774,7 @@ def GenerateSuperTileVerilog(super_tile_description, module, file):
         print(line_print, file=file)
     for line_print in external_port_list:
         print(line_print, file=file)
-    #GenerateVerilog_PortsFooter(file, module)
+    # GenerateVerilog_PortsFooter(file, module)
     print('//signal declarations', file=file)
     for line_print in wire_list:
         print(line_print, file=file)
@@ -2870,8 +3080,8 @@ def GenerateSuperTileVerilog(super_tile_description, module, file):
                                     print('\t.FrameStrobe_O('+'Tile_X'+str(x) +
                                           'Y'+str(y)+'_FrameStrobe_O)', file=file)
                                 print('\t);\n', file=file)
-                                #print('\t\t ConfigBits => ConfigBits ( '+str(TileConfigBits)+' -1 downto '+str(0)+' ) );\n', file=file)
-                                ### BEL_ConfigBitsCounter = BEL_ConfigBitsCounter + int(BEL_ConfigBits)
+                                # print('\t\t ConfigBits => ConfigBits ( '+str(TileConfigBits)+' -1 downto '+str(0)+' ) );\n', file=file)
+                                # BEL_ConfigBitsCounter = BEL_ConfigBitsCounter + int(BEL_ConfigBits)
                 tile_counter += 1
     print('\n'+'endmodule', file=file)
 
@@ -2915,7 +3125,7 @@ def GenerateFabricVerilog(FabricFile, file, module='eFPGA'):
     module_header_files = []
     TileTypeOutputPorts = []
     for tile in TileTypes:
-        #PrintComponentDeclarationForFile(str(tile)+'_tile.vhdl', file)
+        # PrintComponentDeclarationForFile(str(tile)+'_tile.vhdl', file)
         module_header_files.append(str(tile)+'_tile.v')
         # we need the BEL ports (a little later)
         Inputs, Outputs = GetComponentPortsFromFile(str(tile)+'_tile.vhdl')
@@ -3317,7 +3527,7 @@ def GenerateFabricVerilog(FabricFile, file, module='eFPGA'):
                             # print('DEBUG TileOutputSignal :'+'Tile_X'+str(x)+'Y'+str(y), element)
 
                         # if (fabric[y][x]) != 'NULL':    # looks like this conditional is redundant
-                            #TileInputs, TileOutputs = GetComponentPortsFromFile(str(fabric[y][x])+'_tile.vhdl')
+                            # TileInputs, TileOutputs = GetComponentPortsFromFile(str(fabric[y][x])+'_tile.vhdl')
                         # example: W6END( 11 downto 0 ), N1BEG( 3 downto 0 ), ...
                         # meaning: the END-ports are the tile inputs followed by the actual tile output ports (typically BEG)
                         # this is essentially the left side (the component ports) of the component instantiation
@@ -3389,7 +3599,7 @@ def GenerateFabricVerilog(FabricFile, file, module='eFPGA'):
                                         str(fabric[y][x])+'_tile.vhdl')
                                     if TileConfigBits != 'NULL':
                                         if int(TileConfigBits) == 0:
-                                            #f.write('`ifndef EMULATION_MODE\n')
+                                            # f.write('`ifndef EMULATION_MODE\n')
                                             if y == y_tiles-1:
                                                 if bot_edge:
                                                     f.write(
@@ -3414,7 +3624,7 @@ def GenerateFabricVerilog(FabricFile, file, module='eFPGA'):
                                                             '\t.'+port_prefix+'FrameStrobe_O('+'Tile_X'+str(x)+'Y'+str(y)+'_FrameStrobe_O),\n')
                                             # f.write('`endif\n')
                                         else:
-                                            #f.write('`ifdef EMULATION_MODE\n')
+                                            # f.write('`ifdef EMULATION_MODE\n')
                                             # f.write('\t.'+port_prefix+'Emulate_Bitstream('+'`Tile_X'+str(x)+'Y'+str(y)+'_Emulate_Bitstream)\n')
                                             # f.write('`else\n')
                                             if x == 0:  # left_edge
@@ -3710,23 +3920,23 @@ def GenerateFabricVerilog(FabricFile, file, module='eFPGA'):
 
                                 # print('\t);\n', file=file)
                                 if y == y_tiles-1:
-                                    #print('\t.FrameData('+'Tile_Y'+str(y)+'_FrameData), ' , file=file)
-                                    #print('\t.FrameData_O('+'Tile_X'+str(x)+'Y'+str(y)+'_FrameData_O), ' , file=file)
+                                    # print('\t.FrameData('+'Tile_Y'+str(y)+'_FrameData), ' , file=file)
+                                    # print('\t.FrameData_O('+'Tile_X'+str(x)+'Y'+str(y)+'_FrameData_O), ' , file=file)
                                     print('\t.FrameStrobe('+'Tile_X' +
                                           str(x)+'_FrameStrobe),', file=file)
                                     print('\t.FrameStrobe_O('+'Tile_X'+str(x)+'Y' +
                                           str(y)+'_FrameStrobe_O)\n\t);\n', file=file)
                                 elif y != y_tiles-1:
                                     if fabric[y+1][x] == 'NULL':
-                                        #print('\t.FrameData('+'Tile_Y'+str(y)+'_FrameData), ' , file=file)
-                                        #print('\t.FrameData_O('+'Tile_X'+str(x)+'Y'+str(y)+'_FrameData_O), ' , file=file)
+                                        # print('\t.FrameData('+'Tile_Y'+str(y)+'_FrameData), ' , file=file)
+                                        # print('\t.FrameData_O('+'Tile_X'+str(x)+'Y'+str(y)+'_FrameData_O), ' , file=file)
                                         print('\t.FrameStrobe('+'Tile_X' +
                                               str(x)+'_FrameStrobe),', file=file)
                                         print(
                                             '\t.FrameStrobe_O('+'Tile_X'+str(x)+'Y'+str(y)+'_FrameStrobe_O)\n\t);\n', file=file)
                                     else:
-                                        #print('\t.FrameData('+'Tile_X'+str(x-1)+'Y'+str(y)+'_FrameData_O), ' , file=file)
-                                        #print('\t.FrameData_O('+'Tile_X'+str(x)+'Y'+str(y)+'_FrameData_O), ' , file=file)
+                                        # print('\t.FrameData('+'Tile_X'+str(x-1)+'Y'+str(y)+'_FrameData_O), ' , file=file)
+                                        # print('\t.FrameData_O('+'Tile_X'+str(x)+'Y'+str(y)+'_FrameData_O), ' , file=file)
                                         print(
                                             '\t.FrameStrobe('+'Tile_X'+str(x)+'Y'+str(y+1)+'_FrameStrobe_O),', file=file)
                                         print(
@@ -3826,8 +4036,8 @@ def GenerateFabricVerilog(FabricFile, file, module='eFPGA'):
                                                 '\t.FrameStrobe('+'Tile_X'+str(x)+'Y'+str(y+1)+'_FrameStrobe_O),', file=file)
                                             print(
                                                 '\t.FrameStrobe_O('+'Tile_X'+str(x)+'Y'+str(y)+'_FrameStrobe_O)\n\t);\n', file=file)
-                                #print('\t\t ConfigBits => ConfigBits ( '+str(TileConfigBits)+' -1 downto '+str(0)+' ) );\n', file=file)
-                                ### BEL_ConfigBitsCounter = BEL_ConfigBitsCounter + int(BEL_ConfigBits)
+                                # print('\t\t ConfigBits => ConfigBits ( '+str(TileConfigBits)+' -1 downto '+str(0)+' ) );\n', file=file)
+                                # BEL_ConfigBitsCounter = BEL_ConfigBitsCounter + int(BEL_ConfigBits)
                 tile_counter += 1
     for supertile_file in supertile_files:
         lines_seen = set()  # holds lines already seen
@@ -3871,7 +4081,7 @@ def GetVerilogDeclarationForFile(VHDL_file_name):
             # but only if the following is not true
             if re.search('NumberOfConfigBits:0', line, flags=re.IGNORECASE):
                 ConfigPortUsed = 0
-    #print('', file=file)
+    # print('', file=file)
     return ConfigPortUsed
 
 
@@ -4179,7 +4389,7 @@ def genFabricObject(fabric: list):
                                      "yoffset": wire[3], "destination": wire[4], "wire-count": wire[5]})
             cTile.wires = wires
             cTile.x = j
-            #cTile.y = archFabric.height - i -1
+            # cTile.y = archFabric.height - i -1
             cTile.y = i
 
             cTile.bels = belList
@@ -5674,7 +5884,7 @@ def genVPRModelConstraints(archObject: Fabric):
                 # These names are, at time of writing, generated with unique_subckt_name() in vpr/src/base/read_blif.cpp
                 if bel == "OutPass4_frame_config":
                     constraintString += f'    <partition name="Tile_{tileLoc}_{let}">\n'
-                    #constraintString += f'      <add_atom name_pattern="Tile_{tileLoc}_{prefix}I0"/>\n'
+                    # constraintString += f'      <add_atom name_pattern="Tile_{tileLoc}_{prefix}I0"/>\n'
                     constraintString += f'      <add_atom name_pattern="unnamed_subckt{unnamedCount}"/>\n'
                     unnamedCount += 1
                     constraintString += f'      <add_region x_low="{cx}" y_low="{cy}" x_high="{cx}" y_high="{cy}" subtile="{num}"/>\n'
@@ -5771,12 +5981,12 @@ def genBitstreamSpec(archObject: Fabric):
 
     BelMap["RegFile_32x4"] = RegFilemap
 
-    #DoneTypes = []
+    # DoneTypes = []
 
     # NOTE: THIS METHOD HAS BEEN CHANGED FROM A PREVIOUS IMPLEMENTATION SO PLEASE BEAR THIS IN MIND
     # To account for cascading and termination, this now creates a separate map for every tile, as opposed to every cellType
     for row in archObject.tiles:
-        #curTile = getTileByType(archObject, cellType)
+        # curTile = getTileByType(archObject, cellType)
         for curTile in row:
             cellType = curTile.tileType
             if cellType == "NULL":
@@ -5816,7 +6026,7 @@ def genBitstreamSpec(archObject: Fabric):
                 encode_i = 0
                 for i, char in enumerate(maskDict[int(line[1])]):
                     if char != '0':
-                        #encodeDict[int(line[1])][i] = configEncode[encode_i]
+                        # encodeDict[int(line[1])][i] = configEncode[encode_i]
                         encodeDict[int(configEncode[encode_i])] = (
                             31 - i) + (32 * int(line[1]))
                         encode_i += 1
@@ -6109,11 +6319,11 @@ for item in ParametersFromFile:
 # from StackOverflow  config.get("set", "var_name")
 # ConfigBitMode    frame_based
 # config.get("frame_based", "ConfigBitMode")
-### config = ConfigParser.ConfigParser()
+# config = ConfigParser.ConfigParser()
 # config.read("fabric.ini")
-### var_a = config.get("myvars", "var_a")
-### var_b = config.get("myvars", "var_b")
-### var_c = config.get("myvars", "var_c")
+# var_a = config.get("myvars", "var_a")
+# var_b = config.get("myvars", "var_b")
+# var_c = config.get("myvars", "var_c")
 print('DEBUG Parameters: ', ConfigBitMode, FrameBitsPerRow)
 
 TileTypes = GetCellTypes(fabric)
@@ -6219,13 +6429,15 @@ if args.GenTileVerilog or args.run_all:
 if args.GenFabricVHDL or args.run_all:
     print('### Generate the Fabric VHDL descriptions ')
     FileHandler = open(f'{out_dir}/fabric.vhdl', 'w+')
-    GenerateFabricVHDL(FabricFile, FileHandler)
+    fabric = parseFabricCSV(args.fabric_csv)
+    GenerateFabricVHDL(fabric, FileHandler)
     FileHandler.close()
 
 if args.GenFabricVerilog or args.run_all:
     print('### Generate the Fabric Verilog descriptions')
     FileHandler = open(f'{out_dir}/fabric.v', 'w+')
-    fabric_top = GenerateFabricVerilog(FabricFile, FileHandler)
+    fabric = parseFabricCSV(args.fabric_csv)
+    fabric_top = GenerateFabricVerilog(fabric, FileHandler)
     FileHandler.close()
 
 if args.CSV2list:
@@ -6243,7 +6455,7 @@ if args.GenNextpnrModel:
     fabricObject = genFabricObject(fabric)
     pipFile = open(f"{out_dir}/pips.txt", "w")
     belFile = open(f"{out_dir}/bel.txt", "w")
-    #pairFile = open("npnroutput/wirePairs.csv", "w")
+    # pairFile = open("npnroutput/wirePairs.csv", "w")
     templateFile = open(f"{out_dir}/template.v", "w")
     constraintFile = open(f"{out_dir}/template.pcf", "w")
 

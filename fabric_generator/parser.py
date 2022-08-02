@@ -3,7 +3,7 @@ import re
 from copy import deepcopy
 import itertools
 import collections
-from typing import List, Tuple
+from typing import List, Literal, Tuple
 
 
 def parseFabricCSV(fileName: str) -> Fabric:
@@ -16,11 +16,19 @@ def parseFabricCSV(fileName: str) -> Fabric:
         file = re.sub(r"#.*", "", file)
 
     # read in the csv file and part them
-    fabricDescription = re.search(
-        r"FabricBegin(.*?)FabricEnd", file, re.MULTILINE | re.DOTALL).group(1)
+    if fabricDescription := re.search(
+            r"FabricBegin(.*?)FabricEnd", file, re.MULTILINE | re.DOTALL):
+        fabricDescription = fabricDescription.group(1)
+    else:
+        raise ValueError(
+            'ERROR: cannot find FabricBegin and FabricEnd in csv file')
 
-    parameters = re.search(
-        r"ParametersBegin(.*?)ParametersEnd", file, re.MULTILINE | re.DOTALL).group(1)
+    if parameters := re.search(
+            r"ParametersBegin(.*?)ParametersEnd", file, re.MULTILINE | re.DOTALL):
+        parameters = parameters.group(1)
+    else:
+        raise ValueError(
+            'ERROR: cannot find ParametersBegin and ParametersEnd in csv file')
 
     tilesData = re.findall(r"TILE(.*?)EndTILE", file,
                            re.MULTILINE | re.DOTALL)
@@ -111,7 +119,13 @@ def parseFabricCSV(fileName: str) -> Fabric:
         if not i:
             continue
         if i[0].startswith("ConfigBitMode"):
-            configBitMode = i[1]
+            if i[1] == "frame_based":
+                configBitMode = "frame_based"
+            elif i[1] == "FlipFlopChain":
+                configBitMode = "FlipFlopChain"
+            else:
+                raise ValueError(
+                    f"Invalid config bit mode {i[1]} in parameters. Valid options are frame_based and FlipFlopChain")
         elif i[0].startswith("FrameBitsPerRow"):
             frameBitsPerRow = int(i[1])
         elif i[0].startswith("FrameBitsPerColumn"):
@@ -121,7 +135,13 @@ def parseFabricCSV(fileName: str) -> Fabric:
         elif i[0].startswith("GenerateDelayInSwitchMatrix"):
             generateDelayInSwitchMatrix = int(i[1])
         elif i[0].startswith("MultiplexerStyle"):
-            multiplexerStyle = i[1]
+            if i[1] == "custom":
+                multiplexerStyle = "custom"
+            elif i[1] == "generic":
+                multiplexerStyle = "generic"
+            else:
+                raise ValueError(
+                    f"Invalid multiplexer style {i[1]} in parameters. Valid options are custom and generic")
         elif i[0].startswith("SuperTileEnable"):
             superTileEnable = i[1] == "TRUE"
         else:
@@ -167,8 +187,8 @@ def parseList(fileName: str) -> list:
 
 def expandListPorts(port, PortList):
     # a leading '[' tells us that we have to expand the list
-    if re.search('\[', port):
-        if not re.search('\]', port):
+    if "[" in port:
+        if "]" not in port:
             raise ValueError(
                 '\nError in function ExpandListPorts: cannot find closing ]\n')
         # port.find gives us the first occurrence index in a string
@@ -201,8 +221,13 @@ def parseFileHDL(filename, belPrefix="", filter="ALL"):
     with open(filename, "r") as f:
         file = f.read()
 
-    portSection = re.search(r"port.*?\((.*?)\);", file,
-                            re.MULTILINE | re.DOTALL | re.IGNORECASE).group(1)
+    portSection = ""
+    if result := re.search(r"port.*?\((.*?)\);", file,
+                           re.MULTILINE | re.DOTALL | re.IGNORECASE):
+        portSection = result.group(1)
+    else:
+        raise ValueError(
+            f"Could not find port section in file {filename}")
 
     preGlobal, postGlobal = portSection.split("-- GLOBAL")
 

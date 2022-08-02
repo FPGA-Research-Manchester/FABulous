@@ -4638,7 +4638,7 @@ def genNextpnrModel(archObject: Fabric, generatePairs = True):
                     cType = bel
                 belsStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)), let, cType, ",".join(nports))) + "\n"
                 #Add constraints to fix pin location (based on template generated in genVerilogTemplate)
-                if bel == "IO_1_bidirectional_frame_config_pass" or "InPass4_frame_config" or "OutPass4_frame_config":
+                if bel in ["IO_1_bidirectional_frame_config_pass", "InPass4_frame_config", "OutPass4_frame_config"]:
                     belName = f"Tile_{tileLoc}_{let}"
                     constraintStr += f"set_io {belName} {tileLoc}.{let}\n"
             

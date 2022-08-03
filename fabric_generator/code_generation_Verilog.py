@@ -1,7 +1,8 @@
 from re import S
 from typing import Literal
-from fabric import Tile
+from fabric import Tile, Bel
 import math
+import re
 ConfigBitMode = 'FlipFlopChain'
 FrameBitsPerRow = 32
 MaxFramesPerCol = 20
@@ -69,10 +70,15 @@ class VerilogWriter():
     def addNewLine(self):
         self._add("")
 
-    def addComment(self, comment, onNewLine=False, end="\n", indentLevel=0) -> None:
+    def addComment(self, comment, onNewLine=False, end="", indentLevel=0) -> None:
         if onNewLine:
             self._add("")
-        self._add(f"{' ':<{indentLevel*4}}" + f"// {comment}"f"{end}")
+        if self._content:
+            self._content[-1] += f"{' ':<{indentLevel*4}}" + \
+                f"//{comment}"f"{end}"
+        else:
+            self._add(f"{' ':<{indentLevel*4}}" +
+                      f"-- {comment}"f"{end}")
 
     def addHeader(self, name, package='', maxFramesPerCol='', frameBitsPerRow='', ConfigBitMode='FlipFlopChain', indentLevel=0):
         self._add(f"module {name}", indentLevel)
@@ -132,6 +138,40 @@ class VerilogWriter():
 
     def addLogicEnd(self, indentLevel=0):
         pass
+
+    def addInstantiation(self, compName, compInsName, compPort, signal, indentLevel=0):
+        if len(compPort) != len(signal):
+            raise ValueError(
+                f"Number of ports and signals do not match: {compPort} != {signal}")
+
+        self._add(f"{compName} {compInsName} (", indentLevel=indentLevel)
+        connectPair = []
+        for i in range(len(compPort)):
+            connectPair.append(f".{compPort[i]}({signal[i]})")
+
+        self._add(
+            (",\n"f"{' ':<{4*(indentLevel + 1)}}").join(connectPair), indentLevel=indentLevel + 1)
+        self._add(");", indentLevel=indentLevel)
+        self.addNewLine()
+
+    def addGeneratorStart(self, loopName, variableName, start, end, indentLevel=0):
+        self._add(
+            f"{loopName}: for {variableName} in {start} to {end} generate", indentLevel=indentLevel)
+
+    def addGeneratorEnd(self, indentLevel=0):
+        self._add("end generate;", indentLevel)
+
+    def addComponentDeclarationForFile(self, fileName):
+        configPortUsed = 0  # 1 means is used
+        with open(fileName, 'r') as f:
+            data = f.read()
+
+        if result := re.search(r"NumberOfConfigBits.*?(\d+)", data, flags=re.IGNORECASE):
+            configPortUsed = 1
+            if result.group(1) == '0':
+                configPortUsed = 0
+
+        return configPortUsed
 
     def addShiftRegister(self, configBits, indentLevel=0):
         template = f"""
@@ -274,6 +314,121 @@ LHQD1 Inst_{frameName}_bit{frameBitsPerRow} (
                                        frameBitsPerRow=frameBitsPerRow,
                                        frame=frameIndex,
                                        configBit=configBit))
+
+    def addBELInstantiations(self, bel: Bel, configBitCounter, mode="frame_based", belCounter=0):
+        belTemplate = """
+{entity} Inst_{prefix}{entity} (
+{portList}
+    // I/O primitive pins go to tile top level entity (not further parsed)
+{globalAndConfigBits}
+);
+    """
+        # internal port
+        portList = []
+        globalAndConfigBits = []
+        for port in bel.inputs + bel.outputs:
+            port = re.sub(rf"{bel.prefix}", "", port)
+            portList.append(f"{' ':<4}.{port}({bel.prefix}{port}),")
+
+        # normal external port
+        for port in bel.externalInput + bel.externalOutput:
+            if port not in bel.sharedPort:
+                globalAndConfigBits.append(
+                    f".{' ':<4}{port}({bel.prefix}{port})")
+
+        # shared port
+        # top level I/Os (if any) just get connected directly
+        for ports in bel.sharedPort:
+            globalAndConfigBits.append(f"{' ':<4}.{ports[0]}({ports[0]})")
+
+        if mode == "frame_based":
+            globalAndConfigBits.append(
+                f"{' ':<4}.ConfigBits(ConfigBits[{configBitCounter+bel.configBit}-1:{configBitCounter}])")
+        else:
+            self.add_Conf_Instantiation(belCounter, close=True)
+
+        self._add(belTemplate.format(prefix=bel.prefix,
+                                     entity=bel.src.split(
+                                         "/")[-1].split(".")[0],
+                                     portList='\n'.join(portList),
+                                     globalAndConfigBits=',\n'.join(globalAndConfigBits)))
+
+    def add_Conf_Instantiation(self, counter, close=True):
+        confTemplate = """
+        // GLOBAL all primitive pins for configuration (not further parsed)
+            .MODE(Mode),
+            .CONFin(conf_data({counter})),
+            .CONFout(conf_data({counter2})),
+            .CLK(CLK)
+            {end}
+    """
+        self._add(confTemplate.format(counter=counter,
+                                      counter2=counter+1,
+                                      end='' if close else ');'))
+
+    def addSwitchMatrixInstantiation(self, tile: Tile, configBitCounter, switchMatrixConfigPort, belCounter, mode='frame_based'):
+        switchTemplate = """
+// switch matrix component instantiation
+Inst_{tileName}_switch_matrix {tileName}_switch_matrix( 
+{portMapList}
+{configBit}
+    );
+"""
+        portInputIndexed = []
+        portOutputIndexed = []
+        portTopInput = []
+        portTopOutputs = []
+        jumpWire = []
+        # get indexed version of the port of the tile
+        for p in tile.portsInfo:
+            if p.direction != "JUMP":
+                input, output = p.expandPortInfo(
+                    mode="AutoSwitchMatrixIndexed")
+                portInputIndexed += input
+                portOutputIndexed += output
+                input, output = p.expandPortInfo(mode="AutoTopIndexed")
+                portTopInput += input
+                portTopOutputs += output
+            else:
+                input, output = p.expandPortInfo(
+                    mode="AutoSwitchMatrixIndexed")
+                input = [i for i in input if "GND" not in i and "VCC" not in i]
+                jumpWire += input
+
+        belOutputs = []
+        belInputs = []
+
+        for b in tile.bels:
+            belOutputs += b.outputs
+            belInputs += b.inputs
+        inoutPair = zip([i for i in (tile.outputs + tile.inputs) if "GND" not in i and "VCC" not in i],
+                        (portOutputIndexed + belOutputs + jumpWire + portTopInput + belInputs + jumpWire))
+        portMapList = []
+        for i, o in inoutPair:
+            o = o.replace("(", "[").replace(")", "]")
+            portMapList.append(f"{' ':<8}.{i}({o})")
+
+        configBit = ""
+        if switchMatrixConfigPort > 0:
+            if mode == "FlipFlopChain":
+                self._add(switchTemplate.format(tileName=tile.name,
+                                                portMapList=",\n".join(
+                                                    portMapList),
+                                                configBit=""))
+                self.add_Conf_Instantiation(counter=belCounter, close=True)
+            if mode == "frame_based":
+                if tile.globalConfigBits > 0:
+                    configBit = f"{' ':<8}.ConfigBits(ConfigBits[{tile.globalConfigBits} - 1:{configBitCounter}])"
+                    configBit += "\n"f"{' ':<8}.ConfigBits_N(ConfigBits_N[{tile.globalConfigBits} - 1:{configBitCounter}])"
+                    self._add(switchTemplate.format(tileName=tile.name,
+                                                    portMapList=",\n".join(
+                                                        portMapList)+",",
+                                                    configBit=configBit))
+                else:
+                    self._add(switchTemplate.format(tileName=tile.name,
+                                                    portMapList=",\n".join(
+                                                        portMapList),
+                                                    configBit=configBit))
 
 
 def GenerateVerilog_Header(module_header_ports, file, module, package='', NoConfigBits='0', MaxFramesPerCol='NULL', FrameBitsPerRow='NULL', module_header_files=[]):

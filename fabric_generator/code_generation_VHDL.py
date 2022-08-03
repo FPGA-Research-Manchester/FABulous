@@ -1,5 +1,4 @@
-from email import header
-from typing import Literal
+from typing import Literal, Tuple
 from fabric import Fabric, Tile, Port, Bel
 import os
 import math
@@ -74,10 +73,15 @@ class VHDLWriter():
     def addNewLine(self):
         self._add("")
 
-    def addComment(self, comment, onNewLine=False, end="\n", indentLevel=0) -> None:
+    def addComment(self, comment, onNewLine=False, end="", indentLevel=0) -> None:
         if onNewLine:
             self._add("")
-        self._add(f"{' ':<{indentLevel*4}}" + f"-- {comment}"f"{end}")
+        if self._content:
+            self._content[-1] += f"{' ':<{indentLevel*4}}" + \
+                f"-- {comment}"f"{end}"
+        else:
+            self._add(f"{' ':<{indentLevel*4}}" +
+                      f"-- {comment}"f"{end}")
 
     def addHeader(self, name, package='', maxFramesPerCol='', frameBitsPerRow='', ConfigBitMode='FlipFlopChain', indentLevel=0):
         #   library template
@@ -123,18 +127,67 @@ class VHDLWriter():
     def addConstant(self, name, value, indentLevel=0):
         self._add(f"constant {name} : STD_LOGIC := '{value}';", indentLevel)
 
-    def addConnectionVector(self, name, width, indentLevel=0):
-        self._add(
-            f"signal {name} : STD_LOGIC_VECTOR( { width } - 1 downto 0 );", indentLevel)
-
     def addConnectionScalar(self, name, indentLevel=0):
         self._add(f"signal {name} : STD_LOGIC;", indentLevel)
 
+    def addConnectionVector(self, name, width, end=0, indentLevel=0):
+        self._add(
+            f"signal {name} : STD_LOGIC_VECTOR( { width } downto {end} );", indentLevel)
+
     def addLogicStart(self, indentLevel=0):
-        self._add(f"begin", indentLevel)
+        self._add("\n"f"begin""\n", indentLevel)
 
     def addLogicEnd(self, indentLevel=0):
-        self._add(f"end", indentLevel)
+        self._add("\n"f"end""\n", indentLevel)
+
+    def addAssignScalar(self, left, right, indentLevel=0):
+        self._add(f"{left} <= {right};", indentLevel)
+
+    def addAssignVector(self, left, right, widthL, widthR, indentLevel=0):
+        self._add(
+            f"{left} <= {right}( {widthL} downto {widthR} );", indentLevel)
+
+    def addInstantiation(self, compName, compInsName, compPort, signal, indentLevel=0):
+        if len(compPort) != len(signal):
+            raise ValueError(
+                f"Number of ports and signals do not match: {compPort} != {signal}")
+
+        self._add(f"{compInsName} : {compName}", indentLevel=indentLevel)
+        self._add(f"Port map(", indentLevel=indentLevel + 1)
+        connectPair = []
+        for i in range(len(compPort)):
+            connectPair.append(f"{compPort[i]} => {signal[i]}")
+
+        self._add(
+            (",\n"f"{' ':<{4*(indentLevel + 2)}}").join(connectPair), indentLevel=indentLevel + 2)
+        self._add(");", indentLevel=indentLevel + 1)
+        self.addNewLine()
+
+    def addGeneratorStart(self, loopName, variableName, start, end, indentLevel=0):
+        self._add(
+            f"{loopName}: for {variableName} in {start} to {end} generate", indentLevel=indentLevel)
+
+    def addGeneratorEnd(self, indentLevel=0):
+        self._add("end generate;", indentLevel)
+
+    def addComponentDeclarationForFile(self, fileName):
+        configPortUsed = 0  # 1 means is used
+        with open(fileName, 'r') as f:
+            data = f.read()
+
+        if result := re.search(r"NumberOfConfigBits.*?(\d+)", data, flags=re.IGNORECASE):
+            configPortUsed = 1
+            if result.group(1) == '0':
+                configPortUsed = 0
+
+        if result := re.search(r"^entity.*?end entity.*?;",
+                               data, flags=re.MULTILINE | re.DOTALL):
+            result = result.group(0)
+            result = result.replace("entity", "component")
+
+        self._add(result)
+        self.addNewLine()
+        return configPortUsed
 
     def addFlipFlopChain(self, configBitCounter):
         template = f"""
@@ -171,13 +224,6 @@ CONFout <= ConfigBits(ConfigBits'high);
 
     """
         self._add(template, indentLevel)
-
-    def addAssignScalar(self, left, right, indentLevel=0):
-        self._add(f"{left} <= {right};", indentLevel)
-
-    def addAssignVector(self, left, right, widthL, widthR, indentLevel=0):
-        self._add(
-            f"{left} <= {right}( {widthL} downto {widthR} );", indentLevel)
 
     def addMux(self, muxStyle, muxSize, tileName, portName, portList, oldConfigBitstreamPosition, configBitstreamPosition, delay):
         # we have full custom MUX-4 and MUX-16 for which we have to generate code like:
@@ -250,32 +296,6 @@ Inst_{frameName}_bit{frameBitsPerRow} : LHQD1
     """
         self._add(latchTemplate)
 
-    def addComponentDeclarationForFile(self, fileName):
-        configPortUsed = 0  # 1 means is used
-        with open(fileName, 'r') as f:
-            data = f.read()
-
-        if result := re.search(r"NumberOfConfigBits.*?(\d+)", data, flags=re.IGNORECASE):
-            configPortUsed = 1
-            if result.group(1) == '0':
-                configPortUsed = 0
-
-        if result := re.search(r"^entity.*?end entity.*?;$",
-                               data, flags=re.MULTILINE | re.DOTALL):
-            result = result.group(0)
-            result = result.replace("entity", "component")
-
-        self._add(result)
-        return configPortUsed
-
-    def addConfigMemInstantiation(self, name):
-        self._add(f"Inst_{name}_ConfigMem : {name}_ConfigMem")
-        self._add(f"Port Map( ", indentLevel=1)
-        self._add(f"FrameData   => FrameData,", indentLevel=2)
-        self._add(f"FrameStrobe => FrameStrobe,", indentLevel=2)
-        self._add(f"ConfigBits  => ConfigBits", indentLevel=2)
-        self._add(");")
-
     def addBELInstantiations(self, bel: Bel, configBitCounter, mode="frame_based", belCounter=0):
         belTemplate = """
 Inst_{prefix}{entity} : {entity}
@@ -328,7 +348,7 @@ Inst_{prefix}{entity} : {entity}
                                       counter2=counter+1,
                                       end='' if close else ');'))
 
-    def addSwitchMatrixInstruction(self, tile: Tile, configBitCounter, switchMatrixConfigPort, belCounter, mode='frame_based'):
+    def addSwitchMatrixInstantiation(self, tile: Tile, configBitCounter, switchMatrixConfigPort, belCounter, mode='frame_based'):
         switchTemplate = """
 -- switch matrix component instantiation
 Inst_{tileName}_switch_matrix : {tileName}_switch_matrix
@@ -390,36 +410,6 @@ Inst_{tileName}_switch_matrix : {tileName}_switch_matrix
                                                     portMapList=",\n".join(
                                                         portMapList),
                                                     configBit=configBit))
-
-
-def GenerateVHDL_Header(file, entity, package='', noConfigBits='0', maxFramesPerCol='', frameBitsPerRow=''):
-    #   library template
-    headerTemplate = """
-library IEEE;
-use IEEE.STD_LOGIC_1164.ALL;
-use IEEE.NUMERIC_STD.ALL;
-{package}
-entity {entity} is
-    Generic (
-        {maxFramesPerCol}
-        {frameBitsPerRow}
-        NoConfigBits : integer := {noConfigBits}
-    );
-"""
-    if maxFramesPerCol != '':
-        maxFramesPerCol = f"MaxFramesPerCol : integer := {maxFramesPerCol};"
-    else:
-        maxFramesPerCol = f"-- NOT SET MaxFramesPerCol : integer := {maxFramesPerCol};"
-
-    if frameBitsPerRow != '':
-        frameBitsPerRow = f"FrameBitsPerRow : integer := {frameBitsPerRow};"
-    else:
-        frameBitsPerRow = f"-- NOT SET FrameBitsPerRow : integer := {frameBitsPerRow};"
-    print(headerTemplate.format(package=package,
-                                entity=entity,
-                                noConfigBits=noConfigBits,
-                                maxFramesPerCol=maxFramesPerCol,
-                                frameBitsPerRow=frameBitsPerRow), file=file)
 
 
 def PrintTileComponentPort(tile_description, entity, direction, file):

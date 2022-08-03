@@ -84,6 +84,7 @@ class Port():
 class Bel():
     src: str
     prefix: str
+    name: str
     inputs: List[str]
     outputs: List[str]
     externalInput: List[str]
@@ -95,6 +96,7 @@ class Bel():
     def __init__(self, src, prefix, internal, external, configPort, sharedPort, configBit):
         self.src = src
         self.prefix = prefix
+        self.name = src.split("/")[-1].split(".")[0]
         self.inputs = [p for p, io in internal if io == "in"]
         self.outputs = [p for p, io in internal if io == "out"]
         self.externalInput = [p for p, io in external if io == "in"]

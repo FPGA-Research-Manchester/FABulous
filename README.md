@@ -53,9 +53,9 @@ Before you run the flow for the first time, you must generate the basic files us
 cd fabric_generator
 ./create_basic_files.sh ../fabric_files/generic/fabric.csv
 ```
-Then use the following command to build the entire FPGA fabric in both VHDL and Verilog:
+Then use the following command to build the entire FPGA fabric in both VHDL and Verilog (the example has 8 columns and 14 rows):
 ```
-./run_fab_flow.sh
+./run_fab_flow.sh 8 14
 ```
 You are now ready to emulate or synthesise with the netlists in ```/vhdl_output``` or ```/verilog_output```.
 

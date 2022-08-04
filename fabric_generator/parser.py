@@ -102,6 +102,34 @@ def parseFabricCSV(fileName: str) -> Fabric:
                 f"Tile {i} is not used in the fabric. Removing from tile dictionary.")
             del tileDic[i]
 
+    superTileDic = {}
+    # parse the super tile
+    for t in superTile:
+        description = t.split("\n")
+        name = description[0].split(",")[1]
+        tileMap = []
+        tiles = []
+        for i in description[1:-1]:
+            line = i.split(",")
+            line = [i for i in line if i != "" and i != " "]
+            row = []
+            for j in line:
+                if j in tileDic:
+                    t = deepcopy(tileDic[j])
+                    row.append(t)
+                    if t not in tiles:
+                        tiles.append(t)
+                elif j == "Null" or j == "NULL" or j == "None":
+                    row.append(None)
+                else:
+
+                    raise ValueError(
+                        f"The super tile {name} contains definitions that are not tiles or Null.")
+            tileMap.append(row)
+
+        superTileDic[name] = SuperTile(name, tiles, tileMap)
+
+    # parse the parameters
     height = 0
     width = 0
     configBitMode = "frame_based"
@@ -112,7 +140,6 @@ def parseFabricCSV(fileName: str) -> Fabric:
     multiplexerStyle = "custom"
     superTileEnable = True
 
-    # parse the parameters
     for i in parameters:
         i = i.split(",")
         i = [j for j in i if j != ""]
@@ -153,7 +180,7 @@ def parseFabricCSV(fileName: str) -> Fabric:
     width = len(fabricTiles[0])
 
     return Fabric(fabricTiles, height, width, configBitMode, frameBitsPerRow, maxFramesPerCol,
-                  package, generateDelayInSwitchMatrix, multiplexerStyle, superTileEnable, tileDic)
+                  package, generateDelayInSwitchMatrix, multiplexerStyle, superTileEnable, tileDic, superTileDic)
 
 
 def parseList(fileName: str) -> list:

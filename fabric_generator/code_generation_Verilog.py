@@ -128,7 +128,7 @@ class VerilogWriter():
 
     def addConnectionVector(self, name, width, indentLevel=0):
         self._add(
-            f"wire[{width}-1:0] {name};", indentLevel)
+            f"wire[{width}:0] {name};", indentLevel)
 
     def addConnectionScalar(self, name):
         self._add(f"wire {name};")

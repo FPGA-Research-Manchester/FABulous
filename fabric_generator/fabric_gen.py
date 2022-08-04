@@ -244,7 +244,6 @@ def generateConfigMem(tile: Tile, configMemCsv, writer: Union[VHDLWriter, Verilo
     writer.addLogicEnd()
     writer.addDesignDescriptionEnd()
     writer.writeToFile()
-    return
 
 
 def genTileSwitchMatrix(tile: Tile, csvFile: str, writer: Union[VHDLWriter, VerilogWriter]) -> None:
@@ -534,7 +533,7 @@ def generateTile(tile: Tile, writer: Union[VHDLWriter, VerilogWriter]):
     for i in tile.bels:
         if i.src not in BEL_VHDL_riles_processed:
             BEL_VHDL_riles_processed.append(i.src)
-        writer.addComponentDeclarationForFile(i.src)
+            writer.addComponentDeclarationForFile(i.src)
 
     # insert switch matrix component declaration
     # specified in the fabric csv file after the 'MATRIX' key word
@@ -721,6 +720,267 @@ def generateTile(tile: Tile, writer: Union[VHDLWriter, VerilogWriter]):
     # TODO require further refactoring. In the code_generation contains logic that related to the switch matrix instantiation, which should be refactor out to here
     writer.addSwitchMatrixInstantiation(
         tile, belConfigBitsCounter, switchMatrixConfigPort, belCounter)
+    writer.addDesignDescriptionEnd()
+    writer.writeToFile()
+
+
+def generateSuperTile(superTile: SuperTile, writer: Union[VHDLWriter, VerilogWriter]):
+    tiles = [y for x in superTile.tileMap for y in x if y != None]
+    # for tile in tiles:
+    #     with open(tile.matrixDir, "r") as f:
+    #         f = f.read()
+    #         if configBit := re.search(r"-- NumberOfConfigBits: (\d+)", f):
+    #             configBit = int(configBit.group(1))
+    #             tile.globalConfigBits += configBit
+
+    # GenerateVHDL_Header(file, entity, NoConfigBits=str(GlobalConfigBitsCounter))
+    writer.addHeader(f"{superTile.name}")
+    writer.addParameterStart(indentLevel=1)
+    writer.addParameter("MaxFramesPerCol", "integer",
+                        MaxFramesPerCol, indentLevel=2)
+    writer.addParameter("FrameBitsPerRow", "integer",
+                        FrameBitsPerRow, indentLevel=2)
+    writer.addParameter("NoConfigBits", "integer", 0, indentLevel=2)
+    writer.addParameterEnd(indentLevel=1)
+    writer.addPortStart(indentLevel=1)
+
+    portsAround = []
+    # find all the ports that around the super tile
+    for y, row in enumerate(superTile.tileMap):
+        for x, tile in enumerate(row):
+            if y - 1 < 0 or superTile.tileMap[y-1][x] == None:
+                portsAround.append((tile.getNorthPorts(), x, y))
+            if x + 1 >= len(superTile.tileMap[y]) or superTile.tileMap[y][x+1] == None:
+                portsAround.append((tile.getEastPorts(), x, y))
+            if y + 1 >= len(superTile.tileMap) or superTile.tileMap[y+1][x] == None:
+                portsAround.append((tile.getSouthPorts(), x, y))
+            if x - 1 < 0 or superTile.tileMap[y][x-1] == None:
+                portsAround.append((tile.getWestPorts(), x, y))
+
+    commentTemplate = "wires:{wires} X_offset:{X_offset} Y_offset:{Y_offset} source_name:{sourceName} destination_name:{destinationName}"
+    for i, x, y in portsAround:
+        if i:
+            writer.addComment(
+                f"Tile_X{x}Y{y}_{i[0].direction}", onNewLine=True, indentLevel=1)
+            for p in i:
+                if p.sourceName == "NULL":
+                    continue
+                wire = (abs(p.xOffset) + abs(p.yOffset)) * p.wires - 1
+                writer.addPortVector(p.sourceName, "out", wire, indentLevel=2)
+                writer.addComment(commentTemplate.format(
+                    wires=p.wires, X_offset=p.xOffset, Y_offset=p.yOffset, sourceName=p.sourceName, destinationName=p.destinationName), onNewLine=False)
+
+            for p in i:
+                if p.destinationName == "NULL":
+                    continue
+                wire = (abs(p.xOffset) + abs(p.yOffset)) * p.wires - 1
+                writer.addPortVector(
+                    p.destinationName, "in", wire, indentLevel=2)
+                writer.addComment(commentTemplate.format(
+                    wires=p.wires, X_offset=p.xOffset, Y_offset=p.yOffset, sourceName=p.sourceName, destinationName=p.destinationName), onNewLine=False)
+
+    # add tile external bel port
+    writer.addComment("Tile IO ports from BELs", onNewLine=True, indentLevel=1)
+    for i in superTile.tiles:
+        for b in i.bels:
+            for p in b.externalInput:
+                writer.addPortScalar(p, "out", indentLevel=2)
+            for p in b.externalOutput:
+                writer.addPortScalar(p, "in", indentLevel=2)
+            for p in b.sharedPort:
+                writer.addPortScalar(p[0], p[1], indentLevel=2)
+
+    # add config port
+    if ConfigBitMode == "frame_based":
+        for y, row in enumerate(superTile.tileMap):
+            for x, tile in enumerate(row):
+                if y - 1 < 0 or superTile.tileMap[y-1][x] == None:
+                    writer.addPortVector(
+                        f"Tile_X{x}Y{y}_FrameStrobe_O", "out", "MaxFramePerCol-1", indentLevel=2)
+                    writer.addComment("CONFIG_PORT", onNewLine=False)
+                if x + 1 >= len(superTile.tileMap[y]) or superTile.tileMap[y][x+1] == None:
+                    writer.addPortVector(
+                        f"Tile_X{x}Y{y}_FrameData_O", "out", "FrameBitsPerRow-1", indentLevel=2)
+                    writer.addComment("CONFIG_PORT", onNewLine=False)
+                if y + 1 >= len(superTile.tileMap) or superTile.tileMap[y+1][x] == None:
+                    writer.addPortVector(
+                        f"Tile_X{x}Y{y}_FrameStrobe", "in", "MaxFramePerCol-1", indentLevel=2)
+                    writer.addComment("CONFIG_PORT", onNewLine=False)
+                if x - 1 < 0 or superTile.tileMap[y][x-1] == None:
+                    writer.addPortVector(
+                        f"Tile_X{x}Y{y}_FrameData", "in", "FrameBitsPerRow-1", indentLevel=2)
+                    writer.addComment("CONFIG_PORT", onNewLine=False)
+
+    writer.addPortEnd()
+    writer.addHeaderEnd(f"{superTile.name}")
+    writer.addDesignDescriptionStart(f"{superTile.name}")
+    writer.addNewLine()
+
+    BEL_VHDL_riles_processed = []
+    for t in superTile.tiles:
+        # This is only relevant to VHDL code generation, will not affect Verilog code generation
+        writer.addComponentDeclarationForFile(f"{t.name}_tile.vhdl")
+
+    # find all internal connections
+    internalConnections = []
+    for y, row in enumerate(superTile.tileMap):
+        for x, tile in enumerate(row):
+            if 0 <= y - 1 < len(superTile.tileMap) and superTile.tileMap[y-1][x] != None:
+                internalConnections.append((tile.getNorthPorts(), x, y))
+            if 0 <= x + 1 < len(superTile.tileMap[0]) and superTile.tileMap[y][x+1] != None:
+                internalConnections.append((tile.getEastPorts(), x, y))
+            if 0 <= y + 1 < len(superTile.tileMap) and superTile.tileMap[y+1][x] != None:
+                internalConnections.append((tile.getSouthPorts(), x, y))
+            if 0 <= x - 1 < len(superTile.tileMap[0]) and superTile.tileMap[y][x-1] != None:
+                internalConnections.append((tile.getWestPorts(), x, y))
+
+    # declare internal connections
+    writer.addComment("signal declarations", onNewLine=True)
+    for i, x, y in internalConnections:
+        if i:
+            writer.addComment(
+                f"Tile_X{x}Y{y}_{i[0].direction}", onNewLine=True)
+            for p in i:
+                wire = (abs(p.xOffset) + abs(p.yOffset)) * p.wires - 1
+                writer.addConnectionVector(
+                    f"Tile_X{x}Y{y}_{p.sourceName}", wire, indentLevel=1)
+                writer.addComment(commentTemplate.format(
+                    wires=p.wires, X_offset=p.xOffset, Y_offset=p.yOffset, sourceName=p.sourceName, destinationName=p.destinationName), onNewLine=False)
+
+    # declare internal connections for frameData and frameStrobe
+    for y, row in enumerate(superTile.tileMap):
+        for x, tile in enumerate(row):
+            if 0 <= y - 1 < len(superTile.tileMap) and superTile.tileMap[y-1][x] != None:
+                writer.addConnectionVector(
+                    f"Tile_X{x}Y{y}_FrameStrobe_O", "MaxFramePerCol-1", indentLevel=1)
+            if 0 <= x - 1 < len(superTile.tileMap) and superTile.tileMap[y][x-1] != None:
+                writer.addConnectionVector(
+                    f"Tile_X{x}Y{y}_FrameData_O", "FrameBitsPerRow-1", indentLevel=1)
+
+    writer.addNewLine()
+    # pair up the connection for tile instantiation
+
+    for y, row in enumerate(superTile.tileMap):
+        for x, tile in enumerate(row):
+            northInput, southInput, eastInput, westInput = [], [], [], []
+            outputSignalList = []
+            if tile != None:
+                if 0 <= y - 1 < len(superTile.tileMap) and superTile.tileMap[y-1][x] != None:
+                    for p in superTile.tileMap[y-1][x].getSouthPorts():
+                        if p.sourceName != "NULL":
+                            southInput.append(
+                                f"Tile_X{x}Y{y-1}_{p.sourceName}")
+                else:
+                    for p in tile.getSouthPorts():
+                        if p.destinationName != "NULL":
+                            southInput.append(
+                                f"Tile_X{x}Y{y}_{p.destinationName}")
+
+                if 0 <= x + 1 < len(superTile.tileMap[0]) and superTile.tileMap[y][x+1] != None:
+                    for p in superTile.tileMap[y][x+1].getWestPorts():
+                        if p.sourceName != "NULL":
+                            westInput.append(
+                                f"Tile_X{x+1}Y{y}_{p.sourceName}")
+                else:
+                    for p in tile.getWestPorts():
+                        if p.destinationName != "NULL":
+                            westInput.append(
+                                f"Tile_X{x}Y{y}_{p.destinationName}")
+
+                if 0 <= y + 1 < len(superTile.tileMap) and superTile.tileMap[y+1][x] != None:
+                    for p in superTile.tileMap[y+1][x].getNorthPorts():
+                        if p.sourceName != "NULL":
+                            northInput.append(
+                                f"Tile_X{x}Y{y+1}_{p.sourceName}")
+                else:
+                    for p in tile.getNorthPorts():
+                        if p.destinationName != "NULL":
+                            northInput.append(
+                                f"Tile_X{x}Y{y}_{p.destinationName}")
+
+                if 0 <= x - 1 < len(superTile.tileMap[0]) and superTile.tileMap[y][x-1] != None:
+                    for p in superTile.tileMap[y][x-1].getEastPorts():
+                        if p.sourceName != "NULL":
+                            eastInput.append(
+                                f"Tile_X{x-1}Y{y}_{p.sourceName}")
+                else:
+                    for p in tile.getEastPorts():
+                        if p.destinationName != "NULL":
+                            eastInput.append(
+                                f"Tile_X{x}Y{y}_{p.destinationName}")
+
+                for p in tile.getNorthPorts() + tile.getEastPorts() + tile.getSouthPorts() + tile.getWestPorts():
+                    if p.sourceName != "NULL":
+                        outputSignalList.append(
+                            f"Tile_X{x}Y{y}_{p.sourceName}")
+
+                combine = northInput + eastInput + southInput + westInput + outputSignalList
+
+                writer.addComment(
+                    "tile IO port will get directly connected to top-level tile module", onNewLine=True, indentLevel=1)
+                for i in superTile.tiles:
+                    for b in i.bels:
+                        for p in b.externalInput:
+                            combine.append(p)
+                        for p in b.externalOutput:
+                            combine.append(p)
+                        for p in b.sharedPort:
+                            combine.append(p[0])
+
+                if ConfigBitMode == "frame_based":
+                    # add connection for frameData and frameStrobe
+                    if 0 <= x - 1 < len(superTile.tileMap[0]) - 1 and superTile.tileMap[y][x-1] != None:
+                        combine.append(f"Tile_X{x-1}Y{y}_FrameData_O")
+                    else:
+                        combine.append(f"Tile_X{x}Y{y}_FrameData")
+
+                    combine.append(f"Tile_X{x}Y{y}_FrameData_O")
+
+                    if 0 <= y + 1 < len(superTile.tileMap) - 1 and superTile.tileMap[y+1][x] != None:
+                        combine.append(
+                            f"Tile_X{x}Y{y-1}_FrameStrobe_O")
+                    else:
+                        combine.append(f"Tile_X{x}Y{y}_FrameStrobe")
+
+                    combine.append(f"Tile_X{x}Y{y}_FrameStrobe_O")
+
+                ports = []
+                # all the input port
+                ports += [i.destinationName for i in tile.getNorthPorts()
+                          if i.destinationName != "NULL"]
+                ports += [i.destinationName for i in tile.getEastPorts()
+                          if i.destinationName != "NULL"]
+                ports += [i.destinationName for i in tile.getSouthPorts()
+                          if i.destinationName != "NULL"]
+                ports += [i.destinationName for i in tile.getWestPorts()
+                          if i.destinationName != "NULL"]
+                # all the output port
+                ports += [i.sourceName for i in tile.getNorthPorts()
+                          if i.sourceName != "NULL"]
+                ports += [i.sourceName for i in tile.getEastPorts()
+                          if i.sourceName != "NULL"]
+                ports += [i.sourceName for i in tile.getSouthPorts()
+                          if i.sourceName != "NULL"]
+                ports += [i.sourceName for i in tile.getWestPorts()
+                          if i.sourceName != "NULL"]
+
+                for i in superTile.tiles:
+                    for b in i.bels:
+                        for p in b.externalInput:
+                            ports.append(p)
+                        for p in b.externalOutput:
+                            ports.append(p)
+                        for p in b.sharedPort:
+                            ports.append(p[0])
+
+                if ConfigBitMode == 'frame_based':
+                    ports += ["FrameData", "FrameData_O",
+                              "FrameStrobe", "FrameStrobe_O"]
+
+                writer.addInstantiation(compName=tile.name,
+                                        compInsName=f"Tile_X{x}Y{y}_{tile.name}",
+                                        compPort=ports,
+                                        signal=combine)
     writer.addDesignDescriptionEnd()
     writer.writeToFile()
 
@@ -940,1021 +1200,6 @@ def takes_list(a_string, a_list):
     print('first debug (a_list):', a_list, 'string:', a_string)
     for item in a_list:
         print('hello debug:', item, 'string:', a_string)
-
-
-def GenerateTileVerilog(tile_description, module, file):
-    MatrixInputs = []
-    MatrixOutputs = []
-    TileInputs = []
-    TileOutputs = []
-    BEL_Inputs = []
-    BEL_Outputs = []
-    AllJumpWireList = []
-    NuberOfSwitchMatricesWithConfigPort = 0
-    CLOCK_Tile = False
-
-    # We first check if we need a configuration port
-    # Currently we assume that each primitive needs a configuration port
-    # However, a switch matrix can have no switch matrix multiplexers
-    # (e.g., when only bouncing back in border termination tiles)
-    # we can detect this as each switch matrix file contains a comment // NumberOfConfigBits
-    # NumberOfConfigBits:0 tells us that the switch matrix does not have a config port
-    # TODO: we don't do this and always create a configuration port for each tile. This may dangle the CLK and MODE ports hanging in the air, which will throw a warning
-    # TODO: we don't do this and always create a configuration port for each tile. This may dangle the CLK and MODE ports hanging in the air, which will throw a warning
-    # TODO: we don't do this and always create a configuration port for each tile. This may dangle the CLK and MODE ports hanging in the air, which will throw a warning
-    # TODO: we don't do this and always create a configuration port for each tile. This may dangle the CLK and MODE ports hanging in the air, which will throw a warning
-
-    TileTypeMarker = False
-    for line in tile_description:
-        if line[0] == 'TILE':
-            TileType = line[TileType_position]
-            TileTypeMarker = True
-    if TileTypeMarker == False:
-        raise ValueError(
-            'Could not find tile type in function GenerateTileVHDL')
-
-    # the VHDL initial header generation is shared until the Port
-    # in order to use GenerateVHDL_Header, we have to count the number of configuration bits by scanning all files for the "Generic ( NoConfigBits...
-    GlobalConfigBitsCounter = 0
-    if ConfigBitMode == 'frame_based':
-        for line in tile_description:
-            if (line[0] == 'BEL') or (line[0] == 'MATRIX'):
-                if (GetNoConfigBitsFromFile(line[VHDL_file_position])) != 'NULL':
-                    GlobalConfigBitsCounter = GlobalConfigBitsCounter + \
-                        int(GetNoConfigBitsFromFile(line[VHDL_file_position]))
-    # GenerateVerilog_Header(file, module, NoConfigBits=str(GlobalConfigBitsCounter))
-    module_header_ports_list = GetTileComponentPort_Verilog(
-        tile_description, 'NORTH')
-    module_header_ports_list.extend(
-        GetTileComponentPort_Verilog(tile_description, 'EAST'))
-    module_header_ports_list.extend(
-        GetTileComponentPort_Verilog(tile_description, 'SOUTH'))
-    module_header_ports_list.extend(
-        GetTileComponentPort_Verilog(tile_description, 'WEST'))
-    module_header_ports = ', '.join(module_header_ports_list)
-    ExternalPorts = []
-    for line in tile_description:
-        if line[0] == 'BEL':
-            if len(line) >= 3:        # we use the third column to specify an optional BEL prefix
-                BEL_prefix_string = line[BEL_prefix]
-            else:
-                BEL_prefix_string = ''
-            ExternalPorts = ExternalPorts + (GetComponentPortsFromFile(
-                line[VHDL_file_position], port='external', BEL_Prefix=BEL_prefix_string+'BEL_prefix_string_marker'))
-    SharedExternalPorts = []
-    if ExternalPorts != []:
-        for item in ExternalPorts:
-            if re.search('SHARED_PORT', item):
-                shared_port = re.sub(
-                    ':.*', '', re.sub('.*BEL_prefix_string_marker', '', item)).strip()
-                if shared_port not in SharedExternalPorts:
-                    bel_port = re.split(' |	', re.sub(
-                        '.*BEL_prefix_string_marker', '', item))
-                    if bel_port[0] == 'UserCLK':
-                        CLOCK_Tile = True
-                    if bel_port[2] == 'in':
-                        module_header_ports += ', '+bel_port[0]
-                    elif bel_port[2] == 'out':
-                        module_header_ports += ', '+bel_port[0]
-                    SharedExternalPorts.append(shared_port)
-            else:
-                bel_port = re.split(' |	', re.sub(
-                    'BEL_prefix_string_marker', '', item))
-                if bel_port[2] == 'in':
-                    module_header_ports += ', '+bel_port[0]
-                elif bel_port[2] == 'out':
-                    module_header_ports += ', '+bel_port[0]
-    if CLOCK_Tile:
-        module_header_ports += ', UserCLKo'
-    else:
-        module_header_ports += ', UserCLK, UserCLKo'
-    if ConfigBitMode == 'frame_based':
-        if GlobalConfigBitsCounter > 0:
-            # module_header_ports += ', FrameData, FrameStrobe'
-            module_header_ports += ', FrameData, FrameData_O, FrameStrobe, FrameStrobe_O'
-        else:
-            module_header_ports += ', FrameStrobe, FrameStrobe_O'
-    else:
-        if ConfigBitMode == 'FlipFlopChain':
-            module_header_ports += ', MODE, CONFin, CONFout, CLK'
-        elif ConfigBitMode == 'frame_based':
-            module_header_ports += ', ConfigBits, ConfigBits_N'
-
-    # insert CLB, I/O (or whatever BEL) component declaration
-    # specified in the fabric csv file after the 'BEL' key word
-    # we use this list to check if we have seen a BEL description before so we only insert one component declaration
-    BEL_VHDL_riles_processed = []
-    module_header_files = []
-    for line in tile_description:
-        if line[0] == 'BEL':
-            Inputs = []
-            Outputs = []
-            if line[VHDL_file_position] not in BEL_VHDL_riles_processed:
-                module_header_files.append(
-                    line[VHDL_file_position].replace('vhdl', 'v'))
-            BEL_VHDL_riles_processed.append(line[VHDL_file_position])
-            # we need the BEL ports (a little later) so we take them on the way
-            if len(line) >= 3:        # we use the third column to specify an optional BEL prefix
-                BEL_prefix_string = line[BEL_prefix]
-            else:
-                BEL_prefix_string = ''
-            Inputs, Outputs = GetComponentPortsFromFile(
-                line[VHDL_file_position], BEL_Prefix=BEL_prefix_string)
-            BEL_Inputs = BEL_Inputs + Inputs
-            BEL_Outputs = BEL_Outputs + Outputs
-    # insert switch matrix component declaration
-    # specified in the fabric csv file after the 'MATRIX' key word
-    MatrixMarker = False
-    for line in tile_description:
-        if line[0] == 'MATRIX':
-            if MatrixMarker == True:
-                raise ValueError(
-                    'More than one switch matrix defined for tile '+TileType+'; exeting GenerateTileVHDL')
-            NuberOfSwitchMatricesWithConfigPort = NuberOfSwitchMatricesWithConfigPort + \
-                GetVerilogDeclarationForFile(line[VHDL_file_position])
-            module_header_files.append(
-                line[VHDL_file_position].replace('vhdl', 'v'))
-            # we need the switch matrix ports (a little later)
-            MatrixInputs, MatrixOutputs = GetComponentPortsFromFile(
-                line[VHDL_file_position])
-            MatrixMarker = True
-    if MatrixMarker == False:
-        raise ValueError('Could not find switch matrix definition for tyle type ' +
-                         TileType+' in function GenerateTileVHDL')
-    if ConfigBitMode == 'frame_based' and GlobalConfigBitsCounter > 0:
-        module_header_files.append(module+'_ConfigMem.v')
-
-    GenerateVerilog_Header(module_header_ports, file, module, package='', NoConfigBits=str(GlobalConfigBitsCounter), MaxFramesPerCol=str(
-        MaxFramesPerCol), FrameBitsPerRow=str(FrameBitsPerRow), module_header_files=module_header_files)
-
-    PrintTileComponentPort_Verilog(tile_description, 'NORTH', file)
-    PrintTileComponentPort_Verilog(tile_description, 'EAST', file)
-    PrintTileComponentPort_Verilog(tile_description, 'SOUTH', file)
-    PrintTileComponentPort_Verilog(tile_description, 'WEST', file)
-    # now we have to scan all BELs if they use external pins, because they have to be exported to the tile module
-    ExternalPorts = []
-    for line in tile_description:
-        if line[0] == 'BEL':
-            if len(line) >= 3:        # we use the third column to specify an optional BEL prefix
-                BEL_prefix_string = line[BEL_prefix]
-            else:
-                BEL_prefix_string = ''
-            ExternalPorts = ExternalPorts + (GetComponentPortsFromFile(
-                line[VHDL_file_position], port='external', BEL_Prefix=BEL_prefix_string+'BEL_prefix_string_marker'))
-    # if we found BELs with top-level IO ports, we just pass them through
-    SharedExternalPorts = []
-
-    if ExternalPorts != []:
-        print('\t// Tile IO ports from BELs', file=file)
-        for item in ExternalPorts:
-            # if a part is flagged with the 'SHARED_PORT' comment, we declare that port only ones
-            # we use the string 'BEL_prefix_string_marker' to separate the port name from the prefix
-            if re.search('SHARED_PORT', item):
-                # we firstly get the plain port name without comments, whitespaces, etc.
-                # we place that in the SharedExternalPorts list to check if that port was declared earlier
-                shared_port = re.sub(
-                    ':.*', '', re.sub('.*BEL_prefix_string_marker', '', item)).strip()
-                if shared_port not in SharedExternalPorts:
-                    bel_port = re.split(' |	', re.sub(
-                        '.*BEL_prefix_string_marker', '', item))
-                    if bel_port[2] == 'in':
-                        print('\tinput '+bel_port[0]+';', file=file)
-                    elif bel_port[2] == 'out':
-                        print('\toutput '+bel_port[0]+';', file=file)
-                    SharedExternalPorts.append(shared_port)
-            else:
-                bel_port = re.split(' |	', re.sub(
-                    'BEL_prefix_string_marker', '', item))
-                if bel_port[2] == 'in':
-                    print('\tinput '+bel_port[0]+';', file=file)
-                elif bel_port[2] == 'out':
-                    print('\toutput '+bel_port[0]+';', file=file)
-    if CLOCK_Tile:
-        print('\toutput UserCLKo;', file=file)
-    else:
-        print('\tinput UserCLK;', file=file)
-        print('\toutput UserCLKo;', file=file)
-    # the rest is a shared text block
-    if ConfigBitMode == 'frame_based':
-        if GlobalConfigBitsCounter > 0:
-            # print('\tinput [FrameBitsPerRow-1:0] FrameData; //CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register', file=file)
-            # print('\tinput [MaxFramesPerCol-1:0] FrameStrobe; //CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register ', file=file)
-            print('\tinput [FrameBitsPerRow-1:0] FrameData; //CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register', file=file)
-            print('\toutput [FrameBitsPerRow-1:0] FrameData_O;', file=file)
-            print('\tinput [MaxFramesPerCol-1:0] FrameStrobe; //CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register', file=file)
-            print('\toutput [MaxFramesPerCol-1:0] FrameStrobe_O;', file=file)
-        else:
-            # print('\tinput [FrameBitsPerRow-1:0] FrameData; //CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register', file=file)
-            # print('\toutput [FrameBitsPerRow-1:0] FrameData_O;', file=file)
-            print('\tinput [MaxFramesPerCol-1:0] FrameStrobe; //CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register', file=file)
-            print('\toutput [MaxFramesPerCol-1:0] FrameStrobe_O;', file=file)
-
-        GenerateVerilog_PortsFooter(file, module, ConfigPort=False)
-    else:
-        GenerateVerilog_PortsFooter(file, module)
-
-    # VHDL signal declarations
-    print('//signal declarations', file=file)
-    # BEL port wires
-    print('//BEL ports (e.g., slices)', file=file)
-    for port in (BEL_Inputs + BEL_Outputs):
-        print('\twire '+port+';', file=file)
-    # Jump wires
-    print('//jump wires', file=file)
-    for line in tile_description:
-        if line[0] == 'JUMP':
-            if (line[source_name] == '') or (line[destination_name] == ''):
-                raise ValueError(
-                    'Either source or destination port for JUMP wire missing in function GenerateTileVHDL')
-            # we don't add ports or a corresponding signal name, if we have a NULL driver (which we use as an exception for GND and VCC (VCC0 GND0)
-            if not re.search('NULL', line[source_name], flags=re.IGNORECASE):
-                print('\twire ['+str(line[wires])+'-1:0] ' +
-                      line[source_name]+';', file=file)
-            # we need the jump wires for the switch matrix component instantiation..
-                for k in range(int(line[wires])):
-                    AllJumpWireList.append(
-                        str(line[source_name]+'('+str(k)+')'))
-    # internal configuration data signal to daisy-chain all BELs (if any and in the order they are listed in the fabric.csv)
-    print('//internal configuration data signal to daisy-chain all BELs (if any and in the order they are listed in the fabric.csv)', file=file)
-    # the signal has to be number of BELs+2 bits wide (Bel_counter+1 downto 0)
-    BEL_counter = 0
-    for line in tile_description:
-        if line[0] == 'BEL':
-            BEL_counter += 1
-
-    # we chain switch matrices only to the configuration port, if they really contain configuration bits
-    # i.e. switch matrices have a config port which is indicated by "NumberOfConfigBits:0 is false"
-
-    # The following conditional as intended to only generate the config_data signal if really anything is actually configured
-    # however, we leave it and just use this signal as conf_data(0 downto 0) for simply touting through CONFin to CONFout
-    # maybe even useful if we want to add a buffer here
-    # if (Bel_Counter + NuberOfSwitchMatricesWithConfigPort) > 0
-
-    # print('\twire ['+str(BEL_counter+NuberOfSwitchMatricesWithConfigPort)+':0] conf_data;', file=file)
-    if GlobalConfigBitsCounter > 0:
-        print('\twire [NoConfigBits-1:0] ConfigBits;', file=file)
-        print('\twire [NoConfigBits-1:0] ConfigBits_N;', file=file)
-
-    # Cascading of routing for wires spanning more than one tile
-        print('\n// Cascading of routing for wires spanning more than one tile', file=file)
-
-        print('\twire [FrameBitsPerRow-1:0] FrameData_i;', file=file)
-        print('\twire [FrameBitsPerRow-1:0] FrameData_O_i;', file=file)
-
-        print('\tassign FrameData_O_i = FrameData_i;\n', file=file)
-
-        for m in range(FrameBitsPerRow):
-            print('\tmy_buf data_inbuf_'+str(m)+' (', file=file)
-            print('\t.A(FrameData['+str(m)+']),', file=file)
-            print('\t.X(FrameData_i['+str(m)+'])', file=file)
-            print('\t);\n', file=file)
-
-        for m in range(FrameBitsPerRow):
-            # print('\tgenvar m;', file=file)
-            # print('\tfor (m=0; m<FrameBitsPerRow; m=m+1) begin: data_buf', file=file)
-            print('\tmy_buf data_outbuf_'+str(m)+' (', file=file)
-            print('\t.A(FrameData_O_i['+str(m)+']),', file=file)
-            print('\t.X(FrameData_O['+str(m)+'])', file=file)
-            print('\t);\n', file=file)
-            # print('\tend\n', file=file)
-
-    print('\twire [MaxFramesPerCol-1:0] FrameStrobe_i;', file=file)
-    print('\twire [MaxFramesPerCol-1:0] FrameStrobe_O_i;', file=file)
-
-    print('\tassign FrameStrobe_O_i = FrameStrobe_i;\n', file=file)
-
-    for n in range(MaxFramesPerCol):
-        print('\tmy_buf strobe_inbuf_'+str(n)+' (', file=file)
-        print('\t.A(FrameStrobe['+str(n)+']),', file=file)
-        print('\t.X(FrameStrobe_i['+str(n)+'])', file=file)
-        print('\t)\n;', file=file)
-
-    for n in range(MaxFramesPerCol):
-        # print('\tgenvar n;', file=file)
-        # print('\tfor (n=0; n<MaxFramesPerCol; n=n+1) begin: strobe_buf', file=file)
-        print('\tmy_buf strobe_outbuf_'+str(n)+' (', file=file)
-        print('\t.A(FrameStrobe_O_i['+str(n)+']),', file=file)
-        print('\t.X(FrameStrobe_O['+str(n)+'])', file=file)
-        print('\t)\n;', file=file)
-        # print('\tend\n', file=file)
-
-    for line in tile_description:
-        if line[0] in ['NORTH', 'EAST', 'SOUTH', 'WEST']:
-            span = abs(int(line[X_offset]))+abs(int(line[Y_offset]))
-            # in case a signal spans 2 ore more tiles in any direction
-            if (span >= 2) and (line[source_name] != 'NULL') and (line[destination_name] != 'NULL'):
-                high_bound_index = (span*int(line[wires]))-1
-                print('\twire ['+str(high_bound_index)+':0] ' +
-                      line[destination_name]+'_i;', file=file)
-                print('\twire ['+str(high_bound_index-int(line[wires])
-                                     )+':0] '+line[source_name]+'_i;', file=file)
-
-                print('\tassign '+line[source_name]+'_i['+str(high_bound_index) +
-                      '-'+str(line[wires])+':0]', end='', file=file)
-                print(' = '+line[destination_name]+'_i[' +
-                      str(high_bound_index)+':'+str(line[wires])+'];\n', file=file)
-
-                for i in range(int(high_bound_index)-int(line[wires])+1):
-                    # print('\tgenvar '+line[0][0]+'_index;', file=file)
-                    # print('\tfor ('+line[0][0]+'_index=0; '+line[0][0]+'_index<='+str(high_bound_index)+'-'+str(line[wires])+'; '+line[0][0]+'_index='+line[0][0]+'_index+1) begin: '+line[0][0]+'_buf', file=file)
-                    print('\tmy_buf '+line[destination_name] +
-                          '_inbuf_'+str(i)+' (', file=file)
-                    print('\t.A('+line[destination_name] +
-                          '['+str(i+int(line[wires]))+']),', file=file)
-                    print(
-                        '\t.X('+line[destination_name]+'_i['+str(i+int(line[wires]))+'])', file=file)
-                    print('\t);\n', file=file)
-                # print('\tend\n', file=file)
-
-                for j in range(int(high_bound_index)-int(line[wires])+1):
-                    # print('\tgenvar '+line[0][0]+'_index;', file=file)
-                    # print('\tfor ('+line[0][0]+'_index=0; '+line[0][0]+'_index<='+str(high_bound_index)+'-'+str(line[wires])+'; '+line[0][0]+'_index='+line[0][0]+'_index+1) begin: '+line[0][0]+'_buf', file=file)
-                    print('\tmy_buf '+line[source_name] +
-                          '_outbuf_'+str(j)+' (', file=file)
-                    print('\t.A('+line[source_name] +
-                          '_i['+str(j)+']),', file=file)
-                    print('\t.X('+line[source_name]+'['+str(j)+'])', file=file)
-                    print('\t);\n', file=file)
-                # print('\tend\n', file=file)
-
-    print('\tclk_buf inst_clk_buf(.A(UserCLK), .X(UserCLKo));', file=file)
-    # top configuration data daisy chaining
-    if ConfigBitMode == 'FlipFlopChain':
-        print('// top configuration data daisy chaining', file=file)
-        print(
-            '\tassign conf_data[$low(conf_data)] = CONFin; // conf_data\'low=0 and CONFin is from tile module', file=file)
-        print(
-            '\tassign CONFout = conf_data[$high(conf_data)]; // CONFout is from tile module', file=file)
-
-    # the <module>_ConfigMem module is only parametrized through generics, so we hard code its instantiation here
-    if ConfigBitMode == 'frame_based' and GlobalConfigBitsCounter > 0:
-        print('\n// configuration storage latches', file=file)
-        print('\t'+module+'_ConfigMem Inst_'+module+'_ConfigMem (', file=file)
-        print('\t.FrameData(FrameData),', file=file)
-        print('\t.FrameStrobe(FrameStrobe),', file=file)
-        print('\t.ConfigBits(ConfigBits),', file=file)
-        print('\t.ConfigBits_N(ConfigBits_N)', file=file)
-        print('\t);', file=file)
-
-    # BEL component instantiations
-    print('\n//BEL component instantiations', file=file)
-    All_BEL_Inputs = []                # the right hand signal name which gets a BEL prefix
-    All_BEL_Outputs = []            # the right hand signal name which gets a BEL prefix
-    # the left hand port name which does not get a BEL prefix
-    left_All_BEL_Inputs = []
-    # the left hand port name which does not get a BEL prefix
-    left_All_BEL_Outputs = []
-    BEL_counter = 0
-    BEL_ConfigBitsCounter = 0
-    for line in tile_description:
-        if line[0] == 'BEL':
-            BEL_Inputs = []            # the right hand signal name which gets a BEL prefix
-            BEL_Outputs = []        # the right hand signal name which gets a BEL prefix
-            left_BEL_Inputs = []    # the left hand port name which does not get a BEL prefix
-            left_BEL_Outputs = []    # the left hand port name which does not get a BEL prefix
-            ExternalPorts = []
-            if len(line) >= 3:        # we use the third column to specify an optional BEL prefix
-                BEL_prefix_string = line[BEL_prefix]
-            else:
-                BEL_prefix_string = ''
-            # the BEL I/Os that go to the switch matrix
-            BEL_Inputs, BEL_Outputs = GetComponentPortsFromFile(
-                line[VHDL_file_position], BEL_Prefix=BEL_prefix_string)
-            left_BEL_Inputs, left_BEL_Outputs = GetComponentPortsFromFile(
-                line[VHDL_file_position])
-            # the BEL I/Os that go to the tile top module
-            # ExternalPorts = GetComponentPortsFromFile(line[VHDL_file_position], port='external', BEL_Prefix=BEL_prefix_string)
-            ExternalPorts = GetComponentPortsFromFile(
-                line[VHDL_file_position], port='external')
-            # we remember All_BEL_Inputs and All_BEL_Outputs as wee need these pins for the switch matrix
-            All_BEL_Inputs = All_BEL_Inputs + BEL_Inputs
-            All_BEL_Outputs = All_BEL_Outputs + BEL_Outputs
-            left_All_BEL_Inputs = left_All_BEL_Inputs + left_BEL_Inputs
-            left_All_BEL_Outputs = left_All_BEL_Outputs + left_BEL_Outputs
-            EntityName = GetComponentEntityNameFromFile(
-                line[VHDL_file_position])
-            print('\t'+EntityName+' Inst_' +
-                  BEL_prefix_string+EntityName+' (', file=file)
-
-            for k in range(len(BEL_Inputs+BEL_Outputs)):
-                print('\t.'+(left_BEL_Inputs+left_BEL_Outputs)
-                      [k]+'('+(BEL_Inputs+BEL_Outputs)[k]+'),', file=file)
-            # top level I/Os (if any) just get connected directly
-            if ExternalPorts != []:
-                print(
-                    '\t//I/O primitive pins go to tile top level module (not further parsed)  ', file=file)
-                for item in ExternalPorts:
-                    # print('DEBUG ExternalPort :',item)
-                    port = re.sub('\:.*', '', item)
-                    substitutions = {" ": "", "\t": ""}
-                    port = (replace(port, substitutions))
-                    if re.search('SHARED_PORT', item):
-                        print('\t.'+port+'('+port+'),', file=file)
-                    else:  # if not SHARED_PORT then add BEL_prefix_string to signal name
-                        print('\t.'+port+'('+BEL_prefix_string+port+'),', file=file)
-
-            # global configuration port
-            if ConfigBitMode == 'FlipFlopChain':
-                GenerateVerilog_Conf_Instantiation(
-                    file=file, counter=BEL_counter, close=True)
-            if ConfigBitMode == 'frame_based':
-                BEL_ConfigBits = GetNoConfigBitsFromFile(
-                    line[VHDL_file_position])
-                if BEL_ConfigBits != 'NULL':
-                    if int(BEL_ConfigBits) == 0:
-                        # print('\t.ConfigBits(0)', file=file)
-                        last_pos = file.tell()
-                        for k in range(20):
-                            # scan character by character backwards and look for ','
-                            file.seek(last_pos - k)
-                            my_char = file.read(1)
-                            if my_char == ',':
-                                # place seek pointer to last ',' position and overwrite with a space
-                                file.seek(last_pos - k)
-                                print(' ', end='', file=file)
-                                break                            # stop scan
-
-                        # go back to usual...
-                        file.seek(0, os.SEEK_END)
-                        print('\t);\n', file=file)
-                    else:
-                        print('\t.ConfigBits(ConfigBits['+str(BEL_ConfigBitsCounter + int(
-                            BEL_ConfigBits))+'-1:'+str(BEL_ConfigBitsCounter)+'])', file=file)
-                        # print('\t.ConfigBits(ConfigBits_N['+str(BEL_ConfigBitsCounter + int(BEL_ConfigBits))+'-1:'+str(BEL_ConfigBitsCounter)+'])', file=file)
-                        print('\t);\n', file=file)
-                        BEL_ConfigBitsCounter = BEL_ConfigBitsCounter + \
-                            int(BEL_ConfigBits)
-            # for the next BEL (if any) for cascading configuration chain (this information is also needed for chaining the switch matrix)
-            BEL_counter += 1
-
-    # switch matrix component instantiation
-    # important to know:
-    # Each switch matrix module is build up is a specific order:
-    # 1.a) interconnect wire INPUTS (in the order defined by the fabric file,)
-    # 2.a) BEL primitive INPUTS (in the order the BEL-VHDLs are listed in the fabric CSV)
-    #      within each BEL, the order from the module is maintained
-    #      Note that INPUTS refers to the view of the switch matrix! Which corresponds to BEL outputs at the actual BEL
-    # 3.a) JUMP wire INPUTS (in the order defined by the fabric file)
-    # 1.b) interconnect wire OUTPUTS
-    # 2.b) BEL primitive OUTPUTS
-    #      Again: OUTPUTS refers to the view of the switch matrix which corresponds to BEL inputs at the actual BEL
-    # 3.b) JUMP wire OUTPUTS
-    # The switch matrix uses single bit ports (std_logic and not std_logic_vector)!!!
-
-    print('\n//switch matrix component instantiation', file=file)
-    for line in tile_description:
-        if line[0] == 'MATRIX':
-            BEL_Inputs = []
-            BEL_Outputs = []
-            BEL_Inputs, BEL_Outputs = GetComponentPortsFromFile(
-                line[VHDL_file_position])
-            EntityName = GetComponentEntityNameFromFile(
-                line[VHDL_file_position])
-            print('\t'+EntityName+' Inst_'+EntityName+' (', file=file)
-            # for port in BEL_Inputs + BEL_Outputs:
-            # print('\t\t',port,' => ',port,',', file=file)
-            Inputs = []
-            Outputs = []
-            TopInputs = []
-            TopOutputs = []
-            # Inputs, Outputs = GetTileComponentPorts(tile_description, mode='SwitchMatrixIndexed')
-            # changed to:  AutoSwitchMatrixIndexed
-            Inputs, Outputs = GetTileComponentPorts(
-                tile_description, mode='AutoSwitchMatrixIndexed')
-            # TopInputs, TopOutputs = GetTileComponentPorts(tile_description, mode='TopIndexed')
-            # changed to: AutoTopIndexed
-            TopInputs, TopOutputs = GetTileComponentPorts(
-                tile_description, mode='AutoTopIndexed')
-            for k in range(len(BEL_Inputs+BEL_Outputs)):
-                print('\t.'+(BEL_Inputs+BEL_Outputs)[k]+'(', end='', file=file)
-                # note that the BEL outputs (e.g., from the slice component) are the switch matrix inputs
-                print((Inputs+All_BEL_Outputs+AllJumpWireList+TopOutputs+All_BEL_Inputs +
-                      AllJumpWireList)[k].replace('(', '[').replace(')', ']')+')', end='', file=file)
-                if NuberOfSwitchMatricesWithConfigPort > 0:
-                    print(',', file=file)
-                else:
-                    # stupid VHDL does not allow us to have a ',' for the last port connection, so we need the following for NuberOfSwitchMatricesWithConfigPort==0
-                    if k < ((len(BEL_Inputs+BEL_Outputs)) - 1):
-                        print(',', file=file)
-                    else:
-                        print('', file=file)
-            if NuberOfSwitchMatricesWithConfigPort > 0:
-                if ConfigBitMode == 'FlipFlopChain':
-                    GenerateVerilog_Conf_Instantiation(
-                        file=file, counter=BEL_counter, close=False)
-                    # print('\t // GLOBAL all primitive pins for configuration (not further parsed)  ', file=file)
-                    # print('\t\t MODE    => Mode,  ', file=file)
-                    # print('\t\t CONFin    => conf_data('+str(BEL_counter)+'),  ', file=file)
-                    # print('\t\t CONFout    => conf_data('+str(BEL_counter+1)+'),  ', file=file)
-                    # print('\t\t CLK => CLK   ', file=file)
-                if ConfigBitMode == 'frame_based':
-                    BEL_ConfigBits = GetNoConfigBitsFromFile(
-                        line[VHDL_file_position])
-                    if BEL_ConfigBits != 'NULL':
-                        # print('DEBUG:',BEL_ConfigBits)
-                        print('\t.ConfigBits(ConfigBits['+str(BEL_ConfigBitsCounter + int(
-                            BEL_ConfigBits))+'-1:'+str(BEL_ConfigBitsCounter)+']),', file=file)
-                        print('\t.ConfigBits_N(ConfigBits_N['+str(BEL_ConfigBitsCounter + int(
-                            BEL_ConfigBits))+'-1:'+str(BEL_ConfigBitsCounter)+'])', file=file)
-                        BEL_ConfigBitsCounter = BEL_ConfigBitsCounter + \
-                            int(BEL_ConfigBits)
-            print('\t);', file=file)
-    print('\n'+'endmodule', file=file)
-    return
-
-
-def GenerateSuperTileVerilog(super_tile_description, module, file):
-    # get the number of tiles in vertical direction
-    y_tiles = len(super_tile_description)
-    # get the number of tiles in horizontal direction
-    x_tiles = len(super_tile_description[0])
-    TileTypes = GetCellTypes(super_tile_description)
-    module_header_ports_list = []
-    module_header_files = []
-    TileTypeOutputPorts = []
-
-    for tile in TileTypes:
-        module_header_files.append(str(tile)+'_tile.v')
-        Inputs, Outputs = GetComponentPortsFromFile(str(tile)+'_tile.vhdl')
-        TileTypeOutputPorts.append(Outputs)
-
-    print('\t//External IO ports exported directly from the corresponding tiles', file=file)
-    ExternalPorts = []
-    SharedExternalPorts = []
-    port_list = []
-    external_port_list = ['\t// Tile IO ports from BELs']
-    wire_list = []
-    module_header_ports = ''
-
-    for y in range(y_tiles):
-        for x in range(x_tiles):
-            if super_tile_description[y][x] != 'NULL':
-                left_edge = False
-                right_edge = False
-                top_edge = False
-                bot_edge = False
-
-                if x == 0:
-                    left_edge = True
-                else:
-                    if super_tile_description[y][x-1] == 'NULL':
-                        left_edge = True
-                if x == x_tiles-1:
-                    right_edge = True
-                else:
-                    if super_tile_description[y][x+1] == 'NULL':
-                        right_edge = True
-                if y == 0:
-                    top_edge = True
-                else:
-                    if super_tile_description[y-1][x] == 'NULL':
-                        top_edge = True
-                if y == y_tiles-1:
-                    bot_edge = True
-                else:
-                    if super_tile_description[y+1][x] == 'NULL':
-                        bot_edge = True
-
-                tile_description = GetTileFromFile(
-                    FabricFile, str(super_tile_description[y][x]))
-                GlobalConfigBitsCounter = 0
-                if ConfigBitMode == 'frame_based':
-                    for line in tile_description:
-                        if (line[0] == 'BEL') or (line[0] == 'MATRIX'):
-                            if (GetNoConfigBitsFromFile(line[VHDL_file_position])) != 'NULL':
-                                GlobalConfigBitsCounter = GlobalConfigBitsCounter + \
-                                    int(GetNoConfigBitsFromFile(
-                                        line[VHDL_file_position]))
-
-                port_prefix = 'Tile_X'+str(x)+'Y'+str(y)
-                if top_edge:  # outer connection
-                    module_header_ports_list = GetTileComponentPort_Verilog(
-                        tile_description, 'NORTH', port_prefix)
-                    port_list.extend(GetTileComponentPort_Verilog_Str(
-                        tile_description, 'NORTH', port_prefix))
-                else:  # inner connection
-                    wire_list.extend(GetTileComponentWire_Verilog_Str(
-                        tile_description, 'NORTH', port_prefix))
-                if right_edge:
-                    module_header_ports_list.extend(GetTileComponentPort_Verilog(
-                        tile_description, 'EAST', port_prefix))
-                    port_list.extend(GetTileComponentPort_Verilog_Str(
-                        tile_description, 'EAST', port_prefix))
-                else:
-                    wire_list.extend(GetTileComponentWire_Verilog_Str(
-                        tile_description, 'EAST', port_prefix))
-                if bot_edge:
-                    module_header_ports_list.extend(GetTileComponentPort_Verilog(
-                        tile_description, 'SOUTH', port_prefix))
-                    port_list.extend(GetTileComponentPort_Verilog_Str(
-                        tile_description, 'SOUTH', port_prefix))
-                else:
-                    wire_list.extend(GetTileComponentWire_Verilog_Str(
-                        tile_description, 'SOUTH', port_prefix))
-                if left_edge:
-                    module_header_ports_list.extend(GetTileComponentPort_Verilog(
-                        tile_description, 'WEST', port_prefix))
-                    port_list.extend(GetTileComponentPort_Verilog_Str(
-                        tile_description, 'WEST', port_prefix))
-                else:
-                    wire_list.extend(GetTileComponentWire_Verilog_Str(
-                        tile_description, 'WEST', port_prefix))
-
-                CurrentTileExternalPorts = GetComponentPortsFromFile(
-                    super_tile_description[y][x]+'_tile.vhdl', port='external')
-                if CurrentTileExternalPorts != []:
-                    for item in CurrentTileExternalPorts:
-                        # we need the PortName and the PortDefinition (everything after the ':' separately
-                        PortName = re.sub('\:.*', '', item)
-                        substitutions = {" ": "", "\t": ""}
-                        PortName = (replace(PortName, substitutions))
-                        PortDefinition = re.sub('^.*\:', '', item)
-                        PortDefinition = PortDefinition.replace(
-                            '-- ', '//').replace('STD_LOGIC;', '').replace('STD_LOGIC', '').replace('\t', '')
-                        if re.search('SHARED_PORT', item):
-                            # for the module, we define only the very first for all SHARED_PORTs of any name category
-                            if PortName not in SharedExternalPorts:
-                                module_header_ports_list.append(PortName)
-                                if 'in' in PortDefinition:
-                                    PortDefinition = PortDefinition.replace(
-                                        'in', '')
-                                    external_port_list.append(
-                                        '\tinput '+PortName+';'+PortDefinition)
-                                elif 'out' in PortDefinition:
-                                    PortDefinition = PortDefinition.replace(
-                                        'out', '')
-                                    external_port_list.append(
-                                        '\toutput '+PortName+';'+PortDefinition)
-                                SharedExternalPorts.append(PortName)
-                            # we remember the used port name for the component instantiations to come
-                            # for the instantiations, we have to keep track about all external ports
-                            ExternalPorts.append(PortName)
-                        else:
-                            module_header_ports_list.append(
-                                'Tile_X'+str(x)+'Y'+str(y)+'_'+PortName)
-                            if 'in' in PortDefinition:
-                                PortDefinition = PortDefinition.replace(
-                                    'in', '')
-                                external_port_list.append(
-                                    '\tinput '+'Tile_X'+str(x)+'Y'+str(y)+'_'+PortName+';'+PortDefinition)
-                            elif 'out' in PortDefinition:
-                                PortDefinition = PortDefinition.replace(
-                                    'out', '')
-                                external_port_list.append(
-                                    '\toutput '+'Tile_X'+str(x)+'Y'+str(y)+'_'+PortName+';'+PortDefinition)
-                            # we remember the used port name for the component instantiations to come
-                            # we are maintaining the here used Tile_XxYy prefix as a sanity check
-                            # ExternalPorts = ExternalPorts + 'Tile_X'+str(x)+'Y'+str(y)+'_'+str(PortName)
-                            ExternalPorts.append(
-                                'Tile_X'+str(x)+'Y'+str(y)+'_'+PortName)
-
-                if ConfigBitMode == 'frame_based':  # ', FrameData, FrameStrobe'
-                    if top_edge:
-                        module_header_ports_list.append(
-                            port_prefix+'_'+'FrameStrobe_O')
-                        external_port_list.append('\toutput [MaxFramesPerCol-1:0] '+port_prefix+'_' +
-                                                  'FrameStrobe_O;   // CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register ')
-                    else:
-                        wire_list.append('\twire [MaxFramesPerCol-1:0] '+port_prefix+'_' +
-                                         'FrameStrobe_O;   // CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register ')
-                    if bot_edge:
-                        module_header_ports_list.append(
-                            port_prefix+'_'+'FrameStrobe')
-                        external_port_list.append('\tinput [MaxFramesPerCol-1:0] '+port_prefix+'_' +
-                                                  'FrameStrobe;   // CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register ')
-                    if left_edge:
-                        module_header_ports_list.append(
-                            port_prefix+'_'+'FrameData')
-                        external_port_list.append('\tinput [FrameBitsPerRow-1:0] '+port_prefix+'_' +
-                                                  'FrameData;   // CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register ')
-                    if right_edge:
-                        module_header_ports_list.append(
-                            port_prefix+'_'+'FrameData_O')
-                        external_port_list.append('\toutput [FrameBitsPerRow-1:0] '+port_prefix+'_' +
-                                                  'FrameData_O;   // CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register ')
-                    else:
-                        wire_list.append('\twire [FrameBitsPerRow-1:0] '+port_prefix+'_' +
-                                         'FrameData_O;   // CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register ')
-
-    module_header_ports += ', '.join(module_header_ports_list)
-    GenerateVerilog_Header(module_header_ports, file, module,  MaxFramesPerCol=str(
-        MaxFramesPerCol), FrameBitsPerRow=str(FrameBitsPerRow), module_header_files=module_header_files)
-    print('', file=file)
-
-    for line_print in port_list:
-        print(line_print, file=file)
-    for line_print in external_port_list:
-        print(line_print, file=file)
-    # GenerateVerilog_PortsFooter(file, module)
-    print('//signal declarations', file=file)
-    for line_print in wire_list:
-        print(line_print, file=file)
-    print('//configuration signal declarations\n', file=file)
-
-    tile_counter = 0
-    ExternalPorts_counter = 0
-    for y in range(y_tiles):
-        for x in range(x_tiles):
-            if (super_tile_description[y][x]) != 'NULL':
-                left_edge = False
-                right_edge = False
-                top_edge = False
-                bot_edge = False
-                if x == 0:
-                    left_edge = True
-                else:
-                    if super_tile_description[y][x-1] == 'NULL':
-                        left_edge = True
-                if x == x_tiles-1:
-                    right_edge = True
-                else:
-                    if super_tile_description[y][x+1] == 'NULL':
-                        right_edge = True
-                if y == 0:
-                    top_edge = True
-                else:
-                    if super_tile_description[y-1][x] == 'NULL':
-                        top_edge = True
-                if y == y_tiles-1:
-                    bot_edge = True
-                else:
-                    if super_tile_description[y+1][x] == 'NULL':
-                        bot_edge = True
-
-                EntityName = GetComponentEntityNameFromFile(
-                    str(super_tile_description[y][x])+'_tile.vhdl')
-                print('\t'+EntityName+' Tile_X'+str(x)+'Y' +
-                      str(y)+'_'+EntityName+' (', file=file)
-                TileInputs, TileOutputs = GetComponentPortsFromFile(
-                    str(super_tile_description[y][x])+'_tile.vhdl')
-                # print('DEBUG TileInputs: ', TileInputs)
-                # print('DEBUG TileOutputs: ', TileOutputs)
-                TilePorts = []
-                TilePortsDebug = []
-                # for connecting the instance, we write the tile ports in the order all inputs and all outputs
-                for port in TileInputs + TileOutputs:
-                    # GetComponentPortsFromFile returns vector information that starts with "(..." and we throw that away
-                    # However the vector information is still interesting for debug purpose
-                    TilePorts.append(
-                        re.sub(' ', '', (re.sub('\(.*', '', port, flags=re.IGNORECASE))))
-                    TilePortsDebug.append(port)
-
-                # now we get the connecting input signals in the order NORTH EAST SOUTH WEST (order is given in fabric.csv)
-                # from the adjacent tiles. For example, a NorthEnd-port is connected to a SouthBeg-port on tile Y+1
-                # note that super_tile_description[y][x] has its origin [0][0] in the top left corner
-                TileInputSignal = []
-                TileInputSignalCountPerDirection = []
-                # IMPORTANT: we have to go through the following in NORTH EAST SOUTH WEST order
-                # NORTH direction: get the NiBEG wires from tile y+1, because they drive NiEND
-                if bot_edge:
-                    TileInputs, TileOutputs = GetComponentPortsFromFile(
-                        str(super_tile_description[y][x])+'_tile.vhdl', filter='NORTH')
-                    for port in TileInputs:
-                        TileInputSignal.append(
-                            'Tile_X'+str(x)+'Y'+str(y)+'_'+port)
-                    if TileInputs == []:
-                        TileInputSignalCountPerDirection.append(0)
-                    else:
-                        TileInputSignalCountPerDirection.append(
-                            len(TileInputs))
-                else:
-                    TileInputs, TileOutputs = GetComponentPortsFromFile(
-                        str(super_tile_description[y+1][x])+'_tile.vhdl', filter='NORTH')
-                    for port in TileOutputs:
-                        TileInputSignal.append(
-                            'Tile_X'+str(x)+'Y'+str(y+1)+'_'+port)
-                    if TileOutputs == []:
-                        TileInputSignalCountPerDirection.append(0)
-                    else:
-                        TileInputSignalCountPerDirection.append(
-                            len(TileOutputs))
-                # EAST direction: get the EiBEG wires from tile x-1, because they drive EiEND
-                if left_edge:
-                    TileInputs, TileOutputs = GetComponentPortsFromFile(
-                        str(super_tile_description[y][x])+'_tile.vhdl', filter='EAST')
-                    for port in TileInputs:
-                        TileInputSignal.append(
-                            'Tile_X'+str(x)+'Y'+str(y)+'_'+port)
-                    if TileInputs == []:
-                        TileInputSignalCountPerDirection.append(0)
-                    else:
-                        TileInputSignalCountPerDirection.append(
-                            len(TileInputs))
-                else:
-                    TileInputs, TileOutputs = GetComponentPortsFromFile(
-                        str(super_tile_description[y][x-1])+'_tile.vhdl', filter='EAST')
-                    for port in TileOutputs:
-                        TileInputSignal.append(
-                            'Tile_X'+str(x-1)+'Y'+str(y)+'_'+port)
-                    if TileOutputs == []:
-                        TileInputSignalCountPerDirection.append(0)
-                    else:
-                        TileInputSignalCountPerDirection.append(
-                            len(TileOutputs))
-                # SOUTH direction: get the SiBEG wires from tile y-1, because they drive SiEND
-                if top_edge:
-                    TileInputs, TileOutputs = GetComponentPortsFromFile(
-                        str(super_tile_description[y][x])+'_tile.vhdl', filter='SOUTH')
-                    for port in TileInputs:
-                        TileInputSignal.append(
-                            'Tile_X'+str(x)+'Y'+str(y)+'_'+port)
-                    if TileInputs == []:
-                        TileInputSignalCountPerDirection.append(0)
-                    else:
-                        TileInputSignalCountPerDirection.append(
-                            len(TileInputs))
-                else:
-                    TileInputs, TileOutputs = GetComponentPortsFromFile(
-                        str(super_tile_description[y-1][x])+'_tile.vhdl', filter='SOUTH')
-                    for port in TileOutputs:
-                        TileInputSignal.append(
-                            'Tile_X'+str(x)+'Y'+str(y-1)+'_'+port)
-                    if TileOutputs == []:
-                        TileInputSignalCountPerDirection.append(0)
-                    else:
-                        TileInputSignalCountPerDirection.append(
-                            len(TileOutputs))
-                # WEST direction: get the WiBEG wires from tile x+1, because they drive WiEND
-                if right_edge:
-                    TileInputs, TileOutputs = GetComponentPortsFromFile(
-                        str(super_tile_description[y][x])+'_tile.vhdl', filter='WEST')
-                    for port in TileInputs:
-                        TileInputSignal.append(
-                            'Tile_X'+str(x)+'Y'+str(y)+'_'+port)
-                    if TileInputs == []:
-                        TileInputSignalCountPerDirection.append(0)
-                    else:
-                        TileInputSignalCountPerDirection.append(
-                            len(TileInputs))
-                else:
-                    TileInputs, TileOutputs = GetComponentPortsFromFile(
-                        str(super_tile_description[y][x+1])+'_tile.vhdl', filter='WEST')
-                    for port in TileOutputs:
-                        TileInputSignal.append(
-                            'Tile_X'+str(x+1)+'Y'+str(y)+'_'+port)
-                    if TileOutputs == []:
-                        TileInputSignalCountPerDirection.append(0)
-                    else:
-                        TileInputSignalCountPerDirection.append(
-                            len(TileOutputs))
-                # at this point, TileInputSignal is carrying all the driver signals from the surrounding tiles (the BEG signals of those tiles)
-                # for example when we are on Tile_X2Y2, the first entry could be "Tile_X2Y3_N1BEG( 3 downto 0 )"
-                # for element in TileInputSignal:
-                    # print('DEBUG TileInputSignal :'+'Tile_X'+str(x)+'Y'+str(y), element)
-
-                # the output signals are named after the output ports
-                TileOutputSignal = []
-                TileInputsCountPerDirection = []
-                # as for the VHDL signal generation, we simply add a prefix like "Tile_X1Y0_" to the begin port
-                # for port in TileOutputs:
-                # TileOutputSignal.append('Tile_X'+str(x)+'Y'+str(y)+'_'+port)
-                if (super_tile_description[y][x]) != 'NULL':
-                    TileInputs, TileOutputs = GetComponentPortsFromFile(
-                        str(super_tile_description[y][x])+'_tile.vhdl', filter='NORTH')
-                    for port in TileOutputs:
-                        TileOutputSignal.append(
-                            'Tile_X'+str(x)+'Y'+str(y)+'_'+port)
-                    TileInputsCountPerDirection.append(len(TileInputs))
-                    TileInputs, TileOutputs = GetComponentPortsFromFile(
-                        str(super_tile_description[y][x])+'_tile.vhdl', filter='EAST')
-                    for port in TileOutputs:
-                        TileOutputSignal.append(
-                            'Tile_X'+str(x)+'Y'+str(y)+'_'+port)
-                    TileInputsCountPerDirection.append(len(TileInputs))
-                    TileInputs, TileOutputs = GetComponentPortsFromFile(
-                        str(super_tile_description[y][x])+'_tile.vhdl', filter='SOUTH')
-                    for port in TileOutputs:
-                        TileOutputSignal.append(
-                            'Tile_X'+str(x)+'Y'+str(y)+'_'+port)
-                    TileInputsCountPerDirection.append(len(TileInputs))
-                    TileInputs, TileOutputs = GetComponentPortsFromFile(
-                        str(super_tile_description[y][x])+'_tile.vhdl', filter='WEST')
-                    for port in TileOutputs:
-                        TileOutputSignal.append(
-                            'Tile_X'+str(x)+'Y'+str(y)+'_'+port)
-                    TileInputsCountPerDirection.append(len(TileInputs))
-                # at this point, TileOutputSignal is carrying all the signal names that will be driven by the present tile
-                # for example when we are on Tile_X2Y2, the first entry could be "Tile_X2Y2_W1BEG( 3 downto 0 )"
-                # for element in TileOutputSignal:
-                    # print('DEBUG TileOutputSignal :'+'Tile_X'+str(x)+'Y'+str(y), element)
-
-                # looks like this conditional is redundant
-                if (super_tile_description[y][x]) != 'NULL':
-                    TileInputs, TileOutputs = GetComponentPortsFromFile(
-                        str(super_tile_description[y][x])+'_tile.vhdl')
-                # example: W6END( 11 downto 0 ), N1BEG( 3 downto 0 ), ...
-                # meaning: the END-ports are the tile inputs followed by the actual tile output ports (typically BEG)
-                # this is essentially the left side (the component ports) of the component instantiation
-
-                CheckFailed = False
-                # sanity check: The number of input ports has to match the TileInputSignal per direction (N,E,S,W)
-                if (super_tile_description[y][x]) != 'NULL':
-                    for k in range(0, 4):
-                        if TileInputsCountPerDirection[k] != TileInputSignalCountPerDirection[k]:
-                            print('ERROR: component input missmatch in '+str(All_Directions[k])+' direction for Tile_X'+str(
-                                x)+'Y'+str(y)+' of type '+str(super_tile_description[y][x]))
-                            CheckFailed = True
-                    if CheckFailed == True:
-                        print('Error in function GenerateFabricVHDL')
-                        print('DEBUG:TileInputs: ', TileInputs)
-                        print('DEBUG:TileInputSignal: ', TileInputSignal)
-                        print('DEBUG:TileOutputs: ', TileOutputs)
-                        print('DEBUG:TileOutputSignal: ', TileOutputSignal)
-                        # raise ValueError('Error in function GenerateFabricVHDL')
-                # the output ports are derived from the same list and should therefore match automatically
-
-                # for element in (TileInputs+TileOutputs):
-                    # print('DEBUG TileInputs+TileOutputs :'+'Tile_X'+str(x)+'Y'+str(y)+'element:', element)
-
-                # looks like this conditional is redundant
-                if (super_tile_description[y][x]) != 'NULL':
-                    for k in range(0, len(TileInputs)):
-                        PortName = re.sub('\(.*', '', TileInputs[k])
-                        print('\t.'+PortName+'('+TileInputSignal[k].replace('(', '[').replace(')', ']').replace(
-                            ' downto ', ':').replace(' ', '').replace('\t', '')+'),', file=file)
-                        # print('DEBUG_INPUT: '+PortName+'\t=> '+TileInputSignal[k]+',')
-                    for k in range(0, len(TileOutputs)):
-                        PortName = re.sub('\(.*', '', TileOutputs[k])
-                        print('\t.'+PortName+'('+TileOutputSignal[k].replace('(', '[').replace(')', ']').replace(
-                            ' downto ', ':').replace(' ', '').replace('\t', '')+'),', file=file)
-                        # print('DEBUG_OUTPUT: '+PortName+'\t=> '+TileOutputSignal[k]+',')
-
-                # Check if this tile uses IO-pins that have to be connected to the top-level module
-                CurrentTileExternalPorts = GetComponentPortsFromFile(
-                    super_tile_description[y][x]+'_tile.vhdl', port='external')
-                if CurrentTileExternalPorts != []:
-                    print(
-                        '\t//tile IO port which gets directly connected to top-level tile module', file=file)
-                    for item in CurrentTileExternalPorts:
-                        # we need the PortName and the PortDefinition (everything after the ':' separately
-                        PortName = re.sub('\:.*', '', item)
-                        substitutions = {" ": "", "\t": ""}
-                        PortName = (replace(PortName, substitutions))
-                        PortDefinition = re.sub('^.*\:', '', item)
-                        # ExternalPorts was populated when writing the super_tile_description top level module
-                        print('\t.'+PortName+'('+ExternalPorts[ExternalPorts_counter].replace('(', '[').replace(
-                            ')', ']').replace(' downto ', ':').replace(' ', '').replace('\t', '')+'),', file=file)
-                        ExternalPorts_counter += 1
-
-                if ConfigBitMode == 'FlipFlopChain':
-                    GenerateVHDL_Conf_Instantiation(
-                        file=file, counter=tile_counter, close=True)
-                if ConfigBitMode == 'frame_based':
-                    if (super_tile_description[y][x]) != 'NULL':
-                        TileConfigBits = GetNoConfigBitsFromFile(
-                            str(super_tile_description[y][x])+'_tile.vhdl')
-                        if TileConfigBits != 'NULL':
-                            if int(TileConfigBits) == 0:
-                                # print('\t\t ConfigBits => (others => \'-\') );\n', file=file)
-                                # last_pos = file.tell()
-                                # for k in range(20):
-                                # file.seek(last_pos -k)                # scan character by character backwards and look for ','
-                                # my_char = file.read(1)
-                                # if my_char == ',':
-                                # file.seek(last_pos -k)            # place seek pointer to last ',' position and overwrite with a space
-                                # print(' ', end='', file=file)
-                                # break                            # stop scan
-                                # file.seek(0, os.SEEK_END)          # go back to usual...
-
-                                # print('\t);\n', file=file)
-
-                                if bot_edge:
-                                    print('\t.FrameStrobe('+'Tile_X'+str(x) +
-                                          'Y'+str(y)+'_FrameStrobe),', file=file)
-                                    print('\t.FrameStrobe_O('+'Tile_X'+str(x) +
-                                          'Y'+str(y)+'_FrameStrobe_O)', file=file)
-                                else:
-                                    print('\t.FrameStrobe('+'Tile_X'+str(x) +
-                                          'Y'+str(y+1)+'_FrameStrobe_O),', file=file)
-                                    print('\t.FrameStrobe_O('+'Tile_X'+str(x) +
-                                          'Y'+str(y)+'_FrameStrobe_O)', file=file)
-                                print('\t);\n', file=file)
-                            else:
-                                if left_edge:
-                                    print('\t.FrameData(Tile_X'+str(x) +
-                                          'Y'+str(y)+'_FrameData), ', file=file)
-                                    print('\t.FrameData_O(Tile_X'+str(x) +
-                                          'Y'+str(y)+'_FrameData_O), ', file=file)
-                                else:
-                                    print('\t.FrameData(Tile_X'+str(x-1) +
-                                          'Y'+str(y)+'_FrameData), ', file=file)
-                                    print('\t.FrameData_O(Tile_X'+str(x) +
-                                          'Y'+str(y)+'_FrameData_O), ', file=file)
-                                if bot_edge:
-                                    print('\t.FrameStrobe('+'Tile_X'+str(x) +
-                                          'Y'+str(y)+'_FrameStrobe),', file=file)
-                                    print('\t.FrameStrobe_O('+'Tile_X'+str(x) +
-                                          'Y'+str(y)+'_FrameStrobe_O)', file=file)
-                                else:
-                                    print('\t.FrameStrobe('+'Tile_X'+str(x) +
-                                          'Y'+str(y+1)+'_FrameStrobe_O),', file=file)
-                                    print('\t.FrameStrobe_O('+'Tile_X'+str(x) +
-                                          'Y'+str(y)+'_FrameStrobe_O)', file=file)
-                                print('\t);\n', file=file)
-                                # print('\t\t ConfigBits => ConfigBits ( '+str(TileConfigBits)+' -1 downto '+str(0)+' ) );\n', file=file)
-                                # BEL_ConfigBitsCounter = BEL_ConfigBitsCounter + int(BEL_ConfigBits)
-                tile_counter += 1
-    print('\n'+'endmodule', file=file)
 
 
 def GenerateFabricVerilog(FabricFile, file, module='eFPGA'):
@@ -5267,6 +4512,13 @@ if args.GenTileHDL or args.run_all:
         writer = VHDLWriter(f"{out_dir}/{str(tile)}_tile.vhdl")
         generateTile(fabric.tileDic[tile], writer)
 
+    if SuperTileEnable:
+        for superTile in fabric.superTileDic:
+            print(
+                f"### generate VHDL for SuperTile {superTile} # filename: {out_dir}/{superTile}_tile.vhdl")
+            writer = VHDLWriter(f"{out_dir}/{str(superTile)}_tile.vhdl")
+            generateSuperTile(fabric.superTileDic[superTile], writer)
+
 if args.GenTileVerilog or args.run_all:
     fabric = parseFabricCSV(args.fabric_csv)
     for tile in fabric.tileDic:
@@ -5276,16 +4528,11 @@ if args.GenTileVerilog or args.run_all:
         generateTile(fabric.tileDic[tile], writer)
 
     if SuperTileEnable:
-        SuperTileDict = GetSuperTileFromFile(FabricFile)
-        for SuperTile in SuperTileDict:
-            if any(item in SuperTileDict[SuperTile][0] for item in TileTypes):
-                print(
-                    f"### generate Verilog for SuperTile {SuperTile} # filename: {out_dir}/{str(SuperTile)}_tile.v")
-                TileFileHandler = open(
-                    f"{out_dir}/{str(SuperTile)}_tile.v", 'w+')
-                GenerateSuperTileVerilog(
-                    SuperTileDict[SuperTile], str(SuperTile), TileFileHandler)
-                TileFileHandler.close()
+        for superTile in fabric.superTileDic:
+            print(
+                f"### generate Verilog for SuperTile {superTile} # filename: {out_dir}/{superTile}_tile.v")
+            writer = VerilogWriter(f"{out_dir}/{str(superTile)}_tile.v")
+            generateSuperTile(fabric.superTileDic[superTile], writer)
 
 if args.GenFabricVHDL or args.run_all:
     print('### Generate the Fabric VHDL descriptions ')

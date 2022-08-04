@@ -162,6 +162,11 @@ class Tile():
         for b in self.bels:
             self.globalConfigBits += b.configBit
 
+    def __eq__(self, __o) -> bool:
+        if __o is None:
+            return False
+        return self.name == __o.name
+
     def getWestPorts(self) -> List[Port]:
         return [p for p in self.portsInfo if p.direction == "WEST"]
 
@@ -185,6 +190,7 @@ class Tile():
 class SuperTile():
     name: str
     tiles: List[Tile]
+    tileMap: List
 
 
 @dataclass
@@ -202,6 +208,7 @@ class Fabric():
     superTileEnable: bool = True
 
     tileDic: Dict = field(default_factory=dict)
+    superTileDic: Dict = field(default_factory=dict)
 
     def __repr__(self):
         fabric = ""

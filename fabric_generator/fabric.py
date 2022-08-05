@@ -190,12 +190,12 @@ class Tile():
 class SuperTile():
     name: str
     tiles: List[Tile]
-    tileMap: List
+    tileMap: List[List[Tile]]
 
 
 @dataclass
 class Fabric():
-    tile: List = field(default_factory=list)
+    tile: List[List[Tile]] = field(default_factory=list)
 
     height: int = 15
     width: int = 15

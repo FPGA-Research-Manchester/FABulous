@@ -5,6 +5,9 @@ import itertools
 import collections
 from typing import List, Literal, Tuple
 
+oppositeDic = {"NORTH": "SOUTH", "SOUTH": "NORTH",
+               "EAST": "WEST", "WEST": "EAST"}
+
 
 def parseFabricCSV(fileName: str) -> Fabric:
     """
@@ -48,28 +51,38 @@ def parseFabricCSV(fileName: str) -> Fabric:
         ports = []
         bels = []
         matrixDir = ""
+        withUserCLK = False
         for item in t:
             temp = item.split(",")
             if not temp or temp[0] == "":
                 continue
-            if temp[0] in ["NORTH", "SOUTH", "EAST", "WEST", "JUMP"]:
+            if temp[0] in ["NORTH", "SOUTH", "EAST", "WEST"]:
                 if temp[1] == '' or temp[4] == '':
                     raise ValueError(
                         f"Either source or destination port for JUMP wire missing in tile {t}")
                 ports.append(Port(temp[0], temp[1], int(
-                    temp[2]), int(temp[3]), temp[4], int(temp[5])))
+                    temp[2]), int(temp[3]), temp[4], int(temp[5]), temp[1], "OUT", temp[0]))
+
+                ports.append(Port(temp[0], temp[1], int(
+                    temp[2]), int(temp[3]), temp[4], int(temp[5]), temp[4], "IN", oppositeDic[temp[0]]))
+            elif temp[0] == "JUMP":
+                ports.append(Port(temp[0], temp[1], int(
+                    temp[2]), int(temp[3]), temp[4], int(temp[5]), temp[1], "OUT", "ANY"))
+                ports.append(Port(temp[0], temp[1], int(
+                    temp[2]), int(temp[3]), temp[4], int(temp[5]), temp[1], "IN", "ANY"))
             elif temp[0] == "BEL":
-                internal, external, config, shared, configBit = parseFileHDL(
+                internal, external, config, shared, configBit, userClk = parseFileHDL(
                     temp[1], temp[2])
                 bels.append(Bel(temp[1], temp[2], internal,
                             external, config, shared, configBit))
+                withUserCLK |= userClk
             elif temp[0] == "MATRIX":
                 matrixDir = temp[1]
             else:
                 raise ValueError(
                     f"Error: unknown tile description {temp[0]} in tile {t}")
 
-        tileDefs.append(Tile(tileName, ports, bels, matrixDir))
+        tileDefs.append(Tile(tileName, ports, bels, matrixDir, withUserCLK))
 
     fabricTiles = []
     tileDic = dict(zip(tileTypes, tileDefs))
@@ -109,10 +122,21 @@ def parseFabricCSV(fileName: str) -> Fabric:
         name = description[0].split(",")[1]
         tileMap = []
         tiles = []
+        bels = []
+        withUserCLK = False
         for i in description[1:-1]:
             line = i.split(",")
             line = [i for i in line if i != "" and i != " "]
             row = []
+
+            if line[0] == "BEL":
+                internal, external, config, shared, configBit, userClk = parseFileHDL(
+                    line[1], line[2])
+                bels.append(Bel(line[1], line[2], internal,
+                            external, config, shared, configBit))
+                withUserCLK |= userClk
+                continue
+
             for j in line:
                 if j in tileDic:
                     t = deepcopy(tileDic[j])
@@ -122,12 +146,11 @@ def parseFabricCSV(fileName: str) -> Fabric:
                 elif j == "Null" or j == "NULL" or j == "None":
                     row.append(None)
                 else:
-
                     raise ValueError(
                         f"The super tile {name} contains definitions that are not tiles or Null.")
             tileMap.append(row)
 
-        superTileDic[name] = SuperTile(name, tiles, tileMap)
+        superTileDic[name] = SuperTile(name, tiles, tileMap, bels, withUserCLK)
 
     # parse the parameters
     height = 0
@@ -244,6 +267,7 @@ def parseFileHDL(filename, belPrefix="", filter="ALL"):
     isExternal = False
     isConfig = False
     isShared = False
+    userClk = False
 
     with open(filename, "r") as f:
         file = f.read()
@@ -287,6 +311,9 @@ def parseFileHDL(filename, belPrefix="", filter="ALL"):
         else:
             internal.append((portName, result.group(2).lower()))
 
+        if "UserCLK" in portName:
+            userClk = True
+
         isExternal = False
         isConfig = False
         isShared = False
@@ -305,7 +332,7 @@ def parseFileHDL(filename, belPrefix="", filter="ALL"):
         print("Assume the number of configBits is 0")
         noConfigBits = 0
 
-    return internal, external, config, shared, noConfigBits
+    return internal, external, config, shared, noConfigBits, userClk
 
 
 # convert the matrix csv into a dictionary from destination to source
@@ -329,7 +356,6 @@ def parseMatrix(fileName, tileName):
             continue
         indices = [k for k, v in enumerate(connections) if v == "1"]
         connectionsDic[portName] = [destList[j] for j in indices]
-
     return connectionsDic
 
 

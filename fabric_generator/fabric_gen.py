@@ -1156,22 +1156,22 @@ def generateFabric(fabric: Fabric, writer: codeGenerator):
             else:
                 instantiatedPosition.append((x, y))
                 tileLocationOffset.append((0, 0))
-                tilePortsInfo.append((tile.getSouthPorts(), 0, 0))
-                tilePortsInfo.append((tile.getWestPorts(), 0, 0))
-                tilePortsInfo.append((tile.getNorthPorts(), 0, 0))
-                tilePortsInfo.append((tile.getEastPorts(), 0, 0))
+                tilePortsInfo.append((tile.getNorthSidePorts(), 0, 0))
+                tilePortsInfo.append((tile.getEastSidePorts(), 0, 0))
+                tilePortsInfo.append((tile.getSouthSidePorts(), 0, 0))
+                tilePortsInfo.append((tile.getWestSidePorts(), 0, 0))
 
                 # all the input port of a single normal tile
                 for port, i, j in tilePortsInfo:
                     for p in port:
-                        if p.destinationName != "NULL":
-                            tilePortList.append(f"{p.destinationName}")
+                        if p.name != "NULL" and p.inOut == "IN":
+                            tilePortList.append(f"{p.name}")
 
                 # all the output port of a single normal tile
                 for port, i, j in tilePortsInfo:
                     for p in port:
-                        if p.sourceName != "NULL":
-                            tilePortList.append(f"{p.sourceName}")
+                        if p.name != "NULL" and p.inOut == "OUT":
+                            tilePortList.append(f"{p.name}")
 
                 for b in tile.bels:
                     for p in b.externalInput:

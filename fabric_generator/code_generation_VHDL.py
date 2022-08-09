@@ -3,6 +3,8 @@ from fabric import Fabric, Tile, Port, Bel
 import os
 import math
 import re
+
+from code_generator import codeGenerator
 # Default parameters (will be overwritten if defined in fabric between 'ParametersBegin' and 'ParametersEnd'
 # Parameters = [ 'ConfigBitMode', 'FrameBitsPerRow' ]
 ConfigBitMode = 'frame_based'
@@ -46,32 +48,7 @@ Opposite_Directions = {"NORTH": "SOUTH",
                        "EAST": "WEST", "SOUTH": "NORTH", "WEST": "EAST"}
 
 
-class VHDLWriter():
-
-    @property
-    def outFileName(self):
-        return self._outFileName
-
-    @property
-    def content(self):
-        return self._content
-
-    def __init__(self, outFileName):
-        self._outFileName = outFileName
-        self._content = []
-
-    def writeToFile(self):
-        with open(self._outFileName, 'w') as f:
-            f.write("\n".join(self._content))
-
-    def _add(self, line, indentLevel=0) -> None:
-        if indentLevel == 0:
-            self._content.append(line)
-        else:
-            self._content.append(f"{' ':<{4*indentLevel}}" + line)
-
-    def addNewLine(self):
-        self._add("")
+class VHDLWriter(codeGenerator):
 
     def addComment(self, comment, onNewLine=False, end="", indentLevel=0) -> None:
         if onNewLine:
@@ -101,7 +78,7 @@ class VHDLWriter():
     def addParameterEnd(self, indentLevel=0):
         self._add(");", indentLevel)
 
-    def addParameter(self, name, type, value, indentLevel=0):
+    def addParameter(self, name, type, value, end=False, indentLevel=0):
         self._add(f"{name} : {type} := {value};", indentLevel)
 
     def addPortStart(self, indentLevel=0):
@@ -110,10 +87,11 @@ class VHDLWriter():
     def addPortEnd(self, indentLevel=0):
         self._add(");", indentLevel)
 
-    def addPortScalar(self, name, io: Literal["in", "out"], indentLevel=0):
-        self._add(f"{name:<10} : {io} STD_LOGIC;", indentLevel=indentLevel)
+    def addPortScalar(self, name, io, end=False, indentLevel=0):
+        self._add(f"{name:<10} : {io.lower()} STD_LOGIC;",
+                  indentLevel=indentLevel)
 
-    def addPortVector(self, name, io, width, indentLevel=0):
+    def addPortVector(self, name, io, width, end=False, indentLevel=0):
         self._add(
             f"{name:<10} : {io} STD_LOGIC_VECTOR( {width} downto 0 );", indentLevel=indentLevel)
 
@@ -364,7 +342,7 @@ Inst_{tileName}_switch_matrix : {tileName}_switch_matrix
         jumpWire = []
         # get indexed version of the port of the tile
         for p in tile.portsInfo:
-            if p.direction != "JUMP":
+            if p.wireDirection != "JUMP":
                 input, output = p.expandPortInfo(
                     mode="AutoSwitchMatrixIndexed")
                 portInputIndexed += input

@@ -3,6 +3,8 @@ from typing import Literal
 from fabric import Tile, Bel
 import math
 import re
+
+from code_generator import codeGenerator
 ConfigBitMode = 'FlipFlopChain'
 FrameBitsPerRow = 32
 MaxFramesPerCol = 20
@@ -44,31 +46,7 @@ Opposite_Directions = {"NORTH": "SOUTH",
                        "EAST": "WEST", "SOUTH": "NORTH", "WEST": "EAST"}
 
 
-class VerilogWriter():
-    @property
-    def outFileName(self):
-        return self._outFileName
-
-    @property
-    def content(self):
-        return self._content
-
-    def __init__(self, outFileName) -> None:
-        self._outFileName = outFileName
-        self._content = []
-
-    def writeToFile(self):
-        with open(self._outFileName, 'w') as f:
-            f.write("\n".join(self._content))
-
-    def _add(self, line, indentLevel=0) -> None:
-        if indentLevel == 0:
-            self._content.append(line)
-        else:
-            self._content.append(f"{' ':<{4*indentLevel}}" + line)
-
-    def addNewLine(self):
-        self._add("")
+class VerilogWriter(codeGenerator):
 
     def addComment(self, comment, onNewLine=False, end="", indentLevel=0) -> None:
         if onNewLine:
@@ -78,7 +56,7 @@ class VerilogWriter():
                 f"//{comment}"f"{end}"
         else:
             self._add(f"{' ':<{indentLevel*4}}" +
-                      f"-- {comment}"f"{end}")
+                      f"// {comment}"f"{end}")
 
     def addHeader(self, name, package='', maxFramesPerCol='', frameBitsPerRow='', ConfigBitMode='FlipFlopChain', indentLevel=0):
         self._add(f"module {name}", indentLevel)
@@ -92,8 +70,11 @@ class VerilogWriter():
     def addParameterEnd(self, indentLevel=0):
         self._add(")", indentLevel)
 
-    def addParameter(self, name, type, value, indentLevel=0):
-        self._add(f"parameter {name}={value},", indentLevel)
+    def addParameter(self, name, type, value, end=False, indentLevel=0):
+        if end:
+            self._add(f"parameter {name}={value}", indentLevel)
+        else:
+            self._add(f"parameter {name}={value},", indentLevel)
 
     def addPortStart(self, indentLevel=0):
         self._add(f"(", indentLevel)
@@ -101,23 +82,29 @@ class VerilogWriter():
     def addPortEnd(self, indentLevel=0):
         self._add(");", indentLevel)
 
-    def addPortScalar(self, name, io: Literal["in", "out"], indentLevel=0):
+    def addPortScalar(self, name, io, end=False, indentLevel=0):
         t = ""
-        if io == "in":
+        if io == "IN":
             t = "input"
-        if io == "out":
+        if io == "OUT":
             t = "output"
-        self._add(f"{t} {name},", indentLevel)
+        if end:
+            self._add(f"{t} {name}", indentLevel)
+        else:
+            self._add(f"{t} {name},", indentLevel)
 
-    def addPortVector(self, name, io: Literal["in", "out"], width, indentLevel=0):
+    def addPortVector(self, name, io, width, end=False, indentLevel=0):
         t = ""
-        if io == "in":
+        if io == "IN":
             t = "input"
-        if io == "out":
+        if io == "OUT":
             t = "output"
-        self._add(f"{t} [{width}:0] {name},", indentLevel)
+        if end:
+            self._add(f"{t} [{width}:0] {name}", indentLevel)
+        else:
+            self._add(f"{t} [{width}:0] {name},", indentLevel)
 
-    def addDesignDescriptionStart(self, indentLevel=0):
+    def addDesignDescriptionStart(self, name, indentLevel=0):
         pass
 
     def addDesignDescriptionEnd(self, indentLevel=0):
@@ -381,7 +368,7 @@ Inst_{tileName}_switch_matrix {tileName}_switch_matrix(
         jumpWire = []
         # get indexed version of the port of the tile
         for p in tile.portsInfo:
-            if p.direction != "JUMP":
+            if p.wireDirection != "JUMP":
                 input, output = p.expandPortInfo(
                     mode="AutoSwitchMatrixIndexed")
                 portInputIndexed += input
@@ -397,7 +384,10 @@ Inst_{tileName}_switch_matrix {tileName}_switch_matrix(
 
         belOutputs = []
         belInputs = []
-
+        # removing duplicates
+        portOutputIndexed = list(dict.fromkeys(portOutputIndexed))
+        portTopInput = list(dict.fromkeys(portTopInput))
+        jumpWire = list(dict.fromkeys(jumpWire))
         for b in tile.bels:
             belOutputs += b.outputs
             belInputs += b.inputs

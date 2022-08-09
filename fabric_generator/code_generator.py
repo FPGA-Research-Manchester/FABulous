@@ -1,5 +1,6 @@
 import abc
-from fabric import Fabric, Tile
+from typing import Literal
+from fabric import Fabric, Tile, Bel
 
 
 class codeGenerator(abc.ABC):
@@ -12,14 +13,9 @@ class codeGenerator(abc.ABC):
     def content(self):
         return self._content
 
-    @property
-    def tile(self):
-        return self._tile
-
-    def __init__(self, outFileName, tile: Tile):
+    def __init__(self, outFileName):
         self._outFileName = outFileName
         self._content = []
-        self._tile = tile
 
     def writeToFile(self):
         with open(self._outFileName, 'w') as f:
@@ -35,15 +31,15 @@ class codeGenerator(abc.ABC):
         self._add("")
 
     @abc.abstractmethod
-    def addComment(self, comment, onNewLine=False, end="\n", indentLevel=0) -> None:
+    def addComment(self, comment, onNewLine=False, end="", indentLevel=0) -> None:
         pass
 
     @abc.abstractmethod
-    def addHeader(self, postPad, package='', maxFramesPerCol='', frameBitsPerRow='', ConfigBitMode='FlipFlopChain', indentLevel=0):
+    def addHeader(self, name, package='', maxFramesPerCol='', frameBitsPerRow='', ConfigBitMode='FlipFlopChain', indentLevel=0):
         pass
 
     @abc.abstractmethod
-    def addHeaderEnd(self, postPad, indentLevel=0):
+    def addHeaderEnd(self, name, indentLevel=0):
         pass
 
     @abc.abstractmethod
@@ -55,7 +51,7 @@ class codeGenerator(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def addParameter(self, name, type, value, indentLevel=0):
+    def addParameter(self, name, type, value, end=False, indentLevel=0):
         pass
 
     @abc.abstractmethod
@@ -67,15 +63,15 @@ class codeGenerator(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def addPortScalar(self, name, io, indentLevel=0):
+    def addPortScalar(self, name, io: Literal["in", "out"], end=False, indentLevel=0):
         pass
 
     @abc.abstractmethod
-    def addPortVector(self, name, io, width, indentLevel=0):
+    def addPortVector(self, name, io: Literal["in", "out"], width, end=False, indentLevel=0):
         pass
 
     @abc.abstractmethod
-    def addDesignDescriptionStart(self, postPad, indentLevel=0):
+    def addDesignDescriptionStart(self, name, indentLevel=0):
         pass
 
     @abc.abstractmethod
@@ -91,6 +87,10 @@ class codeGenerator(abc.ABC):
         pass
 
     @abc.abstractmethod
+    def addConnectionScalar(self, name):
+        pass
+
+    @abc.abstractmethod
     def addLogicStart(self, indentLevel=0):
         pass
 
@@ -99,15 +99,31 @@ class codeGenerator(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def addFlipFlopChain(self, configBitCounter):
+    def addInstantiation(self, compName, compInsName, compPort, signal, indentLevel=0):
         pass
 
     @abc.abstractmethod
-    def addShiftRegister(self, indentLevel=0):
+    def addGeneratorStart(self, loopName, variableName, start, end, indentLevel=0):
         pass
 
     @abc.abstractmethod
-    def addAssign(self, left, right, indentLevel=0):
+    def addGeneratorEnd(self, indentLevel=0):
+        pass
+
+    @abc.abstractmethod
+    def addComponentDeclarationForFile(self, fileName):
+        pass
+
+    @abc.abstractmethod
+    def addShiftRegister(self, configBits, indentLevel=0):
+        pass
+
+    @abc.abstractmethod
+    def addFlipFlopChain(self, configBits, indentLevel=0):
+        pass
+
+    @abc.abstractmethod
+    def addAssignScalar(self, left, right, indentLevel=0):
         pass
 
     @abc.abstractmethod
@@ -116,4 +132,20 @@ class codeGenerator(abc.ABC):
 
     @abc.abstractmethod
     def addMux(self, muxStyle, muxSize, tileName, portName, portList, oldConfigBitstreamPosition, configBitstreamPosition, delay):
+        pass
+
+    @abc.abstractmethod
+    def addLatch(self, frameName, frameBitsPerRow, frameIndex, configBit):
+        pass
+
+    @abc.abstractmethod
+    def addBELInstantiations(self, bel: Bel, configBitCounter, mode="frame_based", belCounter=0):
+        pass
+
+    @abc.abstractmethod
+    def add_Conf_Instantiation(self, counter, close=True):
+        pass
+
+    @abc.abstractmethod
+    def addSwitchMatrixInstantiation(self, tile: Tile, configBitCounter, switchMatrixConfigPort, belCounter, mode='frame_based'):
         pass

@@ -2,28 +2,29 @@ from dataclasses import dataclass, field
 from typing import Literal, List, Dict
 
 
-@dataclass
+@dataclass(frozen=True, eq=True)
 class Port():
-    direction: Literal["NORTH", "SOUTH", "EAST", "WEST", "JUMP"]
+    wireDirection: Literal["NORTH", "SOUTH", "EAST", "WEST", "JUMP"]
     sourceName: str
     xOffset: int
     yOffset: int
     destinationName: str
     wires: int
+    name: str
+    inOut: Literal["IN", "OUT", "NULL"]
+    sideOfTile: Literal["NORTH", "SOUTH", "EAST", "WEST", "ANY"]
     # totalWireAmount: int
 
     # def __init__(self, direction, sourceName, xOffset, yOffset, destinationName, wires) -> None:
-    #     self.direction = direction
+    #     self.wireDirection = direction
     #     self.sourceName = sourceName
     #     self.xOffset = xOffset
     #     self.yOffset = yOffset
     #     self.destinationName = destinationName
     #     self.wires = wires
-    #     self.totalWireAmount = (
-    #         (abs(self.xOffset)+abs(self.yOffset))-1) * self.wires
 
     def __repr__(self) -> str:
-        return f"{self.sourceName}->{self.destinationName}"
+        return f"wires:{self.wires} X_offset:{self.xOffset} Y_offset:{self.yOffset} source_name:{self.sourceName} destination_name:{self.destinationName}"
 
     def expandPortInfo(self, mode="SwitchMatrix"):
         inputs, outputs = [], []
@@ -114,17 +115,18 @@ class Tile():
     matrixDir: str
     inputs: List[str]
     outputs: List[str]
-    internalInputs = List[str]
-    internalOutputs = List[str]
+    internalInputs: List[str]
+    internalOutputs: List[str]
     jumps: List[str]
     belInputs: List[str]
     belOutputs: List[str]
     globalConfigBits: int = 0
+    withUserCLK: bool = False
 
     def __repr__(self):
         return f"\n{self.name}\n inputPorts:{self.inputs}\n outputPorts:{self.outputs}\n bels:{self.bels}\n Matrix_dir:{self.matrixDir}\n"
 
-    def __init__(self, name: str, ports: List[Port], bels: List[Bel], matrixDir: str):
+    def __init__(self, name: str, ports: List[Port], bels: List[Bel], matrixDir: str, userCLK: bool) -> None:
         self.name = name
         self.portsInfo = ports
         self.bels = bels
@@ -136,14 +138,15 @@ class Tile():
         self.belInputs = []
         self.belOutputs = []
         self.jumps = []
+        self.withUserCLK = userCLK
 
         # adding ports in the order of normal port, bel port, jump port
         for port in self.portsInfo:
-            if port.direction != "JUMP":
+            if port.wireDirection != "JUMP":
                 input, output = port.expandPortInfo(mode="AutoSwitchMatrix")
-                self.inputs = self.inputs + input
+                self.inputs = list(dict.fromkeys(self.inputs + input))
                 self.internalInputs = self.internalInputs + input
-                self.outputs = self.outputs + output
+                self.outputs = list(dict.fromkeys(self.outputs + output))
                 self.internalOutputs = self.internalOutputs + output
 
         for port in self.bels:
@@ -153,12 +156,11 @@ class Tile():
             self.outputs = self.outputs + port.outputs
 
         for port in self.portsInfo:
-            if port.direction == "JUMP":
+            if port.wireDirection == "JUMP":
                 input, output = port.expandPortInfo(mode="AutoSwitchMatrix")
-                self.jumps = input + output
-                self.inputs = self.inputs + input
-                self.outputs = self.outputs + output
-
+                self.jumps = list(dict.fromkeys(input + output))
+                self.inputs = list(dict.fromkeys(self.inputs + input))
+                self.outputs = list(dict.fromkeys(self.outputs + output))
         for b in self.bels:
             self.globalConfigBits += b.configBit
 
@@ -167,23 +169,35 @@ class Tile():
             return False
         return self.name == __o.name
 
-    def getWestPorts(self) -> List[Port]:
-        return [p for p in self.portsInfo if p.direction == "WEST"]
+    def getWestSidePorts(self) -> List[Port]:
+        return [p for p in self.portsInfo if p.sideOfTile == "WEST" and p.name != "NULL"]
 
-    def getEastPorts(self) -> List[Port]:
-        return [p for p in self.portsInfo if p.direction == "EAST"]
+    def getEastSidePorts(self) -> List[Port]:
+        return [p for p in self.portsInfo if p.sideOfTile == "EAST" and p.name != "NULL"]
+
+    def getNorthSidePorts(self) -> List[Port]:
+        return [p for p in self.portsInfo if p.sideOfTile == "NORTH" and p.name != "NULL"]
+
+    def getSouthSidePorts(self) -> List[Port]:
+        return [p for p in self.portsInfo if p.sideOfTile == "SOUTH" and p.name != "NULL"]
 
     def getNorthPorts(self) -> List[Port]:
-        return [p for p in self.portsInfo if p.direction == "NORTH"]
+        return list(dict.fromkeys([p for p in self.portsInfo if p.wireDirection == "NORTH"]))
 
     def getSouthPorts(self) -> List[Port]:
-        return [p for p in self.portsInfo if p.direction == "SOUTH"]
+        return list(dict.fromkeys([p for p in self.portsInfo if p.wireDirection == "SOUTH"]))
+
+    def getEastPorts(self) -> List[Port]:
+        return list(dict.fromkeys([p for p in self.portsInfo if p.wireDirection == "EAST"]))
+
+    def getWestPorts(self) -> List[Port]:
+        return list(dict.fromkeys([p for p in self.portsInfo if p.wireDirection == "WEST"]))
 
     def getTileInputNames(self) -> List[str]:
-        return [p.destinationName for p in self.portsInfo if p.destinationName != "NULL" and p.direction != "JUMP"]
+        return [p.destinationName for p in self.portsInfo if p.destinationName != "NULL" and p.wireDirection != "JUMP"]
 
     def getTileOutputNames(self) -> List[str]:
-        return [p.sourceName for p in self.portsInfo if p.sourceName != "NULL" and p.direction != "JUMP"]
+        return [p.sourceName for p in self.portsInfo if p.sourceName != "NULL" and p.wireDirection != "JUMP"]
 
 
 @dataclass
@@ -191,6 +205,43 @@ class SuperTile():
     name: str
     tiles: List[Tile]
     tileMap: List[List[Tile]]
+    bels: List[Bel] = field(default_factory=list)
+    withUserCLK: bool = False
+
+    def getPortsAroundTile(self) -> Dict[str, List[List[Port]]]:
+        ports = {}
+        for y, row in enumerate(self.tileMap):
+            for x, tile in enumerate(row):
+                if self.tileMap[y][x] == None:
+                    continue
+                ports[f"{x}{y}"] = []
+                if y - 1 < 0 or self.tileMap[y-1][x] == None:
+                    ports[f"{x}{y}"].append(tile.getNorthSidePorts())
+                if x + 1 >= len(self.tileMap[y]) or self.tileMap[y][x+1] == None:
+                    ports[f"{x}{y}"].append(tile.getEastSidePorts())
+                if y + 1 >= len(self.tileMap) or self.tileMap[y+1][x] == None:
+                    ports[f"{x}{y}"].append(tile.getSouthSidePorts())
+                if x - 1 < 0 or self.tileMap[y][x-1] == None:
+                    ports[f"{x}{y}"].append(tile.getWestSidePorts())
+        return ports
+
+    def getInternalConnections(self):
+        internalConnections = []
+        for y, row in enumerate(self.tileMap):
+            for x, tile in enumerate(row):
+                if 0 <= y - 1 < len(self.tileMap) and self.tileMap[y-1][x] != None:
+                    internalConnections.append(
+                        (tile.getNorthSidePorts(), x, y))
+                if 0 <= x + 1 < len(self.tileMap[0]) and self.tileMap[y][x+1] != None:
+                    internalConnections.append(
+                        (tile.getEastSidePorts(), x, y))
+                if 0 <= y + 1 < len(self.tileMap) and self.tileMap[y+1][x] != None:
+                    internalConnections.append(
+                        (tile.getSouthSidePorts(), x, y))
+                if 0 <= x - 1 < len(self.tileMap[0]) and self.tileMap[y][x-1] != None:
+                    internalConnections.append(
+                        (tile.getWestSidePorts(), x, y))
+        return internalConnections
 
 
 @dataclass

@@ -10,9 +10,7 @@ The FABulous ecosystem generates the embedded FPGA fabric for chip fabrication, 
 [SymbiFlow](https://symbiflow.github.io/) 
 toolchain release packages, deals with the bitstream generation and provides after-fabrication tests. Additionally, we plan to provide an emulation path for system development.
 
-This guide describes everything you need to set up your system to use the FABulous ecosystem.
-
-Ways to run Symbiflow on these devices will be explained in the near future.
+This guide describes everything you need to set up your system to use the FABulous ecosystem, and the full project documentation can be found [here](https://fabulous.readthedocs.io/en/latest/).
 
 ![FABulous Ecosystem Diagram](docs/source/figs/fabulous_ecosystem.png)
 
@@ -75,17 +73,15 @@ python3 FABulous.py -r demo
 The fabric generator flow can also be run using bash scripts based on the examples provided under `/fabric_files`.
 
 Before you run the flow for the first time, you must generate the basic files using the following commands:
-
 ```
 cd fabric_generator
 ./create_basic_files.sh ../fabric_files/generic/fabric.csv
 ```
-
 Then use the following command to build the entire FPGA fabric in both VHDL and Verilog:
-
 ```
 ./run_fab_flow.sh
 ```
+You are now ready to emulate or synthesise with the netlists in ```/vhdl_output``` or ```/verilog_output```.
 
 A simple example that runs to generate a bitstream can be found under ```nextpnr/fabulous/fab_arch/```
 

@@ -21,8 +21,8 @@ The following figure shows a small fabric, which we will model throughout this s
 The full model of a fabric is described by the following files:
 
 * A file :ref:`fabric_csv` providing the :ref:`fabric_layout`, some global settings, and the descriptions of the :ref:`tiles`-
-* A set of list files (\*.list) desribing the adjaceny list of the switch matrix for each of the used tiles or the corresponding adjaceny matrix as a csv file
-* A set of optional bitstream mapping csv files
+* A set of list files (\*.list) desribing the adjacency list of the switch matrix for each of the used tiles or the corresponding adjacency matrix as a CSV file
+* A set of optional bitstream mapping CSV files
 * A set of primitives used
 
 The following block provides a fabric.csv example. 
@@ -60,14 +60,14 @@ The following block provides a fabric.csv example.
 
 .. _fabric_csv:
 
-Fabric csv description
+Fabric CSV description
 ----------------------
 
-* For the part between ``FabricBegin`` and ``FabricEnd``, refer to the :ref:`fabric_layout` description.
+* For the section between ``FabricBegin`` and ``FabricEnd``, refer to the :ref:`fabric_layout` description.
 
 * Empty lines will be ignored as well as everything that follows a ``#`` \(the **comment** symbol in all FABulous descriptions\).
 
-* Parameters that relate to the fabric specification are  encapsulated between the key words ``ParametersBegin`` and ``ParametersEnd``.
+* Parameters that relate to the fabric specification are encapsulated between the key words ``ParametersBegin`` and ``ParametersEnd``.
 
   Parameters that relate to the flow are passed as comand line arguments.
   
@@ -77,18 +77,18 @@ Fabric csv description
   
   * ``ConfigBitMode``, ``[frame_based|FlipFlopChain]``
 
-    FABulous can write to the configuration bits in a frame-based organisation very similar to what most industry FPGAs do. This supports partial reconfiguration and is (except for tiny fabrics) superior in any sense (configuration speed, resource cost, power consumption) over flip flop scan chain configuration (which is was most other open source FPGA frameworks opted for). 
+    FABulous can write to the configuration bits in a frame-based organisation, similarly to most commercial FPGAs. This supports partial reconfiguration and is (except for in tiny fabrics) superior in any sense (configuration speed, resource cost, power consumption) over flip flop scan chain configuration (the option selected by most other open source FPGA frameworks). 
     
-    Configuration readback is not supported so far as it was considdered inaffective for embeddd FPGA use cases.
+    Configuration readback is not currently supported, as it was considered ineffective for embedded FPGA use cases.
 
   * ``FrameBitsPerRow``, ``unsigned_int``
     
-    In frame-based configuration mode, FABulous will build a configuration frame register over the height of the fabric and providing the specified number of data bits per row. This whill generate frame_data wires in the fabric, which correspond to bitlines in a memory organisation. 
+    In frame-based configuration mode, FABulous will build a configuration frame register over the height of the fabric and provide the specified number of data bits per row. This will generate frame_data wires in the fabric, which correspond to bitlines in a memory organisation. 
       
     Note that the specified size corresponds to the width of the parallel configuraton port and 32 bits is the most sensible configuration for most systems.
 
-    Currently, we set ``FrameBitsPerRow`` globally for all rows but we plan to extend this to allow for resurce type specific adjustments in future versions. 
-    For instance, the tiles at the north border of a fabric may only provide some fixed U-turn routing without the need of any configuration bits and we could reflect this by removing all frame_data wires in the top row. This extension may include an automatic adjustment mode.
+    Currently, we set ``FrameBitsPerRow`` globally for all rows but we plan to extend this to allow for resource-type specific adjustments in future versions. 
+    For instance, the tiles at the north border of a fabric may only provide some fixed U-turn routing without the need of any configuration bits, which could be reflected by removing all frame_data wires in the top row. This extension may include an automatic adjustment mode.
       
   * ``MaxFramesPerCol``, ``unsigned_int``
     
@@ -98,28 +98,28 @@ Fabric csv description
       
     Note that we can leave possible configuration bits unused and that no configuration latches will be generated for unused bits.
       
-    FABuloud whill generate the specified number of vertical frame_strobe wires in the fabric, which correspond to wordlines in a memory organisation. 
+    FABulous will generate the specified number of vertical frame_strobe wires in the fabric, which correspond to wordlines in memory organisation. 
       
-    ``FrameBitsPerRow`` and ``MaxFramesPerCol`` should be around the same number to minimize the wiring resources for driving the configuratoin bits into the fabric. In most cases, only ``MaxFramesPerCol`` will be adjusted to a number that can accomodate the number of configuration bits needed.
+    ``FrameBitsPerRow`` and ``MaxFramesPerCol`` should be around the same number to minimize the wiring resources for driving the configuration bits into the fabric. In most cases, only ``MaxFramesPerCol`` will be adjusted to a number that can accomodate the number of configuration bits needed.
       
-    Currently, we set ``MaxFramesPerCol`` globally for all resource types (e.g., LUTs and DSP block columns) but we plan to extend this to allow for resurce type specific adjustments.
+    Currently, we set ``MaxFramesPerCol`` globally for all resource types (e.g., LUTs and DSP block columns) but we plan to extend this to allow for resource-type specific adjustments.
     This feature may include an automatic adjustment mode.      
 
   * ``Package``, ``string``
     
-    This option will populate the package declaratio block on VHDL output mode with the string to declare a package.  
+    This option will populate the package declaration block on VHDL output mode with the string to declare a package.  
 
   * ``GenerateDelayInSwitchMatrix``, ``unsigned_int``
     
-    This option will annotate the specified time in ps to all switch matrix multiplexers. This ignored for synthesis but allows simulating the fabric in the case of configured loops (e.g., ring-oscillators). 
+    This option will annotate the specified time in ps to all switch matrix multiplexers. This ignored for synthesis but allows simulation of the fabric in the case of configured loops (e.g., ring-oscillators). 
 
-  * ``MultiplexerStyle``, ``[cutom|TODO]``
+  * ``MultiplexerStyle``, ``[custom|TODO]``
 
     FABulous can generate the switch matrix multiplexers in different styles including behavioral RTL, instantiating standard cell primitives and instantiation of full custom multiplexers.
 
     The latter is implemented by replacing a defined n-input multiplexer with a predefined template. For instance, for the Skywater 130 process, we provide a transmission gate-based custom MUX4. In the case of requiring a MUX16, FABulous will synthesize this multiplexer to use 4 + 1 of our custom cells.
 
-    .. note::  So far, FABulous fabrics are using fully (binary) encoded multiplexers (e.g., a MUX16 requires 4 configuration bits). However, the major vendors Xilinx and Intel use highly optimized SRAM cells where a configuration cell may directly controll a passtransistor (e.g., this is used in Xilinx UltraScale fabrics). For a MUX16, this requires 2 x 4 = 8 configuration bits, but is slightly better in area as omits a decoder.
+    .. note::  So far, FABulous fabrics use fully (binary) encoded multiplexers (e.g., a MUX16 requires 4 configuration bits). However, the major vendors Xilinx and Intel use highly optimized SRAM cells where a configuration cell may directly control a pass transistor (e.g., as used in Xilinx UltraScale fabrics). For a MUX16, this requires 2 x 4 = 8 configuration bits, but is slightly better in area as omits a decoder.
 	We plan to extend the FABulous switch matrix compiler accordingly.
 
 .. _fabric_layout:
@@ -176,7 +176,7 @@ Tiles
 	
 A tile is the smallest unit in a fabric and a tile provides
  
-* A sescription of :ref:`wires` to adjacent tiles
+* A description of :ref:`wires` to adjacent tiles
 
 * A central :ref:`switch_matrix`
 
@@ -186,7 +186,7 @@ A tile is the smallest unit in a fabric and a tile provides
 
 A tile typically hosts primitives like a CLB with LUTs or an I/O block.
 Multiple smaller tiles can be combined into :ref:`supertiles` to accomodate complex blocks like DSPs.
-Each tile that is refered to in the :ref:`fabric_layout` requrires to specify the corresponding tile description in the fabric.csv file that has the following format:  
+Each tile that is referred to in the :ref:`fabric_layout` requires specification of the corresponding tile description in the fabric.csv file that has the following format:  
 
 .. code-block:: python
    :emphasize-lines: 1,12
@@ -223,20 +223,20 @@ specifying:
   
   In the VPR and Altera world, tiles separate between a connection switch matrix and the actual local wire switch matrix. The connection switch matrix is nothing else as a bank of multiplexers selecting from the local routing wires a pool of connection wires that can then be further routed to primitive pins (e.g, a LUT input). In FABulous, those connection wires would be modelled with a set of jump wires, which connect then somehow to the primitive input multiplexers.
   
-  Older Xilinx architectures have a less hierarchical routing graph and local routing wires between the tiles connect drectly to the input multiplexers of the primitives. 
+  Older Xilinx architectures have a less hierarchical routing graph and local routing wires between the tiles connect directly to the input multiplexers of the primitives. 
   
-  Xilinx Virtex-5 FPGAs provide diagonal routing wires (e.g., a wire routing in north-east direction), a concept abbandoned in consecutive Xilinx FPGA families. FABulous can model diagonal routing by splitting a wire in its components (e.g., a north-east wire can be modeled by cascading a north wire and an east wire).
+  Xilinx Virtex-5 FPGAs provide diagonal routing wires (e.g., a wire routing in north-east direction), a concept abandoned in consecutive Xilinx FPGA families. FABulous can model diagonal routing by splitting a wire in its components (e.g., a north-east wire can be modeled by cascading a north wire and an east wire).
   
 * ``source_name``, ``string``
 
   ``destination_name``, ``string``
 
   These are symbolic names for the ports used for the tile top wrapper and the switch matrix connections.
-  It is recomended to follow a semantic that expresses the direction, routing span (i.e. how many tiles far away the wire is spanning) if it is a *begin* or *end* or other port.
-  For instance, a single wire in NORTH direction should use names like *N1Beg* to *N1End* or *N1b* to *N1e*.
+  It is recommended to follow a semantic that expresses the direction, routing span (i.e. how many tiles far away the wire is spanning) and if it is a *begin* or *end* or other port.
+  For instance, a single wire in NORTH direction should use names such as *N1Beg* to *N1End* or *N1b* to *N1e*.
   
   The destination name refers to two ports: a port on the target tile and an expected port on the destination tile. This reflects that wires route between tiles and that the begin and end ports of a tile connect to different wires.
-  However, while this works for tiles inside the fabric (like CLBs), the tiles at the border do usually not extend to antennas outside the fabric but instead route wires back into the fabric as shown in the following figure:
+  However, while this works for tiles inside the fabric (like CLBs), the tiles at the border do usually not extend to antennae outside the fabric but instead route wires back into the fabric as shown in the following figure:
   
   .. figure:: figs/east_terminate.*
     :alt: Basic tile illustration
@@ -246,9 +246,9 @@ specifying:
   The figure illustrates how horizontal quad wires (that route 4 tiles far) are terminated at the east border of the fabric. The example follows the method used by Xilinx to terminate wires at the border of the chip.
   FABulous can implement this scheme, but also any other, including some extra switching at the fabric borders and providing some primitives.
   
-  The figure shows that each CLB tile has a pair of input and output ports for the two east and west directions while the east_terminate tile only has an east end port and a west begin port. Moreover, the figure shows the nested routig for long distance wires (see also the wires bullet below). It can be seen that the CLBs route through long distance wires (here quad wires) while the east_terminate tile  has all internal wires connected to the switch matrix. Note that this is only an abstract view and the wires that route through the CLBs may still be buffered inside the CLB tiles. However this is transparent from the user and not included in the architecture graph.
+  The figure shows that each CLB tile has a pair of input and output ports for the two east and west directions while the east_terminate tile only has an east end port and a west begin port. Moreover, the figure shows the nested routing for long distance wires (see also the wires bullet below). It can be seen that the CLBs route through long distance wires (here quad wires) while the east_terminate tile has all internal wires connected to the switch matrix. Note that this is only an abstract view and the wires that route through the CLBs may still be buffered inside the CLB tiles. However, this is transparent from the user and not included in the architecture graph.
   
-  The shown wires in the CLBs (from the last figure) are modeled as:
+  The shown wires in the CLBs (from the last figure) are modelled as:
 
   .. code-block:: python
   
@@ -257,7 +257,7 @@ specifying:
      EAST,       E4b,         4,        0,        E4e,              N    # N is used for illustration only
      WEST,       W4b,         -4,       0,        W4e,              N    # N is used for illustration only 
    
-  To control the different bahavior for tiles that do not extend a wire (as done in the terminate tiles), we use the ``NULL`` port name for wire begin or end ports that should not be generated on the tile:
+  To control the different behavior for tiles that do not extend a wire (as done in the terminate tiles), we use the ``NULL`` port name for wire begin or end ports that should not be generated on the tile:
   
   .. code-block:: python
   
@@ -266,17 +266,17 @@ specifying:
      EAST,       NULL,        4,        0,        E4e,              N    # N is used for illustration only 
      WEST,       W4b,         -4,       0,        NULL,             N    # N is used for illustration only 
  
-  The ``NULL`` port entry for the EAST source_name and the WEST destination_name will prevent creating the corresponsing tile port names. Moreover the ``NULL`` port entries also will tell FABulous to connect *all* wires or the corresponding entry, including the nested ones, to the switch matrix. This allows the implementation of the shown U-turn routing scheme for termination but also any other more sophisticated termination scheme. 
+  The ``NULL`` port entry for the EAST source_name and the WEST destination_name will prevent FABulous from creating the corresponding tile port names. Moreover, the ``NULL`` port entries also will tell FABulous to connect *all* wires or the corresponding entry, including the nested ones, to the switch matrix. This allows the implementation of the shown U-turn routing scheme for termination but also any other more sophisticated termination scheme. 
  
-  For instance, in the FlexBex project, a FABulous eFPGA was coupled with the Ibex RISC V core for custum instruction set extensions (where the eFPGA fabric operates logically in parallel to the ALU) as shown in the following figure:
+  For instance, in the FlexBex project, a FABulous eFPGA was coupled with the Ibex RISC V core for custom instruction set extensions (where the eFPGA fabric operates logically in parallel to the ALU) as shown in the following figure:
   
   .. figure:: figs/Ibex_eFPGA.*
     :alt: Basic tile illustration
     :width: 90% 
     :align: center
   
-  In this example, the CPU interface is located at the west border of the fabric. The fabric provides three slots, each being two CLB columns wide. The operands are routed into the fabric using double wires (so, each slot receives the operands at exactly the same position, which makes modules relocatable amonth the slots). The results are routed to the CPU using nested hex wires (again resulting in a homogeneous routing scheme that enables module relocation). The CPU has therefore access to the results of each slot and will multiplex results into the register file in case a custom instruction requires to do so. For simplicity, the figure is not showing the west termination tiles, which simply connect the internal routing wires to the top-level fabric wrapper that, in turn, is used to connect to the CPU.
-  In summery, the example shows how a termination tile can be used to provide more complex interface blocks and all this can be easily modeled and implemented with FABulous.
+  In this example, the CPU interface is located at the west border of the fabric. The fabric provides three slots, each being two CLB columns wide. The operands are routed into the fabric using double wires (so, each slot receives the operands at exactly the same position, which makes modules relocatable among the slots). The results are routed to the CPU using nested hex wires (again resulting in a homogeneous routing scheme that enables module relocation). The CPU therefore has access to the results of each slot and will multiplex results into the register file in case a custom instruction requires it to do so. For simplicity, the figure does not show the west termination tiles, which simply connect the internal routing wires to the top-level fabric wrapper that, in turn, is used to connect to the CPU.
+  In summary, the example shows how a termination tile can be used to provide more complex interface blocks and all this can be easily modelled and implemented with FABulous.
   
   .. note::  The ``destination_name`` is refering to the port name used at the destination tile. FABulous will throw an error if the destination tile does not provide that port name.
   
@@ -289,17 +289,17 @@ specifying:
     :width: 40% 
     :align: center
 
-  FABulous models wires strictly in horizontal or vertical direction but never directly in diagonal direction, as this reflects directly the tiled physical implementation of the fabric.
+  FABulous models wires strictly in horizontal or vertical direction but never directly in diagonal direction - this directly reflects the tiled physical implementation of the fabric.
   Therefore, in each wire specification, either ``X-offset`` is ``0`` or ``Y-offset`` is ``X-offset`` or both are ``0`` (in the case of a JUMP wire).
   
-  .. note::  The ``direction`` field and the sign of the ``X-offset`` and ``Y-offset`` values are redundant. FABulous uses internally the absulute ``X-offset`` and ``Y-offset`` values and only the ``direction`` field for specifying the direction of a wire. However, FABulous will throw a warning if there is a missmatch with the sign.
+  .. note::  The ``direction`` field and the sign of the ``X-offset`` and ``Y-offset`` values are redundant. FABulous uses internally the absolute ``X-offset`` and ``Y-offset`` values and only the ``direction`` field for specifying the direction of a wire. However, FABulous will throw a warning if there is a mismatch with the sign.
 
 * ``wires``, ``unsigned_int``
   Specifies the number of wires.
   
   FABulous will index the wires of each entry starting from [0].
 
-A metric that is important for FPGA ASIC implementations is the channel *cut* number, which is denoting the number of wires that must be accomodated between two adjacent tiles. The cut number is an indicator for the congestion to be expected when stitching together the fabric. Let us take the following example: 
+A metric that is important for FPGA ASIC implementations is the channel *cut* number, which denotes the number of wires that must be accomodated between two adjacent tiles. The cut number is an indicator for the congestion to be expected when stitching together the fabric. Let us take the following example: 
 
 .. code-block:: python
    :emphasize-lines: 1
@@ -318,11 +318,11 @@ Note that a wire with a span greater 1 is usually nested.
   :align: center
 
 Each entry in the wire specification contributes with max(abs(``X-offset``),abs(``y-offset``)) x ``wires`` to the cut number.
-In this example, the east single wire (E1Beg) is contributing with 1 x 6 = 6 and the west quad wire (W4Beg) with 4 x 3 = 12 wire segments to he cut. 
-Therefore, even we have only half the number of quad wires, these contribute double the number of ASIC routing tracks to the cut.
-Furthermore, the wires needed to write the configuration into the configuration memory cells are further conributing substantially to the cut (see parameter ``FrameBitsPerRow`` in section :ref:`fabric_csv`).
+In this example, the east single wire (E1Beg) is contributing with 1 x 6 = 6 and the west quad wire (W4Beg) with 4 x 3 = 12 wire segments to the cut. 
+Therefore, even if we have only half the number of quad wires, these contribute double the number of ASIC routing tracks to the cut.
+Furthermore, the wires needed to write the configuration into the configuration memory cells are further contributing substantially to the cut (see parameter ``FrameBitsPerRow`` in section :ref:`fabric_csv`).
 
-The switch matrices see only the ``wires`` anount of wires, regardless of the span. However, the tile-to-tile interfaces include all nested wires concatenated together to a wide vector. FABulous connects the ``wires`` LSBs to the switch matrix inputs and the switch matrix otputs are conneted to the ``wires`` MSBs. Inside the tile, the wide vector is shifted by ``wires`` before routing it to the next tile, as shown in the following figure for an EAST hex-wire example:
+The switch matrices see only the ``wires`` amount of wires, regardless of the span. However, the tile-to-tile interfaces include all nested wires concatenated together to a wide vector. FABulous connects the ``wires`` LSBs to the switch matrix inputs and the switch matrix outputs are connected to the ``wires`` MSBs. Inside the tile, the wide vector is shifted by ``wires`` before routing it to the next tile, as shown in the following figure for an EAST hex-wire example:
 
 .. code-block:: python
    :emphasize-lines: 1
@@ -338,9 +338,9 @@ The switch matrices see only the ``wires`` anount of wires, regardless of the sp
 
 .. note::  A typical CLB requires about 100 to 200 wire connections between adjacent tiles (about 400 to 800 wires in total per tile). 
 
- The shift register configuration mode needs less wire connections than frame-based configuration at the tiole border but shift register mode intends to have a slightly higher congestion inside the tiles because of the long chain.
+ The shift register configuration mode needs fewer wire connections than frame-based configuration at the tile border but shift register mode tends to have a slightly higher congestion inside the tiles because of the long chain.
 
-.. note::  Because long distance wires contribute heavily to the cut number, it can be beneficial to segment long ditance wires to better balance between the silicon core area and the available metal stack for implementing the routing.
+.. note::  Because long distance wires contribute heavily to the cut number, it can be beneficial to segment long distance wires to better balance between the silicon core area and the available metal stack for implementing the routing.
 
 .. _switch_matrix:
 
@@ -357,7 +357,7 @@ Configurable connections are defined in either an adjacency list or an adjacency
 **Adjacency list** files follow the naming convention <tile_descriptor>_switch_matrix.list (e.g., LUT4AB_switch_matrix.list).
 
 A switch matrix entry is specified by a line <output_port>,<input_port>.
-For convinience, it is possible to specify multiple ports though a list operator [item1|item2|...].
+For convenience, it is possible to specify multiple ports though a list operator [item1|item2|...].
 For instance, the following line in a list file
 
 .. code-block:: python
@@ -381,12 +381,12 @@ is equivalent to
    S2BEG2,S2END2 # extend double wires in each direction
    W2BEG2,W2END2 # extend double wires in each direction
    
-The example shows how port names can be composed from string segments that can alternatively be provided in list form. The lists will be recursevely unwrapped, which allows it to use multiple list operators together.
+The example shows how port names can be composed from string segments that can alternatively be provided in list form. The lists will be recursively unwrapped, which allows it to use multiple list operators together.
 
 An error message is generated if the number of composed port names differs for the number of input_ports and output_ports or if ports are not found.
-A warning will be generated if am already specified connection is tried to be set again.
+A warning will be generated if FABulous tries to set a connection that has already been specified.
 
-A switch matrix multiplexer is modeled by having multiple connections for the same <output_port>. For example, a MUX4 can be modeled as:
+A switch matrix multiplexer is modelled by having multiple connections for the same <output_port>. For example, a MUX4 can be modelled as:
 
 .. code-block:: python
 
@@ -398,7 +398,7 @@ A switch matrix multiplexer is modeled by having multiple connections for the sa
    # the same in compact form:
    N2BEG[0|0|0|0],[N2END3|E2END2|S2END1|LB_O]
 
-Adjacency lists are better for specifying and mantaing the connections while an adjaceny matrix is better for monitoring and debug. 
+Adjacency lists are better for specifying and maintaining the connections while an adjacency matrix is better for monitoring and debug. 
 FABulous works on adjacency matrices and the tool can translate arbitrarily between both.
 **Adjacency matrix** files are csv files and follow the naming convention <tile_descriptor>_switch_matrix.csv (e.g., LUT4AB_switch_matrix.csv).
 The following figure shows a list file and the corresponding adjacency matrix:
@@ -408,13 +408,13 @@ The following figure shows a list file and the corresponding adjacency matrix:
   :width: 90% 
   :align: center
   
-The adjaceny matrix states the tile identifyer name in the top left cell.
-The columns denote the input ports to the switch matrix and the rows the output ports.
-A ``1`` in the matrix demotes a configurable connection (i.e. a multiplexer input connection) and each ``1`` corresponds to a <output_port>,<input_port> tuple defined in the adjacency list.
-Therefore, each row is corresponding to one switch matrix multiplexer.
+The adjacency matrix states the tile identifier name in the top left cell.
+The columns denote the input ports to the switch matrix and the rows denote the output ports.
+A ``1`` in the matrix denotes a configurable connection (i.e. a multiplexer input connection) and each ``1`` corresponds to a <output_port>,<input_port> tuple defined in the adjacency list.
+Therefore, each row corresponds to one switch matrix multiplexer.
 
 When generating the adjacency matrix, FABulous will annotate for each row and column the number of connections set.
-For the rows, this denotes the size of the multiplexers (e.g., MUX4) and by checking the column summery, we can insspect how well the wire usage is balanced.
+For the rows, this denotes the size of the multiplexers (e.g., MUX4) and by checking the column summary, we can inspect how well the wire usage is balanced.
 
 .. note::  Note that we can define the port names ``VCC`` and ``GND`` in :ref:`wires`, which allows it to specify a configurable multiplexer setting to ``1`` or ``0``. For instance, this is useful for BRAM pins where unused ports (e.g., some MSB address bits) have to be tied to ``0`` without the need of any further LUTs or routing.
 
@@ -424,15 +424,15 @@ For the rows, this denotes the size of the multiplexers (e.g., MUX4) and by chec
    JUMP,       NULL,        0,        0,        GND,              1
    JUMP,       NULL,        0,        0,        VCC,              1
 
-.. note::  The multiplexers in the switch matrices are controled by configuration bits only. 
+.. note::  The multiplexers in the switch matrices are controlled by configuration bits only. 
 
  The multiplexers in :ref:`primitives` can either be controlled by configuration bits (e.g., to select if a LUT output is to be routed to a primitive output pin or through a flop) or by the user logic (e.g., to cascade adjacent LUTs for implementing larger LUTs (like the F7MUX and F8MUX multiplexers in Xilinx FPGAs with LUT6).
 
-.. note::  Defining the adjaceny of a switch matrix (and the wires) is a difficult task. Too many connections and wires are expensive to implement and will result in poor density and potentially in poor performance. However, to few connections and wires may not allow to implement the intended user circuits on the fabric in the first place. The latter issue is not easily solvable by leaving primitives unused because that requires, for example, to use more CLBs. That, in turn, requires more wires between the tiles, and will therefore jeopardizing the approach of underutilzing the CLBs.
+.. note::  Defining the adjacency of a switch matrix (and the wires) is a difficult task. Too many connections and wires are expensive to implement and will result in poor density and potentially in poor performance. However, too few connections and wires may lead to an inability to implement the intended user circuits on the fabric in the first place. The latter issue is not easily solvable by leaving primitives unused because that requires, for example, the use of more CLBs. That, in turn, requires more wires between the tiles, and will therefore jeopardize the approach of underutilising the CLBs.
 
- Another difficulty is setting good switch matrix connections. An architecture graph should have sufficient entropy because of the usual sparsity of the graph. For instance, if we have to route from a LUT to a specific DSP pin, and the first path is not hitting that pin, then using an alternative path should result in possible connections to a different subset of pins. This implies that the architecture graph should not state linear combinations in subgraphs. However, adjacent LUT inputs often share the same signal (e.g., when dascading two LUT6 to form one LUT7, the two LUT6 connect to the same 6 signals). This can be used to share some multiplexing in the switch matrices.
+ Another difficulty is setting good switch matrix connections. An architecture graph should have sufficient entropy because of the usual sparsity of the graph. For instance, if we have to route from a LUT to a specific DSP pin, and the first path is not hitting that pin, then using an alternative path should result in possible connections to a different subset of pins. This implies that the architecture graph should not state linear combinations in subgraphs. However, adjacent LUT inputs often share the same signal (e.g., when cascading two LUT6 to form one LUT7, the two LUT6s connect to the same 6 signals). This can be used to share some multiplexing in the switch matrices.
 
- To simplify the definition of fabrics, the provided FABulous reference fabrics had been confirmed to implement non-trivial user circuits like different CPU cores.
+ To simplify the definition of fabrics, the provided FABulous reference fabrics have been confirmed to implement non-trivial user circuits like different CPU cores.
  The provided switch matrices can be easily reused in new custom tiles (it is standard to have mostly identical switch matrices throughout an FPGA fabric, even if resources (LUTs, BRAMs, DSPs) differ).
  Moreover, downstripping the routing fabric is easily possible by removing wires and connections.
 
@@ -441,9 +441,9 @@ For the rows, this denotes the size of the multiplexers (e.g., MUX4) and by chec
 Primitives
 ~~~~~~~~~~
 
-Primitives are used to manipulate, store and IO data. Examples for primitives include LUTs, slices (a cluster of LUTs that share a clock and that can be cascaded for arithmetic), flip flops, individual gates or multiplexers or complex blocks like DSPs, ALUs or BRAMs. A tile may have no ptimitves (e.g., the north and south terminate tiles in our example fabric) or as many as needed.
+Primitives are used to manipulate, store and input/output data. Examples for primitives include LUTs, slices (a cluster of LUTs that share a clock and that can be cascaded for arithmetic), flip flops, individual gates or multiplexers, and complex blocks like DSPs, ALUs or BRAMs. A tile may have no primitives (e.g., the north and south terminate tiles in our example fabric) or as many as needed.
 
-Primitves are added with ``BEL`` statements (BEL stands for basic element and the phrase is adopted from Xilinx), as shown in the following tile definition fragment:
+Primitives are added with ``BEL`` statements (BEL stands for Basic Element of Logic and the phrase is adopted from Xilinx), as shown in the following tile definition fragment:
 
 .. code-block:: python
    :emphasize-lines: 1,6,7,10
@@ -459,9 +459,9 @@ Primitves are added with ``BEL`` statements (BEL stands for basic element and th
    MATRIX,           LUT4AB_switch_matrix.vhdl               
    EndTILE        
 
-FABulous simply adds primitves as RTL code blocks. This is a different philosophy than the usual VPR approach where primitives are generated by models. While the VPR path has advantages to drive an automated design space exploration, the FABulous way is more convinient when modeling an existing fabric. However, this requires some adaptations to the FPGA CAD tools as described in TODO. Complex blocks are usually not infered by VHDL or Verilog constructs but through direct primitive instantiations, which is common for all commercial FPGAs. Nevertheless, Yosys can implement arrays specified in RTL automatically to BRAMs and the Verilog multiply operator directly to our DSP blocks.
+FABulous simply adds primitives as RTL code blocks. This is a different philosophy than the usual VPR approach where primitives are generated by models. While the VPR path has advantages to drive automated design space exploration, the FABulous way is more convenient when modelling an existing fabric. However, this requires some adaptations to the FPGA CAD tools as described in TODO. Complex blocks are usually not inferred by VHDL or Verilog constructs but through direct primitive instantiations, which is common for all commercial FPGAs. Nevertheless, Yosys can implement arrays specified in RTL automatically to BRAMs and the Verilog multiply operator directly to our DSP blocks.
 
-The BEL statements in the previous example instantiates a LUT4 which has the following entity:
+The BEL statements in the previous example instantiate a LUT4 which has the following entity:
 
 .. code-block:: VHDL
 
@@ -486,11 +486,11 @@ FABulous defines the following coding rules for BELs:
 
 * Each primitive has to specify the number of configuration bits used in a generic/parameter called ``NoConfigBits``. This also holds if no configuration bits are used (NoConfigBits := 0).
 
-* The port declarations have to be formated to provide one declaration per line.
+* The port declarations have to be formatted to provide one declaration per line.
 
-* We use directives (provided as comments) to control the code generation semantics. The suported directives include: 
+* We use directives (provided as comments) to control the code generation semantics. The supported directives include: 
 
-  * ``EXTERNAL``: ports flagged with this directive are not connected to the switch matrix but are exported through the tile entitiy to the top-level fabric wrapper. The corresponding port will be exported with a tile prefix and, if provided in the BEL statement, the instance prefix. The following two blocks provide an OutBlock tile with two BEL statements and the corresponding Out_PAD module:
+  * ``EXTERNAL``: ports flagged with this directive are not connected to the switch matrix but are exported through the tile entity to the top-level fabric wrapper. The corresponding port will be exported with a tile prefix and, if provided in the BEL statement, the instance prefix. The following two blocks provide an OutBlock tile with two BEL statements and the corresponding Out_Pad module:
 
     .. code-block:: python
        :emphasize-lines: 1,4,5
@@ -535,15 +535,15 @@ FABulous defines the following coding rules for BELs:
 	
     TODO 
   
-  * ``SHARED_PORT``: this directive can only be used together optionally with ``EXTERNAL``. Is a port is set ``EXTERNAL`` but not ``SHARED_PORT``, then , a TODO ( shared  ports flagged with this directive are not connected to the switch matrix but are exported through the tile entitiy to the top-level fabric wrapper.
+  * ``SHARED_PORT``: this directive can only be used together optionally with ``EXTERNAL``. If a port is set ``EXTERNAL`` but not ``SHARED_PORT``, then , a TODO ( shared  ports flagged with this directive are not connected to the switch matrix but are exported through the tile entity to the top-level fabric wrapper.
 
 .. _bitstream:
 
 Bitstream remapping
 ~~~~~~~~~~~~~~~~~~~
 
-FABulous will take care about implementing the configuration logic and bitstream encoding and the mapping of this into configuration bitstreams. This can be done automatically.
-However, users can influence the mapping of configuration bits into the bitstream. We use this in TODO for optimizing the bitstream layout. Moreover, for our first chip, we used remapping to create a human readable bitstream which is more convininet to be modified in a hex editor, as dsscribed later in this subsetion).
+FABulous will take care when implementing the configuration logic and bitstream encoding and the mapping of this into configuration bitstreams. This can be done automatically.
+However, users can influence the mapping of configuration bits into the bitstream. We use this in TODO for optimizing the bitstream layout. Moreover, for our first chip, we used remapping to create a human readable bitstream which is more convenient to modify in a hex editor, as dsscribed later in this subsection).
 
 In the code example for a LUT, it was shown that the configuration bits are exported into the LUT interface:
 
@@ -557,9 +557,9 @@ In the code example for a LUT, it was shown that the configuration bits are expo
     ConfigBits : in 	 STD_LOGIC_VECTOR( NoConfigBits -1 downto 0 )  -- These are the configuration bits
 
 Exporting configuration bits is a requirement for any primitive or switch matrix that uses configuration bits. The tile configuration bitstream is formed by concatenating first the primitive configuration bits (if primitives are available and use configuration bits) and then the switch matrix configuration bits (again, only if the switch matrix uses configuration bits) into one long tile configuration word.
-This is done in the order that the primitives are declared by ``BEL`` entries in the tile definition. Configuration bitstream vectors are defined in *downto* direction and the first BEL primitive configuration bits will be placed at the LSB side of the tile bitstream and the configuration switch matrix at the MSB side.
+This is done in the order that the primitives are declared by ``BEL`` entries in the tile definition. Configuration bitstream vectors are defined in the *downto* direction and the first BEL primitive configuration bits will be placed at the LSB side of the tile bitstream and the configuration switch matrix at the MSB side.
 
-In the case of using the **shift-register configuration mode**, this would form the tile configuration chain. FABulous is only supporting one long bit-serial configuration chain. While configuration speed could bossibly be boosted by using multiple parralel (and correspondingly shorter) chains, we have not added further optimizations, because shift register configuration is inferior to frame-based configuration mode.
+Using the **shift-register configuration mode** will form a tile configuration chain. FABulous only supports one long bit-serial configuration chain. While configuration speed could possibly be boosted by using multiple parallel (and correspondingly shorter) chains, we have not added further optimizations, because shift register configuration is inferior to frame-based configuration mode.
 
 For **frame-based configuration mode**, FABulous will pack those configuration bits into frames. By default, FABulous will start with frame 0 and pack the first ``FrameBitsPerRow`` bits from the tile configuration bitstream starting with the MSBs of the tile bitstream frame-by-frame until all configuration bits are packed. This may leave some of the ``FrameBitsPerRow`` x ``MaxFramesPerCol`` possible  configuration bits unused.
 
@@ -572,15 +572,15 @@ Where the fields mean:
 * <frame_name> is a symbolic name for a frame which is not further used internally by FABulous.
 * <frame_index> is indexed 0 to ``MaxFramesPerCol`` -1.
 * <bits_used> denotes the number of bits that are used in this frame and must be in the range 0 to ``FrameBitsPerRow``.
-* <used_bits_mask> denotes which bits in a frame will be used. The bitmask is defined MSBs downto LSBs and a ``1`` denotes a used configuration bit and a ``0`` denotes a gap bit that will not be used. Note that FABulous will not generate configuration latch for thos gap bits). Again, in frame-based reconfiguration, not all possible ``FrameBitsPerRow`` x ``MaxFramesPerCol`` bits will be usually be used and the bitmask specifies the used and unused bits. The number of ``1`` entries per frame is redundant to <bits_used>. FABulous will count the ``1`` entries and use that value while <bits_used> is used for checking only.
-* <ConfigBits_ranges> denotes a comma-separated list of configuration bits (given by their index) from the tile bitstream. The field can be individual bits or ranges of tile bitstream bits in the form <left_index>:<right_index>. The number of specified bits has to match the number of used configuraton bits as specified by the mask and the mapping is performed in the order the configuratoin bits are listed, as illustrated in the following figure:
+* <used_bits_mask> denotes which bits in a frame will be used. The bitmask is defined MSBs downto LSBs and a ``1`` denotes a used configuration bit, while a ``0`` denotes a gap bit that will not be used. Note that FABulous will not generate configuration latch for those gap bits. Again, in frame-based reconfiguration, not all possible ``FrameBitsPerRow`` x ``MaxFramesPerCol`` bits will be usually be used and the bitmask specifies the used and unused bits. The number of ``1`` entries per frame is redundant to <bits_used>. FABulous will count the ``1`` entries and use that value while <bits_used> is used for checking only.
+* <ConfigBits_ranges> denotes a comma-separated list of configuration bits (given by their index) from the tile bitstream. The field can be individual bits or ranges of tile bitstream bits in the form <left_index>:<right_index>. The number of specified bits has to match the number of used configuration bits as specified by the mask and the mapping is performed in the order the configuration bits are listed, as illustrated in the following figure:
 
   .. figure:: figs/bitstream_mask_mapping.*
     :alt: bitstream_mask_mapping
     :width: 60% 
     :align: center
 
-The following exaple is the FABulous-generated mapping file of the CLB implemented for our first FABulous TSMC chip.
+The following example is the FABulous-generated mapping file of the CLB implemented for our first FABulous TSMC chip.
 
 .. code-block:: python
 
@@ -606,7 +606,7 @@ The following exaple is the FABulous-generated mapping file of the CLB implement
    frame18,     18,          0,         0000_0000_0000_0000_0000_0000_0000_0000,
    frame19,     19,          0,         0000_0000_0000_0000_0000_0000_0000_0000,
 
-Users are not required to modify the <tile_descriptor>_ConfigMem.init.csv file. However, if FABulous finds a file called <tile_descriptor>_ConfigMem.csv (without the init), it will use the bitstream mapping provided in that. The followiwng example shows the basic idea that was used to provide a human readable bitstream encoding. It is not intended to understand the example in detail. Tha basic idea is to align configuration LUT function tables, settings and the switch matrix multiplexer encoding to be nibble aligned such that they are easy to find in a hex editor. For instance, in the example below, the first 8 frames are mostly encoding the LUTs where the 16 MSBs are the LUT tables and the next two nibles are encoding a flop and carry-chain mode:
+Users are not required to modify the <tile_descriptor>_ConfigMem.init.csv file. However, if FABulous finds a file called <tile_descriptor>_ConfigMem.csv (without the init), it will use the bitstream mapping provided in that. The following example shows the basic idea that was used to provide a human readable bitstream encoding. It is not intended to understand the example in detail. Tha basic idea is to align configuration LUT function tables, settings and the switch matrix multiplexer encoding to be nibble aligned such that they are easy to find in a hex editor. For instance, in the example below, the first 8 frames are mostly encoding the LUTs where the 16 MSBs are the LUT tables and the next two nibbles are encoding a flop and carry-chain mode:
 
 .. code-block:: python
 
@@ -625,7 +625,7 @@ Users are not required to modify the <tile_descriptor>_ConfigMem.init.csv file. 
    frame9,9,32,1111_1111_1111_1111_1111_1111_1111_1111,397:394,401:398,405:402,409:406,413:410,417:414,421:418,425:422
    ...
 
-The more important use case of bitsteam remapping is to optimize the physial implementation of the configuration tiles. FABulous includes a correspondingg optimizer that generates the bitsteam remapping files automatically. The process is described in detail in TODO FPGA_2022_paper.
+The more important use case of bitsteam remapping is to optimize the physical implementation of the configuration tiles. FABulous includes a corresponding optimizer that generates the bitstream remapping files automatically. The process is described in detail in TODO FPGA_2022_paper.
 
 .. _supertiles:
 
@@ -636,12 +636,12 @@ Supertiles are grouping together multiple basic :ref:`tiles`. Basic tiles are th
 
 Supertiles are needed for blocks that require more logic and/or more wires to the routing fabric (e.g., as needed for DSP blocks). Therefore, supertiles will normally provide as many switch matrices as they integrate basic tiles. 
 However, larger supertiles (e.g., hosting a CPU or similar) may only provide switch matrices in basic tiles located at the border of such a supertile
-In any case: supertiles must provide wire interfaces that match the surrounding when stitching them into a fabric.
+In any case: supertiles must provide wire interfaces that match the surroundings when stitching them into a fabric.
 
-Modeling
-~~~~~~~~
+Modelling
+~~~~~~~~~
 
-Supertiles are modeled from elementary tiles in a spreadsheet/csv file similar to how we model the whole FPGA fabric. Shapes can be defined arbitrary and NULL tiles can be used to skip fields. Examples:
+Supertiles are modelled from elementary tiles in a spreadsheet/csv file similar to how we model the whole FPGA fabric. Shapes can be defined arbitrary and NULL tiles can be used to skip fields. Examples:
 
 .. code-block:: python
    :emphasize-lines: 1,5,7,11,13,17
@@ -671,13 +671,13 @@ Supertiles are modeled from elementary tiles in a spreadsheet/csv file similar t
 
 Supertiles will be instantiated in the fabric (VHDL or Verilog) file, and supertiles themselves instantiate basic tiles (e.g., the ones shown in the figure). Therefore, supertiles define wires and switch matrices through their instantiated basic tiles. 
 
-Supertiles have an **anchor tile**, which is used to specify its position in the fabric. The anchor tile is determined by a row-by-row scan over the basic tiles and it will be the first non-NULL tile found. All other basic tiles will be placed relatively to the anchor tile. The anchor tiles in the figure aabove had been marked using a bolt font. So far, anchor tiles are only used internally in FABulous but it is planned to allow placing supertiles through their anchor tiles in the fabri layour, rather than through their basic tiles.
+Supertiles have an **anchor tile**, which is used to specify their position in the fabric. The anchor tile is determined by a row-by-row scan over the basic tiles and it will be the first non-NULL tile found. All other basic tiles will be placed relatively to the anchor tile. The anchor tiles in the figure above have been marked using a bold font. So far, anchor tiles are only used internally in FABulous but it is planned to allow placing supertiles through their anchor tiles in the fabric layout, rather than through their basic tiles.
 
 If a basic tile has a **border to the outside world** (i.e. the surrounding fabric), the interface to that border is exported to the supertile interface (i.e. the Entity in VHDL). Those borders are marked blue in the figure above. Internal edges are connected inside the supertile wrapper according to the entire tile specification.
 
 A basic tile instantiated in a supertile may not implement interfaces to all NORTH, EAST, SOUTH, WEST directions. For instance, a supertile may include basic terminate tiles if the supertile is supposed to be placed at the border of the fabric.
 
-Tile ports that are declared ``EXTERNAL`` in the basic tiles will be exported all the way to the top-level the same way this is performed for :ref:`tiles`
+Tile ports that are declared ``EXTERNAL`` in the basic tiles will be exported all the way to the top-level, in the same wayas is done for :ref:`tiles`
 
 .. code-block:: VHDL
    :emphasize-lines: 1
@@ -697,7 +697,7 @@ With the instantiation of multiple basic tiles, we define mostly the part relate
   :width: 90% 
   :align: center
  
-The left example is concentrating the DSP functionality in the bottom tile and is modeled as shown in the next code block.
+The left example concentrates the DSP functionality in the bottom tile and is modelled as shown in the next code block.
 (Note the two extra NORTH and SOUTH wires that provide the connections between the DSP BEL (located bot) and the top basic tile). 
 
 .. code-block:: python
@@ -737,8 +737,8 @@ The left example is concentrating the DSP functionality in the bottom tile and i
    DSP_bot                 
    EndTILE                 
 
-The right example is providing the tile functionality in the supertile wrapper and is modeled as shown in the next code block.
-(Note the two wire entries with the LOCAL attribute in each basic tile to define that these wires are useable in the supertile wrapper. Furthermore configuration bits for the DSP primitive will be provided through a ConfigBits BEL. This allows it to distribute the number of configuration bits among the basic tiles as needed. Note that configuration bits are organized at basic tile level.)
+The right example provides the tile functionality in the supertile wrapper and is modelled as shown in the next code block.
+(Note the two wire entries with the LOCAL attribute in each basic tile to define that these wires are useable in the supertile wrapper. Furthermore, configuration bits for the DSP primitive will be provided through a ConfigBits BEL. This allows it to distribute the number of configuration bits among the basic tiles as needed. Note that configuration bits are organized at basic tile level.)
 
 .. code-block:: python
    :emphasize-lines: 1,8,9,12,14,21,22,25,27,30,31
@@ -772,7 +772,7 @@ The right example is providing the tile functionality in the supertile wrapper a
    SuperTILE   DSP     # declace supetile DSP      
    DSP_top                 
    DSP_bot    
-   BEL,        MUlADD.vhdl   
+   BEL,        MULADD.vhdl   
    EndTILE                 
 
 test

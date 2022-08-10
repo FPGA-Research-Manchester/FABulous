@@ -113,54 +113,18 @@ class Tile():
     portsInfo: List[Port]
     bels: List[Bel]
     matrixDir: str
-    inputs: List[str]
-    outputs: List[str]
-    internalInputs: List[str]
-    internalOutputs: List[str]
-    jumps: List[str]
-    belInputs: List[str]
-    belOutputs: List[str]
     globalConfigBits: int = 0
     withUserCLK: bool = False
 
-    def __repr__(self):
-        return f"\n{self.name}\n inputPorts:{self.inputs}\n outputPorts:{self.outputs}\n bels:{self.bels}\n Matrix_dir:{self.matrixDir}\n"
+    # def __repr__(self):
+    #     return f"\n{self.name}\n inputPorts:{self.inputs}\n outputPorts:{self.outputs}\n bels:{self.bels}\n Matrix_dir:{self.matrixDir}\n"
 
     def __init__(self, name: str, ports: List[Port], bels: List[Bel], matrixDir: str, userCLK: bool) -> None:
         self.name = name
         self.portsInfo = ports
         self.bels = bels
         self.matrixDir = matrixDir
-        self.inputs = []
-        self.outputs = []
-        self.internalInputs = []
-        self.internalOutputs = []
-        self.belInputs = []
-        self.belOutputs = []
-        self.jumps = []
         self.withUserCLK = userCLK
-
-        # adding ports in the order of normal port, bel port, jump port
-        for port in self.portsInfo:
-            if port.wireDirection != "JUMP":
-                input, output = port.expandPortInfo(mode="AutoSwitchMatrix")
-                self.inputs = list(dict.fromkeys(self.inputs + input))
-                self.internalInputs = self.internalInputs + input
-                self.outputs = list(dict.fromkeys(self.outputs + output))
-                self.internalOutputs = self.internalOutputs + output
-
-        for port in self.bels:
-            self.belInputs = self.belInputs + port.inputs
-            self.inputs = self.inputs + port.inputs
-            self.belOutputs = self.belOutputs + port.outputs
-            self.outputs = self.outputs + port.outputs
-
-        for port in self.portsInfo:
-            if port.wireDirection == "JUMP":
-                input, output = port.expandPortInfo(mode="AutoSwitchMatrix")
-                self.jumps = list(dict.fromkeys(input + output))
-                self.inputs = list(dict.fromkeys(self.inputs + input))
-                self.outputs = list(dict.fromkeys(self.outputs + output))
         for b in self.bels:
             self.globalConfigBits += b.configBit
 
@@ -248,14 +212,19 @@ class SuperTile():
 class Fabric():
     tile: List[List[Tile]] = field(default_factory=list)
 
-    height: int = 15
-    width: int = 15
+    name: str = "eFPGA"
+    numberOfRows: int = 15
+    numberOfColumns: int = 15
     configBitMode: Literal["FlipFlopChain", "frame_based"] = "frame_based"
     frameBitsPerRow: int = 32
     maxFramesPerCol: int = 20
     package: str = "use work.my_package.all"
     generateDelayInSwitchMatrix: int = 80
     multiplexerStyle: Literal["custom", "generic"] = "custom"
+    frameSelectWidth: int = 5
+    rowSelectWidth: int = 5
+    desync_flag: int = 20
+    numberOfBRAMs: int = 10
     superTileEnable: bool = True
 
     tileDic: Dict = field(default_factory=dict)
@@ -263,8 +232,8 @@ class Fabric():
 
     def __repr__(self):
         fabric = ""
-        for i in range(self.height):
-            for j in range(self.width):
+        for i in range(self.numberOfColumns):
+            for j in range(self.numberOfRows):
                 if self.tile[i][j] is None:
                     fabric += "Null".ljust(15)+"\t"
                 else:
@@ -272,8 +241,8 @@ class Fabric():
             fabric += "\n"
 
         fabric += f"\n"
-        fabric += f"height: {self.height}\n"
-        fabric += f"width: {self.width}\n"
+        fabric += f"numberOfColumns: {self.numberOfColumns}\n"
+        fabric += f"numberOfRows: {self.numberOfRows}\n"
         fabric += f"configBitMode: {self.configBitMode}\n"
         fabric += f"frameBitsPerRow: {self.frameBitsPerRow}\n"
         fabric += f"frameBitsPerColumn: {self.maxFramesPerCol}\n"

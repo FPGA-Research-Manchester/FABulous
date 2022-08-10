@@ -63,11 +63,11 @@ class codeGenerator(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def addPortScalar(self, name, io: Literal["in", "out"], end=False, indentLevel=0):
+    def addPortScalar(self, name, io, end=False, indentLevel=0):
         pass
 
     @abc.abstractmethod
-    def addPortVector(self, name, io: Literal["in", "out"], width, end=False, indentLevel=0):
+    def addPortVector(self, name, io, width, end=False, indentLevel=0):
         pass
 
     @abc.abstractmethod
@@ -99,7 +99,7 @@ class codeGenerator(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def addInstantiation(self, compName, compInsName, compPort, signal, indentLevel=0):
+    def addInstantiation(self, compName, compInsName, compPort, signal, paramPort=[], paramSignal=[], indentLevel=0):
         pass
 
     @abc.abstractmethod
@@ -144,8 +144,4 @@ class codeGenerator(abc.ABC):
 
     @abc.abstractmethod
     def add_Conf_Instantiation(self, counter, close=True):
-        pass
-
-    @abc.abstractmethod
-    def addSwitchMatrixInstantiation(self, tile: Tile, configBitCounter, switchMatrixConfigPort, belCounter, mode='frame_based'):
         pass

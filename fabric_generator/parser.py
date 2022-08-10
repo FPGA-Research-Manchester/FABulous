@@ -202,8 +202,19 @@ def parseFabricCSV(fileName: str) -> Fabric:
     height = len(fabricTiles)
     width = len(fabricTiles[0])
 
-    return Fabric(fabricTiles, height, width, configBitMode, frameBitsPerRow, maxFramesPerCol,
-                  package, generateDelayInSwitchMatrix, multiplexerStyle, superTileEnable, tileDic, superTileDic)
+    return Fabric(tile=fabricTiles,
+                  numberOfColumns=width,
+                  numberOfRows=height,
+                  configBitMode=configBitMode,
+                  frameBitsPerRow=frameBitsPerRow,
+                  maxFramesPerCol=maxFramesPerCol,
+                  package=package,
+                  generateDelayInSwitchMatrix=generateDelayInSwitchMatrix,
+                  multiplexerStyle=multiplexerStyle,
+                  numberOfBRAMs=int(height/2),
+                  superTileEnable=superTileEnable,
+                  tileDic=tileDic,
+                  superTileDic=superTileDic)
 
 
 def parseList(fileName: str) -> list:
@@ -363,7 +374,6 @@ if __name__ == '__main__':
     # result = parseFabricCSV('fabric.csv')
     # result = parseList('RegFile_switch_matrix.list')
     # result = parseFileHDL('./OutPass4_frame_config.vhdl')
-    result = parseMatrix('./LUT4AB_switch_matrix.csv', "LUT4AB")
-    print(result)
     # print(result.tile)
     # print(result.tileDic["W_IO"].portsInfo)
+    pass

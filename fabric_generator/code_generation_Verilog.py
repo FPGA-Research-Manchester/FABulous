@@ -84,10 +84,12 @@ class VerilogWriter(codeGenerator):
 
     def addPortScalar(self, name, io, end=False, indentLevel=0):
         t = ""
-        if io == "IN":
+        if io.upper() == "IN":
             t = "input"
-        if io == "OUT":
+        if io.upper() == "OUT":
             t = "output"
+        if io.upper() == "INOUT":
+            t = "inout"
         if end:
             self._add(f"{t} {name}", indentLevel)
         else:
@@ -95,10 +97,12 @@ class VerilogWriter(codeGenerator):
 
     def addPortVector(self, name, io, width, end=False, indentLevel=0):
         t = ""
-        if io == "IN":
+        if io.upper() == "IN":
             t = "input"
-        if io == "OUT":
+        if io.upper() == "OUT":
             t = "output"
+        if io.upper() == "INOUT":
+            t = "inout"
         if end:
             self._add(f"{t} [{width}:0] {name}", indentLevel)
         else:
@@ -126,14 +130,26 @@ class VerilogWriter(codeGenerator):
     def addLogicEnd(self, indentLevel=0):
         pass
 
-    def addInstantiation(self, compName, compInsName, compPort, signal, indentLevel=0):
+    def addInstantiation(self, compName, compInsName, compPort, signal, paramPort=[], paramSignal=[], indentLevel=0):
         if len(compPort) != len(signal):
             raise ValueError(
                 f"Number of ports and signals do not match: {compPort} != {signal}")
+        if len(paramPort) != len(paramSignal):
+            raise ValueError(
+                f"Number of ports and signals do not match: {paramPort} != {paramSignal}")
 
-        self._add(f"{compName} {compInsName} (", indentLevel=indentLevel)
+        if paramPort:
+            port = [f".{paramPort[i]}({paramSignal[i]})" for i in range(
+                len(paramPort))]
+            self._add(
+                f"{compName} {compInsName} #({','.join(port)}) (", indentLevel=indentLevel)
+        else:
+            self._add(f"{compName} {compInsName} (", indentLevel=indentLevel)
+
         connectPair = []
         for i in range(len(compPort)):
+            if "(" in signal[i]:
+                signal[i] = signal[i].replace("(", "[").replace(")", "]")
             connectPair.append(f".{compPort[i]}({signal[i]})")
 
         self._add(
@@ -197,7 +213,12 @@ class VerilogWriter(codeGenerator):
         self._add(template, indentLevel)
 
     def addAssignScalar(self, left, right, indentLevel=0):
-        self._add(f"assign {left} = {right};", indentLevel)
+        value = []
+        value += right
+        if len(value) > 1:
+            self._add(f"assign {left} = {{{','.join(value)}}};", indentLevel)
+        else:
+            self._add(f"assign {left} = {right};")
 
     def addAssignVector(self, left, right, widthL, widthR, indentLevel=0):
         self._add(
@@ -352,70 +373,3 @@ LHQD1 Inst_{frameName}_bit{frameBitsPerRow} (
         self._add(confTemplate.format(counter=counter,
                                       counter2=counter+1,
                                       end='' if close else ');'))
-
-    def addSwitchMatrixInstantiation(self, tile: Tile, configBitCounter, switchMatrixConfigPort, belCounter, mode='frame_based'):
-        switchTemplate = """
-// switch matrix component instantiation
-Inst_{tileName}_switch_matrix {tileName}_switch_matrix( 
-{portMapList}
-{configBit}
-    );
-"""
-        portInputIndexed = []
-        portOutputIndexed = []
-        portTopInput = []
-        portTopOutputs = []
-        jumpWire = []
-        # get indexed version of the port of the tile
-        for p in tile.portsInfo:
-            if p.wireDirection != "JUMP":
-                input, output = p.expandPortInfo(
-                    mode="AutoSwitchMatrixIndexed")
-                portInputIndexed += input
-                portOutputIndexed += output
-                input, output = p.expandPortInfo(mode="AutoTopIndexed")
-                portTopInput += input
-                portTopOutputs += output
-            else:
-                input, output = p.expandPortInfo(
-                    mode="AutoSwitchMatrixIndexed")
-                input = [i for i in input if "GND" not in i and "VCC" not in i]
-                jumpWire += input
-
-        belOutputs = []
-        belInputs = []
-        # removing duplicates
-        portOutputIndexed = list(dict.fromkeys(portOutputIndexed))
-        portTopInput = list(dict.fromkeys(portTopInput))
-        jumpWire = list(dict.fromkeys(jumpWire))
-        for b in tile.bels:
-            belOutputs += b.outputs
-            belInputs += b.inputs
-        inoutPair = zip([i for i in (tile.outputs + tile.inputs) if "GND" not in i and "VCC" not in i],
-                        (portOutputIndexed + belOutputs + jumpWire + portTopInput + belInputs + jumpWire))
-        portMapList = []
-        for i, o in inoutPair:
-            o = o.replace("(", "[").replace(")", "]")
-            portMapList.append(f"{' ':<8}.{i}({o})")
-
-        configBit = ""
-        if switchMatrixConfigPort > 0:
-            if mode == "FlipFlopChain":
-                self._add(switchTemplate.format(tileName=tile.name,
-                                                portMapList=",\n".join(
-                                                    portMapList),
-                                                configBit=""))
-                self.add_Conf_Instantiation(counter=belCounter, close=True)
-            if mode == "frame_based":
-                if tile.globalConfigBits > 0:
-                    configBit = f"{' ':<8}.ConfigBits(ConfigBits[{tile.globalConfigBits} - 1:{configBitCounter}])"
-                    configBit += "\n"f"{' ':<8}.ConfigBits_N(ConfigBits_N[{tile.globalConfigBits} - 1:{configBitCounter}])"
-                    self._add(switchTemplate.format(tileName=tile.name,
-                                                    portMapList=",\n".join(
-                                                        portMapList)+",",
-                                                    configBit=configBit))
-                else:
-                    self._add(switchTemplate.format(tileName=tile.name,
-                                                    portMapList=",\n".join(
-                                                        portMapList),
-                                                    configBit=configBit))

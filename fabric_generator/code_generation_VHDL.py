@@ -119,21 +119,38 @@ class VHDLWriter(codeGenerator):
         self._add("\n"f"end""\n", indentLevel)
 
     def addAssignScalar(self, left, right, indentLevel=0):
-        self._add(f"{left} <= {right};", indentLevel)
+        value = []
+        value += right
+        if len(value) > 1:
+            self._add(f"{left} <= {' & '.join(right)};", indentLevel)
+        else:
+            self._add(f"{left} <= {right};", indentLevel)
 
     def addAssignVector(self, left, right, widthL, widthR, indentLevel=0):
         self._add(
             f"{left} <= {right}( {widthL} downto {widthR} );", indentLevel)
 
-    def addInstantiation(self, compName, compInsName, compPort, signal, indentLevel=0):
+    def addInstantiation(self, compName, compInsName, compPort, signal, paramPort=[], paramSignal=[], indentLevel=0):
         if len(compPort) != len(signal):
             raise ValueError(
                 f"Number of ports and signals do not match: {compPort} != {signal}")
+        if len(paramPort) != len(paramSignal):
+            raise ValueError(
+                f"Number of ports and signals do not match: {paramPort} != {paramSignal}")
 
         self._add(f"{compInsName} : {compName}", indentLevel=indentLevel)
+        if paramPort:
+            self._add(f"generic map (", indentLevel=indentLevel+1)
+            for i in range(len(paramPort)):
+                self._add(
+                    f"{paramPort[i]} => {paramSignal[i]};", indentLevel=indentLevel+2)
+            self._add(f")", indentLevel=indentLevel+1)
+
         self._add(f"Port map(", indentLevel=indentLevel + 1)
         connectPair = []
         for i in range(len(compPort)):
+            if "[" in signal[i]:
+                signal[i] = signal[i].replace("[", "(").replace("]", ")")
             connectPair.append(f"{compPort[i]} => {signal[i]}")
 
         self._add(
@@ -325,100 +342,3 @@ Inst_{prefix}{entity} : {entity}
         self._add(confTemplate.format(counter=counter,
                                       counter2=counter+1,
                                       end='' if close else ');'))
-
-    def addSwitchMatrixInstantiation(self, tile: Tile, configBitCounter, switchMatrixConfigPort, belCounter, mode='frame_based'):
-        switchTemplate = """
--- switch matrix component instantiation
-Inst_{tileName}_switch_matrix : {tileName}_switch_matrix
-    Port Map(
-{portMapList}
-{configBit}
-    );
-"""
-        portInputIndexed = []
-        portOutputIndexed = []
-        portTopInput = []
-        portTopOutputs = []
-        jumpWire = []
-        # get indexed version of the port of the tile
-        for p in tile.portsInfo:
-            if p.wireDirection != "JUMP":
-                input, output = p.expandPortInfo(
-                    mode="AutoSwitchMatrixIndexed")
-                portInputIndexed += input
-                portOutputIndexed += output
-                input, output = p.expandPortInfo(mode="AutoTopIndexed")
-                portTopInput += input
-                portTopOutputs += output
-            else:
-                input, output = p.expandPortInfo(
-                    mode="AutoSwitchMatrixIndexed")
-                input = [i for i in input if "GND" not in i and "VCC" not in i]
-                jumpWire += input
-
-        belOutputs = []
-        belInputs = []
-
-        for b in tile.bels:
-            belOutputs += b.outputs
-            belInputs += b.inputs
-        inoutPair = zip([i for i in (tile.outputs + tile.inputs) if "GND" not in i and "VCC" not in i],
-                        (portOutputIndexed + belOutputs + jumpWire + portTopInput + belInputs + jumpWire))
-        portMapList = []
-        for i, o in inoutPair:
-            portMapList.append(f"{' ':<8}{i:<8} => {o}")
-
-        configBit = ""
-        if switchMatrixConfigPort > 0:
-            if mode == "FlipFlopChain":
-                self._add(switchTemplate.format(tileName=tile.name,
-                                                portMapList=",\n".join(
-                                                    portMapList),
-                                                configBit=""))
-                self.add_Conf_Instantiation(counter=belCounter, close=True)
-            if mode == "frame_based":
-                if tile.globalConfigBits > 0:
-                    configBit = f"{' ':<8}ConfigBits => ConfigBits ( {tile.globalConfigBits} - 1 downto {configBitCounter} )"
-                    self._add(switchTemplate.format(tileName=tile.name,
-                                                    portMapList=",\n".join(
-                                                        portMapList)+",",
-                                                    configBit=configBit))
-                else:
-                    self._add(switchTemplate.format(tileName=tile.name,
-                                                    portMapList=",\n".join(
-                                                        portMapList),
-                                                    configBit=configBit))
-
-
-def PrintTileComponentPort(tile_description, entity, direction, file):
-    print(f"{' ':<4}-- ", direction, file=file)
-    for line in tile_description:
-        if line[0] == direction:
-            if line[source_name] != 'NULL':
-                print('\t\t', line[source_name],
-                      '\t: out \tSTD_LOGIC_VECTOR( ', end='', file=file)
-                print(((abs(int(line[X_offset]))+abs(int(line[Y_offset])))
-                      * int(line[wires]))-1, end='', file=file)
-                print(' downto 0 );', end='', file=file)
-                print('\t -- wires:'+line[wires], end=' ', file=file)
-                print('X_offset:'+line[X_offset], 'Y_offset:' +
-                      line[Y_offset], ' ', end='', file=file)
-                print('source_name:'+line[source_name], 'destination_name:' +
-                      line[destination_name], ' \n', end='', file=file)
-
-    for line in tile_description:
-        if line[0] == direction:
-            if line[destination_name] != 'NULL':
-                print('\t\t', line[destination_name],
-                      '\t: in \tSTD_LOGIC_VECTOR( ', end='', file=file)
-                print(((abs(int(line[X_offset]))+abs(int(line[Y_offset])))
-                      * int(line[wires]))-1, end='', file=file)
-                print(' downto 0 );', end='', file=file)
-                print('\t -- wires:'+line[wires], end=' ', file=file)
-                print('X_offset:'+line[X_offset], 'Y_offset:' +
-                      line[Y_offset], ' ', end='', file=file)
-                print('source_name:'+line[source_name], 'destination_name:' +
-                      line[destination_name], ' \n', end='', file=file)
-    return
-
-

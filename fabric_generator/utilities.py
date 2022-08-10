@@ -542,7 +542,9 @@ def list2CSV(InFileName, OutFileName):
     connectionPair = parseList(InFileName)
 
     with open(OutFileName, "r") as f:
-        file = f.readlines()
+        file = f.read()
+        file = re.sub(r"#.*", "", file)
+        file = file.split("\n")
 
     col = len(file[0].split(','))
     rows = len(file)
@@ -553,7 +555,10 @@ def list2CSV(InFileName, OutFileName):
     # load the data from the original csv into the matrix
     for i in range(1, len(file)):
         for j in range(1, len(file[i].split(','))):
-            matrix[i-1][j-1] = int(file[i].split(',')[j])
+            value = file[i].split(',')[j]
+            if value == "":
+                continue
+            matrix[i-1][j-1] = int(value)
 
     # get source and destination list in the csv
     destination = file[0].strip("\n").split(',')[1:]
@@ -582,7 +587,7 @@ def list2CSV(InFileName, OutFileName):
 
     # writing the matrix back to the given out file
     with open(OutFileName, "w") as f:
-        f.write(file[0])
+        f.write(file[0] + "\n")
         for i in range(len(source)):
             f.write(f"{source[i]},")
             for j in range(len(destination)):

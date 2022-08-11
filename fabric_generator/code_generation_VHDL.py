@@ -118,10 +118,8 @@ class VHDLWriter(codeGenerator):
     def addLogicEnd(self, indentLevel=0):
         self._add("\n"f"end""\n", indentLevel)
 
-    def addAssignScalar(self, left, right, indentLevel=0):
-        value = []
-        value += right
-        if len(value) > 1:
+    def addAssignScalar(self, left, right, delay=0, indentLevel=0):
+        if type(right) == list:
             self._add(f"{left} <= {' & '.join(right)};", indentLevel)
         else:
             self._add(f"{left} <= {right};", indentLevel)
@@ -219,66 +217,6 @@ CONFout <= ConfigBits(ConfigBits'high);
 
     """
         self._add(template, indentLevel)
-
-    def addMux(self, muxStyle, muxSize, tileName, portName, portList, oldConfigBitstreamPosition, configBitstreamPosition, delay):
-        # we have full custom MUX-4 and MUX-16 for which we have to generate code like:
-        # VHDL example custom MUX4
-        # -- switch matrix multiplexer  N1BEG0 		MUX-4
-        # N1BEG0_input <= J_l_CD_END1 & JW2END3 & J2MID_CDb_END3 & LC_O after 80 ps
-        # inst_MUX4PTv4_N1BEG0: MUX4PTv4
-        # Port Map(
-        #     IN1   =>  N1BEG0_input(0),
-        #     IN2   =>  N1BEG0_input(1),
-        #     IN3   =>  N1BEG0_input(2),
-        #     IN4   =>  N1BEG0_input(3),
-        #     S1    =>  ConfigBits(0 + 0),
-        #     S2    =>  ConfigBits(0 + 1),
-        #     O     =>  N1BEG0);
-        delayTemplate = "{portName}_input <= {portList} after {delay} ps;"
-        muxTemplate = """
-inst_{muxComponentName}_{portName} : {muxComponentName}
-    Port Map(
-{inputList}
-{configBitsList}
-{outSignal}
-    );
-    """
-
-        muxComponentName = 'MUX4PTv4'
-        if (muxStyle == 'custom') and (muxSize == 4):
-            muxComponentName = 'MUX4PTv4'
-        if (muxStyle == 'custom') and (muxSize == 16):
-            muxComponentName = 'MUX16PTv2'
-
-        inputList, configBitsList, outSignal = [], [], ""
-
-        for k in range(0, muxSize):
-            inputList.append(f"{' ':<8}IN{k+1:<3} => {portName}_input({k}),")
-
-        for k in range(0, (math.ceil(math.log2(muxSize)))):
-            configBitsList.append(
-                f"{' ':<8}S{k+1:<4} => ConfigBits({oldConfigBitstreamPosition} + {k}),")
-
-        outSignal = f"{' ':<8}O{' ':<4} => {portName}"
-
-        muxString = muxTemplate.format(portName=portName,
-                                       muxSize=muxSize,
-                                       muxComponentName=muxComponentName,
-                                       inputList="\n".join(inputList),
-                                       configBitsList="\n".join(
-                                           configBitsList),
-                                       outSignal=outSignal)
-        delayString = delayTemplate.format(portName=portName,
-                                           portList=" & ".join(portList),
-                                           delay=delay)
-        self._add(delayString)
-        if (MultiplexerStyle == 'custom') and (muxSize == 4 or muxSize == 16):
-            self._add(muxString)
-        else:        # generic multiplexer
-            if MultiplexerStyle == 'custom':
-                print(
-                    f"HINT: creating a MUX-{str(muxSize)} for port {portName} in switch matrix for tile {tileName}")
-            self._add(f"{portName:>4} <= {portName}_input(TO_INTEGER(UNSIGNED(ConfigBits( {str(configBitstreamPosition-1)} downto {str(oldConfigBitstreamPosition)}))));""\n")
 
     def addLatch(self, frameName, frameBitsPerRow, frameIndex, configBit):
         latchTemplate = f"""

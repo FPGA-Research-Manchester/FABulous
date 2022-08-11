@@ -123,7 +123,7 @@ class codeGenerator(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def addAssignScalar(self, left, right, indentLevel=0):
+    def addAssignScalar(self, left, right, delay=0, indentLevel=0):
         pass
 
     @abc.abstractmethod

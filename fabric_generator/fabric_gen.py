@@ -275,8 +275,8 @@ def genTileSwitchMatrix(tile: Tile, csvFile: str, writer: codeGenerator) -> None
     connections = parseMatrix(csvFile, tile.name)
     entity = f"{tile.name}_switch_matrix"
     globalConfigBitsCounter = 0
-    for k in connections:
-        muxSize = len(connections[k])
+    for portName in connections:
+        muxSize = len(connections[portName])
         if muxSize >= 2:
             globalConfigBitsCounter += int(math.ceil(math.log2(muxSize)))
     tile.globalConfigBits = globalConfigBitsCounter
@@ -351,18 +351,19 @@ def genTileSwitchMatrix(tile: Tile, csvFile: str, writer: codeGenerator) -> None
     writer.addNewLine()
 
     # signal declaration
-    for k in connections:
-        writer.addConnectionVector(f"{k}_input", f"{len(connections[k])}-1")
+    for portName in connections:
+        writer.addConnectionVector(
+            f"{portName}_input", f"{len(connections[portName])}-1")
 
     ### SwitchMatrixDebugSignals ### SwitchMatrixDebugSignals ###
     ### SwitchMatrixDebugSignals ### SwitchMatrixDebugSignals ###
     if SwitchMatrixDebugSignals == True:
         writer.addNewLine()
-        for k in connections:
-            muxSize = len(connections[k])
+        for portName in connections:
+            muxSize = len(connections[portName])
             if muxSize >= 2:
                 writer.addConnectionVector(
-                    f"DEBUG_select_{k}", f"{int(math.ceil(math.log2(muxSize)))}-1")
+                    f"DEBUG_select_{portName}", f"{int(math.ceil(math.log2(muxSize)))}-1")
     ### SwitchMatrixDebugSignals ### SwitchMatrixDebugSignals ###
     ### SwitchMatrixDebugSignals ### SwitchMatrixDebugSignals ###
     writer.addComment(
@@ -402,58 +403,103 @@ def genTileSwitchMatrix(tile: Tile, csvFile: str, writer: codeGenerator) -> None
     # the switch matrix implementation
     # we use the following variable to count the configuration bits of a long shift register which actually holds the switch matrix configuration
     configBitstreamPosition = 0
-    for k in connections:
-        muxSize = len(connections[k])
+    for portName in connections:
+        muxSize = len(connections[portName])
         writer.addComment(
-            f"switch matrix multiplexer {k} MUX-{muxSize}", onNewLine=True)
+            f"switch matrix multiplexer {portName} MUX-{muxSize}", onNewLine=True)
         if muxSize == 0:
             print(
-                f"WARNING: input port {k} of switch matrix in Tile {tile.name} is not used")
+                f"WARNING: input port {portName} of switch matrix in Tile {tile.name} is not used")
             writer.addComment(
-                f"WARNING unused multiplexer MUX-{k}", onNewLine=True)
+                f"WARNING unused multiplexer MUX-{portName}", onNewLine=True)
 
         elif muxSize == 1:
             # just route through : can be used for auxiliary wires or diagonal routing (Manhattan, just go to a switch matrix when turning
             # can also be used to tap a wire. A double with a mid is nothing else as a single cascaded with another single where the second single has only one '1' to cascade from the first single
-            if connections[k][0] == '0':
-                writer.addAssignScalar(k, 0)
-            elif connections[k][0] == '1':
-                writer.addAssignScalar(k, 1)
+            if connections[portName][0] == '0':
+                writer.addAssignScalar(portName, 0)
+            elif connections[portName][0] == '1':
+                writer.addAssignScalar(portName, 1)
             else:
-                writer.addAssignScalar(k, connections[k][0])
+                writer.addAssignScalar(portName, connections[portName][0])
             writer.addNewLine()
         elif muxSize >= 2:
             # this is the case for a configurable switch matrix multiplexer
             old_ConfigBitstreamPosition = configBitstreamPosition
             # math.ceil(math.log2(len(connections[k]))) tells us how many configuration bits a multiplexer takes
             configBitstreamPosition += (
-                math.ceil(math.log2(len(connections[k]))))
+                math.ceil(math.log2(len(connections[portName]))))
             # the reversed() changes the direction that we iterate over the line list.
             # Changed it such that the left-most entry is located at the end of the concatenated vector for the multiplexing
             # This was done such that the index from left-to-right in the adjacency matrix corresponds with the multiplexer select input (index)
+            numGnd = 0
+            muxComponentName = ""
+            if (MultiplexerStyle == 'custom') and (muxSize == 2):
+                muxComponentName = 'my_mux2'
+            elif (MultiplexerStyle == 'custom') and (2 < muxSize <= 4):
+                muxComponentName = 'cus_mux41_buf'
+                numGnd = 4-muxSize
+            elif (MultiplexerStyle == 'custom') and (4 < muxSize <= 8):
+                muxComponentName = 'cus_mux81_buf'
+                numGnd = 8-muxSize
+            elif (MultiplexerStyle == 'custom') and (8 < muxSize <= 16):
+                muxComponentName = 'cus_mux161_buf'
+                numGnd = 16-muxSize
 
-            # TODO this will leave as hardcoded for now, once algorithmic solution is implemented this should be replaced by building the mux using the writer
-            writer.addMux(muxStyle=MultiplexerStyle,
-                          muxSize=muxSize,
-                          tileName=tile.name,
-                          portName=k,
-                          portList=reversed(connections[k]),
-                          oldConfigBitstreamPosition=old_ConfigBitstreamPosition,
-                          configBitstreamPosition=configBitstreamPosition,
-                          delay=GenerateDelayInSwitchMatrix)
+            portList, signalList = [], []
+            start = 0
+            for start in range(muxSize):
+                portList.append(f"A{start}")
+                signalList.append(f"{portName}_input[{start}]")
+
+            for end in range(start, numGnd):
+                portList.append(f"A{end}")
+                signalList.append(f"GND0")
+
+            if MultiplexerStyle == "custom":
+                if muxSize == 2:
+                    portList.append(f"S{portName}")
+                    signalList.append(
+                        f"ConfigBits[{old_ConfigBitstreamPosition}+{portName}]")
+                else:
+                    for i in range(int(math.ceil(math.log2(muxSize)))):
+                        portList.append(f"S{i}")
+                        portList.append(f"S{i}N")
+                        signalList.append(
+                            f"ConfigBits[{old_ConfigBitstreamPosition}+{i}]")
+                        signalList.append(
+                            f"ConfigBits[{old_ConfigBitstreamPosition}+{i}]")
+
+            portList.append("X")
+            signalList.append(f"{portName}")
+
+            if (MultiplexerStyle == 'custom'):
+                writer.addAssignScalar(f"{portName}_input", list(reversed(
+                    connections[portName])), int(GenerateDelayInSwitchMatrix))
+                writer.addInstantiation(compName=muxComponentName,
+                                        compInsName=f"inst_{muxComponentName}",
+                                        compPort=portList,
+                                        signal=signalList)
+                if muxSize != 2 and muxSize != 4 and muxSize != 8 and muxSize != 16:
+                    print(
+                        f"HINT: creating a MUX-{str(muxSize)} for port {portName} using MUX-{muxSize} in switch matrix for tile {tile.name}")
+            else:
+                # generic multiplexer
+                writer.addAssignScalar(
+                    portName, f"{portName}_input[ConfigBits[{configBitstreamPosition-1}:{old_ConfigBitstreamPosition}]]")
 
     ### SwitchMatrixDebugSignals ### SwitchMatrixDebugSignals ###
     ### SwitchMatrixDebugSignals ### SwitchMatrixDebugSignals ###
     if SwitchMatrixDebugSignals == True:
         writer.addNewLine()
         configBitstreamPosition = 0
-        for k in connections:
-            muxSize = len(connections[k])
+        for portName in connections:
+            muxSize = len(connections[portName])
             if muxSize >= 2:
                 old_ConfigBitstreamPosition = configBitstreamPosition
                 configBitstreamPosition += int(math.ceil(math.log2(muxSize)))
                 writer.addAssignVector(
-                    f"DEBUG_select_{k:<15}", "ConfigBits", configBitstreamPosition-1, old_ConfigBitstreamPosition)
+                    f"DEBUG_select_{portName:<15}", "ConfigBits", configBitstreamPosition-1, old_ConfigBitstreamPosition)
 
     ### SwitchMatrixDebugSignals ### SwitchMatrixDebugSignals ###
     ### SwitchMatrixDebugSignals ### SwitchMatrixDebugSignals ###
@@ -2014,7 +2060,7 @@ def genFabricObject(fabric: list):
                                 if i < int(wire["wire-count"]):
                                     cascaded_i = i + \
                                         int(wire["wire-count"]) * \
-                                            (abs(int(wire["xoffset"]))-1)
+                                        (abs(int(wire["xoffset"]))-1)
                                 else:
                                     cascaded_i = i - int(wire["wire-count"])
                                     tempAtomicWires.append({"direction": "JUMP", "source": wire["destination"] + str(
@@ -2030,7 +2076,7 @@ def genFabricObject(fabric: list):
                                 if i < int(wire["wire-count"]):
                                     cascaded_i = i + \
                                         int(wire["wire-count"]) * \
-                                            (abs(int(wire["xoffset"]))-1)
+                                        (abs(int(wire["xoffset"]))-1)
                                 else:
                                     cascaded_i = i - int(wire["wire-count"])
                                     tempAtomicWires.append({"direction": "JUMP", "source": wire["destination"] + str(
@@ -2047,7 +2093,7 @@ def genFabricObject(fabric: list):
                                 if i < int(wire["wire-count"]):
                                     cascaded_i = i + \
                                         int(wire["wire-count"]) * \
-                                            (abs(int(wire["yoffset"]))-1)
+                                        (abs(int(wire["yoffset"]))-1)
                                 else:
                                     cascaded_i = i - int(wire["wire-count"])
                                     tempAtomicWires.append({"direction": "JUMP", "source": wire["destination"] + str(
@@ -2063,7 +2109,7 @@ def genFabricObject(fabric: list):
                                 if i < int(wire["wire-count"]):
                                     cascaded_i = i + \
                                         int(wire["wire-count"]) * \
-                                            (abs(int(wire["yoffset"]))-1)
+                                        (abs(int(wire["yoffset"]))-1)
                                 else:
                                     cascaded_i = i - int(wire["wire-count"])
                                     tempAtomicWires.append({"direction": "JUMP", "source": wire["destination"] + str(
@@ -2123,283 +2169,6 @@ def genFabricObject(fabric: list):
     archFabric.cellTypes = GetCellTypes(fabric)
 
     return archFabric
-
-
-def genNextpnrModel(archObject: Fabric, generatePairs=True):
-    pipsStr = ""
-    belsStr = f"# BEL descriptions: bottom left corner Tile_X0Y0, top right {archObject.tiles[0][archObject.width - 1].genTileLoc()}\n"
-    pairStr = ""
-    constraintStr = ""
-    for line in archObject.tiles:
-        for tile in line:
-            # Add PIPs
-            # Pips within the tile
-            tileLoc = tile.genTileLoc()  # Get the tile location string
-            pipsStr += f"#Tile-internal pips on tile {tileLoc}:\n"
-            for pip in tile.pips:
-                # Add the pips (also delay should be done here later, sDelay is a filler)
-                pipsStr += ",".join((tileLoc, pip[0], tileLoc,
-                                    pip[1], sDelay, ".".join((pip[0], pip[1]))))
-                pipsStr += "\n"
-
-            # Wires between tiles
-            pipsStr += f"#Tile-external pips on tile {tileLoc}:\n"
-            for wire in tile.wires:
-                desty = tile.y + int(wire["yoffset"])
-                destx = tile.x + int(wire["xoffset"])
-                desttileLoc = f"X{destx}Y{desty}"
-                for i in range(int(wire["wire-count"])):
-                    pipsStr += ",".join((tileLoc, wire["source"]+str(i), desttileLoc, wire["destination"]+str(
-                        i), sDelay, ".".join((wire["source"]+str(i), wire["destination"]+str(i)))))
-                    pipsStr += "\n"
-            for wire in tile.atomicWires:  # Very simple - just add wires using values directly from the atomic wire structure
-                desttileLoc = wire["destTile"]
-                pipsStr += ",".join((tileLoc, wire["source"], desttileLoc, wire["destination"],
-                                    sDelay, ".".join((wire["source"], wire["destination"]))))
-                pipsStr += "\n"
-            # Add BELs
-            belsStr += "#Tile_" + tileLoc + "\n"  # Tile declaration as a comment
-            for num, belpair in enumerate(tile.bels):
-                # To allow to read the bel type
-                bel = belpair[0].split("/")[-1]
-                let = letters[num]
-                # if bel == "LUT4c_frame_config":
-                #     cType = "LUT4"
-                #     prefix = "L" + let + "_"
-                # elif bel == "IO_1_bidirectional_frame_config_pass":
-                #     prefix = let + "_"
-                # else:
-                #     cType = bel
-                #     prefix = ""
-                prefix = belpair[1]
-                nports = belpair[2]
-                if bel == "LUT4c_frame_config":
-                    cType = "FABULOUS_LC"  # "LUT4"
-                # elif bel == "IO_1_bidirectional_frame_config_pass":
-                #    cType = "IOBUF"
-                else:
-                    cType = bel
-                belsStr += ",".join((tileLoc, ",".join(tile.genTileLoc(True)),
-                                    let, cType, ",".join(nports))) + "\n"
-                # Add constraints to fix pin location (based on template generated in genVerilogTemplate)
-                if bel == "IO_1_bidirectional_frame_config_pass" or "InPass4_frame_config" or "OutPass4_frame_config":
-                    belName = f"Tile_{tileLoc}_{let}"
-                    constraintStr += f"set_io {belName} {tileLoc}.{let}\n"
-
-            if generatePairs:
-                # Generate wire beginning to wire beginning pairs for timing analysis
-                print("Generating pairs for: " + tile.genTileLoc())
-                pairStr += "#" + tileLoc + "\n"
-                for wire in tile.wires:
-                    for i in range(int(wire["wire-count"])):
-                        desty = tile.y + int(wire["yoffset"])
-                        destx = tile.x + int(wire["xoffset"])
-                        destTile = archObject.getTileByCoords(destx, desty)
-                        desttileLoc = f"X{destx}Y{desty}"
-                        if (wire["destination"] + str(i)) not in destTile.pipMuxes_MapSourceToSinks.keys():
-                            continue
-                        for pipSink in destTile.pipMuxes_MapSourceToSinks[wire["destination"] + str(i)]:
-                            # If there is a multiplexer here, then we can simply add this pair
-                            if len(destTile.pipMuxes_MapSinkToSources[pipSink]) > 1:
-                                pairStr += ",".join((".".join((tileLoc, wire["source"] + f"[{str(i)}]")), ".".join(
-                                    (desttileLoc, addBrackets(pipSink, tile))))) + "\n"  # TODO: add square brackets to end
-                            # otherwise, there is no physical pair in the ASIC netlist, so we must propagate back until we hit a multiplexer
-                            else:
-                                finalDestination = ".".join(
-                                    (desttileLoc, addBrackets(pipSink, tile)))
-                                foundPhysicalPairs = False
-                                curWireTuple = (tile, wire, i)
-                                potentialStarts = []
-                                stopOffs = []
-                                while (not foundPhysicalPairs):
-                                    cTile = curWireTuple[0]
-                                    cWire = curWireTuple[1]
-                                    cIndex = curWireTuple[2]
-                                    if len(cTile.pipMuxes_MapSinkToSources[cWire["source"] + str(cIndex)]) > 1:
-                                        for wireEnd in cTile.pipMuxes_MapSinkToSources[cWire["source"] + str(cIndex)]:
-                                            if wireEnd in cTile.belPorts:
-                                                continue
-                                            cPair = archObject.getTileAndWireByWireDest(
-                                                cTile.genTileLoc(), wireEnd)
-                                            if cPair == None:
-                                                continue
-                                            potentialStarts.append(cPair[0].genTileLoc(
-                                            ) + "." + cPair[1]["source"] + "[" + str(cPair[2]) + "]")
-                                        foundPhysicalPairs = True
-                                    else:
-                                        destPort = cTile.pipMuxes_MapSinkToSources[cWire["source"] + str(
-                                            cIndex)][0]
-                                        destLoc = cTile.genTileLoc()
-                                        if destPort in cTile.belPorts:
-                                            foundPhysicalPairs = True  # This means it's connected to a BEL
-                                            continue
-                                        if GNDRE.match(destPort) or VCCRE.match(destPort) or VDDRE.match(destPort):
-                                            foundPhysicalPairs = True
-                                            continue
-                                        stopOffs.append(
-                                            destLoc + "." + destPort)
-                                        curWireTuple = archObject.getTileAndWireByWireDest(
-                                            destLoc, destPort)
-                                pairStr += "#Propagated route for " + finalDestination + "\n"
-                                for index, start in enumerate(potentialStarts):
-                                    pairStr += start + "," + finalDestination + "\n"
-                                pairStr += "#Stopoffs: " + \
-                                    ",".join(stopOffs) + "\n"
-
-                # Generate pairs for bels:
-                pairStr += "#Atomic wire pairs\n"
-                for wire in tile.atomicWires:
-                    pairStr += wire["sourceTile"] + "." + addBrackets(
-                        wire["source"], tile) + "," + wire["destTile"] + "." + addBrackets(wire["destination"], tile) + "\n"
-                for num, belpair in enumerate(tile.bels):
-                    pairStr += "#Bel pairs" + "\n"
-                    bel = belpair[0]
-                    let = letters[num]
-                    prefix = belpair[1]
-                    nports = belpair[2]
-                    if bel == "LUT4c_frame_config":
-                        for i in range(4):
-                            pairStr += tileLoc + "." + prefix + \
-                                f"D[{i}]," + tileLoc + "." + \
-                                    addBrackets(outPip, tile) + "\n"
-                        for outPip in tile.pipMuxes_MapSourceToSinks[prefix + "O"]:
-                            for i in range(4):
-                                pairStr += tileLoc + "." + prefix + \
-                                    f"I[{i}]," + tileLoc + "." + \
-                                        addBrackets(outPip, tile) + "\n"
-                                pairStr += tileLoc + "." + prefix + \
-                                    f"Q[{i}]," + tileLoc + "." + \
-                                        addBrackets(outPip, tile) + "\n"
-                    elif bel == "MUX8LUT_frame_config":
-                        for outPip in tile.pipMuxes_MapSourceToSinks["M_AB"]:
-                                pairStr += tileLoc + ".A," + tileLoc + \
-                                    "." + addBrackets(outPip, tile) + "\n"
-                                pairStr += tileLoc + ".B," + tileLoc + \
-                                    "." + addBrackets(outPip, tile) + "\n"
-                                pairStr += tileLoc + ".S0," + tileLoc + \
-                                    "." + addBrackets(outPip, tile) + "\n"
-                        for outPip in tile.pipMuxes_MapSourceToSinks["M_AD"]:
-                                pairStr += tileLoc + ".A," + tileLoc + \
-                                    "." + addBrackets(outPip, tile) + "\n"
-                                pairStr += tileLoc + ".B," + tileLoc + \
-                                    "." + addBrackets(outPip, tile) + "\n"
-                                pairStr += tileLoc + ".C," + tileLoc + \
-                                    "." + addBrackets(outPip, tile) + "\n"
-                                pairStr += tileLoc + ".D," + tileLoc + \
-                                    "." + addBrackets(outPip, tile) + "\n"
-                                pairStr += tileLoc + ".S0," + tileLoc + \
-                                    "." + addBrackets(outPip, tile) + "\n"
-                                pairStr += tileLoc + ".S1," + tileLoc + \
-                                    "." + addBrackets(outPip, tile) + "\n"
-                        for outPip in tile.pipMuxes_MapSourceToSinks["M_AH"]:
-                                pairStr += tileLoc + ".A," + tileLoc + \
-                                    "." + addBrackets(outPip, tile) + "\n"
-                                pairStr += tileLoc + ".B," + tileLoc + \
-                                    "." + addBrackets(outPip, tile) + "\n"
-                                pairStr += tileLoc + ".C," + tileLoc + \
-                                    "." + addBrackets(outPip, tile) + "\n"
-                                pairStr += tileLoc + ".D," + tileLoc + \
-                                    "." + addBrackets(outPip, tile) + "\n"
-                                pairStr += tileLoc + ".E," + tileLoc + \
-                                    "." + addBrackets(outPip, tile) + "\n"
-                                pairStr += tileLoc + ".F," + tileLoc + \
-                                    "." + addBrackets(outPip, tile) + "\n"
-                                pairStr += tileLoc + ".G," + tileLoc + \
-                                    "." + addBrackets(outPip, tile) + "\n"
-                                pairStr += tileLoc + ".H," + tileLoc + \
-                                    "." + addBrackets(outPip, tile) + "\n"
-                                pairStr += tileLoc + ".S0," + tileLoc + \
-                                    "." + addBrackets(outPip, tile) + "\n"
-                                pairStr += tileLoc + ".S1," + tileLoc + \
-                                    "." + addBrackets(outPip, tile) + "\n"
-                                pairStr += tileLoc + ".S2," + tileLoc + \
-                                    "." + addBrackets(outPip, tile) + "\n"
-                                pairStr += tileLoc + ".S3," + tileLoc + \
-                                    "." + addBrackets(outPip, tile) + "\n"
-                        for outPip in tile.pipMuxes_MapSourceToSinks["M_EF"]:
-                                pairStr += tileLoc + ".E," + tileLoc + \
-                                    "." + addBrackets(outPip, tile) + "\n"
-                                pairStr += tileLoc + ".F," + tileLoc + \
-                                    "." + addBrackets(outPip, tile) + "\n"
-                                pairStr += tileLoc + ".S0," + tileLoc + \
-                                    "." + addBrackets(outPip, tile) + "\n"
-                                pairStr += tileLoc + ".S2," + tileLoc + \
-                                    "." + addBrackets(outPip, tile) + "\n"
-                    elif bel == "MULADD":
-                        for i in range(20):
-                            for outPip in tile.pipMuxes_MapSourceToSinks[f"Q{i}"]:
-                                for i in range(8):
-                                    pairStr += tileLoc + \
-                                        f".A[{i}]," + tileLoc + "." + \
-                                            addBrackets(outPip, tile) + "\n"
-                                for i in range(8):
-                                    pairStr += tileLoc + \
-                                        f".B[{i}]," + tileLoc + "." + \
-                                            addBrackets(outPip, tile) + "\n"
-                                for i in range(20):
-                                    pairStr += tileLoc + \
-                                        f".C[{i}]," + tileLoc + "." + \
-                                            addBrackets(outPip, tile) + "\n"
-                    elif bel == "RegFile_32x4":
-                        for i in range(4):
-                            for outPip in tile.pipMuxes_MapSourceToSinks[f"AD{i}"]:
-                                    pairStr += tileLoc + ".W_en," + tileLoc + \
-                                        "." + addBrackets(outPip, tile) + "\n"
-                                    for j in range(4):
-                                        pairStr += tileLoc + \
-                                            f".D[{j}]," + tileLoc + "." + \
-                                                addBrackets(
-                                                    outPip, tile) + "\n"
-                                        pairStr += tileLoc + \
-                                            f".W_ADR[{j}]," + tileLoc + "." + \
-                                                addBrackets(
-                                                    outPip, tile) + "\n"
-                                        pairStr += tileLoc + \
-                                            f".A_ADR[{j}]," + tileLoc + "." + \
-                                                addBrackets(
-                                                    outPip, tile) + "\n"
-                            for outPip in tile.pipMuxes_MapSourceToSinks[f"BD{i}"]:
-                                    pairStr += tileLoc + ".W_en," + tileLoc + \
-                                        "." + addBrackets(outPip, tile) + "\n"
-                                    for j in range(4):
-                                        pairStr += tileLoc + \
-                                            f".D[{j}]," + tileLoc + "." + \
-                                                addBrackets(
-                                                    outPip, tile) + "\n"
-                                        pairStr += tileLoc + \
-                                            f".W_ADR[{j}]," + tileLoc + "." + \
-                                                addBrackets(
-                                                    outPip, tile) + "\n"
-                                        pairStr += tileLoc + \
-                                            f".B_ADR[{j}]," + tileLoc + "." + \
-                                                addBrackets(
-                                                    outPip, tile) + "\n"
-                    elif bel == "IO_1_bidirectional_frame_config_pass":
-                        # inPorts go into the fabric, outPorts go out
-                        for inPort in ("O", "Q"):
-                            for outPip in tile.pipMuxes_MapSourceToSinks[prefix + inPort]:
-                                pairStr += tileLoc + "." + prefix + inPort + "," + \
-                                    tileLoc + "." + \
-                                        addBrackets(outPip, tile) + "\n"
-                        # Outputs are covered by the wire code, as pips will link to them
-                    elif bel == "InPass4_frame_config":
-                        for i in range(4):
-                            for outPip in tile.pipMuxes_MapSourceToSinks[prefix + "O" + str(i)]:
-                                pairStr += tileLoc + "." + prefix + \
-                                    f"O{i}" + "," + tileLoc + "." + \
-                                        addBrackets(outPip, tile) + "\n"
-                    elif bel == "OutPass4_frame_config":
-                        for i in range(4):
-                            for inPip in tile.pipMuxes_MapSinkToSources[prefix + "I" + str(i)]:
-                                pairStr += tileLoc + "." + \
-                                    addBrackets(inPip, tile) + "," + \
-                                                tileLoc + "." + prefix + \
-                                                    f"I{i}" + "\n"
-    if generatePairs:
-        return (pipsStr, belsStr, constraintStr, pairStr)
-    else:
-        # Seems a little nicer to have a constant size tuple returned
-        return (pipsStr, belsStr, constraintStr, None)
 
 
 def genVerilogTemplate(archObject: Fabric):
@@ -3493,33 +3262,30 @@ def genVPRModelConstraints(archObject: Fabric):
 
 
 def genBitstreamSpec(archObject: Fabric):
-	specData = {"TileMap": {}, "TileSpecs": {}, "TileSpecs_No_Mask": {}, "FrameMap": {}, "FrameMapEncode": {
-	    }, "ArchSpecs": {"MaxFramesPerCol": MaxFramesPerCol, "FrameBitsPerRow": FrameBitsPerRow}}
-	BelMap = {}
-	for line in archObject.tiles:
-		for tile in line:
-			specData["TileMap"][tile.genTileLoc()] = tile.tileType
+    specData = {"TileMap": {}, "TileSpecs": {}, "TileSpecs_No_Mask": {}, "FrameMap": {}, "FrameMapEncode": {
+    }, "ArchSpecs": {"MaxFramesPerCol": MaxFramesPerCol, "FrameBitsPerRow": FrameBitsPerRow}}
+    BelMap = {}
+    for line in archObject.tiles:
+        for tile in line:
+            specData["TileMap"][tile.genTileLoc()] = tile.tileType
 
-	# Generate mapping dicts for bel types:
-	# The format here is that each BEL has a dictionary that maps a fasm feature to another dictionary that maps bits to their values
-	# The lines generating the BEL maps do it slightly differently, just notating bits that should go high - this is translated further down
-	# We do not worry about bitmasking here - that's handled in the generation
+    # Generate mapping dicts for bel types:
+    # The format here is that each BEL has a dictionary that maps a fasm feature to another dictionary that maps bits to their values
+    # The lines generating the BEL maps do it slightly differently, just notating bits that should go high - this is translated further down
+    # We do not worry about bitmasking here - that's handled in the generation
+    # LUT4:
+    LUTmap = {}
+    # Futureproofing as there are two ways that INIT[0] may be referred to (FASM parser will use INIT to refer to INIT[0])
+    LUTmap["INIT"] = 0
+    for i in range(16):
+        LUTmap["INIT[" + str(i) + "]"] = i
+    LUTmap["FF"] = 16
+    LUTmap["IOmux"] = 17
+    LUTmap["SET_NORESET"] = 18
 
-	# LUT4:
+    BelMap["LUT4c_frame_config"] = LUTmap
 
-	LUTmap = {}
-	# Futureproofing as there are two ways that INIT[0] may be referred to (FASM parser will use INIT to refer to INIT[0])
-	LUTmap["INIT"] = 0
-	for i in range(16):
-		LUTmap["INIT[" + str(i) + "]"] = i
-	LUTmap["FF"] = 16
-	LUTmap["IOmux"] = 17
-	LUTmap["SET_NORESET"] = 18
-
-	BelMap["LUT4c_frame_config"] = LUTmap
-
-	# MUX8
-
+    # MUX8
     MUX8map = {"c0": 0, "c1": 1}
 
     BelMap["MUX8LUT_frame_config"] = MUX8map
@@ -3580,125 +3346,139 @@ def genBitstreamSpec(archObject: Fabric):
 
     # DoneTypes = []
 
-	# NOTE: THIS METHOD HAS BEEN CHANGED FROM A PREVIOUS IMPLEMENTATION SO PLEASE BEAR THIS IN MIND
-	# To account for cascading and termination, this now creates a separate map for every tile, as opposed to every cellType
-	for row in archObject.tiles:
-		# curTile = getTileByType(archObject, cellType)
-		for curTile in row:
-			cellType = curTile.tileType
-			if cellType == "NULL":
-				continue
+    # NOTE: THIS METHOD HAS BEEN CHANGED FROM A PREVIOUS IMPLEMENTATION SO PLEASE BEAR THIS IN MIND
+    # To account for cascading and termination, this now creates a separate map for every tile, as opposed to every cellType
+    for row in archObject.tiles:
+        # curTile = getTileByType(archObject, cellType)
+        for curTile in row:
+            cellType = curTile.tileType
+            if cellType == "NULL":
+                continue
 
+            # Add frame masks to the dictionary
+            try:
+                # This may need to be .init.csv, not just .csv
+                configCSV = open(cellType + "_ConfigMem.csv")
+            except:
+                try:
+                    configCSV = open(cellType + "_ConfigMem.init.csv")
+                except:
+                    print(
+                        f"No Config Mem csv file found for {cellType}. Assuming no config memory.")
+                    specData["FrameMap"][cellType] = {}
+                    specData["FrameMapEncode"][cellType] = {}
+                    continue
+            configList = [i.strip('\n').split(',') for i in configCSV]
+            configList = RemoveComments(configList)
+            maskDict = {}
+            # Bitmap with the specific configmem.csv file
+            encodeDict = [-1 for i in range(FrameBitsPerRow*MaxFramesPerCol)]
+            for line in configList:
+                configEncode = []
+                maskDict[int(line[1])] = line[3].replace("_", "")
+                for index in line[4:]:
+                    if ':' in index:
+                        index_temp = index.split(':')
+                        index_width = int(index_temp[0])-int(index_temp[1])+1
+                        for i in range(index_width):
+                            configEncode.append(str(int(index_temp[0])-i))
+                    else:
+                        configEncode.append(index)
+                # print(configEncode)
+                encode_i = 0
+                for i, char in enumerate(maskDict[int(line[1])]):
+                    if char != '0':
+                        # encodeDict[int(line[1])][i] = configEncode[encode_i]
+                        encodeDict[int(configEncode[encode_i])] = (
+                            31 - i) + (32 * int(line[1]))
+                        encode_i += 1
+            # print(encodeDict)
+            specData["FrameMap"][cellType] = maskDict
+            if 'term' in cellType:
+                print(f"No config memory for {cellType}.")
+                specData["FrameMap"][cellType] = {}
+                specData["FrameMapEncode"][cellType] = {}
+                # continue
+            # if specData["ArchSpecs"]["MaxFramesPerCol"] < int(line[1]) + 1:
+            # 	specData["ArchSpecs"]["MaxFramesPerCol"] = int(line[1]) + 1
+            # if specData["ArchSpecs"]["FrameBitsPerRow"] < int(line[2]):
+            # 	specData["ArchSpecs"]["FrameBitsPerRow"] = int(line[2])
+            configCSV.close()
 
-			# Add frame masks to the dictionary 
-			try:
-				configCSV = open(cellType + "_ConfigMem.csv") #This may need to be .init.csv, not just .csv
-			except:
-			    try:
-			        configCSV = open(cellType + "_ConfigMem.init.csv")
-			    except:
-			        print(f"No Config Mem csv file found for {cellType}. Assuming no config memory.")
-			        specData["FrameMap"][cellType] = {}
-			        specData["FrameMapEncode"][cellType] = {}
-			        continue
-			configList = [i.strip('\n').split(',') for i in configCSV]
-			configList = RemoveComments(configList)
-			maskDict = {}
-			encodeDict = [-1 for i in range(FrameBitsPerRow*MaxFramesPerCol)]  #Bitmap with the specific configmem.csv file
-			for line in configList:
-				configEncode = []
-				maskDict[int(line[1])] = line[3].replace("_", "")
-				for index in line[4:]:
-				    if ':' in index:
-				        index_temp = index.split(':')
-				        index_width = int(index_temp[0])-int(index_temp[1])+1
-				        for i in range(index_width):
-				            configEncode.append(str(int(index_temp[0])-i))
-				    else:
-				        configEncode.append(index)
-				# print(configEncode)
-				encode_i = 0
-				for i,char in enumerate(maskDict[int(line[1])]):
-				    if char != '0':
-				        # encodeDict[int(line[1])][i] = configEncode[encode_i]
-				        encodeDict[int(configEncode[encode_i])] = (31 - i) + ( 32 * int(line[1]))
-				        encode_i += 1
-			# print(encodeDict)
-			specData["FrameMap"][cellType] = maskDict
-			if 'term' in cellType:
-				print(f"No config memory for {cellType}.")
-				specData["FrameMap"][cellType] = {}
-				specData["FrameMapEncode"][cellType] = {}
-				# continue
-			# if specData["ArchSpecs"]["MaxFramesPerCol"] < int(line[1]) + 1:
-			# 	specData["ArchSpecs"]["MaxFramesPerCol"] = int(line[1]) + 1
-			# if specData["ArchSpecs"]["FrameBitsPerRow"] < int(line[2]):
-			# 	specData["ArchSpecs"]["FrameBitsPerRow"] = int(line[2])
-			configCSV.close()
+            curBitOffset = 0
+            curTileMap = {}
+            curTileMap_No_Mask = {}
 
-			curBitOffset = 0
-			curTileMap = {}
-			curTileMap_No_Mask = {}
+            # Add the bel features we made a list of earlier
+            for i, belPair in enumerate(curTile.bels):
+                tempOffset = 0
+                name = letters[i]
+                # print(belPair)
+                belType = belPair[0]
+                for featureKey in BelMap[belType]:
+                    # We convert to the desired format like so
+                    curTileMap[name + "." + featureKey] = {
+                        encodeDict[BelMap[belType][featureKey] + curBitOffset]: "1"}
+                    curTileMap_No_Mask[name + "." + featureKey] = {
+                        (BelMap[belType][featureKey] + curBitOffset): "1"}
+                    if featureKey != "INIT":
+                        tempOffset += 1
+                curBitOffset += tempOffset
+                # if(belType == 'Config_access'):
+                # print(curBitOffset)
+            csvFile = [i.strip('\n').split(',')
+                       for i in open(curTile.matrixFileName)]
+            pipCounts = [int(row[-1]) for row in csvFile[1::]]
+            csvFile = RemoveComments(csvFile)
+            sinks = [line[0] for line in csvFile]
+            sources = csvFile[0]
+            pips = []
+            pipsdict = {}
+            # Config bits for switch matrix from file
+            for y, row in enumerate(csvFile[1::]):
+                muxList = []
+                pipCount = pipCounts[y]
+                for x, value in enumerate(row[1::]):
+                    # Remember that x and y are offset
+                    if value == "1":
+                        muxList.append(".".join((sources[x+1], sinks[y+1])))
+                muxList.reverse()  # Order is flipped
+                for i, pip in enumerate(muxList):
+                    controlWidth = int(numpy.ceil(numpy.log2(pipCount)))
+                    if pipCount < 2:
+                        curTileMap[pip] = {}
+                        curTileMap_No_Mask[pip] = {}
+                        continue
+                    pip_index = pipCount-i-1
+                    controlValue = f"{pip_index:0{controlWidth}b}"
+                    tempOffset = 0
+                    for curChar in controlValue[::-1]:
+                        if pip not in curTileMap.keys():
+                            curTileMap[pip] = {}
+                            curTileMap_No_Mask[pip] = {}
+                        curTileMap[pip][encodeDict[curBitOffset +
+                                                   tempOffset]] = curChar
+                        curTileMap_No_Mask[pip][curBitOffset +
+                                                tempOffset] = curChar
+                        tempOffset += 1
+                curBitOffset += controlWidth
+            # And now we add empty config bit mappings for immutable connections (i.e. wires), as nextpnr sees these the same as normal pips
+            for wire in curTile.wires:
+                for count in range(int(wire["wire-count"])):
+                    wireName = ".".join(
+                        (wire["source"] + str(count), wire["destination"] + str(count)))
+                    # Tile connection wires are seen as pips by nextpnr for ease of use, so this makes sure those pips still have corresponding keys
+                    curTileMap[wireName] = {}
+                    curTileMap_No_Mask[wireName] = {}
+            for wire in curTile.atomicWires:
+                wireName = ".".join((wire["source"], wire["destination"]))
+                curTileMap[wireName] = {}
+                curTileMap_No_Mask[wireName] = {}
 
-			for i, belPair in enumerate(curTile.bels):	#Add the bel features we made a list of earlier
-				tempOffset = 0
-				name = letters[i]
-				# print(belPair)
-				belType = belPair[0]
-				for featureKey in BelMap[belType]:
-					curTileMap[name + "." +featureKey] = {encodeDict[BelMap[belType][featureKey] + curBitOffset]: "1"}	#We convert to the desired format like so
-					curTileMap_No_Mask[name + "." +featureKey] = {(BelMap[belType][featureKey] + curBitOffset): "1"}
-					if featureKey != "INIT":
-					    tempOffset += 1
-				curBitOffset += tempOffset
-				# if(belType == 'Config_access'):
-				    # print(curBitOffset)
-			csvFile = [i.strip('\n').split(',') for i in open(curTile.matrixFileName)] 
-			pipCounts = [int(row[-1]) for row in csvFile[1::]]
-			csvFile = RemoveComments(csvFile)
-			sinks = [line[0] for line in csvFile]
-			sources = csvFile[0]
-			pips = []
-			pipsdict = {}
-			for y, row in enumerate(csvFile[1::]): #Config bits for switch matrix from file
-				muxList = []
-				pipCount = pipCounts[y]
-				for x, value in enumerate(row[1::]):
-					# Remember that x and y are offset 
-					if value == "1":
-						muxList.append(".".join((sources[x+1], sinks[y+1])))
-				muxList.reverse() #Order is flipped 
-				for i, pip in enumerate(muxList):
-					controlWidth = int(numpy.ceil(numpy.log2(pipCount)))
-					if pipCount < 2:
-						curTileMap[pip] = {}
-						curTileMap_No_Mask[pip] = {}
-						continue
-					pip_index = pipCount-i-1
-					controlValue = f"{pip_index:0{controlWidth}b}"
-					tempOffset = 0
-					for curChar in controlValue[::-1]:
-						if pip not in curTileMap.keys():
-							curTileMap[pip] = {}
-							curTileMap_No_Mask[pip] = {}
-						curTileMap[pip][encodeDict[curBitOffset + tempOffset]] = curChar
-						curTileMap_No_Mask[pip][curBitOffset + tempOffset] = curChar
-						tempOffset += 1
-				curBitOffset += controlWidth
-			for wire in curTile.wires: #And now we add empty config bit mappings for immutable connections (i.e. wires), as nextpnr sees these the same as normal pips
-				for count in range(int(wire["wire-count"])):
-					wireName = ".".join((wire["source"] + str(count), wire["destination"] + str(count)))
-					curTileMap[wireName] = {} #Tile connection wires are seen as pips by nextpnr for ease of use, so this makes sure those pips still have corresponding keys
-					curTileMap_No_Mask[wireName] = {}
-			for wire in curTile.atomicWires:
-				wireName = ".".join((wire["source"], wire["destination"]))
-				curTileMap[wireName] = {}
-				curTileMap_No_Mask[wireName] = {}
-
-			specData["TileSpecs"][curTile.genTileLoc()] = curTileMap
-			specData["TileSpecs_No_Mask"][curTile.genTileLoc()] = curTileMap_No_Mask
-
-	return specData
+            specData["TileSpecs"][curTile.genTileLoc()] = curTileMap
+            specData["TileSpecs_No_Mask"][curTile.genTileLoc()
+                                          ] = curTileMap_No_Mask
+    return specData
 
 #####################################################################################
 # Main
@@ -3795,7 +3575,7 @@ parser.add_argument('-GenTileConfigMemVerilog',
                     default=False,
                     action='store_true')
 
-parser.add_argument('-GenTileHDL',
+parser.add_argument('-GenTileVHDL',
                     default=False,
                     action='store_true')
 
@@ -3977,7 +3757,7 @@ if args.GenTileConfigMemVerilog or args.run_all:
         generateConfigMem(
             fabric.tileDic[tile], f"{src_dir}/{str(tile)}_ConfigMem.csv", writer)
 
-if args.GenTileHDL or args.run_all:
+if args.GenTileVHDL or args.run_all:
     print('### Generate all tile HDL descriptions')
     fabric = parseFabricCSV(args.fabric_csv)
     for tile in fabric.tileDic:

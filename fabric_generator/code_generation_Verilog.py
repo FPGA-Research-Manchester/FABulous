@@ -212,11 +212,9 @@ class VerilogWriter(codeGenerator):
 """
         self._add(template, indentLevel)
 
-    def addAssignScalar(self, left, right, indentLevel=0):
-        value = []
-        value += right
-        if len(value) > 1:
-            self._add(f"assign {left} = {{{','.join(value)}}};", indentLevel)
+    def addAssignScalar(self, left, right, delay=0, indentLevel=0):
+        if type(right) == list:
+            self._add(f"assign {left} = {{{','.join(right)}}};", indentLevel)
         else:
             self._add(f"assign {left} = {right};")
 
@@ -224,90 +222,6 @@ class VerilogWriter(codeGenerator):
         self._add(
             f"assign {left} = {right}[{widthL}:{widthR}];", indentLevel)
 
-    def addMux(self, muxStyle, muxSize, tileName, portName, portList, oldConfigBitstreamPosition, configBitstreamPosition, delay):
-        # we have full custom MUX-4 and MUX-16 for which we have to generate code like:
-        # // switch matrix multiplexer  N1BEG0 		MUX-4
-        # 	assign N1BEG0_input = {J_l_CD_END1,JW2END3,J2MID_CDb_END3,LC_O};
-        # 	cus_mux41_buf inst_cus_mux41_buf_N1BEG0 (
-        # 	    .A0 (N1BEG0_input[0]),
-        # 	    .A1 (N1BEG0_input[1]),
-        # 	    .A2 (N1BEG0_input[2]),
-        # 	    .A3 (N1BEG0_input[3]),
-        # 	    .S0 (ConfigBits[0+0]),
-        # 	    .S0N (ConfigBits_N[0+0]),
-        # 	    .S1 (ConfigBits[0+1]),
-        # 	    .S1N (ConfigBits_N[0+1]),
-        # 	    .X (N1BEG0)
-        # 	);
-
-        delayTemplate = "assign {portName}_input = {{{portList}}};"
-        muxTemplate = """
-{muxComponentName} inst_{muxComponentName} (
-{inputList}
-{configBitsList}
-{outSignal}
-);
-    """
-        numGnd = 0
-        muxComponentName = ""
-        if (muxStyle == 'custom') and (muxSize == 2):
-            muxComponentName = 'my_mux2'
-        if (muxStyle == 'custom') and (2 < muxSize <= 4):
-            muxComponentName = 'cus_mux41_buf'
-            numGnd = 4-muxSize
-        if (muxStyle == 'custom') and (4 < muxSize <= 8):
-            muxComponentName = 'cus_mux81_buf'
-            numGnd = 8-muxSize
-        if (muxStyle == 'custom') and (8 < muxSize <= 16):
-            muxComponentName = 'cus_mux161_buf'
-            numGnd = 16-muxSize
-
-        inputList, configBitsList, outSignal = [], [], ""
-
-        start = 0
-        for start in range(muxSize):
-            inputList.append(f"{' ':<4}.A{start}({portName}_input[{start}]),")
-
-        for end in range(start, numGnd):
-            inputList.append(f"{' ':<4}.A{end}(GND0)")
-
-        if muxStyle == "custom":
-            if muxSize == 2:
-                for k in range(0, (math.ceil(math.log2(muxSize)))):
-                    configBitsList.append(
-                        f"{' ':<4}.S{k}(ConfigBits[{oldConfigBitstreamPosition}+{k}]),")
-
-            else:
-                for i in range(int(math.ceil(math.log2(muxSize)))):
-                    configBitsList.append(
-                        f"{' ':<4}.S{i}(ConfigBits[{oldConfigBitstreamPosition}+{i}]),")
-                    configBitsList.append(
-                        f"{' ':<4}.S{i}N(ConfigBits[{oldConfigBitstreamPosition}+{i}]),")
-
-        outSignal = f"{' ':<4}.X({portName})"
-
-        delayString = delayTemplate.format(portName=portName,
-                                           portList=", ".join(portList),
-                                           delay=delay)
-        muxString = muxTemplate.format(portName=portName,
-                                       muxSize=muxSize,
-                                       muxComponentName=muxComponentName,
-                                       inputList="\n".join(inputList),
-                                       configBitsList="\n".join(
-                                           configBitsList),
-                                       outSignal=outSignal)
-        self._add(delayString)
-        if (MultiplexerStyle == 'custom'):
-            self._add(muxString)
-            if muxSize != 2 and muxSize != 4 and muxSize != 8 and muxSize != 16:
-                print(
-                    f"HINT: creating a MUX-{str(muxSize)} for port {portName} using MUX-{muxSize} in switch matrix for tile {tileName}")
-        else:
-            # generic multiplexer
-            self._add(
-                f"assign {portName} = {portName}_input[ConfigBits[{configBitstreamPosition-1}:{oldConfigBitstreamPosition}]];")
-
-        self.addNewLine()
 
     def addLatch(self, frameName, frameBitsPerRow, frameIndex, configBit):
         latchTemplate = """

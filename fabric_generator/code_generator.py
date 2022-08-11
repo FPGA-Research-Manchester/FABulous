@@ -131,14 +131,6 @@ class codeGenerator(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def addMux(self, muxStyle, muxSize, tileName, portName, portList, oldConfigBitstreamPosition, configBitstreamPosition, delay):
-        pass
-
-    @abc.abstractmethod
-    def addLatch(self, frameName, frameBitsPerRow, frameIndex, configBit):
-        pass
-
-    @abc.abstractmethod
     def addBELInstantiations(self, bel: Bel, configBitCounter, mode="frame_based", belCounter=0):
         pass
 

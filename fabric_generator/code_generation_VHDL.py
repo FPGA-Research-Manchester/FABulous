@@ -218,17 +218,6 @@ CONFout <= ConfigBits(ConfigBits'high);
     """
         self._add(template, indentLevel)
 
-    def addLatch(self, frameName, frameBitsPerRow, frameIndex, configBit):
-        latchTemplate = f"""
-Inst_{frameName}_bit{frameBitsPerRow} : LHQD1
-    PortMap(
-        D => FrameData({frameBitsPerRow}),
-        E => FrameStrobe({frameIndex}),
-        Q => ConfigBits({configBit})
-    );
-    """
-        self._add(latchTemplate)
-
     def addBELInstantiations(self, bel: Bel, configBitCounter, mode="frame_based", belCounter=0):
         belTemplate = """
 Inst_{prefix}{entity} : {entity}

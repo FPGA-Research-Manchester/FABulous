@@ -183,7 +183,7 @@ def generateConfigMem(tile: Tile, configMemCsv, writer: codeGenerator):
         writer.addParameter("FrameBitsPerRow", "integer",
                             FrameBitsPerRow, indentLevel=2)
     writer.addParameter("NoConfigBits", "integer",
-                        tile.globalConfigBits, indentLevel=2)
+                        tile.globalConfigBits, end=True, indentLevel=2)
     writer.addParameterEnd(indentLevel=1)
     writer.addPortStart(indentLevel=1)
     # the port definitions are generic
@@ -211,7 +211,7 @@ def generateConfigMem(tile: Tile, configMemCsv, writer: codeGenerator):
         bitsUsedInFrame = entry["used_bits_mask"].count("1")
         if bitsUsedInFrame > 0:
             writer.addConnectionVector(
-                entry['frame_name'], f"{bitsUsedInFrame} - 1")
+                entry['frame_name'], f"{bitsUsedInFrame}-1")
             usedFrame.append(int(entry["frame_index"]))
 
         # The actual ConfigBits are given as address ranges starting at position ConfigBits_ranges
@@ -257,11 +257,13 @@ def generateConfigMem(tile: Tile, configMemCsv, writer: codeGenerator):
         usedBits = mappingFile[frame]["used_bits_mask"]
         for k in range(FrameBitsPerRow):
             if usedBits[k] == "1":
-                # TODO this section is hardcode depends on language refactoring once the desired logic is implemented
-                writer.addLatch(frameName=mappingFile[frame]["frame_name"],
-                                frameBitsPerRow=FrameBitsPerRow-1-k,
-                                frameIndex=frame,
-                                configBit=allConfigBitsOrder[allConfigBitsCounter])
+                writer.addInstantiation(compName="LHQD1",
+                                        compInsName=f"Inst_{mappingFile[frame]['frame_name']}_bit{FrameBitsPerRow-1-k}",
+                                        compPort=["D", "E", "Q", "QN"],
+                                        signal=[f"FrameData[{FrameBitsPerRow-1-k}]",
+                                                f"FrameStrobe[{frame}]",
+                                                f"ConfigBits[{allConfigBitsOrder[allConfigBitsCounter]}]",
+                                                f"ConfigBits[{allConfigBitsOrder[allConfigBitsCounter]}]"])
                 allConfigBitsCounter += 1
     writer.addLogicEnd()
     writer.addDesignDescriptionEnd()

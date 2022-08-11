@@ -1,8 +1,6 @@
 from fabric import Fabric, Port, Bel, Tile, SuperTile
 import re
 from copy import deepcopy
-import itertools
-import collections
 from typing import List, Literal, Tuple
 
 oppositeDic = {"NORTH": "SOUTH", "SOUTH": "NORTH",

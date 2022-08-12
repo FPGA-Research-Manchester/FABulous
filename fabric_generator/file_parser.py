@@ -1,7 +1,8 @@
+from unittest import result
 from fabric import Fabric, Port, Bel, Tile, SuperTile, ConfigMem
 import re
 from copy import deepcopy
-from typing import List, Literal, Tuple
+from typing import Dict, List, Literal, Tuple
 import csv
 
 from fabric import IO, Direction, Side, MultiplexerStyle, ConfigBitMode
@@ -69,8 +70,11 @@ def parseFabricCSV(fileName: str) -> Fabric:
                 ports.append(Port(Direction.JUMP, temp[1], int(
                     temp[2]), int(temp[3]), temp[4], int(temp[5]), temp[1], IO.INOUT, Side.ANY))
             elif temp[0] == "BEL":
-                internal, external, config, shared, configBit, userClk = parseFileHDL(
-                    temp[1], temp[2])
+                if temp[0].endswith(".vhdl"):
+                    result = parseFileVHDL(temp[1], temp[2])
+                else:
+                    result = parseFileVerilog(temp[1], temp[2])
+                internal, external, config, shared, configBit, userClk = result
                 bels.append(Bel(temp[1], temp[2], internal,
                             external, config, shared, configBit))
                 withUserCLK |= userClk
@@ -128,10 +132,13 @@ def parseFabricCSV(fileName: str) -> Fabric:
             row = []
 
             if line[0] == "BEL":
-                internal, external, config, shared, configBit, userClk = parseFileHDL(
-                    line[1], line[2])
+                if line[0].endswith("VHDL"):
+                    result = parseFileVHDL(line[1], line[2])
+                else:
+                    result = parseFileVerilog(line[1], line[2])
+                internal, external, config, shared, configBit, userClk, belMap = result
                 bels.append(Bel(line[1], line[2], internal,
-                            external, config, shared, configBit))
+                            external, config, shared, configBit, belMap))
                 withUserCLK |= userClk
                 continue
 
@@ -268,7 +275,7 @@ def expandListPorts(port, PortList):
     return
 
 
-def parseFileHDL(filename, belPrefix="", filter="ALL"):
+def parseFileVHDL(filename, belPrefix="", filter="ALL") -> Tuple[List[Tuple[str, IO]], List[Tuple[str, IO]], List[Tuple[str, IO]], List[Tuple[str, IO]], int, bool, Dict[str, int]]:
     internal: List[Tuple[str, IO]] = []
     external: List[Tuple[str, IO]] = []
     config: List[Tuple[str, IO]] = []
@@ -278,8 +285,17 @@ def parseFileHDL(filename, belPrefix="", filter="ALL"):
     isShared = False
     userClk = False
 
-    with open(filename, "r") as f:
-        file = f.read()
+    try:
+        with open(filename, "r") as f:
+            file = f.read()
+    except FileNotFoundError:
+        print(f"File {filename} not found.")
+        exit(-1)
+    except PermissionError:
+        print(f"Permission denied to file {filename}.")
+        exit(-1)
+
+    belMapDic = {}
 
     portSection = ""
     if result := re.search(r"port.*?\((.*?)\);", file,
@@ -363,7 +379,91 @@ def parseFileHDL(filename, belPrefix="", filter="ALL"):
         print("Assume the number of configBits is 0")
         noConfigBits = 0
 
-    return internal, external, config, shared, noConfigBits, userClk
+    return internal, external, config, shared, noConfigBits, userClk, belMapDic
+
+
+def parseFileVerilog(filename, belPrefix="", filter="ALL") -> Tuple[List[Tuple[str, IO]], List[Tuple[str, IO]], List[Tuple[str, IO]], List[Tuple[str, IO]], int, bool, Dict[str, int]]:
+    internal: List[Tuple[str, IO]] = []
+    external: List[Tuple[str, IO]] = []
+    config: List[Tuple[str, IO]] = []
+    shared: List[Tuple[str, IO]] = []
+    isExternal = False
+    isConfig = False
+    isShared = False
+    userClk = False
+    noConfigBits = 0
+
+    try:
+        with open(filename, "r") as f:
+            file = f.read()
+    except FileNotFoundError:
+        print(f"File {filename} not found.")
+        exit(-1)
+    except PermissionError:
+        print(f"Permission denied to file {filename}.")
+        exit(-1)
+
+    belMapDic = {}
+    if belMap := re.search(r"\(\*.*FABulous,.*?BelMap,(.*?)\*\)", file, re.DOTALL | re.MULTILINE | re.VERBOSE):
+        belMap = belMap.group(1)
+        belMap = belMap.replace("\n", "").replace(" ", "").replace("\t", "")
+        belMap = belMap.split(",")
+        for bel in belMap:
+            bel = bel.split("=")
+            belMapDic[bel[0]] = int(bel[1])
+
+    if result := re.search(r"NoConfigBits.*?=.*?(\d+)", file, re.IGNORECASE):
+        noConfigBits = int(result.group(1))
+    else:
+        print(f"Cannot find NoConfigBits in {filename}")
+        print("Assume the number of configBits is 0")
+        noConfigBits = 0
+
+    print(belMapDic)
+    print(len(belMapDic))
+
+    if len(belMapDic) != noConfigBits:
+        raise ValueError(
+            f"NoConfigBits does not match with the BEL map in file {filename}")
+
+    file = file.split("\n")
+
+    for line in file:
+        if result := re.search(r".*(input|output|inout).*?(\w+);", line, re.IGNORECASE):
+            cleanedLine = line.replace(" ", "")
+            if attribute := re.search(r"\(\*FABulous,(.*)\*\)", cleanedLine):
+                if "EXTERNAL" in attribute.group(1):
+                    isExternal = True
+
+                if "CONFIG" in attribute.group(1):
+                    isConfig = True
+
+                if "SHARED_PORT" in attribute.group(1):
+                    isShared = True
+
+                if "GLOBAL" in attribute.group(1):
+                    break
+
+            portName = f"{belPrefix}{result.group(2)}"
+
+            if isExternal and not isShared:
+                external.append((portName, IO[result.group(1).upper()]))
+            elif isConfig:
+                config.append((portName, IO[result.group(1).upper()]))
+            elif isShared:
+                # shared port do not have a prefix
+                shared.append((result.group(2), IO[result.group(1).upper()]))
+            else:
+                internal.append((portName, IO[result.group(1).upper()]))
+
+            if "UserCLK" in portName:
+                userClk = True
+
+            isExternal = False
+            isConfig = False
+            isShared = False
+
+    return internal, external, config, shared, noConfigBits, userClk, belMapDic
 
 
 # convert the matrix csv into a dictionary from destination to source
@@ -473,7 +573,10 @@ def parseConfigMem(fileName, maxFramePerCol, frameBitPerRow, globalConfigBits):
 if __name__ == '__main__':
     # result = parseFabricCSV('fabric.csv')
     # result = parseList('RegFile_switch_matrix.list')
-    # result = parseFileHDL('./OutPass4_frame_config.vhdl')
-    # print(result.tile)
+    result = parseFileVerilog('./LUT4c_frame_config_dffesr.v')
+    print(result[0])
+    print(result[1])
+    print(result[2])
+    print(result[3])
+
     # print(result.tileDic["W_IO"].portsInfo)
-    pass

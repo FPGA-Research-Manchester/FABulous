@@ -68,9 +68,9 @@ class VHDLWriter(codeGenerator):
     def addConnectionScalar(self, name, indentLevel=0):
         self._add(f"signal {name} : STD_LOGIC;", indentLevel)
 
-    def addConnectionVector(self, name, width, end=0, indentLevel=0):
+    def addConnectionVector(self, name, startIndex, end=0, indentLevel=0):
         self._add(
-            f"signal {name} : STD_LOGIC_VECTOR( { width } downto {end} );", indentLevel)
+            f"signal {name} : STD_LOGIC_VECTOR( { startIndex } downto {end} );", indentLevel)
 
     def addLogicStart(self, indentLevel=0):
         self._add("\n"f"begin""\n", indentLevel)

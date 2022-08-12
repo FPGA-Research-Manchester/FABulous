@@ -83,7 +83,7 @@ class codeGenerator(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def addConnectionVector(self, name, width, indentLevel=0):
+    def addConnectionVector(self, name, startIndex, end=0, indentLevel=0):
         pass
 
     @abc.abstractmethod

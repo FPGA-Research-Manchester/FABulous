@@ -66,9 +66,9 @@ class VerilogWriter(codeGenerator):
     def addConstant(self, name, value, indentLevel=0):
         self._add(f"parameter {name} = {value};", indentLevel)
 
-    def addConnectionVector(self, name, width, indentLevel=0):
+    def addConnectionVector(self, name, startIndex, end=0, indentLevel=0):
         self._add(
-            f"wire[{width}:0] {name};", indentLevel)
+            f"wire[{startIndex}:{end}] {name};", indentLevel)
 
     def addConnectionScalar(self, name):
         self._add(f"wire {name};")

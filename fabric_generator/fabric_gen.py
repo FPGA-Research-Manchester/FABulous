@@ -151,22 +151,22 @@ def CSV2list(InFileName, OutFileName):
     # format: destination,source (per line)
     # read CSV file into an array of strings
     InFile = [i.strip('\n').split(',') for i in open(InFileName)]
-    f = open(OutFileName, 'w')
-    rows = len(InFile)      # get the number of tiles in vertical direction
-    cols = len(InFile[0])    # get the number of tiles in horizontal direction
-    # top-left should be the name
-    print('#', InFile[0][0], file=f)
-    # switch matrix inputs
-    inputs = []
-    for item in InFile[0][1:]:
-        inputs.append(item)
-    # beginning from the second line, write out the list
-    for line in InFile[1:]:
-        for i in range(1, cols):
-            if line[i] != '0':
-                # it is [i-1] because the beginning of the line is the destination port
-                print(line[0]+','+inputs[i-1], file=f)
-    f.close()
+    with open(OutFileName, "w") as f:
+        rows = len(InFile)      # get the number of tiles in vertical direction
+        # get the number of tiles in horizontal direction
+        cols = len(InFile[0])
+        # top-left should be the name
+        print('#', InFile[0][0], file=f)
+        # switch matrix inputs
+        inputs = []
+        for item in InFile[0][1:]:
+            inputs.append(item)
+        # beginning from the second line, write out the list
+        for line in InFile[1:]:
+            for i in range(1, cols):
+                if line[i] != '0':
+                    # it is [i-1] because the beginning of the line is the destination port
+                    print(line[0]+','+inputs[i-1], file=f)
     return
 
 
@@ -413,8 +413,8 @@ def genTileSwitchMatrix(tile: Tile, csvFile: str, writer: codeGenerator) -> None
             # this is the case for a configurable switch matrix multiplexer
             old_ConfigBitstreamPosition = configBitstreamPosition
             # math.ceil(math.log2(len(connections[k]))) tells us how many configuration bits a multiplexer takes
-            configBitstreamPosition += (
-                math.ceil(math.log2(len(connections[portName]))))
+            configBitstreamPosition += len(
+                connections[portName]).bit_length()-1
             # the reversed() changes the direction that we iterate over the line list.
             # Changed it such that the left-most entry is located at the end of the concatenated vector for the multiplexing
             # This was done such that the index from left-to-right in the adjacency matrix corresponds with the multiplexer select input (index)
@@ -442,7 +442,7 @@ def genTileSwitchMatrix(tile: Tile, csvFile: str, writer: codeGenerator) -> None
                 portList.append(f"A{end}")
                 signalList.append(f"GND0")
 
-            if MULTIPLEXER_STYLE == "custom":
+            if MULTIPLEXER_STYLE == MultiplexerStyle.CUSTOM:
                 if muxSize == 2:
                     portList.append(f"S{portName}")
                     signalList.append(
@@ -459,7 +459,7 @@ def genTileSwitchMatrix(tile: Tile, csvFile: str, writer: codeGenerator) -> None
             portList.append("X")
             signalList.append(f"{portName}")
 
-            if (MULTIPLEXER_STYLE == 'custom'):
+            if (MULTIPLEXER_STYLE == MultiplexerStyle.CUSTOM):
                 writer.addAssignScalar(f"{portName}_input", list(reversed(
                     connections[portName])), int(GENERATE_DELAY_IN_SWITCH_MATRIX))
                 writer.addInstantiation(compName=muxComponentName,

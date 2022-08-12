@@ -5,17 +5,17 @@ import collections
 
 # Default parameters (will be overwritten if defined in fabric between 'ParametersBegin' and 'ParametersEnd'
 #Parameters = [ 'ConfigBitMode', 'FrameBitsPerRow' ]
-ConfigBitMode = 'FlipFlopChain'
-FrameBitsPerRow = 32
-MaxFramesPerCol = 20
-Package = 'use work.my_package.all;'
+CONFIG_BIT_MODE = 'FlipFlopChain'
+FRAME_BITS_PER_ROW = 32
+MAX_FRAMES_PER_COL = 20
+PACKAGE = 'use work.my_package.all;'
 # time in ps - this is needed for simulation as a fabric configuration can result in loops crashing the simulator
-GenerateDelayInSwitchMatrix = '100'
+GENERATE_DELAY_IN_SWITCH_MATRIX = '100'
 # 'custom': using our hard-coded MUX-4 and MUX-16; 'generic': using standard generic RTL code
-MultiplexerStyle = 'custom'
+MULTIPLEXER_STYLE = 'custom'
 # generate switch matrix select signals (index) which is useful to verify if bitstream matches bitstream
-SwitchMatrixDebugSignals = True
-SuperTileEnable = True		# enable SuperTile generation
+SWITCH_MATRIX_DEBUG_SIGNAL = True
+SUPER_TILE_ENABLE = True		# enable SuperTile generation
 
 src_dir = "./"
 
@@ -527,28 +527,28 @@ def generateConfigMemInit(file, globalConfigBitsCounter):
     with open(file, "w") as f:
         writer = csv.writer(f)
         writer.writerow(fieldName)
-        for k in range(int(MaxFramesPerCol)):
+        for k in range(int(MAX_FRAMES_PER_COL)):
             entry = []
             # frame0, frame1, ...
             entry.append(f"frame{k}")
             # and the index (0, 1, 2, ...), in case we need
             entry.append(str(k))
             # size of the frame in bits
-            if bitsLeftToPackInFrames >= FrameBitsPerRow:
-                entry.append(str(FrameBitsPerRow))
+            if bitsLeftToPackInFrames >= FRAME_BITS_PER_ROW:
+                entry.append(str(FRAME_BITS_PER_ROW))
                 # generate a string encoding a '1' for each flop used
-                frameBitsMask = f"{2**FrameBitsPerRow-1:_b}"
+                frameBitsMask = f"{2**FRAME_BITS_PER_ROW-1:_b}"
                 entry.append(frameBitsMask)
                 entry.append(
-                    f"{bitsLeftToPackInFrames-1}:{bitsLeftToPackInFrames-FrameBitsPerRow}")
-                bitsLeftToPackInFrames -= FrameBitsPerRow
+                    f"{bitsLeftToPackInFrames-1}:{bitsLeftToPackInFrames-FRAME_BITS_PER_ROW}")
+                bitsLeftToPackInFrames -= FRAME_BITS_PER_ROW
             else:
                 entry.append(str(bitsLeftToPackInFrames))
                 # generate a string encoding a '1' for each flop used
                 # this will allow us to kick out flops in the middle (e.g. for alignment padding)
-                frameBitsMask = (2**FrameBitsPerRow-1) - \
-                    (2**(FrameBitsPerRow-bitsLeftToPackInFrames)-1)
-                frameBitsMask = f"{frameBitsMask:0{FrameBitsPerRow+7}_b}"
+                frameBitsMask = (2**FRAME_BITS_PER_ROW-1) - \
+                    (2**(FRAME_BITS_PER_ROW-bitsLeftToPackInFrames)-1)
+                frameBitsMask = f"{frameBitsMask:0{FRAME_BITS_PER_ROW+7}_b}"
                 entry.append(frameBitsMask)
                 if bitsLeftToPackInFrames > 0:
                     entry.append(f"{bitsLeftToPackInFrames-1}:0")

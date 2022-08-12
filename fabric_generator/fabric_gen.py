@@ -29,6 +29,7 @@ from code_generator import codeGenerator
 from typing import List, Tuple
 
 from fabric import Fabric, Tile, Port, SuperTile, ConfigMem
+from fabric import IO, Direction, Side, MultiplexerStyle, ConfigBitMode
 from file_parser import parseFabricCSV, parseMatrix, parseConfigMem
 from model_generation_npnr import *
 from model_generation_vpr import *
@@ -43,7 +44,7 @@ def BootstrapSwitchMatrix(fabric: Fabric):
             sourceName, destName = [], []
             # normal wire
             for i in fabric.tileDic[tile].portsInfo:
-                if i.wireDirection != "JUMP":
+                if i.wireDirection != Direction.JUMP:
                     input, output = i.expandPortInfo("AutoSwitchMatrix")
                     sourceName += input
                     destName += output
@@ -56,7 +57,7 @@ def BootstrapSwitchMatrix(fabric: Fabric):
 
             # jump wire
             for i in fabric.tileDic[tile].portsInfo:
-                if i.wireDirection == "JUMP":
+                if i.wireDirection == Direction.JUMP:
                     input, output = i.expandPortInfo("AutoSwitchMatrix")
                     sourceName += input
                     destName += output
@@ -191,36 +192,36 @@ def generateConfigMem(tile: Tile, configMemCsv, writer: codeGenerator):
         print(
             f"# found bitstream mapping file {tile.name}.csv for tile {tile.name}")
         configMemList = parseConfigMem(
-            configMemCsv, MaxFramesPerCol, FrameBitsPerRow, tile.globalConfigBits)
+            configMemCsv, MAX_FRAMES_PER_COL, FRAME_BITS_PER_ROW, tile.globalConfigBits)
 
     else:
         generateConfigMemInit(
             f"{tile.name}_ConfigMem.init.csv", tile.globalConfigBits)
         configMemList = parseConfigMem(
-            f"{tile.name}_ConfigMem.init.csv", MaxFramesPerCol, FrameBitsPerRow, tile.globalConfigBits)
+            f"{tile.name}_ConfigMem.init.csv", MAX_FRAMES_PER_COL, FRAME_BITS_PER_ROW, tile.globalConfigBits)
 
     # write entity
     entity = f"{tile.name}_ConfigMem"
     writer.addHeader(f"{tile.name}_ConfigMem")
     writer.addParameterStart(indentLevel=1)
-    if MaxFramesPerCol != 0:
+    if MAX_FRAMES_PER_COL != 0:
         writer.addParameter("MaxFramesPerCol", "integer",
-                            MaxFramesPerCol, indentLevel=2)
-    if FrameBitsPerRow != 0:
+                            MAX_FRAMES_PER_COL, indentLevel=2)
+    if FRAME_BITS_PER_ROW != 0:
         writer.addParameter("FrameBitsPerRow", "integer",
-                            FrameBitsPerRow, indentLevel=2)
+                            FRAME_BITS_PER_ROW, indentLevel=2)
     writer.addParameter("NoConfigBits", "integer",
                         tile.globalConfigBits, end=True, indentLevel=2)
     writer.addParameterEnd(indentLevel=1)
     writer.addPortStart(indentLevel=1)
     # the port definitions are generic
     writer.addPortVector(
-        "FrameData", "in", "FrameBitsPerRow - 1", indentLevel=2)
-    writer.addPortVector("FrameStrobe", "in",
+        "FrameData", IO.INPUT, "FrameBitsPerRow - 1", indentLevel=2)
+    writer.addPortVector("FrameStrobe", IO.INPUT,
                          "MaxFramesPerCol - 1", indentLevel=2)
-    writer.addPortVector("ConfigBits", "out",
+    writer.addPortVector("ConfigBits", IO.OUTPUT,
                          "NoConfigBits - 1", indentLevel=2)
-    writer.addPortVector("ConfigBits_N", "out",
+    writer.addPortVector("ConfigBits_N", IO.OUTPUT,
                          "NoConfigBits - 1", end=True, indentLevel=2)
     writer.addPortEnd(indentLevel=1)
     writer.addHeaderEnd(f"{tile.name}_ConfigMem")
@@ -239,12 +240,12 @@ def generateConfigMem(tile: Tile, configMemCsv, writer: codeGenerator):
     writer.addComment("instantiate frame latches", end="")
     for i in configMemList:
         counter = 0
-        for k in range(FrameBitsPerRow):
+        for k in range(FRAME_BITS_PER_ROW):
             if i.usedBitMask[k] == "1":
                 writer.addInstantiation(compName="LHQD1",
-                                        compInsName=f"Inst_{i.frameName}_bit{FrameBitsPerRow-1-k}",
+                                        compInsName=f"Inst_{i.frameName}_bit{FRAME_BITS_PER_ROW-1-k}",
                                         compPort=["D", "E", "Q", "QN"],
-                                        signal=[f"FrameData[{FrameBitsPerRow-1-k}]",
+                                        signal=[f"FrameData[{FRAME_BITS_PER_ROW-1-k}]",
                                                 f"FrameStrobe[{i.frameIndex}]",
                                                 f"ConfigBits[{i.configBitRanges[counter]}]",
                                                 f"ConfigBits[{i.configBitRanges[counter]}]"])
@@ -257,7 +258,6 @@ def generateConfigMem(tile: Tile, configMemCsv, writer: codeGenerator):
 
 def genTileSwitchMatrix(tile: Tile, csvFile: str, writer: codeGenerator) -> None:
     print(f"### Read {tile.name} csv file ###")
-
     # convert the matrix to a dictionary map and performs entry check
     connections = parseMatrix(csvFile, tile.name)
     globalConfigBitsCounter = 0
@@ -281,7 +281,7 @@ def genTileSwitchMatrix(tile: Tile, csvFile: str, writer: codeGenerator) -> None
     sourceName, destName = [], []
     # normal wire
     for i in tile.portsInfo:
-        if i.wireDirection != "JUMP":
+        if i.wireDirection != Direction.JUMP:
             input, output = i.expandPortInfo("AutoSwitchMatrix")
             sourceName += input
             destName += output
@@ -294,7 +294,7 @@ def genTileSwitchMatrix(tile: Tile, csvFile: str, writer: codeGenerator) -> None
 
     # jump wire
     for i in tile.portsInfo:
-        if i.wireDirection == "JUMP":
+        if i.wireDirection == Direction.JUMP:
             input, output = i.expandPortInfo("AutoSwitchMatrix")
             sourceName += input
             destName += output
@@ -304,23 +304,23 @@ def genTileSwitchMatrix(tile: Tile, csvFile: str, writer: codeGenerator) -> None
     for port in sourceName:
         if "GND" in port or "VCC" in port:
             continue
-        writer.addPortScalar(port, "in", indentLevel=2)
+        writer.addPortScalar(port, IO.INPUT, indentLevel=2)
     for port in destName:
         if "GND" in port or "VCC" in port:
             continue
-        writer.addPortScalar(port, "out", indentLevel=2)
+        writer.addPortScalar(port, IO.OUTPUT, indentLevel=2)
     writer.addComment("global", onNewLine=True)
     if tile.globalConfigBits > 0:
-        if ConfigBitMode == "FlipFlopChain":
-            writer.addPortScalar("MODE", "in", indentLevel=2)
+        if CONFIG_BIT_MODE == ConfigBitMode.FLIPFLOP_CHAIN:
+            writer.addPortScalar("MODE", IO.INPUT, indentLevel=2)
             writer.addComment("global signal 1: configuration, 0: operation")
-            writer.addPortScalar("CONFin", "in", indentLevel=2)
-            writer.addPortScalar("CONFout", "out", indentLevel=2)
-            writer.addPortScalar("CLK", "in", indentLevel=2)
-        if ConfigBitMode == "frame_based":
-            writer.addPortVector("ConfigBits", "in",
+            writer.addPortScalar("CONFin", IO.INPUT, indentLevel=2)
+            writer.addPortScalar("CONFout", IO.OUTPUT, indentLevel=2)
+            writer.addPortScalar("CLK", IO.INPUT, indentLevel=2)
+        if CONFIG_BIT_MODE == ConfigBitMode.FRAME_BASED:
+            writer.addPortVector("ConfigBits", IO.INPUT,
                                  "NoConfigBits-1", indentLevel=2)
-            writer.addPortVector("ConfigBits_N", "in",
+            writer.addPortVector("ConfigBits_N", IO.INPUT,
                                  "NoConfigBits-1", end=True, indentLevel=2)
     writer.addPortEnd()
     writer.addHeaderEnd(f"{tile.name}_switch_matrix")
@@ -343,7 +343,7 @@ def genTileSwitchMatrix(tile: Tile, csvFile: str, writer: codeGenerator) -> None
 
     ### SwitchMatrixDebugSignals ### SwitchMatrixDebugSignals ###
     ### SwitchMatrixDebugSignals ### SwitchMatrixDebugSignals ###
-    if SwitchMatrixDebugSignals == True:
+    if SWITCH_MATRIX_DEBUG_SIGNAL == True:
         writer.addNewLine()
         for portName in connections:
             muxSize = len(connections[portName])
@@ -360,9 +360,9 @@ def genTileSwitchMatrix(tile: Tile, csvFile: str, writer: codeGenerator) -> None
     # we are only generate configuration bits, if we really need configurations bits
     # for example in terminating switch matrices at the fabric borders, we may just change direction without any switching
     if globalConfigBitsCounter > 0:
-        if ConfigBitMode == 'ff_chain':
+        if CONFIG_BIT_MODE == 'ff_chain':
             writer.addConnectionVector("ConfigBits", globalConfigBitsCounter)
-        if ConfigBitMode == 'FlipFlopChain':
+        if CONFIG_BIT_MODE == 'FlipFlopChain':
             # print('DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG ConfigBitMode == FlipFlopChain')
             # we pad to an even number of bits: (int(math.ceil(ConfigBitCounter/2.0))*2)
             writer.addConnectionVector("ConfigBits", int(
@@ -375,16 +375,16 @@ def genTileSwitchMatrix(tile: Tile, csvFile: str, writer: codeGenerator) -> None
 
     # the configuration bits shift register
     # again, we add this only if needed
+    # TODO Should ff_chain be the same as FlipFlopChain?
     if globalConfigBitsCounter > 0:
-        if ConfigBitMode == 'ff_chain':
+        if CONFIG_BIT_MODE == 'ff_chain':
             writer.addShiftRegister(globalConfigBitsCounter)
-
-        elif ConfigBitMode == 'FlipFlopChain':
+        elif CONFIG_BIT_MODE == ConfigBitMode.FLIPFLOP_CHAIN:
             writer.addFlipFlopChain(globalConfigBitsCounter)
-        elif ConfigBitMode == 'frame_based':
+        elif CONFIG_BIT_MODE == ConfigBitMode.FRAME_BASED:
             pass
         else:
-            raise ValueError(f"{ConfigBitMode} is not a valid ConfigBitMode")
+            raise ValueError(f"{CONFIG_BIT_MODE} is not a valid ConfigBitMode")
 
     # the switch matrix implementation
     # we use the following variable to count the configuration bits of a long shift register which actually holds the switch matrix configuration
@@ -420,15 +420,15 @@ def genTileSwitchMatrix(tile: Tile, csvFile: str, writer: codeGenerator) -> None
             # This was done such that the index from left-to-right in the adjacency matrix corresponds with the multiplexer select input (index)
             numGnd = 0
             muxComponentName = ""
-            if (MultiplexerStyle == 'custom') and (muxSize == 2):
+            if (MULTIPLEXER_STYLE == MultiplexerStyle.CUSTOM) and (muxSize == 2):
                 muxComponentName = 'my_mux2'
-            elif (MultiplexerStyle == 'custom') and (2 < muxSize <= 4):
+            elif (MULTIPLEXER_STYLE == MultiplexerStyle.CUSTOM) and (2 < muxSize <= 4):
                 muxComponentName = 'cus_mux41_buf'
                 numGnd = 4-muxSize
-            elif (MultiplexerStyle == 'custom') and (4 < muxSize <= 8):
+            elif (MULTIPLEXER_STYLE == MultiplexerStyle.CUSTOM) and (4 < muxSize <= 8):
                 muxComponentName = 'cus_mux81_buf'
                 numGnd = 8-muxSize
-            elif (MultiplexerStyle == 'custom') and (8 < muxSize <= 16):
+            elif (MULTIPLEXER_STYLE == MultiplexerStyle.CUSTOM) and (8 < muxSize <= 16):
                 muxComponentName = 'cus_mux161_buf'
                 numGnd = 16-muxSize
 
@@ -442,7 +442,7 @@ def genTileSwitchMatrix(tile: Tile, csvFile: str, writer: codeGenerator) -> None
                 portList.append(f"A{end}")
                 signalList.append(f"GND0")
 
-            if MultiplexerStyle == "custom":
+            if MULTIPLEXER_STYLE == "custom":
                 if muxSize == 2:
                     portList.append(f"S{portName}")
                     signalList.append(
@@ -459,9 +459,9 @@ def genTileSwitchMatrix(tile: Tile, csvFile: str, writer: codeGenerator) -> None
             portList.append("X")
             signalList.append(f"{portName}")
 
-            if (MultiplexerStyle == 'custom'):
+            if (MULTIPLEXER_STYLE == 'custom'):
                 writer.addAssignScalar(f"{portName}_input", list(reversed(
-                    connections[portName])), int(GenerateDelayInSwitchMatrix))
+                    connections[portName])), int(GENERATE_DELAY_IN_SWITCH_MATRIX))
                 writer.addInstantiation(compName=muxComponentName,
                                         compInsName=f"inst_{muxComponentName}",
                                         compPort=portList,
@@ -476,7 +476,7 @@ def genTileSwitchMatrix(tile: Tile, csvFile: str, writer: codeGenerator) -> None
 
     ### SwitchMatrixDebugSignals ### SwitchMatrixDebugSignals ###
     ### SwitchMatrixDebugSignals ### SwitchMatrixDebugSignals ###
-    if SwitchMatrixDebugSignals == True:
+    if SWITCH_MATRIX_DEBUG_SIGNAL == True:
         writer.addNewLine()
         configBitstreamPosition = 0
         for portName in connections:
@@ -521,15 +521,14 @@ def generateTile(tile: Tile, writer: codeGenerator):
     writer.addHeader(f"{tile.name}")
     writer.addParameterStart(indentLevel=1)
     writer.addParameter("MaxFramesPerCol", "integer",
-                        MaxFramesPerCol, indentLevel=2)
+                        MAX_FRAMES_PER_COL, indentLevel=2)
     writer.addParameter("FrameBitsPerRow", "integer",
-                        FrameBitsPerRow, indentLevel=2)
+                        FRAME_BITS_PER_ROW, indentLevel=2)
     writer.addParameter("NoConfigBits", "integer",
                         tile.globalConfigBits, end=True, indentLevel=2)
     writer.addParameterEnd(indentLevel=1)
     writer.addPortStart(indentLevel=1)
 
-    commentTemplate = "wires:{wires} X_offset:{X_offset} Y_offset:{Y_offset} source_name:{sourceName} destination_name:{destinationName}"
     # holder for each direction of port string
     portList = [tile.getNorthSidePorts(), tile.getEastSidePorts(),
                 tile.getWestSidePorts(), tile.getSouthSidePorts()]
@@ -550,9 +549,9 @@ def generateTile(tile: Tile, writer: codeGenerator):
     externalPorts = []
     for i in tile.bels:
         for p in i.externalInput:
-            writer.addPortScalar(i.name, "in", indentLevel=2)
+            writer.addPortScalar(i.name, IO.INPUT, indentLevel=2)
         for p in i.externalOutput:
-            writer.addPortScalar(i.name, "out", indentLevel=2)
+            writer.addPortScalar(i.name, IO.OUTPUT, indentLevel=2)
         externalPorts += i.externalInput
         externalPorts += i.externalOutput
 
@@ -564,34 +563,34 @@ def generateTile(tile: Tile, writer: codeGenerator):
     writer.addComment("Tile IO ports from BELs", onNewLine=True, indentLevel=1)
 
     if not tile.withUserCLK:
-        writer.addPortScalar("UserCLKo", "out", indentLevel=2)
+        writer.addPortScalar("UserCLKo", IO.OUTPUT, indentLevel=2)
     else:
-        writer.addPortScalar("UserCLK", "in", indentLevel=2)
-        writer.addPortScalar("UserCLKo", "out", indentLevel=2)
+        writer.addPortScalar("UserCLK", IO.INPUT, indentLevel=2)
+        writer.addPortScalar("UserCLKo", IO.OUTPUT, indentLevel=2)
 
-    if ConfigBitMode == "frame_based":
+    if CONFIG_BIT_MODE == ConfigBitMode.FRAME_BASED:
         if tile.globalConfigBits > 0:
             writer.addPortVector(
-                "FrameData", "in", "FrameBitsPerRow -1", indentLevel=2)
+                "FrameData", IO.INPUT, "FrameBitsPerRow -1", indentLevel=2)
             writer.addComment("CONFIG_PORT", onNewLine=False, end="")
-            writer.addPortVector("FrameData_O", "out",
+            writer.addPortVector("FrameData_O", IO.OUTPUT,
                                  "FrameBitsPerRow -1", indentLevel=2)
-            writer.addPortVector("FrameStrobe", "in",
+            writer.addPortVector("FrameStrobe", IO.INPUT,
                                  "MaxFramesPerCol -1", indentLevel=2)
             writer.addComment("CONFIG_PORT", onNewLine=False, end="")
-            writer.addPortVector("FrameStrobe_O", "out",
+            writer.addPortVector("FrameStrobe_O", IO.OUTPUT,
                                  "MaxFramesPerCol -1", end=True, indentLevel=2)
         else:
-            writer.addPortVector("FrameStrobe", "in",
+            writer.addPortVector("FrameStrobe", IO.INPUT,
                                  "MaxFramesPerCol -1", indentLevel=2)
-            writer.addPortVector("FrameStrobe_O", "out",
+            writer.addPortVector("FrameStrobe_O", IO.OUTPUT,
                                  "MaxFramesPerCol -1", end=True, indentLevel=2)
 
-    elif ConfigBitMode == "FlipFlopChain":
-        writer.addPortScalar("MODE", "in", indentLevel=2)
-        writer.addPortScalar("CONFin", "in", indentLevel=2)
-        writer.addPortScalar("CONFout", "out", indentLevel=2)
-        writer.addPortScalar("CLK", "in", end=True, indentLevel=2)
+    elif CONFIG_BIT_MODE == ConfigBitMode.FLIPFLOP_CHAIN:
+        writer.addPortScalar("MODE", IO.INPUT, indentLevel=2)
+        writer.addPortScalar("CONFin", IO.INPUT, indentLevel=2)
+        writer.addPortScalar("CONFout", IO.OUTPUT, indentLevel=2)
+        writer.addPortScalar("CLK", IO.INPUT, end=True, indentLevel=2)
 
     writer.addComment("global", onNewLine=True, indentLevel=1)
 
@@ -617,7 +616,7 @@ def generateTile(tile: Tile, writer: codeGenerator):
         raise ValueError(
             f"Could not find switch matrix definition for tile type {tile.name} in function GenerateTileVHDL")
 
-    if ConfigBitMode == 'frame_based' and tile.globalConfigBits > 0:
+    if CONFIG_BIT_MODE == ConfigBitMode.FRAME_BASED and tile.globalConfigBits > 0:
         writer.addComponentDeclarationForFile(f"{tile.name}_ConfigMem.vhdl")
 
     # VHDL signal declarations
@@ -634,8 +633,8 @@ def generateTile(tile: Tile, writer: codeGenerator):
     # Jump wires
     writer.addComment("Jump wires", onNewLine=True)
     for p in tile.portsInfo:
-        if p.wireDirection == "JUMP":
-            if p.sourceName != "NULL" and p.destinationName != "NULL" and p.inOut == "OUT":
+        if p.wireDirection == Direction.JUMP:
+            if p.sourceName != "NULL" and p.destinationName != "NULL" and p.inOut == IO.OUTPUT:
                 writer.addConnectionVector(p.name, f"{p.wires}-1")
 
             for k in range(p.wires):
@@ -663,12 +662,12 @@ def generateTile(tile: Tile, writer: codeGenerator):
         writer.addConnectionVector("FrameData_O_i", "FrameBitsPerRow-1", 0)
         writer.addAssignScalar("FrameData_O_i", "FrameData_i")
         writer.addNewLine()
-        for i in range(FrameBitsPerRow):
+        for i in range(FRAME_BITS_PER_ROW):
             writer.addInstantiation("my_buf",
                                     f"data_inbuf_{i}",
                                     ["A", "X"],
                                     [f"frameData[{i}]", f"frameData_i[{i}]"])
-        for i in range(FrameBitsPerRow):
+        for i in range(FRAME_BITS_PER_ROW):
             writer.addInstantiation("my_buf",
                                     f"data_outbuf_{i}",
                                     ["A", "X"],
@@ -681,12 +680,12 @@ def generateTile(tile: Tile, writer: codeGenerator):
         "FrameStrobe_O_i", "MaxFramesPerCol-1", 0)
     writer.addAssignScalar("FrameStrobe_O_i", "FrameStrobe_i")
     writer.addNewLine()
-    for i in range(MaxFramesPerCol):
+    for i in range(MAX_FRAMES_PER_COL):
         writer.addInstantiation("my_buf",
                                 f"strobe_inbuf_{i}",
                                 ["A", "X"],
                                 [f"FrameStrobe[{i}]", f"FrameStrobe_i[{i}]"])
-    for i in range(MaxFramesPerCol):
+    for i in range(MAX_FRAMES_PER_COL):
         writer.addInstantiation("my_buf",
                                 f"strobe_outbuf_{i}",
                                 ["A", "X"],
@@ -728,7 +727,7 @@ def generateTile(tile: Tile, writer: codeGenerator):
 
     writer.addNewLine()
     # top configuration data daisy chaining
-    if ConfigBitMode == 'FlipFlopChain':
+    if CONFIG_BIT_MODE == ConfigBitMode.FLIPFLOP_CHAIN:
         writer.addComment(
             "top configuration data daisy chaining", onNewLine=True)
         writer.addAssignScalar("conf_data(conf_data'low)", "CONFin")
@@ -737,7 +736,7 @@ def generateTile(tile: Tile, writer: codeGenerator):
         writer.addComment("CONFout is from tile entity")
 
     # the <entity>_ConfigMem module is only parametrized through generics, so we hard code its instantiation here
-    if ConfigBitMode == 'frame_based' and tile.globalConfigBits > 0:
+    if CONFIG_BIT_MODE == ConfigBitMode.FRAME_BASED and tile.globalConfigBits > 0:
         writer.addComment("configuration storage latches", onNewLine=True)
         writer.addInstantiation(compName=f"{tile.name}_ConfigMem",
                                 compInsName=f"Inst_{tile.name}_ConfigMem",
@@ -751,7 +750,7 @@ def generateTile(tile: Tile, writer: codeGenerator):
     belConfigBitsCounter = 0
     for b in tile.bels:
         writer.addBELInstantiations(
-            b, belConfigBitsCounter, ConfigBitMode, belCounter)
+            b, belConfigBitsCounter, CONFIG_BIT_MODE, belCounter)
         belConfigBitsCounter += b.configBit
         # for the next BEL (if any) for cascading configuration chain (this information is also needed for chaining the switch matrix)
         belCounter += 1
@@ -779,7 +778,7 @@ def generateTile(tile: Tile, writer: codeGenerator):
     sourceName, destName = [], []
     # normal wire
     for i in tile.portsInfo:
-        if i.wireDirection != "JUMP":
+        if i.wireDirection != Direction.JUMP:
             input, output = i.expandPortInfo("AutoSwitchMatrix")
             sourceName += input
             destName += output
@@ -792,7 +791,7 @@ def generateTile(tile: Tile, writer: codeGenerator):
 
     # jump wire
     for i in tile.portsInfo:
-        if i.wireDirection == "JUMP":
+        if i.wireDirection == Direction.JUMP:
             input, output = i.expandPortInfo("AutoSwitchMatrix")
             sourceName += input
             destName += output
@@ -800,7 +799,7 @@ def generateTile(tile: Tile, writer: codeGenerator):
     destName = list(dict.fromkeys(destName))
     # get indexed version of the port of the tile
     for p in tile.portsInfo:
-        if p.wireDirection != "JUMP":
+        if p.wireDirection != Direction.JUMP:
             input, output = p.expandPortInfo(
                 mode="AutoSwitchMatrixIndexed")
             portInputIndexed += input
@@ -830,7 +829,7 @@ def generateTile(tile: Tile, writer: codeGenerator):
         jumpWire + portTopInput + belInputs + jumpWire
 
     configBit = ""
-    if ConfigBitMode == "FlipFlopChain":
+    if CONFIG_BIT_MODE == ConfigBitMode.FLIPFLOP_CHAIN:
         portList.append("MODE")
         portList.append("CONFin")
         portList.append("CONFout")
@@ -839,7 +838,7 @@ def generateTile(tile: Tile, writer: codeGenerator):
         signal.append(f"conf_data[{belCounter}]")
         signal.append(f"conf_data[{belCounter+1}]")
         signal.append("CLK")
-    if ConfigBitMode == "frame_based":
+    if CONFIG_BIT_MODE == ConfigBitMode.FRAME_BASED:
         if tile.globalConfigBits > 0:
             portList.append("ConfigBits")
             portList.append("ConfigBits_N")
@@ -868,9 +867,9 @@ def generateSuperTile(superTile: SuperTile, writer: codeGenerator):
     writer.addHeader(f"{superTile.name}")
     writer.addParameterStart(indentLevel=1)
     writer.addParameter("MaxFramesPerCol", "integer",
-                        MaxFramesPerCol, indentLevel=2)
+                        MAX_FRAMES_PER_COL, indentLevel=2)
     writer.addParameter("FrameBitsPerRow", "integer",
-                        FrameBitsPerRow, indentLevel=2)
+                        FRAME_BITS_PER_ROW, indentLevel=2)
     writer.addParameter("NoConfigBits", "integer", 0, indentLevel=2)
     writer.addParameterEnd(indentLevel=1)
     writer.addPortStart(indentLevel=1)
@@ -897,31 +896,31 @@ def generateSuperTile(superTile: SuperTile, writer: codeGenerator):
     for i in superTile.tiles:
         for b in i.bels:
             for p in b.externalInput:
-                writer.addPortScalar(p, "out", indentLevel=2)
+                writer.addPortScalar(p, IO.OUTPUT, indentLevel=2)
             for p in b.externalOutput:
-                writer.addPortScalar(p, "in", indentLevel=2)
+                writer.addPortScalar(p, IO.INPUT, indentLevel=2)
             for p in b.sharedPort:
                 writer.addPortScalar(p[0], p[1], indentLevel=2)
 
     # add config port
-    if ConfigBitMode == "frame_based":
+    if CONFIG_BIT_MODE == ConfigBitMode.FRAME_BASED:
         for y, row in enumerate(superTile.tileMap):
             for x, tile in enumerate(row):
                 if y - 1 < 0 or superTile.tileMap[y-1][x] == None:
                     writer.addPortVector(
-                        f"Tile_X{x}Y{y}_FrameStrobe_O", "out", "MaxFramePerCol-1", indentLevel=2)
+                        f"Tile_X{x}Y{y}_FrameStrobe_O", IO.OUTPUT, "MaxFramePerCol-1", indentLevel=2)
                     writer.addComment("CONFIG_PORT", onNewLine=False)
                 if x + 1 >= len(superTile.tileMap[y]) or superTile.tileMap[y][x+1] == None:
                     writer.addPortVector(
-                        f"Tile_X{x}Y{y}_FrameData_O", "out", "FrameBitsPerRow-1", indentLevel=2)
+                        f"Tile_X{x}Y{y}_FrameData_O", IO.OUTPUT, "FrameBitsPerRow-1", indentLevel=2)
                     writer.addComment("CONFIG_PORT", onNewLine=False)
                 if y + 1 >= len(superTile.tileMap) or superTile.tileMap[y+1][x] == None:
                     writer.addPortVector(
-                        f"Tile_X{x}Y{y}_FrameStrobe", "in", "MaxFramePerCol-1", indentLevel=2)
+                        f"Tile_X{x}Y{y}_FrameStrobe", IO.INPUT, "MaxFramePerCol-1", indentLevel=2)
                     writer.addComment("CONFIG_PORT", onNewLine=False)
                 if x - 1 < 0 or superTile.tileMap[y][x-1] == None:
                     writer.addPortVector(
-                        f"Tile_X{x}Y{y}_FrameData", "in", "FrameBitsPerRow-1", indentLevel=2)
+                        f"Tile_X{x}Y{y}_FrameData", IO.INPUT, "FrameBitsPerRow-1", indentLevel=2)
                     writer.addComment("CONFIG_PORT", onNewLine=False)
 
     writer.addPortEnd()
@@ -944,7 +943,7 @@ def generateSuperTile(superTile: SuperTile, writer: codeGenerator):
             writer.addComment(
                 f"Tile_X{x}Y{y}_{i[0].wireDirection}", onNewLine=True)
             for p in i:
-                if p.inOut == "OUT":
+                if p.inOut == IO.OUTPUT:
                     wire = (abs(p.xOffset) + abs(p.yOffset)) * p.wires - 1
                     writer.addConnectionVector(
                         f"Tile_X{x}Y{y}_{p.name}", wire, indentLevel=1)
@@ -1034,7 +1033,7 @@ def generateSuperTile(superTile: SuperTile, writer: codeGenerator):
                         for p in b.sharedPort:
                             combine.append(p[0])
 
-                if ConfigBitMode == "frame_based":
+                if CONFIG_BIT_MODE == ConfigBitMode.FRAME_BASED:
                     # add connection for frameData and frameStrobe
                     if 0 <= x - 1 < len(superTile.tileMap[0]) - 1 and superTile.tileMap[y][x-1] != None:
                         combine.append(f"Tile_X{x-1}Y{y}_FrameData_O")
@@ -1080,7 +1079,7 @@ def generateSuperTile(superTile: SuperTile, writer: codeGenerator):
                         for p in b.sharedPort:
                             ports.append(p[0])
 
-                if ConfigBitMode == 'frame_based':
+                if CONFIG_BIT_MODE == ConfigBitMode.FRAME_BASED:
                     ports += ["FrameData", "FrameData_O",
                               "FrameStrobe", "FrameStrobe_O"]
 
@@ -1121,26 +1120,26 @@ def generateFabric(fabric: Fabric, writer: codeGenerator):
                 for bel in tile.bels:
                     for i in bel.externalInput:
                         writer.addPortScalar(
-                            f"Tile_X{x}Y{y}_{i}", "in", indentLevel=2)
+                            f"Tile_X{x}Y{y}_{i}", IO.INPUT, indentLevel=2)
                         writer.addComment("EXTERNAL", onNewLine=False)
                     for i in bel.externalOutput:
                         writer.addPortScalar(
-                            f"Tile_X{x}Y{y}_{i}", "out", indentLevel=2)
+                            f"Tile_X{x}Y{y}_{i}", IO.OUTPUT, indentLevel=2)
                         writer.addComment("EXTERNAL", onNewLine=False)
 
-    if fabric.configBitMode == "frame_based":
+    if fabric.configBitMode == ConfigBitMode.FRAME_BASED:
         writer.addPortVector(
-            "FrameData", "in", f"(FrameBitsPerRow{len(fabric.tile[0])})-1", indentLevel=2)
+            "FrameData", IO.INPUT, f"(FrameBitsPerRow{len(fabric.tile[0])})-1", indentLevel=2)
         writer.addComment("CONFIG_PORT", onNewLine=False)
         writer.addPortVector(
-            "FrameData_O", "out", f"(FrameBitsPerRow{len(fabric.tile[0])})-1", indentLevel=2)
+            "FrameData_O", IO.OUTPUT, f"(FrameBitsPerRow{len(fabric.tile[0])})-1", indentLevel=2)
         writer.addPortVector(
-            "FrameStrobe", "in", f"(MaxFramesPerCol*{len(fabric.tile)})", indentLevel=2)
+            "FrameStrobe", IO.INPUT, f"(MaxFramesPerCol*{len(fabric.tile)})", indentLevel=2)
         writer.addComment("CONFIG_PORT", onNewLine=False)
         writer.addPortVector(
-            "FrameStrobe_O", "out", f"(MaxFramesPerCol*{len(fabric.tile)})", end=True, indentLevel=2)
+            "FrameStrobe_O", IO.OUTPUT, f"(MaxFramesPerCol*{len(fabric.tile)})", end=True, indentLevel=2)
 
-    writer.addPortScalar("UserCLK", "in", indentLevel=2)
+    writer.addPortScalar("UserCLK", IO.INPUT, indentLevel=2)
 
     writer.addPortEnd()
     writer.addHeaderEnd(fabricName)
@@ -1170,7 +1169,7 @@ def generateFabric(fabric: Fabric, writer: codeGenerator):
                     tileCounter += 1
         writer.addConnectionVector("conf_data", tileCounter)
 
-    if fabric.configBitMode == 'frame_based':
+    if fabric.configBitMode == ConfigBitMode.FRAME_BASED:
         # FrameData       =>     Tile_Y3_FrameData,
         # FrameStrobe      =>     Tile_X1_FrameStrobe
         # MaxFramesPerCol : integer := 20;
@@ -1199,7 +1198,7 @@ def generateFabric(fabric: Fabric, writer: codeGenerator):
             if tile != None:
                 for p in tile.portsInfo:
                     wireLength = (abs(p.xOffset)+abs(p.yOffset)) * p.wires-1
-                    if p.sourceName == "NULL" or p.wireDirection == "JUMP":
+                    if p.sourceName == "NULL" or p.wireDirection == Direction.JUMP:
                         continue
                     writer.addConnectionVector(
                         f"Tile_X{x}Y{y}_{p.sourceName}", wireLength)
@@ -1216,7 +1215,7 @@ def generateFabric(fabric: Fabric, writer: codeGenerator):
         writer.addAssignScalar("CONFout", "conf_data'high")
         writer.addComment("CONFout is from tile entity")
 
-    if fabric.configBitMode == 'frame_based':
+    if fabric.configBitMode == ConfigBitMode.FRAME_BASED:
         for y in range(1, len(fabric.tile)-1):
             writer.addAssignVector(
                 f"Tile_Y{y}_FrameData", "FrameData", f"FrameBitsPerRow*({y}+1)", f"FrameBitsPerRow*{y}")
@@ -1228,7 +1227,6 @@ def generateFabric(fabric: Fabric, writer: codeGenerator):
     # VHDL tile instantiations
     for y, row in enumerate(fabric.tile):
         for x, tile in enumerate(row):
-            northInput, southInput, eastInput, westInput = [], [], [], []
             tilePortList: List[str] = []
             tilePortsInfo: List[Tuple[List[Port], int, int]] = []
             outputSignalList = []
@@ -1245,7 +1243,6 @@ def generateFabric(fabric: Fabric, writer: codeGenerator):
             # get all the ports of the tile. If is a super tile, we loop over the
             # tile map and find all the offset of the subtile, and all their related
             # ports.
-            superTileName = ""
             for k, v in fabric.superTileDic.items():
                 if tile.name in [i.name for i in v.tiles]:
                     if tile.name == "":
@@ -1263,7 +1260,7 @@ def generateFabric(fabric: Fabric, writer: codeGenerator):
                 for (i, j), around in portsAround.items():
                     for ports in around:
                         for port in ports:
-                            if port.inOut == "IN" and port.sourceName != "NULL" and port.destinationName != "NULL":
+                            if port.inOut == IO.INPUT and port.sourceName != "NULL" and port.destinationName != "NULL":
                                 tilePortList.append(
                                     f"Tile_X{i}Y{j}_{port.name}")
 
@@ -1271,7 +1268,7 @@ def generateFabric(fabric: Fabric, writer: codeGenerator):
                 for (i, j), around in portsAround.items():
                     for ports in around:
                         for port in ports:
-                            if port.inOut == "OUT" and port.sourceName != "NULL" and port.destinationName != "NULL":
+                            if port.inOut == IO.OUTPUT and port.sourceName != "NULL" and port.destinationName != "NULL":
                                 tilePortList.append(
                                     f"Tile_X{i}Y{j}_{port.name}")
 
@@ -1294,7 +1291,7 @@ def generateFabric(fabric: Fabric, writer: codeGenerator):
                     tilePortList.append("UserCLK")
                     tilePortList.append("UserCLKo")
 
-                if fabric.configBitMode == "frame_based":
+                if fabric.configBitMode == ConfigBitMode.FRAME_BASED:
                     for j, row in enumerate(superTile.tileMap):
                         for i, _ in enumerate(row):
                             if superTile.tileMap[j][i] == None:
@@ -1322,13 +1319,13 @@ def generateFabric(fabric: Fabric, writer: codeGenerator):
                 # all the input port of a single normal tile
                 for port, i, j in tilePortsInfo:
                     for p in port:
-                        if p.name != "NULL" and p.inOut == "IN":
+                        if p.name != "NULL" and p.inOut == IO.INPUT:
                             tilePortList.append(f"{p.name}")
 
                 # all the output port of a single normal tile
                 for port, i, j in tilePortsInfo:
                     for p in port:
-                        if p.name != "NULL" and p.inOut == "OUT":
+                        if p.name != "NULL" and p.inOut == IO.OUTPUT:
                             tilePortList.append(f"{p.name}")
 
                 for b in tile.bels:
@@ -1346,7 +1343,7 @@ def generateFabric(fabric: Fabric, writer: codeGenerator):
                     tilePortList.append("UserCLK")
                     tilePortList.append("UserCLKo")
 
-                if fabric.configBitMode == "frame_based":
+                if fabric.configBitMode == ConfigBitMode.FRAME_BASED:
                     # only add frame data port when there are config bits in the tile
                     if tile.globalConfigBits > 0:
                         tilePortList.append("FrameData")
@@ -1363,26 +1360,26 @@ def generateFabric(fabric: Fabric, writer: codeGenerator):
                 # input connection from south side of the north tile
                 if 0 <= y - 1 < len(fabric.tile) and fabric.tile[y+j-1][x+i] != None and (x+i, y+j-1) not in superTileLoc:
                     for p in fabric.tile[y+j-1][x+i].getSouthSidePorts():
-                        if p.inOut == "OUT":
+                        if p.inOut == IO.OUTPUT:
                             signal.append(
                                 f"Tile_X{x+i}Y{y+j-1}_{p.name}")
                 # input connection from west side of the east tile
                 if 0 <= x + 1 < len(fabric.tile[0]) and fabric.tile[y+j][x+i+1] != None and (x+i+1, y+j) not in superTileLoc:
                     for p in fabric.tile[y+j][x+i+1].getWestSidePorts():
-                        if p.inOut == "OUT":
+                        if p.inOut == IO.OUTPUT:
                             signal.append(
                                 f"Tile_X{x+i+1}Y{y+j}_{p.name}")
                 # input connection from north side of the south tile
                 if 0 <= y + 1 < len(fabric.tile) and fabric.tile[y+j+1][x+i] != None and (x+i, y+j+1) not in superTileLoc:
                     for p in fabric.tile[y+j+1][x+i].getNorthSidePorts():
-                        if p.inOut == "OUT":
+                        if p.inOut == IO.OUTPUT:
                             signal.append(
                                 f"Tile_X{x+i}Y{y+j+1}_{p.name}")
 
                 # input connection from east side of the west tile
                 if 0 <= x - 1 < len(fabric.tile[0]) and fabric.tile[y+j][x+i-1] != None and (x+i-1, y+j) not in superTileLoc:
                     for p in fabric.tile[y+j][x+i-1].getEastSidePorts():
-                        if p.inOut == "OUT":
+                        if p.inOut == IO.OUTPUT:
                             signal.append(
                                 f"Tile_X{x+i-1}Y{y+j}_{p.name}")
 
@@ -1392,13 +1389,13 @@ def generateFabric(fabric: Fabric, writer: codeGenerator):
                 for (i, j), around in portsAround.items():
                     for ports in around:
                         for port in ports:
-                            if port.inOut == "OUT" and port.name != "NULL":
+                            if port.inOut == IO.OUTPUT and port.name != "NULL":
                                 outputSignalList.append(
                                     f"Tile_X{x+int(i)}Y{y+int(j)}_{port.name}")
             else:
                 for ports, i, j in tilePortsInfo:
                     for p in ports:
-                        if p.inOut == "OUT" and p.name != "NULL":
+                        if p.inOut == IO.OUTPUT and p.name != "NULL":
                             outputSignalList.append(
                                 f"Tile_X{x+i}Y{y+j}_{p.name}")
 
@@ -1432,7 +1429,7 @@ def generateFabric(fabric: Fabric, writer: codeGenerator):
                 else:
                     signal.append(f"UserCLK")
 
-            if fabric.configBitMode == "frame_based":
+            if fabric.configBitMode == ConfigBitMode.FRAME_BASED:
                 for (i, j) in tileLocationOffset:
                     if tile.globalConfigBits > 0 or superTile:
                         # frameData signal
@@ -1496,19 +1493,19 @@ def generateTopWrapper(fabric: Fabric, writer: codeGenerator):
                         fabric.rowSelectWidth, indentLevel=2)
     writer.addParameterEnd(indentLevel=1)
     writer.addPortStart(indentLevel=1)
-    writer.addPortVector("I_top", "INOUT", f"{numberOfRows*2}-1")
-    writer.addPortVector("T_top", "INOUT", f"{numberOfRows*2}-1")
-    writer.addPortVector("O_top", "INOUT", f"{numberOfRows*2}-1")
-    writer.addPortVector("A_config_C", "INOUT", f"{numberOfRows*4}-1")
-    writer.addPortVector("B_config_C", "INOUT", f"{numberOfRows*4}-1")
-    writer.addPortScalar("CLK", "IN")
-    writer.addPortScalar("SelfWriteStrobe", "INOUT")
-    writer.addPortScalar("SelfWriteData", "INOUT")
-    writer.addPortScalar("RX", "INOUT")
-    writer.addPortScalar("ComActive", "INOUT")
-    writer.addPortScalar("ReceiveLED", "INOUT")
-    writer.addPortScalar("s_clk", "INOUT")
-    writer.addPortScalar("s_data", "INOUT")
+    writer.addPortVector("I_top", IO.INOUT, f"{numberOfRows*2}-1")
+    writer.addPortVector("T_top", IO.INOUT, f"{numberOfRows*2}-1")
+    writer.addPortVector("O_top", IO.INOUT, f"{numberOfRows*2}-1")
+    writer.addPortVector("A_config_C", IO.INOUT, f"{numberOfRows*4}-1")
+    writer.addPortVector("B_config_C", IO.INOUT, f"{numberOfRows*4}-1")
+    writer.addPortScalar("CLK", IO.INPUT)
+    writer.addPortScalar("SelfWriteStrobe", IO.INOUT)
+    writer.addPortScalar("SelfWriteData", IO.INOUT)
+    writer.addPortScalar("RX", IO.INOUT)
+    writer.addPortScalar("ComActive", IO.INOUT)
+    writer.addPortScalar("ReceiveLED", IO.INOUT)
+    writer.addPortScalar("s_clk", IO.INOUT)
+    writer.addPortScalar("s_data", IO.INOUT)
     writer.addPortEnd()
     writer.addHeaderEnd(f"{fabric.name}")
     writer.addDesignDescriptionStart(f"{fabric.name}")
@@ -1684,7 +1681,7 @@ def generateTopWrapper(fabric: Fabric, writer: codeGenerator):
 
 def genBitstreamSpec(archObject: FabricModelGen):
     specData = {"TileMap": {}, "TileSpecs": {}, "TileSpecs_No_Mask": {}, "FrameMap": {}, "FrameMapEncode": {
-    }, "ArchSpecs": {"MaxFramesPerCol": MaxFramesPerCol, "FrameBitsPerRow": FrameBitsPerRow}}
+    }, "ArchSpecs": {"MaxFramesPerCol": MAX_FRAMES_PER_COL, "FrameBitsPerRow": FRAME_BITS_PER_ROW}}
     BelMap = {}
     for line in archObject.tiles:
         for tile in line:
@@ -1793,7 +1790,8 @@ def genBitstreamSpec(archObject: FabricModelGen):
             configList = RemoveComments(configList)
             maskDict = {}
             # Bitmap with the specific configmem.csv file
-            encodeDict = [-1 for i in range(FrameBitsPerRow*MaxFramesPerCol)]
+            encodeDict = [-1 for i in range(FRAME_BITS_PER_ROW *
+                                            MAX_FRAMES_PER_COL)]
             for line in configList:
                 configEncode = []
                 maskDict[int(line[1])] = line[3].replace("_", "")
@@ -2075,18 +2073,18 @@ else:
 
 fabric = parseFabricCSV(args.fabric_csv)
 
-ConfigBitMode = fabric.configBitMode
-FrameBitsPerRow = fabric.frameBitsPerRow
-MaxFramesPerCol = fabric.maxFramesPerCol
-Package = fabric.package
+CONFIG_BIT_MODE = fabric.configBitMode
+FRAME_BITS_PER_ROW = fabric.frameBitsPerRow
+MAX_FRAMES_PER_COL = fabric.maxFramesPerCol
+PACKAGE = fabric.package
 # time in ps - this is needed for simulation as a fabric configuration can result in loops crashing the simulator
-GenerateDelayInSwitchMatrix = fabric.generateDelayInSwitchMatrix
+GENERATE_DELAY_IN_SWITCH_MATRIX = fabric.generateDelayInSwitchMatrix
 # 'custom': using our hard-coded MUX-4 and MUX-16; 'generic': using standard generic RTL code
-MultiplexerStyle = fabric.multiplexerStyle
+MULTIPLEXER_STYLE = fabric.multiplexerStyle
 # generate switch matrix select signals (index) which is useful to verify if bitstream matches bitstream
-SwitchMatrixDebugSignals = True
+SWITCH_MATRIX_DEBUG_SIGNAL = True
 # enable SuperTile generation
-SuperTileEnable = fabric.superTileEnable
+SUPER_TILE_ENABLE = fabric.superTileEnable
 
 src_dir = "./"
 
@@ -2145,7 +2143,7 @@ if args.GenTileVHDL or args.run_all:
         writer = VHDLWriter(f"{out_dir}/{str(tile)}_tile.vhdl")
         generateTile(fabric.tileDic[tile], writer)
 
-    if SuperTileEnable:
+    if SUPER_TILE_ENABLE:
         for superTile in fabric.superTileDic:
             print(
                 f"### generate VHDL for SuperTile {superTile} # filename: {out_dir}/{superTile}_tile.vhdl")
@@ -2159,7 +2157,7 @@ if args.GenTileVerilog or args.run_all:
         writer = VerilogWriter(f"{out_dir}/{str(tile)}_tile.v")
         generateTile(fabric.tileDic[tile], writer)
 
-    if SuperTileEnable:
+    if SUPER_TILE_ENABLE:
         for superTile in fabric.superTileDic:
             print(
                 f"### generate Verilog for SuperTile {superTile} # filename: {out_dir}/{superTile}_tile.v")

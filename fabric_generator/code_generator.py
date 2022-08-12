@@ -1,6 +1,6 @@
 import abc
 from typing import Literal
-from fabric import Fabric, Tile, Bel
+from fabric import Fabric, Tile, Bel, IO
 
 
 class codeGenerator(abc.ABC):
@@ -63,11 +63,11 @@ class codeGenerator(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def addPortScalar(self, name, io, end=False, indentLevel=0):
+    def addPortScalar(self, name, io: IO, end=False, indentLevel=0):
         pass
 
     @abc.abstractmethod
-    def addPortVector(self, name, io, width, end=False, indentLevel=0):
+    def addPortVector(self, name, io: IO, width, end=False, indentLevel=0):
         pass
 
     @abc.abstractmethod

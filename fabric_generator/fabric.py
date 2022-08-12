@@ -1,19 +1,53 @@
 from dataclasses import dataclass, field
-from typing import Literal, List, Dict
+from typing import Any, Literal, List, Dict, Tuple
 import math
+from enum import Enum
+
+
+class IO(Enum):
+    INPUT = "INPUT"
+    OUTPUT = "OUTPUT"
+    INOUT = "INOUT"
+    NULL = "NULL"
+
+
+class Direction(Enum):
+    NORTH = "NORTH"
+    SOUTH = "SOUTH"
+    EAST = "EAST"
+    WEST = "WEST"
+    JUMP = "JUMP"
+
+
+class Side(Enum):
+    NORTH = "NORTH"
+    SOUTH = "SOUTH"
+    EAST = "EAST"
+    WEST = "WEST"
+    ANY = "ANY"
+
+
+class MultiplexerStyle(Enum):
+    CUSTOM = "CUSTOM"
+    GENERIC = "GENERIC"
+
+
+class ConfigBitMode(Enum):
+    FRAME_BASED = "FRAME_BASED"
+    FLIPFLOP_CHAIN = "FLIPFLOP_CHAIN"
 
 
 @dataclass(frozen=True, eq=True)
 class Port():
-    wireDirection: Literal["NORTH", "SOUTH", "EAST", "WEST", "JUMP"]
+    wireDirection: Direction
     sourceName: str
     xOffset: int
     yOffset: int
     destinationName: str
     wires: int
     name: str
-    inOut: Literal["IN", "OUT", "NULL"]
-    sideOfTile: Literal["NORTH", "SOUTH", "EAST", "WEST", "ANY"]
+    inOut: IO
+    sideOfTile: Side
     # totalWireAmount: int
 
     # def __init__(self, direction, sourceName, xOffset, yOffset, destinationName, wires) -> None:
@@ -101,17 +135,17 @@ class Bel():
     externalInput: List[str]
     externalOutput: List[str]
     configPort: List[str]
-    sharedPort: List[str]
+    sharedPort: List[Tuple[str, IO]]
     configBit: int
 
-    def __init__(self, src, prefix, internal, external, configPort, sharedPort, configBit):
+    def __init__(self, src: str, prefix: str, internal, external, configPort, sharedPort, configBit: int):
         self.src = src
         self.prefix = prefix
         self.name = src.split("/")[-1].split(".")[0]
-        self.inputs = [p for p, io in internal if io == "in"]
-        self.outputs = [p for p, io in internal if io == "out"]
-        self.externalInput = [p for p, io in external if io == "in"]
-        self.externalOutput = [p for p, io in external if io == "out"]
+        self.inputs = [p for p, io in internal if io == IO.INPUT]
+        self.outputs = [p for p, io in internal if io == IO.OUTPUT]
+        self.externalInput = [p for p, io in external if io == IO.INPUT]
+        self.externalOutput = [p for p, io in external if io == IO.OUTPUT]
         self.configPort = configPort
         self.sharedPort = sharedPort
         self.configBit = configBit
@@ -139,40 +173,40 @@ class Tile():
         for b in self.bels:
             self.globalConfigBits += b.configBit
 
-    def __eq__(self, __o) -> bool:
-        if __o is None:
+    def __eq__(self, __o: Any) -> bool:
+        if __o is None or not isinstance(__o, Tile):
             return False
         return self.name == __o.name
 
     def getWestSidePorts(self) -> List[Port]:
-        return [p for p in self.portsInfo if p.sideOfTile == "WEST" and p.name != "NULL"]
+        return [p for p in self.portsInfo if p.sideOfTile == Side.WEST and p.name != "NULL"]
 
     def getEastSidePorts(self) -> List[Port]:
-        return [p for p in self.portsInfo if p.sideOfTile == "EAST" and p.name != "NULL"]
+        return [p for p in self.portsInfo if p.sideOfTile == Side.EAST and p.name != "NULL"]
 
     def getNorthSidePorts(self) -> List[Port]:
-        return [p for p in self.portsInfo if p.sideOfTile == "NORTH" and p.name != "NULL"]
+        return [p for p in self.portsInfo if p.sideOfTile == Side.NORTH and p.name != "NULL"]
 
     def getSouthSidePorts(self) -> List[Port]:
-        return [p for p in self.portsInfo if p.sideOfTile == "SOUTH" and p.name != "NULL"]
+        return [p for p in self.portsInfo if p.sideOfTile == Side.SOUTH and p.name != "NULL"]
 
     def getNorthPorts(self) -> List[Port]:
-        return list(dict.fromkeys([p for p in self.portsInfo if p.wireDirection == "NORTH"]))
+        return list(dict.fromkeys([p for p in self.portsInfo if p.wireDirection == Direction.NORTH]))
 
     def getSouthPorts(self) -> List[Port]:
-        return list(dict.fromkeys([p for p in self.portsInfo if p.wireDirection == "SOUTH"]))
+        return list(dict.fromkeys([p for p in self.portsInfo if p.wireDirection == Direction.SOUTH]))
 
     def getEastPorts(self) -> List[Port]:
-        return list(dict.fromkeys([p for p in self.portsInfo if p.wireDirection == "EAST"]))
+        return list(dict.fromkeys([p for p in self.portsInfo if p.wireDirection == Direction.EAST]))
 
     def getWestPorts(self) -> List[Port]:
-        return list(dict.fromkeys([p for p in self.portsInfo if p.wireDirection == "WEST"]))
+        return list(dict.fromkeys([p for p in self.portsInfo if p.wireDirection == Direction.WEST]))
 
     def getTileInputNames(self) -> List[str]:
-        return [p.destinationName for p in self.portsInfo if p.destinationName != "NULL" and p.wireDirection != "JUMP"]
+        return [p.destinationName for p in self.portsInfo if p.destinationName != "NULL" and p.wireDirection != Direction.JUMP]
 
     def getTileOutputNames(self) -> List[str]:
-        return [p.sourceName for p in self.portsInfo if p.sourceName != "NULL" and p.wireDirection != "JUMP"]
+        return [p.sourceName for p in self.portsInfo if p.sourceName != "NULL" and p.wireDirection != Direction.JUMP]
 
 
 @dataclass
@@ -226,12 +260,12 @@ class Fabric():
     name: str = "eFPGA"
     numberOfRows: int = 15
     numberOfColumns: int = 15
-    configBitMode: Literal["FlipFlopChain", "frame_based"] = "frame_based"
+    configBitMode: ConfigBitMode = ConfigBitMode.FRAME_BASED
     frameBitsPerRow: int = 32
     maxFramesPerCol: int = 20
     package: str = "use work.my_package.all"
     generateDelayInSwitchMatrix: int = 80
-    multiplexerStyle: Literal["custom", "generic"] = "custom"
+    multiplexerStyle: MultiplexerStyle = MultiplexerStyle.CUSTOM
     frameSelectWidth: int = 5
     rowSelectWidth: int = 5
     desync_flag: int = 20

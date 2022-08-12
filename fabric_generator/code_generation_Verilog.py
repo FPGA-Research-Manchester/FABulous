@@ -1,49 +1,10 @@
 from re import S
 from typing import Literal
-from fabric import Tile, Bel
+from fabric import Tile, Bel, ConfigBitMode, IO
 import math
 import re
 
 from code_generator import codeGenerator
-ConfigBitMode = 'FlipFlopChain'
-FrameBitsPerRow = 32
-MaxFramesPerCol = 20
-Package = 'use work.my_package.all;'
-# time in ps - this is needed for simulation as a fabric configuration can result in loops crashing the simulator
-GenerateDelayInSwitchMatrix = '100'
-# 'custom': using our hard-coded MUX-4 and MUX-16; 'generic': using standard generic RTL code
-MultiplexerStyle = 'custom'
-# generate switch matrix select signals (index) which is useful to verify if bitstream matches bitstream
-SwitchMatrixDebugSignals = True
-SuperTileEnable = True		# enable SuperTile generation
-
-src_dir = "./"
-
-# TILE field aliases
-direction = 0
-source_name = 1
-X_offset = 2
-Y_offset = 3
-destination_name = 4
-wires = 5
-
-# bitstream mapping aliases
-frame_name = 0
-frame_index = 1
-bits_used_in_frame = 2
-used_bits_mask = 3
-ConfigBits_ranges = 4
-
-# columns where VHDL file is specified
-VHDL_file_position = 1
-TileType_position = 1
-
-# BEL prefix field (needed to allow multiple instantiations of the same BEL inside the same tile)
-BEL_prefix = 2
-# MISC
-All_Directions = ['NORTH', 'EAST', 'SOUTH', 'WEST']
-Opposite_Directions = {"NORTH": "SOUTH",
-                       "EAST": "WEST", "SOUTH": "NORTH", "WEST": "EAST"}
 
 
 class VerilogWriter(codeGenerator):
@@ -82,27 +43,15 @@ class VerilogWriter(codeGenerator):
     def addPortEnd(self, indentLevel=0):
         self._add(");", indentLevel)
 
-    def addPortScalar(self, name, io, end=False, indentLevel=0):
-        t = ""
-        if io.upper() == "IN":
-            t = "input"
-        if io.upper() == "OUT":
-            t = "output"
-        if io.upper() == "INOUT":
-            t = "inout"
+    def addPortScalar(self, name, io: IO, end=False, indentLevel=0):
+        t = io.value.lower()
         if end:
             self._add(f"{t} {name}", indentLevel)
         else:
             self._add(f"{t} {name},", indentLevel)
 
-    def addPortVector(self, name, io, width, end=False, indentLevel=0):
-        t = ""
-        if io.upper() == "IN":
-            t = "input"
-        if io.upper() == "OUT":
-            t = "output"
-        if io.upper() == "INOUT":
-            t = "inout"
+    def addPortVector(self, name, io: IO, width, end=False, indentLevel=0):
+        t = io.value.lower()
         if end:
             self._add(f"{t} [{width}:0] {name}", indentLevel)
         else:
@@ -222,7 +171,6 @@ class VerilogWriter(codeGenerator):
         self._add(
             f"assign {left} = {right}[{widthL}:{widthR}];", indentLevel)
 
-
     def addLatch(self, frameName, frameBitsPerRow, frameIndex, configBit):
         latchTemplate = """
 LHQD1 Inst_{frameName}_bit{frameBitsPerRow} (
@@ -237,7 +185,7 @@ LHQD1 Inst_{frameName}_bit{frameBitsPerRow} (
                                        frame=frameIndex,
                                        configBit=configBit))
 
-    def addBELInstantiations(self, bel: Bel, configBitCounter, mode="frame_based", belCounter=0):
+    def addBELInstantiations(self, bel: Bel, configBitCounter, mode=ConfigBitMode.FRAME_BASED, belCounter=0):
         belTemplate = """
 {entity} Inst_{prefix}{entity} (
 {portList}
@@ -263,10 +211,10 @@ LHQD1 Inst_{frameName}_bit{frameBitsPerRow} (
         for ports in bel.sharedPort:
             globalAndConfigBits.append(f"{' ':<4}.{ports[0]}({ports[0]})")
 
-        if mode == "frame_based":
+        if mode == ConfigBitMode.FRAME_BASED:
             globalAndConfigBits.append(
                 f"{' ':<4}.ConfigBits(ConfigBits[{configBitCounter+bel.configBit}-1:{configBitCounter}])")
-        else:
+        elif mode == ConfigBitMode.FLIPFLOP_CHAIN:
             self.add_Conf_Instantiation(belCounter, close=True)
 
         self._add(belTemplate.format(prefix=bel.prefix,

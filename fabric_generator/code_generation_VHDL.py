@@ -1,51 +1,11 @@
 from typing import Literal, Tuple
-from fabric import Fabric, Tile, Port, Bel
+from fabric import Fabric, Tile, Port, Bel, IO
 import os
 import math
 import re
 
 from code_generator import codeGenerator
-# Default parameters (will be overwritten if defined in fabric between 'ParametersBegin' and 'ParametersEnd'
-# Parameters = [ 'ConfigBitMode', 'FrameBitsPerRow' ]
-ConfigBitMode = 'frame_based'
-FrameBitsPerRow = 32
-MaxFramesPerCol = 20
-Package = 'use work.my_package.all;'
-# time in ps - this is needed for simulation as a fabric configuration can result in loops crashing the simulator
-GenerateDelayInSwitchMatrix = '100'
-# 'custom': using our hard-coded MUX-4 and MUX-16; 'generic': using standard generic RTL code
-MultiplexerStyle = 'custom'
-# generate switch matrix select signals (index) which is useful to verify if bitstream matches bitstream
-SwitchMatrixDebugSignals = True
-SuperTileEnable = True		# enable SuperTile generation
-
-src_dir = "./"
-
-# TILE field aliases
-direction = 0
-source_name = 1
-X_offset = 2
-Y_offset = 3
-destination_name = 4
-wires = 5
-
-# bitstream mapping aliases
-frame_name = 0
-frame_index = 1
-bits_used_in_frame = 2
-used_bits_mask = 3
-ConfigBits_ranges = 4
-
-# columns where VHDL file is specified
-VHDL_file_position = 1
-TileType_position = 1
-
-# BEL prefix field (needed to allow multiple instantiations of the same BEL inside the same tile)
-BEL_prefix = 2
-# MISC
-All_Directions = ['NORTH', 'EAST', 'SOUTH', 'WEST']
-Opposite_Directions = {"NORTH": "SOUTH",
-                       "EAST": "WEST", "SOUTH": "NORTH", "WEST": "EAST"}
+from fabric import ConfigBitMode
 
 
 class VHDLWriter(codeGenerator):
@@ -87,13 +47,13 @@ class VHDLWriter(codeGenerator):
     def addPortEnd(self, indentLevel=0):
         self._add(");", indentLevel)
 
-    def addPortScalar(self, name, io, end=False, indentLevel=0):
-        self._add(f"{name:<10} : {io.lower()} STD_LOGIC;",
+    def addPortScalar(self, name, io: IO, end=False, indentLevel=0):
+        self._add(f"{name:<10} : {io.value.lower()} STD_LOGIC;",
                   indentLevel=indentLevel)
 
-    def addPortVector(self, name, io, width, end=False, indentLevel=0):
+    def addPortVector(self, name, io: IO, width, end=False, indentLevel=0):
         self._add(
-            f"{name:<10} : {io} STD_LOGIC_VECTOR( {width} downto 0 );", indentLevel=indentLevel)
+            f"{name:<10} : {io.value.lower()} STD_LOGIC_VECTOR( {width} downto 0 );", indentLevel=indentLevel)
 
     def addDesignDescriptionStart(self, name, indentLevel=0):
         self._add(
@@ -218,7 +178,7 @@ CONFout <= ConfigBits(ConfigBits'high);
     """
         self._add(template, indentLevel)
 
-    def addBELInstantiations(self, bel: Bel, configBitCounter, mode="frame_based", belCounter=0):
+    def addBELInstantiations(self, bel: Bel, configBitCounter, mode=ConfigBitMode.FRAME_BASED, belCounter=0):
         belTemplate = """
 Inst_{prefix}{entity} : {entity}
         Port Map(
@@ -245,10 +205,10 @@ Inst_{prefix}{entity} : {entity}
         for ports in bel.sharedPort:
             globalAndConfigBits.append(f"{' ':<8}{ports[0]} => {ports[0]}")
 
-        if mode == "frame_based":
+        if mode == ConfigBitMode.FRAME_BASED:
             globalAndConfigBits.append(
                 f"{' ':<8}ConfigBits => ConfigBits ( {configBitCounter+bel.configBit} - 1 downto {configBitCounter} )")
-        else:
+        elif mode == ConfigBitMode.FLIPFLOP_CHAIN:
             self.add_Conf_Instantiation(belCounter, close=True)
 
         self._add(belTemplate.format(prefix=bel.prefix,

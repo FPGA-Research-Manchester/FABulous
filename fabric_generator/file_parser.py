@@ -4,6 +4,8 @@ from copy import deepcopy
 from typing import List, Literal, Tuple
 import csv
 
+from fabric import IO, Direction, Side, MultiplexerStyle, ConfigBitMode
+
 oppositeDic = {"NORTH": "SOUTH", "SOUTH": "NORTH",
                "EAST": "WEST", "WEST": "EAST"}
 
@@ -56,19 +58,16 @@ def parseFabricCSV(fileName: str) -> Fabric:
             if not temp or temp[0] == "":
                 continue
             if temp[0] in ["NORTH", "SOUTH", "EAST", "WEST"]:
-                if temp[1] == '' or temp[4] == '':
-                    raise ValueError(
-                        f"Either source or destination port for JUMP wire missing in tile {t}")
-                ports.append(Port(temp[0], temp[1], int(
-                    temp[2]), int(temp[3]), temp[4], int(temp[5]), temp[1], "OUT", temp[0]))
+                ports.append(Port(Direction[temp[0]], temp[1], int(
+                    temp[2]), int(temp[3]), temp[4], int(temp[5]), temp[1], IO.OUTPUT, Side[temp[0]]))
 
-                ports.append(Port(temp[0], temp[1], int(
-                    temp[2]), int(temp[3]), temp[4], int(temp[5]), temp[4], "IN", oppositeDic[temp[0]]))
+                ports.append(Port(Direction[temp[0]], temp[1], int(
+                    temp[2]), int(temp[3]), temp[4], int(temp[5]), temp[4], IO.INPUT, Side[oppositeDic[temp[0]].upper()]))
             elif temp[0] == "JUMP":
-                ports.append(Port(temp[0], temp[1], int(
-                    temp[2]), int(temp[3]), temp[4], int(temp[5]), temp[1], "OUT", "ANY"))
-                ports.append(Port(temp[0], temp[1], int(
-                    temp[2]), int(temp[3]), temp[4], int(temp[5]), temp[1], "IN", "ANY"))
+                ports.append(Port(Direction.JUMP, temp[1], int(
+                    temp[2]), int(temp[3]), temp[4], int(temp[5]), temp[1], IO.OUTPUT, Side.ANY))
+                ports.append(Port(Direction.JUMP, temp[1], int(
+                    temp[2]), int(temp[3]), temp[4], int(temp[5]), temp[1], IO.INOUT, Side.ANY))
             elif temp[0] == "BEL":
                 internal, external, config, shared, configBit, userClk = parseFileHDL(
                     temp[1], temp[2])
@@ -154,12 +153,12 @@ def parseFabricCSV(fileName: str) -> Fabric:
     # parse the parameters
     height = 0
     width = 0
-    configBitMode = "frame_based"
+    configBitMode = ConfigBitMode.FRAME_BASED
     frameBitsPerRow = 32
     maxFramesPerCol = 20
     package = "use work.my_package.all;"
     generateDelayInSwitchMatrix = 80
-    multiplexerStyle = "custom"
+    multiplexerStyle = MultiplexerStyle.CUSTOM
     superTileEnable = True
 
     for i in parameters:
@@ -169,9 +168,9 @@ def parseFabricCSV(fileName: str) -> Fabric:
             continue
         if i[0].startswith("ConfigBitMode"):
             if i[1] == "frame_based":
-                configBitMode = "frame_based"
+                configBitMode = ConfigBitMode.FRAME_BASED
             elif i[1] == "FlipFlopChain":
-                configBitMode = "FlipFlopChain"
+                configBitMode = ConfigBitMode.FLIPFLOP_CHAIN
             else:
                 raise ValueError(
                     f"Invalid config bit mode {i[1]} in parameters. Valid options are frame_based and FlipFlopChain")
@@ -185,9 +184,9 @@ def parseFabricCSV(fileName: str) -> Fabric:
             generateDelayInSwitchMatrix = int(i[1])
         elif i[0].startswith("MultiplexerStyle"):
             if i[1] == "custom":
-                multiplexerStyle = "custom"
+                multiplexerStyle = MultiplexerStyle.CUSTOM
             elif i[1] == "generic":
-                multiplexerStyle = "generic"
+                multiplexerStyle = MultiplexerStyle.GENERIC
             else:
                 raise ValueError(
                     f"Invalid multiplexer style {i[1]} in parameters. Valid options are custom and generic")
@@ -270,10 +269,10 @@ def expandListPorts(port, PortList):
 
 
 def parseFileHDL(filename, belPrefix="", filter="ALL"):
-    internal = []
-    external = []
-    config = []
-    shared = []
+    internal: List[Tuple[str, IO]] = []
+    external: List[Tuple[str, IO]] = []
+    config: List[Tuple[str, IO]] = []
+    shared: List[Tuple[str, IO]] = []
     isExternal = False
     isConfig = False
     isShared = False
@@ -312,14 +311,36 @@ def parseFileHDL(filename, belPrefix="", filter="ALL"):
         portName = f"{belPrefix}{result.group(1)}"
 
         if isExternal and not isShared:
-            external.append((portName, result.group(2).lower()))
+            if result.group(2).lower() == "in":
+                external.append((portName, IO.INPUT))
+            elif result.group(2).lower() == "out":
+                external.append((portName, IO.OUTPUT))
         elif isConfig:
-            config.append((portName, result.group(2).lower()))
+            if result.group(2).lower() == "in":
+                config.append((portName, IO.INPUT))
+            elif result.group(2).lower() == "out":
+                config.append((portName, IO.OUTPUT))
         elif isShared:
             # shared port do not have a prefix
-            shared.append((result.group(1), result.group(2).lower()))
+            if result.group(2).lower() == "in":
+                shared.append((result.group(1), IO.INOUT))
+            elif result.group(2).lower() == "out":
+                shared.append((result.group(1), IO.OUTPUT))
+            elif result.group(2).lower() == "inout":
+                shared.append((result.group(1), IO.INOUT))
+            else:
+                raise ValueError(
+                    f"Invalid port type {result.group(2)} in file {filename}")
         else:
-            internal.append((portName, result.group(2).lower()))
+            if result.group(2).lower() == "in":
+                internal.append((portName, IO.INPUT))
+            elif result.group(2).lower() == "out":
+                internal.append((portName, IO.OUTPUT))
+            elif result.group(2).lower() == "inout":
+                internal.append((portName, IO.INOUT))
+            else:
+                raise ValueError(
+                    f"Invalid port type {result.group(2)} in file {filename}")
 
         if "UserCLK" in portName:
             userClk = True

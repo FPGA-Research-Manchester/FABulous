@@ -50,12 +50,12 @@ class VerilogWriter(codeGenerator):
         else:
             self._add(f"{t} {name},", indentLevel)
 
-    def addPortVector(self, name, io: IO, width, end=False, indentLevel=0):
+    def addPortVector(self, name, io: IO, msbIndex, end=False, indentLevel=0):
         t = io.value.lower()
         if end:
-            self._add(f"{t} [{width}:0] {name}", indentLevel)
+            self._add(f"{t} [{msbIndex}:0] {name}", indentLevel)
         else:
-            self._add(f"{t} [{width}:0] {name},", indentLevel)
+            self._add(f"{t} [{msbIndex}:0] {name},", indentLevel)
 
     def addDesignDescriptionStart(self, name, indentLevel=0):
         pass

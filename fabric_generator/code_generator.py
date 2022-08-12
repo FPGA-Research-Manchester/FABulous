@@ -67,7 +67,7 @@ class codeGenerator(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def addPortVector(self, name, io: IO, width, end=False, indentLevel=0):
+    def addPortVector(self, name, io: IO, msbIndex, end=False, indentLevel=0):
         pass
 
     @abc.abstractmethod

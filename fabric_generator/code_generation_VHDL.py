@@ -51,9 +51,9 @@ class VHDLWriter(codeGenerator):
         self._add(f"{name:<10} : {io.value.lower()} STD_LOGIC;",
                   indentLevel=indentLevel)
 
-    def addPortVector(self, name, io: IO, width, end=False, indentLevel=0):
+    def addPortVector(self, name, io: IO, msbIndex, end=False, indentLevel=0):
         self._add(
-            f"{name:<10} : {io.value.lower()} STD_LOGIC_VECTOR( {width} downto 0 );", indentLevel=indentLevel)
+            f"{name:<10} : {io.value.lower()} STD_LOGIC_VECTOR( {msbIndex} downto 0 );", indentLevel=indentLevel)
 
     def addDesignDescriptionStart(self, name, indentLevel=0):
         self._add(

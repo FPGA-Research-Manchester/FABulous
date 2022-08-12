@@ -1,7 +1,8 @@
-from fabric import Fabric, Port, Bel, Tile, SuperTile
+from fabric import Fabric, Port, Bel, Tile, SuperTile, ConfigMem
 import re
 from copy import deepcopy
 from typing import List, Literal, Tuple
+import csv
 
 oppositeDic = {"NORTH": "SOUTH", "SOUTH": "NORTH",
                "EAST": "WEST", "WEST": "EAST"}
@@ -366,6 +367,86 @@ def parseMatrix(fileName, tileName):
         indices = [k for k, v in enumerate(connections) if v == "1"]
         connectionsDic[portName] = [destList[j] for j in indices]
     return connectionsDic
+
+
+def parseConfigMem(fileName, maxFramePerCol, frameBitPerRow, globalConfigBits):
+    with open(fileName) as f:
+        mappingFile = list(csv.DictReader(f))
+
+        # remove the pretty print from used_bits_mask
+        for i, _ in enumerate(mappingFile):
+            mappingFile[i]["used_bits_mask"] = mappingFile[i]["used_bits_mask"].replace(
+                "_", "")
+
+        # we should have as many lines as we have frames (=framePerCol)
+        if len(mappingFile) != maxFramePerCol:
+            raise ValueError(
+                f"WARNING: the bitstream mapping file has only {len(mappingFile)} entries but MaxFramesPerCol is {maxFramePerCol}")
+
+        # we also check used_bits_mask (is a vector that is as long as a frame and contains a '1' for a bit used and a '0' if not used (padded)
+        usedBitsCounter = 0
+        for entry in mappingFile:
+            if entry["used_bits_mask"].count("1") > frameBitPerRow:
+                raise ValueError(
+                    f"bitstream mapping file {fileName} has to many 1-elements in bitmask for frame : {entry['frame_name']}")
+            if len(entry["used_bits_mask"]) != frameBitPerRow:
+                raise ValueError(
+                    f"bitstream mapping file {fileName} has has a too long or short bitmask for frame : {entry['frame_name']}")
+            usedBitsCounter += entry["used_bits_mask"].count("1")
+
+        if usedBitsCounter != globalConfigBits:
+            raise ValueError(
+                f"bitstream mapping file {fileName} has a bitmask miss match; bitmask has in total {usedBitsCounter} 1-values for {globalConfigBits} bits")
+
+        allConfigBitsOrder = []
+        configMemEntry = []
+        for entry in mappingFile:
+            configBitsOrder = []
+            entry["ConfigBits_ranges"] = entry["ConfigBits_ranges"].replace(
+                " ", "").replace("\t", "")
+
+            if ":" in entry["ConfigBits_ranges"]:
+                left, right = re.split(':', entry["ConfigBits_ranges"])
+                # check the order of the number, if right is smaller than left, then we swap them
+                left, right = int(left), int(right)
+                if right < left:
+                    left, right = right, left
+                    numList = list(reversed(range(left, right + 1)))
+                else:
+                    numList = list(range(left, right + 1))
+
+                for i in numList:
+                    if i in allConfigBitsOrder:
+                        raise ValueError(
+                            f"Configuration bit index {i} already allocated in {fileName}, {entry['frame_name']}")
+                    configBitsOrder.append(i)
+
+            elif ";" in entry["ConfigBits_ranges"]:
+                for item in entry["ConfigBits_ranges"].split(";"):
+                    if int(item) in allConfigBitsOrder:
+                        raise ValueError(
+                            f"Configuration bit index {item} already allocated in {fileName}, {entry['frame_name']}")
+                    configBitsOrder.append(int(item))
+
+            elif "NULL" in entry["ConfigBits_ranges"]:
+                continue
+
+            else:
+                raise ValueError(
+                    f"Range {entry['ConfigBits_ranges']} is not a valid format. It should be in the form [int]:[int] or [int]. If there are multiple ranges it should be separated by ';'")
+
+            allConfigBitsOrder += configBitsOrder
+
+            if entry["used_bits_mask"].count("1") > 0:
+                configMemEntry.append(ConfigMem(frameName=entry["frame_name"],
+                                                frameIndex=int(
+                                                    entry["frame_index"]),
+                                                bitsUsedInFrame=entry["used_bits_mask"].count(
+                                                    "1"),
+                                                usedBitMask=entry["used_bits_mask"],
+                                                configBitRanges=configBitsOrder))
+
+    return configMemEntry
 
 
 if __name__ == '__main__':

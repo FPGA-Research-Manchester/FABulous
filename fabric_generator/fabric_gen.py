@@ -26,9 +26,10 @@ from code_generation_Verilog import VerilogWriter
 from fasm import *  # Remove this line if you do not have the fasm library installed and will not be generating a bitstream
 import argparse
 from code_generator import codeGenerator
+from typing import List, Tuple
 
-from fabric import Fabric, Tile, Port, SuperTile
-from file_parser import parseFabricCSV, parseMatrix
+from fabric import Fabric, Tile, Port, SuperTile, ConfigMem
+from file_parser import parseFabricCSV, parseMatrix, parseConfigMem
 from model_generation_npnr import *
 from model_generation_vpr import *
 
@@ -182,52 +183,22 @@ def generateConfigMem(tile: Tile, configMemCsv, writer: codeGenerator):
     # we use a file to describe the exact configuration bits to frame mapping
     # the following command generates an init file with a simple enumerated default mapping (e.g. 'LUT4AB_ConfigMem.init.csv')
     # if we run this function again, but have such a file (without the .init), then that mapping will be used
-    generateConfigMemInit(
-        f"{tile.name}_ConfigMem.init.csv", tile.globalConfigBits)
 
     # test if we have a bitstream mapping file
     # if not, we will take the default, which was passed on from GenerateConfigMemInit
+    configMemList: List[ConfigMem] = []
     if os.path.exists(configMemCsv):
         print(
             f"# found bitstream mapping file {tile.name}.csv for tile {tile.name}")
-        with open(f"{tile.name}_ConfigMem.csv") as f:
-            mappingFile = list(csv.DictReader(f))
-            csvFileName = f"{tile.name}_ConfigMem.csv"
+        configMemList = parseConfigMem(
+            configMemCsv, MaxFramesPerCol, FrameBitsPerRow, tile.globalConfigBits)
 
     else:
-        with open(f"{tile.name}_ConfigMem.init.csv") as f:
-            mappingFile = list(csv.DictReader(f))
-            csvFileName = f"{tile.name}_ConfigMem.init.csv"
+        generateConfigMemInit(
+            f"{tile.name}_ConfigMem.init.csv", tile.globalConfigBits)
+        configMemList = parseConfigMem(
+            f"{tile.name}_ConfigMem.init.csv", MaxFramesPerCol, FrameBitsPerRow, tile.globalConfigBits)
 
-    # remove the pretty print from used_bits_mask
-    for i, _ in enumerate(mappingFile):
-        mappingFile[i]["used_bits_mask"] = mappingFile[i]["used_bits_mask"].replace(
-            "_", "")
-
-    # potential refactoring the check to to utilities or parser
-    # we should have as many lines as we have frames (=MaxFramesPerCol)
-    if len(mappingFile) != MaxFramesPerCol:
-        raise ValueError(
-            f"WARNING: the bitstream mapping file has only {len(mappingFile)} entries but MaxFramesPerCol is {MaxFramesPerCol}")
-
-     # we should have as many lines as we have frames (=MaxFramesPerCol)
-    # we also check used_bits_mask (is a vector that is as long as a frame and contains a '1' for a bit used and a '0' if not used (padded)
-    usedBitsCounter = 0
-    for entry in mappingFile:
-        if entry["used_bits_mask"].count("1") > FrameBitsPerRow:
-            raise ValueError(
-                f"bitstream mapping file {csvFileName} has to many 1-elements in bitmask for frame : {entry['frame_name']}")
-        if len(entry["used_bits_mask"]) != FrameBitsPerRow:
-            raise ValueError(
-                f"bitstream mapping file {csvFileName} has has a too long or short bitmask for frame : {entry['frame_name']}")
-        usedBitsCounter += entry["used_bits_mask"].count("1")
-
-    if usedBitsCounter != tile.globalConfigBits:
-        raise ValueError(
-            f"bitstream mapping file {csvFileName} has a bitmask miss match; bitmask has in total {usedBitsCounter} 1-values for {tile.globalConfigBits} bits")
-
-    # write entity
-    # write entity
     # write entity
     entity = f"{tile.name}_ConfigMem"
     writer.addHeader(f"{tile.name}_ConfigMem")
@@ -250,77 +221,35 @@ def generateConfigMem(tile: Tile, configMemCsv, writer: codeGenerator):
     writer.addPortVector("ConfigBits", "out",
                          "NoConfigBits - 1", indentLevel=2)
     writer.addPortVector("ConfigBits_N", "out",
-                         "NoConfigBits - 1", indentLevel=2)
+                         "NoConfigBits - 1", end=True, indentLevel=2)
     writer.addPortEnd(indentLevel=1)
     writer.addHeaderEnd(f"{tile.name}_ConfigMem")
     writer.addNewLine()
     # declare architecture
     writer.addDesignDescriptionStart(f"{tile.name}_ConfigMem")
 
-    # one_line('frame_name')('frame_index')('bits_used_in_frame')('used_bits_mask')('ConfigBits_ranges')
-
-    # frame signal declaration ONLY for the bits actually used
-    usedFrame = []
-    # stores a list of ConfigBits indices in exactly the order defined in the rage statements in the frames
-    allConfigBitsOrder = []
-    for entry in mappingFile:
-        bitsUsedInFrame = entry["used_bits_mask"].count("1")
-        if bitsUsedInFrame > 0:
-            writer.addConnectionVector(
-                entry['frame_name'], f"{bitsUsedInFrame}-1")
-            usedFrame.append(int(entry["frame_index"]))
-
-        # The actual ConfigBits are given as address ranges starting at position ConfigBits_ranges
-        configBitsOrder = []
-        for item in entry["ConfigBits_ranges"].split(";"):
-            item = item.replace(" ", "").replace("\t", "")
-            if ":" in item:
-                left, right = re.split(':', entry["ConfigBits_ranges"])
-                # check the order of the number, if right is smaller than left, then we swap them
-                left, right = int(left), int(right)
-                if right < left:
-                    left, right = right, left
-                    numList = list(reversed(range(left, right + 1)))
-                else:
-                    numList = list(range(left, right + 1))
-                for i in numList:
-                    if i in configBitsOrder:
-                        raise ValueError(
-                            f"Configuration bit index {i} already allocated in {entity}, {entry['frame_name']}")
-                    configBitsOrder.append(i)
-            elif item.isdigit():
-                if int(item) in configBitsOrder:
-                    raise ValueError(
-                        f"Configuration bit index {item} already allocated in {entity}, {entry['frame_name']}")
-                configBitsOrder.append(int(item))
-            elif "NULL" in item:
-                continue
-            else:
-                raise ValueError(
-                    f"Range {entry['ConfigBits_ranges']} is not a valid format. It should be in the form [int]:[int] or [int]. If there are multiple ranges it should be separated by ';'")
-        if len(configBitsOrder) != bitsUsedInFrame:
-            raise ValueError(
-                f"ConfigBitsOrder definition miss match: number of 1s in mask do not match ConfigBits_ranges for frame : {entry['frame_name']} in {csvFileName}")
-
-        allConfigBitsOrder += configBitsOrder
-
     writer.addLogicStart()
     # instantiate latches for only the used frame bits
-    allConfigBitsCounter = 0
+    for i in configMemList:
+        if i.usedBitMask.count("1") > 0:
+            writer.addConnectionVector(i.frameName, f"{i.bitsUsedInFrame}-1")
+
+    writer.addNewLine()
     writer.addNewLine()
     writer.addComment("instantiate frame latches", end="")
-    for frame in usedFrame:
-        usedBits = mappingFile[frame]["used_bits_mask"]
+    for i in configMemList:
+        counter = 0
         for k in range(FrameBitsPerRow):
-            if usedBits[k] == "1":
+            if i.usedBitMask[k] == "1":
                 writer.addInstantiation(compName="LHQD1",
-                                        compInsName=f"Inst_{mappingFile[frame]['frame_name']}_bit{FrameBitsPerRow-1-k}",
+                                        compInsName=f"Inst_{i.frameName}_bit{FrameBitsPerRow-1-k}",
                                         compPort=["D", "E", "Q", "QN"],
                                         signal=[f"FrameData[{FrameBitsPerRow-1-k}]",
-                                                f"FrameStrobe[{frame}]",
-                                                f"ConfigBits[{allConfigBitsOrder[allConfigBitsCounter]}]",
-                                                f"ConfigBits[{allConfigBitsOrder[allConfigBitsCounter]}]"])
-                allConfigBitsCounter += 1
+                                                f"FrameStrobe[{i.frameIndex}]",
+                                                f"ConfigBits[{i.configBitRanges[counter]}]",
+                                                f"ConfigBits[{i.configBitRanges[counter]}]"])
+                counter += 1
+
     writer.addLogicEnd()
     writer.addDesignDescriptionEnd()
     writer.writeToFile()
@@ -331,7 +260,6 @@ def genTileSwitchMatrix(tile: Tile, csvFile: str, writer: codeGenerator) -> None
 
     # convert the matrix to a dictionary map and performs entry check
     connections = parseMatrix(csvFile, tile.name)
-    entity = f"{tile.name}_switch_matrix"
     globalConfigBitsCounter = 0
     for portName in connections:
         muxSize = len(connections[portName])

@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Literal, List, Dict
+import math
 
 
 @dataclass(frozen=True, eq=True)
@@ -81,6 +82,15 @@ class Port():
         return inputs, outputs
 
 
+@dataclass(frozen=True, eq=True)
+class ConfigMem():
+    frameName: str
+    frameIndex: int
+    bitsUsedInFrame: int
+    usedBitMask: str
+    configBitRanges: List[int] = field(default_factory=list)
+
+
 @dataclass
 class Bel():
     src: str
@@ -125,6 +135,7 @@ class Tile():
         self.bels = bels
         self.matrixDir = matrixDir
         self.withUserCLK = userCLK
+
         for b in self.bels:
             self.globalConfigBits += b.configBit
 

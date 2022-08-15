@@ -137,7 +137,7 @@ class Bel():
     configPort: List[str]
     sharedPort: List[Tuple[str, IO]]
     configBit: int
-    belMap: Dict[str, int] = field(default_factory=dict)
+    belFeatureMap: Dict[str, int] = field(default_factory=dict)
 
     def __init__(self, src: str, prefix: str, internal, external, configPort, sharedPort, configBit: int, belMap: Dict[str, int]) -> None:
         self.src = src
@@ -150,7 +150,7 @@ class Bel():
         self.configPort = configPort
         self.sharedPort = sharedPort
         self.configBit = configBit
-        self.belMap = belMap
+        self.belFeatureMap = belMap
 
 
 @dataclass
@@ -165,15 +165,18 @@ class Tile():
     # def __repr__(self):
     #     return f"\n{self.name}\n inputPorts:{self.inputs}\n outputPorts:{self.outputs}\n bels:{self.bels}\n Matrix_dir:{self.matrixDir}\n"
 
-    def __init__(self, name: str, ports: List[Port], bels: List[Bel], matrixDir: str, userCLK: bool) -> None:
+    def __init__(self, name: str, ports: List[Port], bels: List[Bel], matrixDir: str, userCLK: bool, configBit: int = 0) -> None:
         self.name = name
         self.portsInfo = ports
         self.bels = bels
         self.matrixDir = matrixDir
         self.withUserCLK = userCLK
+        self.globalConfigBits = configBit
 
         for b in self.bels:
             self.globalConfigBits += b.configBit
+
+        print(self.name, self.globalConfigBits)
 
     def __eq__(self, __o: Any) -> bool:
         if __o is None or not isinstance(__o, Tile):

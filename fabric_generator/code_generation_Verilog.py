@@ -1,4 +1,3 @@
-from re import S
 from typing import Literal
 from fabric import Tile, Bel, ConfigBitMode, IO
 import math

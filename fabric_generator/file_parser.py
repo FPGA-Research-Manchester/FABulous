@@ -2,7 +2,7 @@ from unittest import result
 from fabric import Fabric, Port, Bel, Tile, SuperTile, ConfigMem
 import re
 from copy import deepcopy
-from typing import Dict, List, Literal, Tuple
+from typing import Dict, List, Literal, Tuple, Union
 import csv
 
 from fabric import IO, Direction, Side, MultiplexerStyle, ConfigBitMode
@@ -55,7 +55,7 @@ def parseFabricCSV(fileName: str) -> Fabric:
         matrixDir = ""
         withUserCLK = False
         for item in t:
-            temp = item.split(",")
+            temp: List[str] = item.split(",")
             if not temp or temp[0] == "":
                 continue
             if temp[0] in ["NORTH", "SOUTH", "EAST", "WEST"]:
@@ -70,21 +70,44 @@ def parseFabricCSV(fileName: str) -> Fabric:
                 ports.append(Port(Direction.JUMP, temp[1], int(
                     temp[2]), int(temp[3]), temp[4], int(temp[5]), temp[1], IO.INOUT, Side.ANY))
             elif temp[0] == "BEL":
-                if temp[0].endswith(".vhdl"):
+                if temp[1].endswith(".vhdl"):
                     result = parseFileVHDL(temp[1], temp[2])
                 else:
                     result = parseFileVerilog(temp[1], temp[2])
-                internal, external, config, shared, configBit, userClk = result
+                internal, external, config, shared, configBit, userClk, belMap = result
                 bels.append(Bel(temp[1], temp[2], internal,
-                            external, config, shared, configBit))
+                            external, config, shared, configBit, belMap))
                 withUserCLK |= userClk
             elif temp[0] == "MATRIX":
                 matrixDir = temp[1]
+                configBit = 0
+                if temp[1].endswith(".list"):
+                    for _, v in parseList(temp[1], "source").items():
+                        muxSize = len(v)
+                        if muxSize >= 2:
+                            configBit += muxSize.bit_length()-1
+                elif temp[1].endswith("_matrix.csv"):
+                    for _, v in parseMatrix(temp[1], tileName).items():
+                        muxSize = len(v)
+                        if muxSize >= 2:
+                            configBit += muxSize.bit_length()-1
+                elif temp[1].endswith(".vhdl") or temp[1].endswith(".v"):
+                    with open(matrixDir, "r") as f:
+                        f = f.read()
+                        if configBit := re.search(r"NumberOfConfigBits: (\d+)", f):
+                            configBit = int(configBit.group(1))
+                        else:
+                            print(
+                                f"Cannot find NumberOfConfigBits in {matrixDir} assume 0 config bits")
+
+                else:
+                    raise ValueError(
+                        'ERROR: unknown file extension for matrix')
             else:
                 raise ValueError(
                     f"Error: unknown tile description {temp[0]} in tile {t}")
 
-        tileDefs.append(Tile(tileName, ports, bels, matrixDir, withUserCLK))
+        tileDefs.append(Tile(tileName, ports, bels, matrixDir, withUserCLK, configBit))
 
     fabricTiles = []
     tileDic = dict(zip(tileTypes, tileDefs))
@@ -222,7 +245,7 @@ def parseFabricCSV(fileName: str) -> Fabric:
                   superTileDic=superTileDic)
 
 
-def parseList(fileName: str) -> list:
+def parseList(fileName: str, collect: Literal["", "source", "sink"] = "") -> Union[List[Tuple[str, str]], Dict[str, List[str]]]:
     """
     Parses a list file and returns a list of tuples.
     """
@@ -238,36 +261,53 @@ def parseList(fileName: str) -> list:
             continue
         if len(line) != 2:
             print(line)
-            print(
+            raise ValueError(
                 f"Invalid list formatting in file: {fileName} at line {i}")
-            exit(-1)
         left, right = line[0], line[1]
 
         leftList = []
         rightList = []
-        expandListPorts(left, leftList)
-        expandListPorts(right, rightList)
+        _expandListPorts(left, leftList)
+        _expandListPorts(right, rightList)
         resultList += list(zip(leftList, rightList))
-    return list(set(resultList))
+
+    result = list(dict.fromkeys(resultList))
+    resultDic = {}
+    if collect == "source":
+        for k, v in result:
+            if k not in resultDic:
+                resultDic[k] = []
+            resultDic[k].append(v)
+        return resultDic
+
+    if collect == "sink":
+        for k, v in result:
+            for i in v:
+                if v not in resultDic:
+                    resultDic[v] = []
+                resultDic[i].append(k)
+        return resultDic
+
+    return result
 
 
-def expandListPorts(port, PortList):
+def _expandListPorts(port, PortList):
     # a leading '[' tells us that we have to expand the list
     if "[" in port:
         if "]" not in port:
             raise ValueError(
                 '\nError in function ExpandListPorts: cannot find closing ]\n')
         # port.find gives us the first occurrence index in a string
-        left_index = port.find('[')
-        right_index = port.find(']')
+        left_index = port.find("[")
+        right_index = port.find("]")
         before_left_index = port[0:left_index]
         # right_index is the position of the ']' so we need everything after that
         after_right_index = port[(right_index+1):]
         ExpandList = []
-        ExpandList = re.split('\|', port[left_index+1:right_index])
+        ExpandList = re.split(r"\|", port[left_index+1:right_index])
         for entry in ExpandList:
             ExpandListItem = (before_left_index+entry+after_right_index)
-            expandListPorts(ExpandListItem, PortList)
+            _expandListPorts(ExpandListItem, PortList)
 
     else:
         # print('DEBUG: else, just:',port)
@@ -275,7 +315,7 @@ def expandListPorts(port, PortList):
     return
 
 
-def parseFileVHDL(filename, belPrefix="", filter="ALL") -> Tuple[List[Tuple[str, IO]], List[Tuple[str, IO]], List[Tuple[str, IO]], List[Tuple[str, IO]], int, bool, Dict[str, int]]:
+def parseFileVHDL(filename: str, belPrefix: str = "") -> Tuple[List[Tuple[str, IO]], List[Tuple[str, IO]], List[Tuple[str, IO]], List[Tuple[str, IO]], int, bool, Dict[str, int]]:
     internal: List[Tuple[str, IO]] = []
     external: List[Tuple[str, IO]] = []
     config: List[Tuple[str, IO]] = []
@@ -382,7 +422,7 @@ def parseFileVHDL(filename, belPrefix="", filter="ALL") -> Tuple[List[Tuple[str,
     return internal, external, config, shared, noConfigBits, userClk, belMapDic
 
 
-def parseFileVerilog(filename, belPrefix="", filter="ALL") -> Tuple[List[Tuple[str, IO]], List[Tuple[str, IO]], List[Tuple[str, IO]], List[Tuple[str, IO]], int, bool, Dict[str, int]]:
+def parseFileVerilog(filename: str, belPrefix: str = "") -> Tuple[List[Tuple[str, IO]], List[Tuple[str, IO]], List[Tuple[str, IO]], List[Tuple[str, IO]], int, bool, Dict[str, int]]:
     internal: List[Tuple[str, IO]] = []
     external: List[Tuple[str, IO]] = []
     config: List[Tuple[str, IO]] = []
@@ -467,7 +507,7 @@ def parseFileVerilog(filename, belPrefix="", filter="ALL") -> Tuple[List[Tuple[s
 
 
 # convert the matrix csv into a dictionary from destination to source
-def parseMatrix(fileName, tileName):
+def parseMatrix(fileName: str, tileName: str) -> Dict[str, List[str]]:
     connectionsDic = {}
     with open(fileName, 'r') as f:
         file = f.read()
@@ -490,7 +530,7 @@ def parseMatrix(fileName, tileName):
     return connectionsDic
 
 
-def parseConfigMem(fileName, maxFramePerCol, frameBitPerRow, globalConfigBits):
+def parseConfigMem(fileName: str, maxFramePerCol: int, frameBitPerRow: int, globalConfigBits: int) -> List[ConfigMem]:
     with open(fileName) as f:
         mappingFile = list(csv.DictReader(f))
 
@@ -572,11 +612,12 @@ def parseConfigMem(fileName, maxFramePerCol, frameBitPerRow, globalConfigBits):
 
 if __name__ == '__main__':
     # result = parseFabricCSV('fabric.csv')
-    # result = parseList('RegFile_switch_matrix.list')
-    result = parseFileVerilog('./LUT4c_frame_config_dffesr.v')
-    print(result[0])
-    print(result[1])
-    print(result[2])
-    print(result[3])
+    result = parseList('RegFile_switch_matrix.list')
+    # result = parseFileVerilog('./LUT4c_frame_config_dffesr.v')
+    print(result)
+    # print(result[0])
+    # print(result[1])
+    # print(result[2])
+    # print(result[3])
 
     # print(result.tileDic["W_IO"].portsInfo)

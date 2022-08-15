@@ -12,6 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
+(* FABulous, BelMap,
+AD_reg=0,
+BD_reg=1
+*)
 module RegFile_32x4 (D0, D1, D2, D3, W_ADR0, W_ADR1, W_ADR2, W_ADR3, W_ADR4, W_en, AD0, AD1, AD2, AD3, A_ADR0, A_ADR1, A_ADR2, A_ADR3, A_ADR4, BD0, BD1, BD2, BD3, B_ADR0, B_ADR1, B_ADR2, B_ADR3, B_ADR4, UserCLK, ConfigBits);
 	parameter NoConfigBits = 2;// has to be adjusted manually (we don't use an arithmetic parser for the value)
 	// IMPORTANT: this has to be in a dedicated line
@@ -46,9 +51,9 @@ module RegFile_32x4 (D0, D1, D2, D3, W_ADR0, W_ADR1, W_ADR2, W_ADR3, W_ADR4, W_e
 	input B_ADR3;
 	input B_ADR4;
 
-	input UserCLK;// EXTERNAL // SHARED_PORT // ## the EXTERNAL keyword will send this sisgnal all the way to top and the //SHARED Allows multiple BELs using the same port (e.g. for exporting a clock to the top)
+	(* FABulous, EXTERNAL, SHARED_PORT *) input UserCLK;// EXTERNAL // SHARED_PORT // ## the EXTERNAL keyword will send this sisgnal all the way to top and the //SHARED Allows multiple BELs using the same port (e.g. for exporting a clock to the top)
 	// GLOBAL all primitive pins that are connected to the switch matrix have to go before the GLOBAL label
-	input [NoConfigBits-1:0] ConfigBits;
+	(* FABulous, GLOBAL *) input [NoConfigBits-1:0] ConfigBits;
 
 	//type memtype is array (31 downto 0) of std_logic_vector(3 downto 0); // 32 entries of 4 bit
 	//signal mem : memtype := (others => (others => '0'));

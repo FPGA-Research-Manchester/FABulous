@@ -656,9 +656,8 @@ class FabricModelGen:
                             return (tile, wire, i)
         return None
 
+
 # Method to add square brackets for wire pair generation (to account for different reference styles)
-
-
 def addBrackets(portIn: str, tile: TileModelGen):
     BracketMatch = BracketAddingRE.match(portIn)
     if BracketMatch and portIn not in tile.belPorts:
@@ -702,19 +701,17 @@ def findPipList(csvFile: list, returnDict: bool = False, mapSourceToSinks: bool 
         return pipsdict
     return pips
 
+
 # Method to remove a known prefix from a string if it is present at the start - this is provided as str.removeprefix in Python 3.9 but has been implemented for compatibility
-
-
 def removeStringPrefix(mainStr: str, prefix: str):
     if mainStr[0:len(prefix)] == prefix:
         return mainStr[len(prefix):]
     else:
         return mainStr
 
+
 # Method to find all 'hanging' sources and sinks in a fabric (i.e. ports with connections to pips in only one direction e.g. VCC, GND)
 # Returns dict mapping tileLoc to hanging pins
-
-
 def getFabricSourcesAndSinks(archObject: FabricModelGen, assumeSourceSinkNames=True):
     # First, build a list of all fabric inputs/outputs (bel ports and wires) with the tile address
     allFabricInputs = []
@@ -753,7 +750,6 @@ def getFabricSourcesAndSinks(archObject: FabricModelGen, assumeSourceSinkNames=T
                         wire["destTile"] + "." + wire["destination"])
 
     # Now we go through all the pips, and if a source/sink doesn't appear in the list we keep it
-
     for row in archObject.tiles:
         for tile in row:
             tileLoc = tile.genTileLoc()
@@ -899,78 +895,122 @@ def genFabricObject(fabric: list, FabricFile):
             tempAtomicWires = []
             # Wires from tile
             for wire in wireTextList:
+                xOffset = int(wire["xOffset"])
+                yOffset = int(wire["yOffset"])
                 destinationTile = archFabric.getTileByCoords(
-                    tile.x + int(wire["xoffset"]), tile.y + int(wire["yoffset"]))
-                if abs(int(wire["xoffset"])) <= 1 and abs(int(wire["yoffset"])) <= 1 and not ("NULL" in wire.values()):
+                    tile.x + xOffset, tile.y + yOffset)
+                if abs(xOffset) <= 1 and abs(yOffset) <= 1 and not ("NULL" in wire.values()):
                     wires.append(wire)
                     portMap[destinationTile].remove(wire["destination"])
                     portMap[tile].remove(wire["source"])
                 # If the wire goes off the fabric then we account for cascading by finding the last tile the wire goes through
                 elif not ("NULL" in wire.values()):
-                    if int(wire["xoffset"]) != 0:  # If we're moving in the x axis
-                        if int(wire["xoffset"]) > 1:
+                    if xOffset != 0:  # If we're moving in the x axis
+                        if xOffset > 1:
                             cTile = archFabric.getTileByCoords(
-                                tile.x + 1, tile.y + int(wire["yoffset"]))  # destination tile
-                            for i in range(int(wire["wire-count"])*abs(int(wire["xoffset"]))):
+                                tile.x + 1, tile.y + yOffset)  # destination tile
+                            for i in range(int(wire["wire-count"])*abs(xOffset)):
                                 if i < int(wire["wire-count"]):
                                     cascaded_i = i + \
                                         int(wire["wire-count"]) * \
-                                        (abs(int(wire["xoffset"]))-1)
+                                        (abs(xOffset)-1)
                                 else:
                                     cascaded_i = i - int(wire["wire-count"])
-                                    tempAtomicWires.append({"direction": "JUMP", "source": wire["destination"] + str(
-                                        i), "xoffset": '0', "yoffset": '0', "destination": wire["source"] + str(i), "sourceTile": tile.genTileLoc(), "destTile": tile.genTileLoc()})
-                                tempAtomicWires.append({"direction": wire["direction"], "source": wire["source"] + str(i), "xoffset": '1', "yoffset": wire["yoffset"], "destination": wire["destination"] + str(
-                                    cascaded_i), "sourceTile": tile.genTileLoc(), "destTile": cTile.genTileLoc()})  # Add atomic wire names
+                                    tempAtomicWires.append({"direction": "JUMP",
+                                                            "source": wire["destination"] + str(i),
+                                                            "xoffset": '0',
+                                                            "yoffset": '0',
+                                                            "destination": wire["source"] + str(i),
+                                                            "sourceTile": tile.genTileLoc(),
+                                                            "destTile": tile.genTileLoc()})
+                                tempAtomicWires.append({"direction": wire["direction"],
+                                                        "source": wire["source"] + str(i),
+                                                        "xoffset": '1',
+                                                        "yoffset": wire["yoffset"],
+                                                        "destination": wire["destination"] + str(cascaded_i),
+                                                        "sourceTile": tile.genTileLoc(),
+                                                        "destTile": cTile.genTileLoc()})  # Add atomic wire names
                             portMap[cTile].remove(wire["destination"])
                             portMap[tile].remove(wire["source"])
-                        elif int(wire["xoffset"]) < -1:
+                        elif xOffset < -1:
                             cTile = archFabric.getTileByCoords(
-                                tile.x - 1, tile.y + int(wire["yoffset"]))  # destination tile
-                            for i in range(int(wire["wire-count"])*abs(int(wire["xoffset"]))):
+                                tile.x - 1, tile.y + yOffset)  # destination tile
+                            for i in range(int(wire["wire-count"])*abs(xOffset)):
                                 if i < int(wire["wire-count"]):
                                     cascaded_i = i + \
                                         int(wire["wire-count"]) * \
-                                        (abs(int(wire["xoffset"]))-1)
+                                        (abs(xOffset)-1)
                                 else:
                                     cascaded_i = i - int(wire["wire-count"])
-                                    tempAtomicWires.append({"direction": "JUMP", "source": wire["destination"] + str(
-                                        i), "xoffset": '0', "yoffset": '0', "destination": wire["source"] + str(i), "sourceTile": tile.genTileLoc(), "destTile": tile.genTileLoc()})
-                                tempAtomicWires.append({"direction": wire["direction"], "source": wire["source"] + str(i), "xoffset": '-1', "yoffset": wire["yoffset"], "destination": wire["destination"] + str(
-                                    cascaded_i), "sourceTile": tile.genTileLoc(), "destTile": cTile.genTileLoc()})  # Add atomic wire names
+                                    tempAtomicWires.append({"direction": "JUMP",
+                                                            "source": wire["destination"] + str(i),
+                                                            "xoffset": '0',
+                                                            "yoffset": '0',
+                                                            "destination": wire["source"] + str(i),
+                                                            "sourceTile": tile.genTileLoc(),
+                                                            "destTile": tile.genTileLoc()})
+                                tempAtomicWires.append({"direction": wire["direction"],
+                                                        "source": wire["source"] + str(i),
+                                                        "xoffset": '-1',
+                                                        "yoffset": wire["yoffset"],
+                                                        "destination": wire["destination"] + str(cascaded_i),
+                                                        "sourceTile": tile.genTileLoc(),
+                                                        "destTile": cTile.genTileLoc()})  # Add atomic wire names
                             portMap[cTile].remove(wire["destination"])
                             portMap[tile].remove(wire["source"])
-                    elif int(wire["yoffset"]) != 0:  # If we're moving in the y axis
-                        if int(wire["yoffset"]) > 1:
+                    elif yOffset != 0:  # If we're moving in the y axis
+                        if yOffset > 1:
                             cTile = archFabric.getTileByCoords(
-                                tile.x + int(wire["xoffset"]), tile.y + 1)  # destination tile
-                            for i in range(int(wire["wire-count"])*abs(int(wire["yoffset"]))):
+                                tile.x + xOffset, tile.y + 1)  # destination tile
+                            for i in range(int(wire["wire-count"])*abs(yOffset)):
                                 if i < int(wire["wire-count"]):
                                     cascaded_i = i + \
                                         int(wire["wire-count"]) * \
-                                        (abs(int(wire["yoffset"]))-1)
+                                        (abs(yOffset)-1)
                                 else:
                                     cascaded_i = i - int(wire["wire-count"])
-                                    tempAtomicWires.append({"direction": "JUMP", "source": wire["destination"] + str(
-                                        i), "xoffset": '0', "yoffset": '0', "destination": wire["source"] + str(i), "sourceTile": tile.genTileLoc(), "destTile": tile.genTileLoc()})
-                                tempAtomicWires.append({"direction": wire["direction"], "source": wire["source"] + str(i), "xoffset": wire["xoffset"], "yoffset": '1', "destination": wire["destination"] + str(
-                                    cascaded_i), "sourceTile": tile.genTileLoc(), "destTile": cTile.genTileLoc()})  # Add atomic wire names
+                                    tempAtomicWires.append({"direction": "JUMP",
+                                                            "source": wire["destination"] + str(i),
+                                                            "xoffset": '0',
+                                                            "yoffset": '0',
+                                                            "destination": wire["source"] + str(i),
+                                                            "sourceTile": tile.genTileLoc(),
+                                                            "destTile": tile.genTileLoc()})
+                                tempAtomicWires.append({"direction": wire["direction"],
+                                                        "source": wire["source"] + str(i),
+                                                        "xoffset": wire["xoffset"],
+                                                        "yoffset": '1',
+                                                        "destination": wire["destination"] + str(ascaded_i),
+                                                        "sourceTile": tile.genTileLoc(),
+                                                        "destTile": cTile.genTileLoc()})  # Add atomic wire names
+
                             portMap[cTile].remove(wire["destination"])
                             portMap[tile].remove(wire["source"])
-                        elif int(wire["yoffset"]) < -1:
+                        elif yOffset < -1:
                             cTile = archFabric.getTileByCoords(
-                                tile.x + int(wire["xoffset"]), tile.y - 1)  # destination tile
-                            for i in range(int(wire["wire-count"])*abs(int(wire["yoffset"]))):
+                                tile.x + xOffset, tile.y - 1)  # destination tile
+                            for i in range(int(wire["wire-count"])*abs(yOffset)):
                                 if i < int(wire["wire-count"]):
                                     cascaded_i = i + \
                                         int(wire["wire-count"]) * \
-                                        (abs(int(wire["yoffset"]))-1)
+                                        (abs(yOffset)-1)
                                 else:
                                     cascaded_i = i - int(wire["wire-count"])
-                                    tempAtomicWires.append({"direction": "JUMP", "source": wire["destination"] + str(
-                                        i), "xoffset": '0', "yoffset": '0', "destination": wire["source"] + str(i), "sourceTile": tile.genTileLoc(), "destTile": tile.genTileLoc()})
-                                tempAtomicWires.append({"direction": wire["direction"], "source": wire["source"] + str(i), "xoffset": wire["xoffset"], "yoffset": '-1', "destination": wire["destination"] + str(
-                                    cascaded_i), "sourceTile": tile.genTileLoc(), "destTile": cTile.genTileLoc()})  # Add atomic wire names
+                                    tempAtomicWires.append({"direction": "JUMP",
+                                                            "source": wire["destination"] + str(i),
+                                                            "xoffset": '0',
+                                                            "yoffset": '0',
+                                                            "destination": wire["source"] + str(i),
+                                                            "sourceTile": tile.genTileLoc(),
+                                                            "destTile": tile.genTileLoc()})
+                                tempAtomicWires.append({"direction": wire["direction"],
+                                                        "source": wire["source"] + str(i),
+                                                        "xoffset": wire["xoffset"],
+                                                        "yoffset": '-1',
+                                                        "destination": wire["destination"] + str(cascaded_i),
+                                                        "sourceTile": tile.genTileLoc(),
+                                                        "destTile": cTile.genTileLoc()})  # Add atomic wire names
+
                             portMap[cTile].remove(wire["destination"])
                             portMap[tile].remove(wire["source"])
                 elif wire["source"] != "NULL" and wire["destination"] == "NULL":
@@ -983,38 +1023,57 @@ def genFabricObject(fabric: list, FabricFile):
                         dest_wire_name = wire["source"].replace("BEG", "MID")
                     else:
                         dest_wire_name = wire["source"].replace("BEG", "END")
-                    if int(wire["xoffset"]) != 0:  # If we're moving in the x axis
-                        if int(wire["xoffset"]) > 0:
+                    if xOffset != 0:  # If we're moving in the x axis
+                        if xOffset > 0:
                             cTile = archFabric.getTileByCoords(
-                                tile.x + 1, tile.y + int(wire["yoffset"]))  # destination tile
-                            for i in range(int(wire["wire-count"])*abs(int(wire["xoffset"]))):
-                                tempAtomicWires.append({"direction": wire["direction"], "source": wire["source"] + str(i), "xoffset": '1', "yoffset": wire["yoffset"],
-                                                       "destination": dest_wire_name + str(i), "sourceTile": tile.genTileLoc(), "destTile": cTile.genTileLoc()})  # Add atomic wire names
+                                tile.x + 1, tile.y + yOffset)  # destination tile
+                            for i in range(int(wire["wire-count"])*abs(xOffset)):
+                                tempAtomicWires.append({"direction": wire["direction"],
+                                                        "source": wire["source"] + str(i),
+                                                        "xoffset": '1', "yoffset": wire["yoffset"],
+                                                       "destination": dest_wire_name + str(i),
+                                                        "sourceTile": tile.genTileLoc(),
+                                                        "destTile": cTile.genTileLoc()})  # Add atomic wire names
                             portMap[cTile].remove(dest_wire_name)
                             portMap[tile].remove(wire["source"])
-                        elif int(wire["xoffset"]) < 0:
+                        elif xOffset < 0:
                             cTile = archFabric.getTileByCoords(
-                                tile.x - 1, tile.y + int(wire["yoffset"]))  # destination tile
-                            for i in range(int(wire["wire-count"])*abs(int(wire["xoffset"]))):
-                                tempAtomicWires.append({"direction": wire["direction"], "source": wire["source"] + str(i), "xoffset": '-1', "yoffset": wire["yoffset"],
-                                                       "destination": dest_wire_name + str(i), "sourceTile": tile.genTileLoc(), "destTile": cTile.genTileLoc()})  # Add atomic wire names
+                                tile.x - 1, tile.y + yOffset)  # destination tile
+                            for i in range(int(wire["wire-count"])*abs(xOffset)):
+                                tempAtomicWires.append({"direction": wire["direction"],
+                                                        "source": wire["source"] + str(i),
+                                                        "xoffset": '-1',
+                                                        "yoffset": wire["yoffset"],
+                                                        "destination": dest_wire_name + str(i),
+                                                        "sourceTile": tile.genTileLoc(),
+                                                        "destTile": cTile.genTileLoc()})  # Add atomic wire names
                             portMap[cTile].remove(dest_wire_name)
                             portMap[tile].remove(wire["source"])
-                    elif int(wire["yoffset"]) != 0:  # If we're moving in the y axis
-                        if int(wire["yoffset"]) > 0:
+                    elif yOffset != 0:  # If we're moving in the y axis
+                        if yOffset > 0:
                             cTile = archFabric.getTileByCoords(
-                                tile.x + int(wire["xoffset"]), tile.y + 1)  # destination tile
-                            for i in range(int(wire["wire-count"])*abs(int(wire["yoffset"]))):
-                                tempAtomicWires.append({"direction": wire["direction"], "source": wire["source"] + str(i), "xoffset": wire["xoffset"], "yoffset": '1',
-                                                       "destination": dest_wire_name + str(i), "sourceTile": tile.genTileLoc(), "destTile": cTile.genTileLoc()})  # Add atomic wire names
+                                tile.x + xOffset, tile.y + 1)  # destination tile
+                            for i in range(int(wire["wire-count"])*abs(yOffset)):
+                                tempAtomicWires.append({"direction": wire["direction"],
+                                                        "source": wire["source"] + str(i),
+                                                        "xoffset": wire["xoffset"],
+                                                        "yoffset": '1',
+                                                        "destination": dest_wire_name + str(i),
+                                                        "sourceTile": tile.genTileLoc(),
+                                                        "destTile": cTile.genTileLoc()})  # Add atomic wire names
                             portMap[cTile].remove(dest_wire_name)
                             portMap[tile].remove(wire["source"])
-                        elif int(wire["yoffset"]) < 0:
+                        elif yOffset < 0:
                             cTile = archFabric.getTileByCoords(
-                                tile.x + int(wire["xoffset"]), tile.y - 1)  # destination tile
-                            for i in range(int(wire["wire-count"])*abs(int(wire["yoffset"]))):
-                                tempAtomicWires.append({"direction": wire["direction"], "source": wire["source"] + str(i), "xoffset": wire["xoffset"], "yoffset": '-1',
-                                                       "destination": dest_wire_name + str(i), "sourceTile": tile.genTileLoc(), "destTile": cTile.genTileLoc()})  # Add atomic wire names
+                                tile.x + xOffset, tile.y - 1)  # destination tile
+                            for i in range(int(wire["wire-count"])*abs(yOffset)):
+                                tempAtomicWires.append({"direction": wire["direction"],
+                                                        "source": wire["source"] + str(i),
+                                                        "xoffset": wire["xoffset"],
+                                                        "yoffset": '-1',
+                                                        "destination": dest_wire_name + str(i),
+                                                        "sourceTile": tile.genTileLoc(),
+                                                        "destTile": cTile.genTileLoc()})  # Add atomic wire names
                             portMap[cTile].remove(dest_wire_name)
                             portMap[tile].remove(wire["source"])
 

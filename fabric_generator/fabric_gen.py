@@ -623,9 +623,9 @@ def generateTile(tile: Tile, writer: codeGenerator):
     for p in tile.portsInfo:
         if p.wireDirection == Direction.JUMP:
             if p.sourceName != "NULL" and p.destinationName != "NULL" and p.inOut == IO.OUTPUT:
-                writer.addConnectionVector(p.name, f"{p.wires}-1")
+                writer.addConnectionVector(p.name, f"{p.wireCount}-1")
 
-            for k in range(p.wires):
+            for k in range(p.wireCount):
                 allJumpWireList.append(f"{p.name}( {k} )")
 
     # internal configuration data signal to daisy-chain all BELs (if any and in the order they are listed in the fabric.csv)

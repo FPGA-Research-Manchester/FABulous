@@ -55,6 +55,7 @@ def parseFabricCSV(fileName: str) -> Fabric:
         bels: List[Bel] = []
         matrixDir = ""
         withUserCLK = False
+        configBit = 0
         for item in t:
             temp: List[str] = item.split(",")
             if not temp or temp[0] == "":
@@ -69,7 +70,7 @@ def parseFabricCSV(fileName: str) -> Fabric:
                 #              abs(int(temp[3])))*int(temp[5])
                 # for i in range(wireCount):
                 commonWirePair.append(
-                        (f"{temp[1]}", f"{temp[4]}"))
+                    (f"{temp[1]}", f"{temp[4]}"))
 
             elif temp[0] == "JUMP":
                 ports.append(Port(Direction.JUMP, temp[1], int(
@@ -104,6 +105,7 @@ def parseFabricCSV(fileName: str) -> Fabric:
                         if configBit := re.search(r"NumberOfConfigBits: (\d+)", f):
                             configBit = int(configBit.group(1))
                         else:
+                            configBit = 0
                             print(
                                 f"Cannot find NumberOfConfigBits in {matrixDir} assume 0 config bits")
 

@@ -1,5 +1,6 @@
 import csv
 import re
+from signal import raise_signal
 from file_parser import parseList
 import collections
 
@@ -632,7 +633,7 @@ class FabricModelGen:
             for tile in row:
                 if tile.x == x and tile.y == y:
                     return tile
-        return None
+        raise ValueError(f"{x}, {y} is not a valid tile coordinate")
 
     def getTileByLoc(self, loc: str):
         for row in self.tiles:
@@ -897,6 +898,7 @@ def genFabricObject(fabric: list, FabricFile):
             for wire in wireTextList:
                 xOffset = int(wire["xOffset"])
                 yOffset = int(wire["yOffset"])
+                wireCount = int(wire["wire-count"])
                 destinationTile = archFabric.getTileByCoords(
                     tile.x + xOffset, tile.y + yOffset)
                 if abs(xOffset) <= 1 and abs(yOffset) <= 1 and not ("NULL" in wire.values()):
@@ -909,13 +911,13 @@ def genFabricObject(fabric: list, FabricFile):
                         if xOffset > 1:
                             cTile = archFabric.getTileByCoords(
                                 tile.x + 1, tile.y + yOffset)  # destination tile
-                            for i in range(int(wire["wire-count"])*abs(xOffset)):
-                                if i < int(wire["wire-count"]):
+                            for i in range(wireCount*abs(xOffset)):
+                                if i < wireCount:
                                     cascaded_i = i + \
-                                        int(wire["wire-count"]) * \
+                                        wireCount * \
                                         (abs(xOffset)-1)
                                 else:
-                                    cascaded_i = i - int(wire["wire-count"])
+                                    cascaded_i = i - wireCount
                                     tempAtomicWires.append({"direction": "JUMP",
                                                             "source": wire["destination"] + str(i),
                                                             "xoffset": '0',
@@ -935,13 +937,13 @@ def genFabricObject(fabric: list, FabricFile):
                         elif xOffset < -1:
                             cTile = archFabric.getTileByCoords(
                                 tile.x - 1, tile.y + yOffset)  # destination tile
-                            for i in range(int(wire["wire-count"])*abs(xOffset)):
-                                if i < int(wire["wire-count"]):
+                            for i in range(wireCount*abs(xOffset)):
+                                if i < wireCount:
                                     cascaded_i = i + \
-                                        int(wire["wire-count"]) * \
+                                        wireCount * \
                                         (abs(xOffset)-1)
                                 else:
-                                    cascaded_i = i - int(wire["wire-count"])
+                                    cascaded_i = i - wireCount
                                     tempAtomicWires.append({"direction": "JUMP",
                                                             "source": wire["destination"] + str(i),
                                                             "xoffset": '0',
@@ -962,13 +964,13 @@ def genFabricObject(fabric: list, FabricFile):
                         if yOffset > 1:
                             cTile = archFabric.getTileByCoords(
                                 tile.x + xOffset, tile.y + 1)  # destination tile
-                            for i in range(int(wire["wire-count"])*abs(yOffset)):
-                                if i < int(wire["wire-count"]):
+                            for i in range(wireCount*abs(yOffset)):
+                                if i < wireCount:
                                     cascaded_i = i + \
-                                        int(wire["wire-count"]) * \
+                                        wireCount * \
                                         (abs(yOffset)-1)
                                 else:
-                                    cascaded_i = i - int(wire["wire-count"])
+                                    cascaded_i = i - wireCount
                                     tempAtomicWires.append({"direction": "JUMP",
                                                             "source": wire["destination"] + str(i),
                                                             "xoffset": '0',
@@ -989,13 +991,13 @@ def genFabricObject(fabric: list, FabricFile):
                         elif yOffset < -1:
                             cTile = archFabric.getTileByCoords(
                                 tile.x + xOffset, tile.y - 1)  # destination tile
-                            for i in range(int(wire["wire-count"])*abs(yOffset)):
-                                if i < int(wire["wire-count"]):
+                            for i in range(wireCount*abs(yOffset)):
+                                if i < wireCount:
                                     cascaded_i = i + \
-                                        int(wire["wire-count"]) * \
+                                        wireCount * \
                                         (abs(yOffset)-1)
                                 else:
-                                    cascaded_i = i - int(wire["wire-count"])
+                                    cascaded_i = i - wireCount
                                     tempAtomicWires.append({"direction": "JUMP",
                                                             "source": wire["destination"] + str(i),
                                                             "xoffset": '0',
@@ -1027,7 +1029,7 @@ def genFabricObject(fabric: list, FabricFile):
                         if xOffset > 0:
                             cTile = archFabric.getTileByCoords(
                                 tile.x + 1, tile.y + yOffset)  # destination tile
-                            for i in range(int(wire["wire-count"])*abs(xOffset)):
+                            for i in range(wireCount*abs(xOffset)):
                                 tempAtomicWires.append({"direction": wire["direction"],
                                                         "source": wire["source"] + str(i),
                                                         "xoffset": '1', "yoffset": wire["yoffset"],
@@ -1039,7 +1041,7 @@ def genFabricObject(fabric: list, FabricFile):
                         elif xOffset < 0:
                             cTile = archFabric.getTileByCoords(
                                 tile.x - 1, tile.y + yOffset)  # destination tile
-                            for i in range(int(wire["wire-count"])*abs(xOffset)):
+                            for i in range(wireCount*abs(xOffset)):
                                 tempAtomicWires.append({"direction": wire["direction"],
                                                         "source": wire["source"] + str(i),
                                                         "xoffset": '-1',
@@ -1053,7 +1055,7 @@ def genFabricObject(fabric: list, FabricFile):
                         if yOffset > 0:
                             cTile = archFabric.getTileByCoords(
                                 tile.x + xOffset, tile.y + 1)  # destination tile
-                            for i in range(int(wire["wire-count"])*abs(yOffset)):
+                            for i in range(wireCount*abs(yOffset)):
                                 tempAtomicWires.append({"direction": wire["direction"],
                                                         "source": wire["source"] + str(i),
                                                         "xoffset": wire["xoffset"],
@@ -1066,7 +1068,7 @@ def genFabricObject(fabric: list, FabricFile):
                         elif yOffset < 0:
                             cTile = archFabric.getTileByCoords(
                                 tile.x + xOffset, tile.y - 1)  # destination tile
-                            for i in range(int(wire["wire-count"])*abs(yOffset)):
+                            for i in range(wireCount*abs(yOffset)):
                                 tempAtomicWires.append({"direction": wire["direction"],
                                                         "source": wire["source"] + str(i),
                                                         "xoffset": wire["xoffset"],

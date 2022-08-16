@@ -30,7 +30,7 @@ import argparse
 from code_generator import codeGenerator
 from typing import List, Tuple
 
-from fabric import Fabric, Tile, Port, SuperTile, ConfigMem
+from fabric import Fabric, Tile, Port, SuperTile, ConfigMem, Wire
 from fabric import IO, Direction, Side, MultiplexerStyle, ConfigBitMode
 from file_parser import parseFabricCSV, parseMatrix, parseConfigMem
 from model_generation_npnr import *
@@ -528,7 +528,7 @@ def generateTile(tile: Tile, writer: codeGenerator):
         # source port are output of the tile
         for p in l:
             if p.sourceName != "NULL":
-                wireSize = (abs(p.xOffset)+abs(p.yOffset)) * p.wires-1
+                wireSize = (abs(p.xOffset)+abs(p.yOffset)) * p.wireCount-1
                 writer.addPortVector(p.name, p.inOut,
                                      wireSize, indentLevel=2)
                 writer.addComment(str(p), indentLevel=2, onNewLine=False)
@@ -685,21 +685,21 @@ def generateTile(tile: Tile, writer: codeGenerator):
         if (port.sourceName, port.destinationName) in added:
             continue
         if span >= 2 and port.sourceName != "NULL" and port.destinationName != "NULL":
-            highBoundIndex = span*port.wires - 1
+            highBoundIndex = span*port.wireCount - 1
             writer.addConnectionVector(
                 f"{port.destinationName}_i", highBoundIndex)
             writer.addConnectionVector(
-                f"{port.sourceName}_i", highBoundIndex - port.wires)
+                f"{port.sourceName}_i", highBoundIndex - port.wireCount)
             # using scalar assignment to connect the two vectors
             writer.addAssignScalar(
-                f"{port.destinationName}_i[{highBoundIndex}-{port.wires}:0]", f"{port.destinationName}_i[{highBoundIndex}:{port.wires}]")
+                f"{port.destinationName}_i[{highBoundIndex}-{port.wireCount}:0]", f"{port.destinationName}_i[{highBoundIndex}:{port.wireCount}]")
             writer.addNewLine()
-            for i in range(highBoundIndex - port.wires + 1):
+            for i in range(highBoundIndex - port.wireCount + 1):
                 writer.addInstantiation("my_buf",
                                         f"{port.destinationName}_inbuf_{i}",
                                         ["A", "X"],
-                                        [f"{port.destinationName}[{i+port.wires}]", f"{port.destinationName}_i[{i+port.wires}]"])
-            for i in range(highBoundIndex - port.wires + 1):
+                                        [f"{port.destinationName}[{i+port.wireCount}]", f"{port.destinationName}_i[{i+port.wireCount}]"])
+            for i in range(highBoundIndex - port.wireCount + 1):
                 writer.addInstantiation("my_buf",
                                         f"{port.sourceName}_outbuf_{i}",
                                         ["A", "X"],
@@ -867,7 +867,7 @@ def generateSuperTile(superTile: SuperTile, writer: codeGenerator):
             for p in pList:
                 if p.sourceName == "NULL" or p.destinationName == "NULL":
                     continue
-                wire = (abs(p.xOffset) + abs(p.yOffset)) * p.wires - 1
+                wire = (abs(p.xOffset) + abs(p.yOffset)) * p.wireCount - 1
                 writer.addPortVector(
                     f"Tile_X{x}Y{y}_{p.name}", p.inOut, wire, indentLevel=2)
                 writer.addComment(str(p), onNewLine=False)
@@ -1178,7 +1178,8 @@ def generateFabric(fabric: Fabric, writer: codeGenerator):
         for x, tile in enumerate(row):
             if tile != None:
                 for p in tile.portsInfo:
-                    wireLength = (abs(p.xOffset)+abs(p.yOffset)) * p.wires-1
+                    wireLength = (abs(p.xOffset)+abs(p.yOffset)
+                                  ) * p.wireCount-1
                     if p.sourceName == "NULL" or p.wireDirection == Direction.JUMP:
                         continue
                     writer.addConnectionVector(
@@ -1676,6 +1677,7 @@ def genBitsStreamSpec(fabric: Fabric):
             else:
                 tileMap[f"X{x}Y{y}"] = "NULL"
 
+    specData["TileMap"] = tileMap
     configMemList: List[ConfigMem] = []
     for y, row in enumerate(fabric.tile):
         for x, tile in enumerate(row):
@@ -1692,20 +1694,24 @@ def genBitsStreamSpec(fabric: Fabric):
                     f"No Config Mem csv file found for {tile.name}. Assuming no config memory.")
                 specData["FrameMap"][tile.name] = {}
                 specData["FrameMapEncode"][tile.name] = {}
-                continue
 
-            encodeDict = [-1 for _ in range(fabric.maxFramesPerCol *
-                                            fabric.frameBitsPerRow)]
+            encodeDict = [-1] * (fabric.maxFramesPerCol *
+                                 fabric.frameBitsPerRow)
             maskDic = {}
             for cfm in configMemList:
                 maskDic[cfm.frameIndex] = cfm.usedBitMask
-                reversedBitMask = cfm.usedBitMask[::-1]
                 # matching the value in the configBitRanges with the reversedBitMask
                 # bit 0 in bit mask is the first value in the configBitRanges
-                for i, v in enumerate(cfm.configBitRanges):
-                    if reversedBitMask[i] == "1":
-                        encodeDict[v] = i + \
-                            fabric.frameBitsPerRow * cfm.frameIndex
+                encodeI = 0
+                for i, char in enumerate(cfm.usedBitMask):
+                    if char == "1":
+                        encodeDict[cfm.configBitRanges[encodeI]] = (
+                            fabric.frameBitsPerRow - 1 - i) + fabric.frameBitsPerRow * cfm.frameIndex
+                        encodeI += 1
+
+            # filling the maskDic with the unused frames
+            for i in range(fabric.maxFramesPerCol-len(configMemList)):
+                maskDic[len(configMemList)+i] = '0' * fabric.frameBitsPerRow
 
             specData["FrameMap"][tile.name] = maskDic
             if tile.globalConfigBits == 0:
@@ -1725,38 +1731,32 @@ def genBitsStreamSpec(fabric: Fabric):
                         encodeDict[curBitOffset+value]: "1"}
                 curBitOffset += len(bel.belFeatureMap)
 
-            controlWidth = 0
             result = parseMatrix(f"{tile.name}_switch_matrix.csv", tile.name)
-            for source, sinkList in reversed(result.items()):
-                for i, sink in enumerate(sinkList):
-                    pip = f"{source}.{sink}"
+            for source, sinkList in result.items():
+                controlWidth = 0
+                for i, sink in enumerate(reversed(sinkList)):
                     controlWidth = len(sinkList).bit_length()-1
                     controlValue = f"{len(sinkList) - 1 - i:0{controlWidth}b}"
+                    pip = f"{sink}.{source}"
                     if len(sinkList) < 2:
                         curTileMap[pip] = {}
                         curTileMapNoMask[pip] = {}
                         continue
-                    tempOffset = 0
+
                     for c, curChar in enumerate(controlValue[::-1]):
                         if pip not in curTileMap.keys():
                             curTileMap[pip] = {}
                             curTileMapNoMask[pip] = {}
+
                         curTileMap[pip][encodeDict[curBitOffset+c]] = curChar
                         curTileMapNoMask[pip][encodeDict[curBitOffset+c]] = curChar
 
                 curBitOffset += controlWidth
 
             # And now we add empty config bit mappings for immutable connections (i.e. wires), as nextpnr sees these the same as normal pips
-            for port in tile.portsInfo:
-                wireCount = (abs(port.xOffset) +
-                             abs(port.yOffset)) * port.wires
-                wireName = f"{port.sourceName}{wireCount}.{port.destinationName}{wireCount}"
-                curTileMap[wireName] = {}
-                curTileMapNoMask[wireName] = {}
-                for i in range(wireCount):
-                    wireName = f"{port.sourceName}{i}.{port.destinationName}{i}"
-                    curTileMap[wireName] = {}
-                    curTileMapNoMask[wireName] = {}
+            for wire in tile.wireList:
+                curTileMap[f"{wire.source}.{wire.destination}"] = {}
+                curTileMapNoMask[f"{wire.source}.{wire.destination}"] = {}
 
             specData["TileSpecs"][f"X{x}Y{y}"] = curTileMap
             specData["TileSpecs_No_Mask"][f"X{x}Y{y}"] = curTileMapNoMask
@@ -2381,22 +2381,21 @@ if args.GenVPRModel:
 if args.GenBitstreamSpec:
     # read fabric description as a csv file (Excel uses tabs '\t' instead of ',')
     print('### Read Fabric csv file ###')
-    try:
-        FabricFile = [i.strip('\n').split(',') for i in open(args.fabric_csv)]
-        # filter = 'Fabric' is default to get the definition between 'FabricBegin' and 'FabricEnd'
-        fabric = GetFabric(FabricFile)
-    except IOError:
-        print("Could not open fabric.csv file")
-        exit(-1)
+    # try:
+    #     FabricFile = [i.strip('\n').split(',') for i in open(args.fabric_csv)]
+    #     # filter = 'Fabric' is default to get the definition between 'FabricBegin' and 'FabricEnd'
+    #     fabric = GetFabric(FabricFile)
+    # except IOError:
+    #     print("Could not open fabric.csv file")
+    #     exit(-1)
 
-    OutFileName = args.GenBitstreamSpec
     fabric = parseFabricCSV(args.fabric_csv)
     specObject = genBitsStreamSpec(fabric)
-    with open(OutFileName, "wb") as outFile:
+    with open(args.GenBitstreamSpec, "wb") as outFile:
         pickle.dump(specObject, outFile)
 
     with open("spec.json", "w") as f:
-        json.dump(specObject, f)
+        json.dump(specObject, f, indent=4)
 
     # w = csv.writer(open(OutFileName.replace("txt", "csv"), "w"))
     # for key1 in specObject["TileSpecs"]:

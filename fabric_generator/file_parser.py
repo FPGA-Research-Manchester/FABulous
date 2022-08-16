@@ -46,12 +46,13 @@ def parseFabricCSV(fileName: str) -> Fabric:
     parameters = parameters.split("\n")
     tileTypes = []
     tileDefs = []
+    commonWirePair: List[Tuple[str, str]] = []
     for t in tilesData:
         t = t.split("\n")
         tileName = t[0].split(",")[1]
         tileTypes.append(tileName)
-        ports = []
-        bels = []
+        ports: List[Port] = []
+        bels: List[Bel] = []
         matrixDir = ""
         withUserCLK = False
         for item in t:
@@ -64,6 +65,12 @@ def parseFabricCSV(fileName: str) -> Fabric:
 
                 ports.append(Port(Direction[temp[0]], temp[1], int(
                     temp[2]), int(temp[3]), temp[4], int(temp[5]), temp[4], IO.INPUT, Side[oppositeDic[temp[0]].upper()]))
+                # wireCount = (abs(int(temp[2])) +
+                #              abs(int(temp[3])))*int(temp[5])
+                # for i in range(wireCount):
+                commonWirePair.append(
+                        (f"{temp[1]}", f"{temp[4]}"))
+
             elif temp[0] == "JUMP":
                 ports.append(Port(Direction.JUMP, temp[1], int(
                     temp[2]), int(temp[3]), temp[4], int(temp[5]), temp[1], IO.OUTPUT, Side.ANY))
@@ -107,7 +114,8 @@ def parseFabricCSV(fileName: str) -> Fabric:
                 raise ValueError(
                     f"Error: unknown tile description {temp[0]} in tile {t}")
 
-        tileDefs.append(Tile(tileName, ports, bels, matrixDir, withUserCLK, configBit))
+        tileDefs.append(Tile(tileName, ports, bels,
+                        matrixDir, withUserCLK, configBit))
 
     fabricTiles = []
     tileDic = dict(zip(tileTypes, tileDefs))
@@ -230,6 +238,10 @@ def parseFabricCSV(fileName: str) -> Fabric:
     height = len(fabricTiles)
     width = len(fabricTiles[0])
 
+    commonWirePair = list(dict.fromkeys(commonWirePair))
+    commonWirePair = [(i, j) for (
+        i, j) in commonWirePair if "NULL" not in i and "NULL" not in j]
+
     return Fabric(tile=fabricTiles,
                   numberOfColumns=width,
                   numberOfRows=height,
@@ -242,7 +254,8 @@ def parseFabricCSV(fileName: str) -> Fabric:
                   numberOfBRAMs=int(height/2),
                   superTileEnable=superTileEnable,
                   tileDic=tileDic,
-                  superTileDic=superTileDic)
+                  superTileDic=superTileDic,
+                  commonWirePair=commonWirePair)
 
 
 def parseList(fileName: str, collect: Literal["", "source", "sink"] = "") -> Union[List[Tuple[str, str]], Dict[str, List[str]]]:
@@ -336,6 +349,11 @@ def parseFileVHDL(filename: str, belPrefix: str = "") -> Tuple[List[Tuple[str, I
         exit(-1)
 
     belMapDic = {}
+    if result := re.search(r"-- pragma FABulous belMap (.*)", file):
+        result = result.group(1).split(",")
+        for i in result:
+            key, value = i.split("=")
+            belMapDic[key.replace(" ", "")] = int(value)
 
     portSection = ""
     if result := re.search(r"port.*?\((.*?)\);", file,

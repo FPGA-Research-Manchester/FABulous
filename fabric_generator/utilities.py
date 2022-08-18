@@ -1,8 +1,4 @@
-import csv
 import re
-from signal import raise_signal
-from file_parser import parseList
-import collections
 
 # Default parameters (will be overwritten if defined in fabric between 'ParametersBegin' and 'ParametersEnd'
 #Parameters = [ 'ConfigBitMode', 'FrameBitsPerRow' ]
@@ -515,54 +511,6 @@ def ExpandListPorts(port, PortList):
         # print('DEBUG: else, just:',port)
         PortList.append(port)
     return
-
-
-def generateConfigMemInit(file, globalConfigBitsCounter):
-    # write configuration bits to frame mapping init file (e.g. 'LUT4AB_ConfigMem.init.csv')
-    # this file can be modified and saved as 'LUT4AB_ConfigMem.csv' (without the '.init')
-    bitsLeftToPackInFrames = globalConfigBitsCounter
-
-    fieldName = ["frame_name", "frame_index", "bits_used_in_frame",
-                 "used_bits_mask", "ConfigBits_ranges"]
-
-    with open(file, "w") as f:
-        writer = csv.writer(f)
-        writer.writerow(fieldName)
-        for k in range(int(MAX_FRAMES_PER_COL)):
-            entry = []
-            # frame0, frame1, ...
-            entry.append(f"frame{k}")
-            # and the index (0, 1, 2, ...), in case we need
-            entry.append(str(k))
-            # size of the frame in bits
-            if bitsLeftToPackInFrames >= FRAME_BITS_PER_ROW:
-                entry.append(str(FRAME_BITS_PER_ROW))
-                # generate a string encoding a '1' for each flop used
-                frameBitsMask = f"{2**FRAME_BITS_PER_ROW-1:_b}"
-                entry.append(frameBitsMask)
-                entry.append(
-                    f"{bitsLeftToPackInFrames-1}:{bitsLeftToPackInFrames-FRAME_BITS_PER_ROW}")
-                bitsLeftToPackInFrames -= FRAME_BITS_PER_ROW
-            else:
-                entry.append(str(bitsLeftToPackInFrames))
-                # generate a string encoding a '1' for each flop used
-                # this will allow us to kick out flops in the middle (e.g. for alignment padding)
-                frameBitsMask = (2**FRAME_BITS_PER_ROW-1) - \
-                    (2**(FRAME_BITS_PER_ROW-bitsLeftToPackInFrames)-1)
-                frameBitsMask = f"{frameBitsMask:0{FRAME_BITS_PER_ROW+7}_b}"
-                entry.append(frameBitsMask)
-                if bitsLeftToPackInFrames > 0:
-                    entry.append(f"{bitsLeftToPackInFrames-1}:0")
-                else:
-                    entry.append("# NULL")
-                # will have to be 0 if already 0 or if we just allocate the last bits
-                bitsLeftToPackInFrames = 0
-            # The mapping into frames is described as a list of index ranges applied to the ConfigBits vector
-            # use '2' for a single bit; '5:0' for a downto range; multiple ranges can be specified in optional consecutive comma separated fields get concatenated)
-            # default is counting top down
-
-            # write the entry to the file
-            writer.writerow(entry)
 
 
 def takes_list(a_string, a_list):

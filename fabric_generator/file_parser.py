@@ -1,11 +1,10 @@
-from unittest import result
-from fabric import Fabric, Port, Bel, Tile, SuperTile, ConfigMem
 import re
 from copy import deepcopy
 from typing import Dict, List, Literal, Tuple, Union
 import csv
 
-from fabric import IO, Direction, Side, MultiplexerStyle, ConfigBitMode
+from fabric_generator.fabric import Fabric, Port, Bel, Tile, SuperTile, ConfigMem
+from fabric_generator.fabric import IO, Direction, Side, MultiplexerStyle, ConfigBitMode
 
 oppositeDic = {"NORTH": "SOUTH", "SOUTH": "NORTH",
                "EAST": "WEST", "WEST": "EAST"}
@@ -298,8 +297,8 @@ def parseList(fileName: str, collect: Literal["", "source", "sink"] = "") -> Uni
     if collect == "sink":
         for k, v in result:
             for i in v:
-                if v not in resultDic:
-                    resultDic[v] = []
+                if i not in resultDic:
+                    resultDic[i] = []
                 resultDic[i].append(k)
         return resultDic
 
@@ -470,6 +469,8 @@ def parseFileVerilog(filename: str, belPrefix: str = "") -> Tuple[List[Tuple[str
         belMap = belMap.split(",")
         for bel in belMap:
             bel = bel.split("=")
+            if bel == ['']:
+                continue
             belMapDic[bel[0]] = int(bel[1])
 
     if result := re.search(r"NoConfigBits.*?=.*?(\d+)", file, re.IGNORECASE):
@@ -479,12 +480,9 @@ def parseFileVerilog(filename: str, belPrefix: str = "") -> Tuple[List[Tuple[str
         print("Assume the number of configBits is 0")
         noConfigBits = 0
 
-    print(belMapDic)
-    print(len(belMapDic))
-
     if len(belMapDic) != noConfigBits:
         raise ValueError(
-            f"NoConfigBits does not match with the BEL map in file {filename}")
+            f"NoConfigBits does not match with the BEL map in file {filename}, length of BelMap is {len(belMapDic)}, but with {noConfigBits} config bits")
 
     file = file.split("\n")
 
@@ -632,9 +630,14 @@ def parseConfigMem(fileName: str, maxFramePerCol: int, frameBitPerRow: int, glob
 
 if __name__ == '__main__':
     # result = parseFabricCSV('fabric.csv')
-    result = parseList('RegFile_switch_matrix.list')
+    result1 = parseList('RegFile_switch_matrix.list', collect="source")
     # result = parseFileVerilog('./LUT4c_frame_config_dffesr.v')
-    print(result)
+
+    result2 = parseMatrix('RegFile_switch_matrix.csv', "RegFile")
+    print(len(result1))
+    print(len(result2))
+    print(result1["SS4BEG3"])
+    print(result2["SS4BEG3"])
     # print(result[0])
     # print(result[1])
     # print(result[2])

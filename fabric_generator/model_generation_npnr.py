@@ -1,4 +1,4 @@
-from utilities import *
+from fabric_generator.utilities import *
 
 
 def genNextpnrModel(archObject: FabricModelGen, generatePairs=True):

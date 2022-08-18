@@ -258,7 +258,7 @@ class SuperTile():
                     ports[f"{x}{y}"].append(tile.getWestSidePorts())
         return ports
 
-    def getInternalConnections(self):
+    def getInternalConnections(self) -> List[Tuple[List[Port], int, int]]:
         internalConnections = []
         for y, row in enumerate(self.tileMap):
             for x, tile in enumerate(row):
@@ -431,3 +431,9 @@ class Fabric():
         fabric += f"superTileEnable: {self.superTileEnable}\n"
         fabric += f"tileDic: {list(self.tileDic.keys())}\n"
         return fabric
+
+    def getTileByName(self, name: str) -> Tile:
+        return self.tileDic[name]
+
+    def getSuperTileByName(self, name: str) -> SuperTile:
+        return self.superTileDic[name]

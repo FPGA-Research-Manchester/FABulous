@@ -1,4 +1,4 @@
-from utilities import *
+from fabric_generator.utilities import *
 import xml.etree.ElementTree as ET
 
 

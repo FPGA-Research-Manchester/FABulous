@@ -1,9 +1,9 @@
 from typing import Literal
-from fabric import Tile, Bel, ConfigBitMode, IO
 import math
 import re
 
-from code_generator import codeGenerator
+from fabric_generator.fabric import Tile, Bel, ConfigBitMode, IO
+from fabric_generator.code_generator import codeGenerator
 
 
 class VerilogWriter(codeGenerator):

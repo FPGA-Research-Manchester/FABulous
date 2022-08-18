@@ -1,6 +1,7 @@
 import abc
-from typing import Literal
-from fabric import Fabric, Tile, Bel, IO
+from typing import List, Literal
+from xmlrpc.client import Boolean
+from fabric_generator.fabric import Fabric, Tile, Bel, IO, ConfigBitMode
 
 
 class codeGenerator(abc.ABC):
@@ -18,8 +19,16 @@ class codeGenerator(abc.ABC):
         self._content = []
 
     def writeToFile(self):
+        if self._outFileName == "":
+            print("OutFileName is not set")
+            exit(-1)
         with open(self._outFileName, 'w') as f:
             f.write("\n".join(self._content))
+        self._content = []
+
+    @outFileName.setter
+    def outFileName(self, outFileName):
+        self._outFileName = outFileName
 
     def _add(self, line, indentLevel=0) -> None:
         if indentLevel == 0:
@@ -99,11 +108,11 @@ class codeGenerator(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def addInstantiation(self, compName, compInsName, compPort, signal, paramPort=[], paramSignal=[], indentLevel=0):
+    def addInstantiation(self, compName: str, compInsName: str, compPort: List[str], signal: List[str], paramPort: List[str] = [], paramSignal: List[str] = [], indentLevel=0):
         pass
 
     @abc.abstractmethod
-    def addGeneratorStart(self, loopName, variableName, start, end, indentLevel=0):
+    def addGeneratorStart(self, loopName: str, variableName: str, start, end, indentLevel=0):
         pass
 
     @abc.abstractmethod
@@ -131,9 +140,9 @@ class codeGenerator(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def addBELInstantiations(self, bel: Bel, configBitCounter, mode="frame_based", belCounter=0):
+    def addBELInstantiations(self, bel: Bel, configBitCounter: int, mode: ConfigBitMode, belCounter: int = 0):
         pass
 
     @abc.abstractmethod
-    def add_Conf_Instantiation(self, counter, close=True):
+    def add_Conf_Instantiation(self, counter: int, close: bool = True):
         pass

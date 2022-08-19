@@ -2,6 +2,7 @@ import re
 from copy import deepcopy
 from typing import Dict, List, Literal, Tuple, Union
 import csv
+import os
 
 from fabric_generator.fabric import Fabric, Port, Bel, Tile, SuperTile, ConfigMem
 from fabric_generator.fabric import IO, Direction, Side, MultiplexerStyle, ConfigBitMode
@@ -15,6 +16,11 @@ def parseFabricCSV(fileName: str) -> Fabric:
     Parses a csv file and returns a Fabric object.
     """
 
+    if not fileName.endswith(".csv"):
+        raise ValueError("File must be a csv file")
+
+    filePath, _ = os.path.split(os.path.abspath(fileName))
+
     with open(fileName, 'r') as f:
         file = f.read()
         file = re.sub(r"#.*", "", file)
@@ -25,14 +31,14 @@ def parseFabricCSV(fileName: str) -> Fabric:
         fabricDescription = fabricDescription.group(1)
     else:
         raise ValueError(
-            'ERROR: cannot find FabricBegin and FabricEnd in csv file')
+            'Cannot find FabricBegin and FabricEnd in csv file')
 
     if parameters := re.search(
             r"ParametersBegin(.*?)ParametersEnd", file, re.MULTILINE | re.DOTALL):
         parameters = parameters.group(1)
     else:
         raise ValueError(
-            'ERROR: cannot find ParametersBegin and ParametersEnd in csv file')
+            'Cannot find ParametersBegin and ParametersEnd in csv file')
 
     tilesData = re.findall(r"TILE(.*?)EndTILE", file,
                            re.MULTILINE | re.DOTALL)
@@ -77,24 +83,28 @@ def parseFabricCSV(fileName: str) -> Fabric:
                 ports.append(Port(Direction.JUMP, temp[1], int(
                     temp[2]), int(temp[3]), temp[4], int(temp[5]), temp[1], IO.INOUT, Side.ANY))
             elif temp[0] == "BEL":
+                belFilePath = os.path.join(filePath, temp[1])
                 if temp[1].endswith(".vhdl"):
-                    result = parseFileVHDL(temp[1], temp[2])
+                    result = parseFileVHDL(belFilePath, temp[2])
+                elif temp[1].endswith(".v"):
+                    result = parseFileVerilog(belFilePath, temp[2])
                 else:
-                    result = parseFileVerilog(temp[1], temp[2])
+                    raise ValueError(
+                        "Invalid file type, only .vhdl and .v are supported")
                 internal, external, config, shared, configBit, userClk, belMap = result
-                bels.append(Bel(temp[1], temp[2], internal,
+                bels.append(Bel(belFilePath, temp[2], internal,
                             external, config, shared, configBit, belMap))
                 withUserCLK |= userClk
             elif temp[0] == "MATRIX":
-                matrixDir = temp[1]
+                matrixDir = os.path.join(filePath, temp[1])
                 configBit = 0
                 if temp[1].endswith(".list"):
-                    for _, v in parseList(temp[1], "source").items():
+                    for _, v in parseList(matrixDir, "source").items():
                         muxSize = len(v)
                         if muxSize >= 2:
                             configBit += muxSize.bit_length()-1
                 elif temp[1].endswith("_matrix.csv"):
-                    for _, v in parseMatrix(temp[1], tileName).items():
+                    for _, v in parseMatrix(matrixDir, tileName).items():
                         muxSize = len(v)
                         if muxSize >= 2:
                             configBit += muxSize.bit_length()-1
@@ -110,11 +120,10 @@ def parseFabricCSV(fileName: str) -> Fabric:
 
                 else:
                     raise ValueError(
-                        'ERROR: unknown file extension for matrix')
+                        'Unknown file extension for matrix')
             else:
                 raise ValueError(
-                    f"Error: unknown tile description {temp[0]} in tile {t}")
-
+                    f"Unknown tile description {temp[0]} in tile {t}")
         tileDefs.append(Tile(tileName, ports, bels,
                         matrixDir, withUserCLK, configBit))
 
@@ -164,12 +173,13 @@ def parseFabricCSV(fileName: str) -> Fabric:
             row = []
 
             if line[0] == "BEL":
+                belFilePath = os.path.join(filePath, line[1])
                 if line[0].endswith("VHDL"):
-                    result = parseFileVHDL(line[1], line[2])
+                    result = parseFileVHDL(belFilePath, line[2])
                 else:
-                    result = parseFileVerilog(line[1], line[2])
+                    result = parseFileVerilog(belFilePath, line[2])
                 internal, external, config, shared, configBit, userClk, belMap = result
-                bels.append(Bel(line[1], line[2], internal,
+                bels.append(Bel(belFilePath, line[2], internal,
                             external, config, shared, configBit, belMap))
                 withUserCLK |= userClk
                 continue
@@ -533,8 +543,11 @@ def parseMatrix(fileName: str, tileName: str) -> Dict[str, List[str]]:
         file = file.split("\n")
 
     if file[0].split(",")[0] != tileName:
+        print(fileName)
+        print(file[0].split(","))
+        print(tileName)
         raise ValueError(
-            'ERROR: tile name (top left element) in csv file does not match tile name in tile object')
+            'Tile name (top left element) in csv file does not match tile name in tile object')
 
     destList = file[0].split(",")[1:]
 

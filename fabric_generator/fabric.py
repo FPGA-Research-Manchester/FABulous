@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from typing import Any, Literal, List, Dict, Tuple
 import math
 from enum import Enum
+import os
 
 
 class IO(Enum):
@@ -181,6 +182,7 @@ class Tile():
     globalConfigBits: int = 0
     withUserCLK: bool = False
     wireList: List[Wire] = field(default_factory=list)
+    filePath: str = "."
 
     # def __repr__(self):
     #     return f"\n{self.name}\n inputPorts:{self.inputs}\n outputPorts:{self.outputs}\n bels:{self.bels}\n Matrix_dir:{self.matrixDir}\n"
@@ -193,6 +195,7 @@ class Tile():
         self.withUserCLK = userCLK
         self.globalConfigBits = configBit
         self.wireList = []
+        self.filePath = os.path.split(matrixDir)[0]
 
         for b in self.bels:
             self.globalConfigBits += b.configBit

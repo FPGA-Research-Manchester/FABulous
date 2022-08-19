@@ -26,6 +26,8 @@ import pickle
 import csv
 from typing import Dict, List, Tuple
 import argparse
+import logging
+
 
 from fasm import *  # Remove this line if you do not have the fasm library installed and will not be generating a bitstream
 
@@ -41,6 +43,7 @@ from fabric_generator.code_generation_Verilog import VerilogWriter
 from fabric_generator.code_generator import codeGenerator
 
 SWITCH_MATRIX_DEBUG_SIGNAL = True
+logger = logging.getLogger(__name__)
 
 
 class FabricGenerator:
@@ -52,8 +55,8 @@ class FabricGenerator:
         self.writer = writer
 
     def bootstrapSwitchMatrix(self, tile: Tile, outputDir: str):
-        print(
-            f"### generate csv for {tile.name} # filename: {tile.name}_switch_matrix.csv")
+        logger.info(
+            f"Generate matrix csv for {tile.name} # filename: {outputDir}")
         with open(f"{outputDir}", "w") as f:
             writer = csv.writer(f)
             sourceName, destName = [], []
@@ -67,7 +70,7 @@ class FabricGenerator:
             for b in tile.bels:
                 for p in b.inputs:
                     sourceName.append(f"{p}")
-                for p in b.outputs:
+                for p in b.outputs + b.externalOutput:
                     destName.append(f"{p}")
 
             # jump wire
@@ -87,7 +90,7 @@ class FabricGenerator:
         # format: source,destination (per line)
         # read CSV file into an array of strings
 
-        print(f"### Adding {InFileName} to {OutFileName}")
+        logger.info(f"Adding {InFileName} to {OutFileName}")
 
         connectionPair = parseList(InFileName)
 
@@ -119,19 +122,19 @@ class FabricGenerator:
             try:
                 s_index = source.index(s)
             except ValueError:
-                print(f"{s} is not in the source column of the matrix csv file")
-                print()
+                logger.critical(
+                    f"{s} is not in the source column of the matrix csv file")
                 exit(-1)
 
             try:
                 d_index = destination.index(d)
             except ValueError:
-                print(f"{d} is not in the destination row of the matrix csv file")
-                print()
+                logger.critical(
+                    f"{d} is not in the destination row of the matrix csv file")
                 exit(-1)
 
             if matrix[s_index][d_index] != 0:
-                print(
+                logger.warning(
                     f"connection ({s}, {d}) already exists in the original matrix")
             matrix[s_index][d_index] = 1
 
@@ -231,16 +234,6 @@ class FabricGenerator:
                 writer.writerow(entry)
 
     def generateConfigMem(self, tile: Tile, configMemCsv: str):
-        # need to find a better way to handle data that is generated during the flow
-        # get switch matrix configuration bits
-
-        configBit = 0
-        # with open(tile.matrixDir, "r") as f:
-        #     f = f.read()
-        #     if configBit := re.search(r"NumberOfConfigBits: (\d+)", f):
-        #         configBit = int(configBit.group(1))
-        #         tile.globalConfigBits += configBit
-
         # we use a file to describe the exact configuration bits to frame mapping
         # the following command generates an init file with a simple enumerated default mapping (e.g. 'LUT4AB_ConfigMem.init.csv')
         # if we run this function again, but have such a file (without the .init), then that mapping will be used
@@ -253,9 +246,9 @@ class FabricGenerator:
                 configMemCsv, self.fabric.maxFramesPerCol, self.fabric.frameBitsPerRow, tile.globalConfigBits)
         else:
             self.generateConfigMemInit(
-                f"{tile.name}_ConfigMem.csv", tile.globalConfigBits)
+                configMemCsv, tile.globalConfigBits)
             configMemList = parseConfigMem(
-                f"{tile.name}_ConfigMem.csv", self.fabric.maxFramesPerCol, self.fabric.frameBitsPerRow, tile.globalConfigBits)
+                configMemCsv, self.fabric.maxFramesPerCol, self.fabric.frameBitsPerRow, tile.globalConfigBits)
 
         # write entity
         entity = f"{tile.name}_ConfigMem"
@@ -320,13 +313,18 @@ class FabricGenerator:
         if tile.matrixDir.endswith(".csv"):
             connections = parseMatrix(tile.matrixDir, tile.name)
         elif tile.matrixDir.endswith(".list"):
+            logger.info(f"{tile.name} matrix is a list file")
+            logger.info(
+                f"bootstrapping {tile.name} to matrix form and adding the list file to the matrix")
             matrixDir = tile.matrixDir.replace(".list", ".csv")
             self.bootstrapSwitchMatrix(tile, matrixDir)
             self.list2CSV(tile.matrixDir, matrixDir)
+            logger.info(
+                f"Update matrix directory to {matrixDir} for Fabric Tile Dictionary")
             tile.matrixDir = matrixDir
             connections = parseMatrix(tile.matrixDir, tile.name)
         elif tile.matrixDir.endswith(".v") or tile.matrixDir.endswith(".vhdl"):
-            print(
+            logger.info(
                 f"A switch matrix file is provided in {tile.name}, will skip the matrix generation process")
             return
 
@@ -351,21 +349,21 @@ class FabricGenerator:
         for i in tile.portsInfo:
             if i.wireDirection != Direction.JUMP:
                 input, output = i.expandPortInfo("AutoSwitchMatrix")
-                sourceName += input
-                destName += output
+                destName += input
+                sourceName += output
         # bel wire
         for b in tile.bels:
-            for p in b.inputs:
-                sourceName.append(f"{p}")
-            for p in b.outputs:
+            for p in list(dict.fromkeys(b.inputs)):
                 destName.append(f"{p}")
+            for p in list(dict.fromkeys(b.outputs)):
+                sourceName.append(f"{p}")
 
         # jump wire
         for i in tile.portsInfo:
             if i.wireDirection == Direction.JUMP:
                 input, output = i.expandPortInfo("AutoSwitchMatrix")
-                sourceName += input
-                destName += output
+                destName += input
+                sourceName += output
         sourceName = list(dict.fromkeys(sourceName))
         destName = list(dict.fromkeys(destName))
 
@@ -465,8 +463,8 @@ class FabricGenerator:
             self.writer.addComment(
                 f"switch matrix multiplexer {portName} MUX-{muxSize}", onNewLine=True)
             if muxSize == 0:
-                print(
-                    f"WARNING: input port {portName} of switch matrix in Tile {tile.name} is not used")
+                logger.warning(
+                    f"Input port {portName} of switch matrix in Tile {tile.name} is not used")
                 self.writer.addComment(
                     f"WARNING unused multiplexer MUX-{portName}", onNewLine=True)
 
@@ -1216,7 +1214,8 @@ class FabricGenerator:
 
         # TODO refactor
         for t in self.fabric.tileDic:
-            self.writer.addComponentDeclarationForFile(f"{t}_tile.vhdl")
+            if isinstance(self.writer, VHDLWriter):
+                self.writer.addComponentDeclarationForFile(f"{t}_tile.vhdl")
 
         # VHDL signal declarations
         self.writer.addComment("signal declarations", onNewLine=True, end="\n")
@@ -1767,7 +1766,8 @@ class FabricGenerator:
                     "TileSpecs_No_Mask": {},
                     "FrameMap": {},
                     "FrameMapEncode": {},
-                    "ArchSpecs": {"MaxFramesPerCol": self.fabric.maxFramesPerCol, "FrameBitsPerRow": self.fabric.frameBitsPerRow}}
+                    "ArchSpecs": {"MaxFramesPerCol": self.fabric.maxFramesPerCol,
+                                  "FrameBitsPerRow": self.fabric.frameBitsPerRow}}
 
         tileMap = {}
         for y, row in enumerate(self.fabric.tile):
@@ -1783,17 +1783,13 @@ class FabricGenerator:
             for x, tile in enumerate(row):
                 if tile == None:
                     continue
-                if os.path.exists(f"{tile.name}_ConfigMem.csv"):
+                if os.path.exists(f"{tile.filePath}/{tile.name}_ConfigMem.csv"):
                     configMemList = parseConfigMem(
-                        f"{tile.name}_ConfigMem.csv", self.fabric.maxFramesPerCol, self.fabric.frameBitsPerRow, tile.globalConfigBits)
-                elif os.path.exists(f"{tile.name}_ConfigMem.init.csv"):
-                    configMemList = parseConfigMem(
-                        f"{tile.name}_ConfigMem.init.csv", self.fabric.maxFramesPerCol, self.fabric.frameBitsPerRow, tile.globalConfigBits)
-                else:
-                    print(
-                        f"No Config Mem csv file found for {tile.name}. Assuming no config memory.")
-                    specData["FrameMap"][tile.name] = {}
-                    specData["FrameMapEncode"][tile.name] = {}
+                        f"{tile.filePath}/{tile.name}_ConfigMem.csv", self.fabric.maxFramesPerCol, self.fabric.frameBitsPerRow, tile.globalConfigBits)
+                elif tile.globalConfigBits > 0:
+                    logger.error(
+                        f"No ConfigMem csv file found for {tile.name} which have config bits")
+                    exit(-1)
 
                 encodeDict = [-1] * (self.fabric.maxFramesPerCol *
                                      self.fabric.frameBitsPerRow)
@@ -1816,7 +1812,7 @@ class FabricGenerator:
 
                 specData["FrameMap"][tile.name] = maskDic
                 if tile.globalConfigBits == 0:
-                    print(f"No config memory for {tile.name}.")
+                    logger.info(f"No config memory for X{x}Y{y}_{tile.name}.")
                     specData["FrameMap"][tile.name] = {}
                     specData["FrameMapEncode"][tile.name] = {}
 
@@ -1832,8 +1828,13 @@ class FabricGenerator:
                             encodeDict[curBitOffset+value]: "1"}
                     curBitOffset += len(bel.belFeatureMap)
 
+                # All the generation will be working on the tile level with the tileDic
+                # This is added to propagate the updated switch matrix to each of the tile in the fabric
+                if tile.matrixDir.endswith(".list"):
+                    tile.matrixDir = tile.matrixDir.replace(".list", ".csv")
+
                 result = parseMatrix(
-                    f"{tile.name}_switch_matrix.csv", tile.name)
+                    tile.matrixDir, tile.name)
                 for source, sinkList in result.items():
                     controlWidth = 0
                     for i, sink in enumerate(reversed(sinkList)):

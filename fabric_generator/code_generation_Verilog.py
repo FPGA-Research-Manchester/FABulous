@@ -60,7 +60,7 @@ class VerilogWriter(codeGenerator):
         pass
 
     def addDesignDescriptionEnd(self, indentLevel=0):
-        self._add("endModule", indentLevel)
+        self._add("endmodule", indentLevel)
 
     def addConstant(self, name, value, indentLevel=0):
         self._add(f"parameter {name} = {value};", indentLevel)

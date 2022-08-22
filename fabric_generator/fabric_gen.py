@@ -533,7 +533,7 @@ class FabricGenerator:
                     self.writer.addAssignScalar(
                         f"{portName}_input", connections[portName][::-1], int(self.fabric.generateDelayInSwitchMatrix))
                     self.writer.addInstantiation(compName=muxComponentName,
-                                                 compInsName=f"inst_{muxComponentName}",
+                                                 compInsName=f"inst_{muxComponentName}_{portName}",
                                                  compPort=portList,
                                                  signal=signalList)
                     if muxSize != 2 and muxSize != 4 and muxSize != 8 and muxSize != 16:
@@ -733,12 +733,12 @@ class FabricGenerator:
                 self.writer.addInstantiation("my_buf",
                                              f"data_inbuf_{i}",
                                              ["A", "X"],
-                                             [f"frameData[{i}]", f"frameData_i[{i}]"])
+                                             [f"FrameData[{i}]", f"FrameData_i[{i}]"])
             for i in range(self.fabric.frameBitsPerRow):
                 self.writer.addInstantiation("my_buf",
                                              f"data_outbuf_{i}",
                                              ["A", "X"],
-                                             [f"frameData_O_i[{i}]", f"frameData_O[{i}]"])
+                                             [f"FrameData_O_i[{i}]", f"FrameData_O[{i}]"])
 
         # strobe is always added even when config bits are 0
         self.writer.addNewLine()
@@ -812,7 +812,7 @@ class FabricGenerator:
                                          compInsName=f"Inst_{tile.name}_ConfigMem",
                                          compPort=["FrameData",
                                                    "FrameStrobe", "ConfigBits", "ConfigBits_N"],
-                                         signal=["FrameData", "FrameStrobe", "COnfigBits", "ConfigBits_N"])
+                                         signal=["FrameData", "FrameStrobe", "ConfigBits", "ConfigBits_N"])
 
         # BEL component instantiations
         self.writer.addComment("BEL component instantiations", onNewLine=True)
@@ -917,8 +917,8 @@ class FabricGenerator:
                 signal.append(
                     f"ConfigBits_N[{tile.globalConfigBits}-1:{belConfigBitsCounter}]")
 
-        self.writer.addInstantiation(compName=f"{tile.name}_SwitchMatrix",
-                                     compInsName=f"Inst_{tile.name}_SwitchMatrix",
+        self.writer.addInstantiation(compName=f"{tile.name}_switch_matrix",
+                                     compInsName=f"Inst_{tile.name}_switch_matrix",
                                      compPort=portList,
                                      signal=signal)
         self.writer.addDesignDescriptionEnd()

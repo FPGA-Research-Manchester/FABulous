@@ -60,10 +60,10 @@ def create_project(project_dir, type: Literal["verilog", "vhdl"] = "verilog"):
     else:
         os.mkdir(f"./{project_dir}")
 
-    os.mkdir(f"./{project_dir}/.FABulous")
+    os.mkdir(f"{project_dir}/.FABulous")
 
-    shutil.copytree(f"./fabric_files/FABulous_project_template_{type}/",
-                    f"./{project_dir}/", dirs_exist_ok=True)
+    shutil.copytree(f"{fabulousRoot}/fabric_files/FABulous_project_template_{type}/",
+                    f"{project_dir}/", dirs_exist_ok=True)
 
 
 class FABulous:
@@ -163,7 +163,6 @@ To run the complete FABulous flow, type
         self.tiles = []
         self.superTiles = []
         self.csvFile = ""
-        self.allTile = [f.name for f in os.scandir(f"./Tile") if f.is_dir()]
         if isinstance(self.fabricGen.writer, VHDLWriter):
             self.extension = "vhdl"
         else:
@@ -216,6 +215,7 @@ To run the complete FABulous flow, type
             self.fabricGen.loadFabric(args[0])
         self.fabricLoaded = True
         self.csvFile = args[0]
+        self.allTile = list(self.fabricGen.fabric.tileDic.keys())
         logger.info("Complete")
 
     def complete_load_fabric(self, text, *ignored):
@@ -724,13 +724,14 @@ if __name__ == "__main__":
         if args.writer == "verilog":
             writer = VerilogWriter("")
 
-        os.chdir(args.project_dir)
 
         fabShell = FABulousShell(
             FABulous(writer, fabricCSV=args.csv), args.project_dir)
 
         if args.script:
             fabShell.cmdqueue.extend(args.script.splitlines())
+
+        os.chdir(args.project_dir)
 
         if args.metaDataDir:
             metaDataDir = args.metaDataDir

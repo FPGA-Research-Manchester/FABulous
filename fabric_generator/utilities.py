@@ -581,7 +581,7 @@ class FabricModelGen:
             for tile in row:
                 if tile.x == x and tile.y == y:
                     return tile
-        raise ValueError(f"{x}, {y} is not a valid tile coordinate")
+        # raise ValueError(f"{x}, {y} is not a valid tile coordinate")
 
     def getTileByLoc(self, loc: str):
         for row in self.tiles:
@@ -844,8 +844,8 @@ def genFabricObject(fabric: list, FabricFile):
             tempAtomicWires = []
             # Wires from tile
             for wire in wireTextList:
-                xOffset = int(wire["xOffset"])
-                yOffset = int(wire["yOffset"])
+                xOffset = int(wire["xoffset"])
+                yOffset = int(wire["yoffset"])
                 wireCount = int(wire["wire-count"])
                 destinationTile = archFabric.getTileByCoords(
                     tile.x + xOffset, tile.y + yOffset)
@@ -930,7 +930,7 @@ def genFabricObject(fabric: list, FabricFile):
                                                         "source": wire["source"] + str(i),
                                                         "xoffset": wire["xoffset"],
                                                         "yoffset": '1',
-                                                        "destination": wire["destination"] + str(ascaded_i),
+                                                        "destination": wire["destination"] + str(cascaded_i),
                                                         "sourceTile": tile.genTileLoc(),
                                                         "destTile": cTile.genTileLoc()})  # Add atomic wire names
 

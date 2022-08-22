@@ -215,7 +215,12 @@ To run the complete FABulous flow, type
             self.fabricGen.loadFabric(args[0])
         self.fabricLoaded = True
         self.csvFile = args[0]
-        self.allTile = list(self.fabricGen.fabric.tileDic.keys())
+        tileByPath = [f.name for f in os.scandir(f"./Tile/") if f.is_dir()]
+        tileByFabric = list(self.fabricGen.fabric.tileDic.keys())
+        superTileByFabric = list(self.fabricGen.fabric.superTileDic.keys())
+        self.allTile = list(set(tileByPath) & set(
+            tileByFabric + superTileByFabric))
+        print(self.allTile)
         logger.info("Complete")
 
     def complete_load_fabric(self, text, *ignored):
@@ -723,7 +728,6 @@ if __name__ == "__main__":
             writer = VHDLWriter("")
         if args.writer == "verilog":
             writer = VerilogWriter("")
-
 
         fabShell = FABulousShell(
             FABulous(writer, fabricCSV=args.csv), args.project_dir)

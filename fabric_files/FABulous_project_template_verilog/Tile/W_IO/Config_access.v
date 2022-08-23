@@ -12,7 +12,7 @@ module Config_access (C_bit0, C_bit1, C_bit2, C_bit3, ConfigBits);
 	(* FABulous, EXTERNAL *)output C_bit2; // EXTERNAL
 	(* FABulous, EXTERNAL *)output C_bit3; // EXTERNAL
 	// GLOBAL all primitive pins that are connected to the switch matrix have to go before the GLOBAL label
-	input [NoConfigBits-1:0] ConfigBits;
+	(* FABulous, GLOBAL *)input [NoConfigBits-1:0] ConfigBits;
 
 	// we just wire configuration bits to fabric top
 	assign C_bit0 = ConfigBits[0];

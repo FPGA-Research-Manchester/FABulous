@@ -19,9 +19,11 @@ def parseFabricCSV(fileName: str) -> Fabric:
     """
     Parses a csv file and returns a Fabric object.
     """
-
     if not fileName.endswith(".csv"):
         raise ValueError("File must be a csv file")
+
+    if not os.path.exists(fileName):
+        raise ValueError(f"File {fileName} does not exist")
 
     filePath, _ = os.path.split(os.path.abspath(fileName))
 
@@ -128,6 +130,7 @@ def parseFabricCSV(fileName: str) -> Fabric:
             else:
                 raise ValueError(
                     f"Unknown tile description {temp[0]} in tile {t}")
+
         tileDefs.append(Tile(tileName, ports, bels,
                         matrixDir, withUserCLK, configBit))
 
@@ -202,7 +205,6 @@ def parseFabricCSV(fileName: str) -> Fabric:
             tileMap.append(row)
 
         superTileDic[name] = SuperTile(name, tiles, tileMap, bels, withUserCLK)
-
     # parse the parameters
     height = 0
     width = 0
@@ -277,6 +279,10 @@ def parseList(fileName: str, collect: Literal["", "source", "sink"] = "") -> Uni
     """
     Parses a list file and returns a list of tuples.
     """
+
+    if not os.path.exists(fileName):
+        raise ValueError(f"The file {fileName} does not exist.")
+
     resultList = []
     with open(fileName, 'r') as f:
         file = f.read()

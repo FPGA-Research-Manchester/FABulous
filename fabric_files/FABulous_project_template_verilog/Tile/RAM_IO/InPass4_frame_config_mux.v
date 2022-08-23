@@ -26,10 +26,10 @@ module InPass4_frame_config (I0, I1, I2, I3, O0, O1, O2, O3, UserCLK, ConfigBits
 	(* FABulous, EXTERNAL *) input I1; //EXTERNAL
 	(* FABulous, EXTERNAL *) input I2; //EXTERNAL
 	(* FABulous, EXTERNAL *) input I3; //EXTERNAL
-	(* FABulous, EXTERNAL *) output O0; //EXTERNAL
-	(* FABulous, EXTERNAL *) output O1; //EXTERNAL
-	(* FABulous, EXTERNAL *) output O2; //EXTERNAL
-	(* FABulous, EXTERNAL *) output O3; //EXTERNAL
+	output O0; //EXTERNAL
+	output O1; //EXTERNAL
+	output O2; //EXTERNAL
+	output O3; //EXTERNAL
 	// Tile IO ports from BELs
 	(* FABulous, EXTERNAL, SHARED_PORT *) input UserCLK; //EXTERNAL -- SHARED_PORT -- ## the EXTERNAL keyword will send this signal all the way to top and the --SHARED Allows multiple BELs using the same port (e.g. for exporting a clock to the top)
 	// GLOBAL all primitive pins that are connected to the switch matrix have to go before the GLOBAL label

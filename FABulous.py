@@ -82,6 +82,7 @@ class FABulous:
         # self.fabricGenerator = FabricGenerator(fabric, writer)
 
     def setWriterOutputFile(self, outputDir):
+        logger.info(f"Output file: {outputDir}")
         self.writer.outFileName = outputDir
 
     def loadFabric(self, dir: str):
@@ -146,9 +147,10 @@ You have started FABlous shell with following options:
 Type help or ? to list commands
 The shell support tab completion for commands and files
 
-To run the complete FABulous flow, type 
-    load_fabric <fabric_file>
-    run_FABulous
+To run the complete FABulous flow with the default project, run the following command: 
+    load_fabric
+    run_FABulous_fabric
+    run_FABulous_bitstream npnr ./user_design/AND_gate.v
     """
     prompt: str = "FABulous> "
     fabricGen: FABulous
@@ -203,21 +205,26 @@ To run the complete FABulous flow, type
 
     def do_load_fabric(self, args):
         "load csv file and generate an internal representation of the fabric"
-        logger.info("Loading fabric")
         args = self.parse(args)
         # if no argument is given will use the one set by set_fabric_csv
         # else use the argument
+        logger.info("Loading fabric")
         if len(args) == 0:
             if self.csvFile != "" and os.path.exists(self.csvFile):
                 self.fabricGen.loadFabric(self.csvFile)
+            elif os.path.exists("./fabric.csv"):
+                logger.info(
+                    "Found fabric.csv in current directory loading that file as the definition of the fabric")
+                self.fabricGen.loadFabric("./fabric.csv")
+                self.csvFile = "./fabric.csv"
             else:
                 logger.error(
                     "No argument is given and no csv file is set or the file does not exist")
                 return
         else:
             self.fabricGen.loadFabric(args[0])
+            self.csvFile = args[0]
         self.fabricLoaded = True
-        self.csvFile = args[0]
         tileByPath = [f.name for f in os.scandir(f"./Tile/") if f.is_dir()]
         tileByFabric = list(self.fabricGen.fabric.tileDic.keys())
         superTileByFabric = list(self.fabricGen.fabric.superTileDic.keys())
@@ -250,7 +257,7 @@ To run the complete FABulous flow, type
 
             logger.info(f"Generating configMem for {i}")
             self.fabricGen.setWriterOutputFile(
-                f"./Tile/{i}_ConfigMem.{self.extension}")
+                f"./Tile/{i}/{i}_ConfigMem.{self.extension}")
             self.fabricGen.genConfigMem(i, f"./Tile/{i}/{i}_ConfigMem.csv")
         logger.info(f"Generating configMem complete")
 
@@ -307,6 +314,8 @@ To run the complete FABulous flow, type
 
                     # Gen tile
                     logger.info(f"Generating subtile {st}")
+                    logger.info(
+                        f"Output file: ./Tile/{t}/{st}/{st}_tile.{self.extension}")
                     self.fabricGen.setWriterOutputFile(
                         f"./Tile/{t}/{st}/{st}_tile.{self.extension}")
                     self.fabricGen.genTile(st)
@@ -349,7 +358,7 @@ To run the complete FABulous flow, type
         logger.info(f"Generating fabric {self.fabricGen.fabric.name}")
         self.do_gen_all_tile()
         self.fabricGen.setWriterOutputFile(
-            f"./{self.fabricGen.fabric.name}.{self.extension}")
+            f"./Fabric/{self.fabricGen.fabric.name}.{self.extension}")
         self.fabricGen.genFabric()
         logger.info("Fabric generation complete")
 
@@ -358,9 +367,11 @@ To run the complete FABulous flow, type
         logger.info("Generating bitstream specification")
         specObject = self.fabricGen.genBitStreamSpec()
 
+        logger.info(f"output file: {metaDataDir}/bitStreamSpec.bin")
         with open(f"{metaDataDir}/bitStreamSpec.bin", "wb") as outFile:
             pickle.dump(specObject, outFile)
 
+        logger.info(f"output file: {metaDataDir}/bitStreamSpec.csv")
         with open(f"{metaDataDir}/bitStreamSpec.csv", "w") as f:
             w = csv.writer(f)
             for key1 in specObject["TileSpecs"]:
@@ -373,11 +384,11 @@ To run the complete FABulous flow, type
         "generate the top wrapper of the fabric"
         logger.info("Generating top wrapper")
         self.fabricGen.setWriterOutputFile(
-            f"./{self.fabricGen.fabric.name}_top.{self.extension}")
+            f"./Fabric/{self.fabricGen.fabric.name}_top.{self.extension}")
         self.fabricGen.genTopWrapper()
         logger.info("Generated top wrapper")
 
-    def do_run_FABulous(self, *ignored):
+    def do_run_FABulous_fabric(self, *ignored):
         "generate the fabric base on the CSV file, create the bitstream specification of the fabric, top wrapper of the fabric and Nextpnr model of the fabric"
         logger.info("Running FABulous")
         self.do_gen_fabric()
@@ -392,12 +403,15 @@ To run the complete FABulous flow, type
         logger.info("Generating npnr model")
         npnrModel = self.fabricGen.genModelNpnr()
 
+        logger.info(f"output file: {metaDataDir}/pips.txt")
         with open(f"{metaDataDir}/pips.txt", "w") as f:
             f.write(npnrModel[0])
 
+        logger.info(f"output file: {metaDataDir}/bel.txt")
         with open(f"{metaDataDir}/bel.txt", "w") as f:
             f.write(npnrModel[1])
 
+        logger.info(f"output file: {metaDataDir}/template.pcf")
         with open(f"{metaDataDir}/template.pcf", "w") as f:
             f.write(npnrModel[2])
 
@@ -555,22 +569,19 @@ To run the complete FABulous flow, type
                 "Verilog file is not generated, potentialy due to the error in the C code")
             exit(-1)
 
-    def do_load_design(self, args):
+    def do_synthesis_npnr(self, args):
         args = self.parse(args)
         if len(args) != 1:
-            print("Usage: load_design <top>")
-        else:
-            self.top = args[0]
-
-    def do_synthesis_npnr(self, args):
-        logger.info("Running synthesis that targeting Nextpnr")
-        args = self.parse(args)
+            logger.error("Usage: synthesis_npnr <dir_to_top_module>")
+            return
+        logger.info(
+            f"Running synthesis that targeting Nextpnr with design {args[0]}")
         path, name = os.path.split(args[0])
         name = name.split('.')[0]
         runCmd = ["yosys",
-                  "-p", f"tcl {fabulousRoot}/nextpnr/fabulous/synth/synth_fabulous_dffesr.tcl 4 {name} ./.FABulous/{name}.json",
+                  "-p", f"tcl {fabulousRoot}/nextpnr/fabulous/synth/synth_fabulous_dffesr.tcl 4 {name} {path}/{name}.json",
                   f"{args[0]}",
-                  "-l", f"./{path}/{name}_yosys_log.txt"]
+                  "-l", f"{path}/{name}_yosys_log.txt"]
         sp.run(runCmd, check=True)
         logger.info("Synthesis completed")
 
@@ -578,14 +589,15 @@ To run the complete FABulous flow, type
         return self._complete_path(text)
 
     def do_synthesis_blif(self, args):
-        logger.info("Running synthesis that targeting BLIF")
+        logger.info(
+            f"Running synthesis that targeting BLIF with design {args[0]}")
         args = self.parse(args)
         path, name = os.path.split(args[0])
         name = name.split('.')[0]
         runCmd = ["yosys",
-                  "-p", f"tcl {fabulousRoot}/nextpnr/fabulous/synth/synth_fabulous_dffesr.tcl 4 {name} ./.FABulous/{name}.blif",
+                  "-p", f"tcl {fabulousRoot}/nextpnr/fabulous/synth/synth_fabulous_dffesr.tcl 4 {name} {path}/{name}.blif",
                   f"{args[0]}",
-                  "-l", f"./{path}/{name}_yosys_log.txt"]
+                  "-l", f"{path}/{name}_yosys_log.txt"]
         sp.run(runCmd, check=True)
         logger.info("Synthesis completed")
 
@@ -593,40 +605,45 @@ To run the complete FABulous flow, type
         return self._complete_path(text)
 
     def do_place_and_route_npnr(self, args):
-        logger.info("Running Placement and Routing with Nextpnr")
         args = self.parse(args)
         if len(args) != 1:
-            print("Usage: place_and_route_npnr <dir_to_top_module>")
+            logger.error("Usage: place_and_route_npnr <dir_to_top_module>")
             return
+        logger.info(
+            f"Running Placement and Routing with Nextpnr for design {args[0]}")
         path, name = os.path.split(args[0])
         name = name.split('.')[0]
 
-        if f"{name}.json" in os.listdir(f"./.FABulous"):
+        if not os.path.exists(f".FABulous/pips.txt") or not os.path.exists(f".FABulous/bel.txt"):
+            logger.error(
+                "Pips and Bel files are not found, please run model_gen_npnr first")
+            return
+
+        # TODO rewriting the fab_arch script so no need to copy file for work around
+        if f"{name}.json" in os.listdir(f"{path}"):
             shutil.copy(f".FABulous/pips.txt", f".")
             shutil.copy(f".FABulous/bel.txt", f".")
-
             runCmd = [f"{fabulousRoot}/nextpnr/nextpnr-fabulous",
                       "--pre-pack", f"{fabulousRoot}/nextpnr/fabulous/fab_arch/fab_arch.py",
                       "--pre-place", f"{fabulousRoot}/nextpnr/fabulous/fab_arch/fab_timing.py",
-                      "--json", f".FABulous/{name}.json",
+                      "--json", f"{path}/{name}.json",
                       "--router", "router2",
-                      "--router2-heatmap", f"{name}_heatmap",
+                      "--router2-heatmap", f"{path}/{name}_heatmap",
                       "--post-route", f"{fabulousRoot}/nextpnr/fabulous/fab_arch/bitstream_temp.py",
-                      "--write", f"./.FABulous/pnr_{name}.json",
+                      "--write", f"{path}/pnr_{name}.json",
                       "--verbose",
-                      "--log", f"./{name}_npnr_log.txt"]
+                      "--log", f"{path}/{name}_npnr_log.txt"]
 
-            # print(" ".join(runCmd))
             sp.run(runCmd, stdout=sys.stdout, stderr=sp.STDOUT, check=True)
 
             shutil.move("./sequential_16bit.fasm",
-                        f"./{name}.fasm")
+                        f"{path}/{name}.fasm")
 
             os.remove("./bel.txt")
             os.remove("./pips.txt")
         else:
             logger.error(
-                f"Cannot find {self.top}.json file, which is generated by running Yosys with Nextpnr backend")
+                f"Cannot find {name}.json file in {path}, which is generated by running Yosys with Nextpnr backend")
             return
         logger.info("Placement and Routing completed")
 
@@ -634,19 +651,20 @@ To run the complete FABulous flow, type
         return self._complete_path(text)
 
     def do_place_and_route_vpr(self, args):
-        logger.info("Running Placement and Routing with VPR")
+        logger.info(
+            f"Running Placement and Routing with VPR for design {args[0]}")
         if f"{self.top}.blif" in os.listdir(f".FABulous"):
             if not os.getenv('VTR_ROOT'):
-                print(
+                logger.error(
                     "VTR_ROOT is not set, please set it to the VPR installation directory")
                 exit(-1)
 
             vtr_root = os.getenv('VTR_ROOT')
 
             runCmd = [f"{vtr_root}/vpr/vpr",
-                      f"{self.projectDir}/.FABulous/architecture.xml",
-                      f"{self.projectDir}/.FABulous/{self.top}.blif",
-                      "--read_rr_graph", f"{self.projectDir}/.FABulous/routing_resources.xml",
+                      f".FABulous/architecture.xml",
+                      f".FABulous/{self.top}.blif",
+                      "--read_rr_graph", f".FABulous/routing_resources.xml",
                       "--route_chan_width", "16"]
             sp.run(runCmd, check=True)
         else:
@@ -655,16 +673,58 @@ To run the complete FABulous flow, type
             return
         logger.info("Placement and Routing completed")
 
+    def complete_place_and_route_vpr(self, text, *ignored):
+        return self._complete_path(text)
+
     def do_gen_bitStream_binary(self, args):
-        logger.info(f"Generating Bitstream for design {self.top}")
-        runCmd = ["python3", f"./nextpnr/fabulous/fab_arch/bit_gen.py",
+        args = self.parse(args)
+        if len(args) != 1:
+            logger.error("Usage: gen_bitStream_binary <dir_to_top_module>")
+            return
+        path, name = os.path.split(args[0])
+        name = name.split('.')[0]
+        if not os.path.exists("./.FABulous/bitStreamSpec.bin"):
+            logger.error(
+                "Cannot find bitStreamSpec.bin file, which is generated by running gen_bitStream_spec")
+            return
+
+        if not os.path.exists(f"{path}/{name}.fasm"):
+            logger.error(
+                f"Cannot find {path}/{name}.fasm file which is generated by running place_and_route_npnr or place_and_route_vpr")
+            return
+
+        logger.info(f"Generating Bitstream for design {args[0]}")
+        logger.info(f"Outputting to {path}/{name}.bin")
+        name = name.split('.')[0]
+        runCmd = ["python3", f"{fabulousRoot}/nextpnr/fabulous/fab_arch/bit_gen.py",
                   "-genBitstream",
-                  f"./{self.projectDir}/{self.top}.fasm",
-                  f"{self.projectDir}/.FABulous/meta_data.txt",
-                  f"./{self.projectDir}/{self.top}.bin"]
+                  f"{path}/{name}.fasm",
+                  f"./.FABulous/bitStreamSpec.bin",
+                  f"./{path}/{name}.bin"]
 
         sp.run(runCmd, check=True)
         logger.info("Bitstream generated")
+
+    def complete_gen_bitStream_binary(self, text, *ignored):
+        return self._complete_path(text)
+
+    def do_run_FABulous_bitstream(self, args):
+        args = self.parse(args)
+        if len(args) != 2:
+            logger.error(
+                "Usage: run_FABulous_bitstream <npnr|vpr> <dir_to_top>")
+            return
+        if args[0] == "vpr":
+            self.do_synthesis_blif(args[1])
+            self.do_place_and_route_vpr(args[1])
+            self.do_gen_bitStream_binary(args[1])
+        else:
+            self.do_synthesis_npnr(args[1])
+            self.do_place_and_route_npnr(args[1])
+            self.do_gen_bitStream_binary(args[1])
+
+    def complete_run_FABulous_bitstream(self, text, *ignored):
+        return self._complete_path(text)
 
 
 if __name__ == "__main__":

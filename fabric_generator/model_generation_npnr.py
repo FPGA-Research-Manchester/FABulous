@@ -20,10 +20,9 @@ def genNextpnrModel(fabric: Fabric):
             if tile.matrixDir.endswith(".csv"):
                 connection = parseMatrix(tile.matrixDir, tile.name)
                 for source, sinkList in connection.items():
-
                     for sink in sinkList:
                         pipStr.append(
-                            f"X{x}Y{y},{source},X{x}Y{y},{sink},{8},{source}.{sink}")
+                            f"X{x}Y{y},{sink},X{x}Y{y},{source},{8},{sink}.{source}")
             elif tile.matrixDir.endswith(".list"):
                 connection = parseList(tile.matrixDir)
                 for sink, source in connection:
@@ -39,7 +38,7 @@ def genNextpnrModel(fabric: Fabric):
                     f"X{x}Y{y},{wire.source},X{x+wire.xOffset}Y{y+wire.yOffset},{wire.destination},{8},{wire.source}.{wire.destination}")
 
             belStr.append(f"#Tile_X{x}Y{y}")
-            for i, bel in enumerate(tile.bels ):
+            for i, bel in enumerate(tile.bels):
                 belPort = bel.inputs + bel.outputs
                 cType = bel.name
                 if bel.name == "LUT4c_frame_config" or bel.name == "LUT4c_frame_config_dffesr":

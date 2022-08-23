@@ -7,6 +7,10 @@ import os
 from fabric_generator.fabric import Fabric, Port, Bel, Tile, SuperTile, ConfigMem
 from fabric_generator.fabric import IO, Direction, Side, MultiplexerStyle, ConfigBitMode
 
+# from fabric import Fabric, Port, Bel, Tile, SuperTile, ConfigMem
+# from fabric import IO, Direction, Side, MultiplexerStyle, ConfigBitMode
+
+
 oppositeDic = {"NORTH": "SOUTH", "SOUTH": "NORTH",
                "EAST": "WEST", "WEST": "EAST"}
 
@@ -451,7 +455,7 @@ def parseFileVHDL(filename: str, belPrefix: str = "") -> Tuple[List[Tuple[str, I
     return internal, external, config, shared, noConfigBits, userClk, belMapDic
 
 
-def parseFileVerilog(filename: str, belPrefix: str = "") -> Tuple[List[Tuple[str, IO]], List[Tuple[str, IO]], List[Tuple[str, IO]], List[Tuple[str, IO]], int, bool, Dict[str, int]]:
+def parseFileVerilog(filename: str, belPrefix: str = "") -> Tuple[List[Tuple[str, IO]], List[Tuple[str, IO]], List[Tuple[str, IO]], List[Tuple[str, IO]], int, bool, Dict[str, dict]]:
     internal: List[Tuple[str, IO]] = []
     external: List[Tuple[str, IO]] = []
     config: List[Tuple[str, IO]] = []
@@ -472,16 +476,64 @@ def parseFileVerilog(filename: str, belPrefix: str = "") -> Tuple[List[Tuple[str
         print(f"Permission denied to file {filename}.")
         exit(-1)
 
+    belEnumsDic = {}
+    if belEnums := re.findall(r"\(\*.*?FABulous,.*?BelEnum,(.*?)\*\)", file, re.DOTALL | re.MULTILINE):
+        for enums in belEnums:
+            enums = enums.replace("\n", "").replace(" ", "").replace("\t", "")
+            enums = enums.split(",")
+            enums = [i for i in enums if i != "" and i != " "]
+            if enumParse := re.search(r"(.*?)\[(\d+):(\d+)\]", enums[0]):
+                name = enumParse.group(1)
+                start = int(enumParse.group(2))
+                end = int(enumParse.group(3))
+            else:
+                raise ValueError(
+                    f"Invalid enum {enums[0]} in file {filename}")
+            belEnumsDic[name] = {}
+            for i in enums[1:]:
+                key, value = i.split("=")
+                belEnumsDic[name][key] = {}
+                bitValue = list(value)
+                if start > end:
+                    for j in range(start, end - 1, -1):
+                        belEnumsDic[name][key][j] = bitValue.pop(0)
+                else:
+                    for j in range(start, end + 1):
+                        belEnumsDic[name][key][j] = bitValue.pop(0)
+
     belMapDic = {}
-    if belMap := re.search(r"\(\*.*FABulous,.*?BelMap,(.*?)\*\)", file, re.DOTALL | re.MULTILINE | re.VERBOSE):
+    if belMap := re.search(r"\(\*.*FABulous,.*?BelMap,(.*?)\*\)", file, re.DOTALL | re.MULTILINE):
         belMap = belMap.group(1)
         belMap = belMap.replace("\n", "").replace(" ", "").replace("\t", "")
         belMap = belMap.split(",")
+        belMap = [i for i in belMap if i != "" and i != " "]
         for bel in belMap:
             bel = bel.split("=")
+            belMapDic[bel[0]] = {}
             if bel == ['']:
                 continue
-            belMapDic[bel[0]] = int(bel[1])
+            if bel[0] in list(belEnumsDic.keys()):
+                belMapDic[bel[0]] = belEnumsDic[bel[0]]
+            elif ":" in bel[1]:
+                start, end = bel[1].split(":")
+                start, end = int(start), int(end)
+                if start > end:
+                    length = start - end + 1
+                    for i in range(2**length-1, -1, -1):
+                        belMapDic[bel[0]][i] = {}
+                        bitMap = list(f"{i:0{length.bit_length()}b}")
+                        for v in range(len(bitMap)-1, -1, -1):
+                            belMapDic[bel[0]][i][v] = bitMap.pop(0)
+                else:
+                    length = end - start + 1
+                    for i in range(0, 2**length):
+                        belMapDic[bel[0]][i] = {}
+                        bitMap = list(
+                            f"{2**length-i-1:0{length.bit_length()}b}")
+                        for v in range(len(bitMap)-1, -1, -1):
+                            belMapDic[bel[0]][i][v] = bitMap.pop(0)
+            else:
+                belMapDic[bel[0]][0] = {0: '1'}
 
     if result := re.search(r"NoConfigBits.*?=.*?(\d+)", file, re.IGNORECASE):
         noConfigBits = int(result.group(1))
@@ -643,14 +695,10 @@ def parseConfigMem(fileName: str, maxFramePerCol: int, frameBitPerRow: int, glob
 
 if __name__ == '__main__':
     # result = parseFabricCSV('fabric.csv')
-    result1 = parseList('RegFile_switch_matrix.list', collect="source")
+    # result1 = parseList('RegFile_switch_matrix.list', collect="source")
     # result = parseFileVerilog('./LUT4c_frame_config_dffesr.v')
 
-    result2 = parseMatrix('RegFile_switch_matrix.csv', "RegFile")
-    print(len(result1))
-    print(len(result2))
-    print(result1["SS4BEG3"])
-    print(result2["SS4BEG3"])
+    result2 = parseFileVerilog("./test.txt")
     # print(result[0])
     # print(result[1])
     # print(result[2])

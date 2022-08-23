@@ -16,6 +16,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+from curses.ascii import isdigit
 import json
 import re
 import math
@@ -1544,7 +1545,7 @@ class FabricGenerator:
 
     def generateTopWrapper(self):
         numberOfRows = self.fabric.numberOfRows - 2
-        numberOfColumns = self.fabric.numberOfColumns
+        numberOfColumns = self.fabric.numberOfColumns - 2
         self.writer.addHeader(f"{self.fabric.name}")
         self.writer.addParameterStart(indentLevel=1)
         self.writer.addParameter("include_eFPGA", "integer", 1, indentLevel=2)
@@ -1798,12 +1799,10 @@ class FabricGenerator:
                     maskDic[cfm.frameIndex] = cfm.usedBitMask
                     # matching the value in the configBitRanges with the reversedBitMask
                     # bit 0 in bit mask is the first value in the configBitRanges
-                    encodeI = 0
                     for i, char in enumerate(cfm.usedBitMask):
                         if char == "1":
-                            encodeDict[cfm.configBitRanges[encodeI]] = (
+                            encodeDict[cfm.configBitRanges.pop(0)] = (
                                 self.fabric.frameBitsPerRow - 1 - i) + self.fabric.frameBitsPerRow * cfm.frameIndex
-                            encodeI += 1
 
                 # filling the maskDic with the unused frames
                 for i in range(self.fabric.maxFramesPerCol-len(configMemList)):
@@ -1821,12 +1820,15 @@ class FabricGenerator:
                 curTileMapNoMask = {}
 
                 for i, bel in enumerate(tile.bels):
-                    for featureKey, value in bel.belFeatureMap.items():
-                        curTileMap[f"{string.ascii_uppercase[i]}.{featureKey}"] = {
-                            encodeDict[curBitOffset+value]: "1"}
-                        curTileMapNoMask[f"{string.ascii_uppercase[i]}.{featureKey}"] = {
-                            encodeDict[curBitOffset+value]: "1"}
-                    curBitOffset += len(bel.belFeatureMap)
+                    for featureKey, keyDict in bel.belFeatureMap.items():
+                        for entry in keyDict:
+                            if isinstance(entry, int):
+                                for v in keyDict[entry]:
+                                    curTileMap[f"{string.ascii_uppercase[i]}.{featureKey}"] = {
+                                        encodeDict[curBitOffset+v]: keyDict[entry][v]}
+                                    curTileMapNoMask[f"{string.ascii_uppercase[i]}.{featureKey}"] = {
+                                        encodeDict[curBitOffset+v]: keyDict[entry][v]}
+                                curBitOffset += len(keyDict[entry])
 
                 # All the generation will be working on the tile level with the tileDic
                 # This is added to propagate the updated switch matrix to each of the tile in the fabric

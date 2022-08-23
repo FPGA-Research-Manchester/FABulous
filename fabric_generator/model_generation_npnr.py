@@ -1,7 +1,65 @@
+import string
+from typing import Tuple
 from fabric_generator.utilities import *
+from fabric_generator.fabric import Fabric, Tile
+from fabric_generator.file_parser import parseMatrix, parseList
 
 
-def genNextpnrModel(archObject: FabricModelGen, generatePairs=True):
+def genNextpnrModel(fabric: Fabric):
+    pipStr = []
+    belStr = []
+    belStr.append(
+        f"# BEL descriptions: bottom left corner Tile_X0Y0, top right Tile_X{fabric.numberOfColumns}Y{fabric.numberOfRows}")
+    constrainStr = []
+
+    for y, row in enumerate(fabric.tile):
+        for x, tile in enumerate(row):
+            if tile is None:
+                continue
+            pipStr.append(f"#Tile-internal pips on tile X{x}Y{y}:")
+            if tile.matrixDir.endswith(".csv"):
+                connection = parseMatrix(tile.matrixDir, tile.name)
+                for source, sinkList in connection.items():
+
+                    for sink in sinkList:
+                        pipStr.append(
+                            f"X{x}Y{y},{source},X{x}Y{y},{sink},{8},{source}.{sink}")
+            elif tile.matrixDir.endswith(".list"):
+                connection = parseList(tile.matrixDir)
+                for sink, source in connection:
+                    pipStr.append(
+                        f"X{x}Y{y},{source},X{x}Y{y},{sink},{8},{source}.{sink}")
+            else:
+                raise ValueError(
+                    f"For model generation {tile.matrixDir} need to a csv or list file")
+
+            pipStr.append(f"#Tile-external pips on tile X{x}Y{y}:")
+            for wire in tile.wireList:
+                pipStr.append(
+                    f"X{x}Y{y},{wire.source},X{x+wire.xOffset}Y{y+wire.yOffset},{wire.destination},{8},{wire.source}.{wire.destination}")
+
+            belStr.append(f"#Tile_X{x}Y{y}")
+            for i, bel in enumerate(tile.bels ):
+                belPort = bel.inputs + bel.outputs
+                cType = bel.name
+                if bel.name == "LUT4c_frame_config" or bel.name == "LUT4c_frame_config_dffesr":
+                    cType = "FABULOUS_LC"
+                letter = string.ascii_uppercase[i]
+                belStr.append(
+                    f"X{x}Y{y},X{x},Y{y},{letter},{cType},{','.join(belPort)}")
+
+                if bel.name in ["IO_1_bidirectional_frame_config_pass", "InPass4_frame_config", "OutPass4_frame_config", "InPass4_frame_config_mux", "OutPass4_frame_config_mux"]:
+                    constrainStr.append(
+                        f"set_io Tile_X{x}Y{y}_{letter} Tile_X{x}Y{y}.{letter}")
+
+    return "\n".join(pipStr), "\n".join(belStr), "\n".join(constrainStr)
+
+
+def genNextpnrPairModel(fabric: Fabric):
+    pass
+
+
+def genNextpnrModelOld(archObject: FabricModelGen, generatePairs=True) -> Tuple[str, str, str]:
     pipsStr = ""
     belsStr = f"# BEL descriptions: bottom left corner Tile_X0Y0, top right {archObject.tiles[0][archObject.width - 1].genTileLoc()}\n"
     pairStr = ""

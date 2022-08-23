@@ -148,9 +148,9 @@ class Bel():
     configPort: List[str]
     sharedPort: List[Tuple[str, IO]]
     configBit: int
-    belFeatureMap: Dict[str, int] = field(default_factory=dict)
+    belFeatureMap: Dict[str, dict] = field(default_factory=dict)
 
-    def __init__(self, src: str, prefix: str, internal, external, configPort, sharedPort, configBit: int, belMap: Dict[str, int]) -> None:
+    def __init__(self, src: str, prefix: str, internal, external, configPort, sharedPort, configBit: int, belMap: Dict[str, dict]) -> None:
         self.src = src
         self.prefix = prefix
         self.name = src.split("/")[-1].split(".")[0]

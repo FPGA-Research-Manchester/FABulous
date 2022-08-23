@@ -124,6 +124,9 @@ class FABulous:
         specObject = self.fabricGenerator.generateBitsStreamSpec()
         return specObject
 
+    def genModelNpnr(self):
+        return model_gen_npnr.genNextpnrModel(self.fabric)
+
 
 class FABulousShell(cmd.Cmd):
     intro: str = f"""
@@ -172,7 +175,7 @@ To run the complete FABulous flow, type
             self.fabricLoaded = True
 
     def precmd(self, line: str) -> str:
-        if "gen" in line or "run" in line and not self.fabricLoaded:
+        if ("gen" in line or "run" in line) and not self.fabricLoaded:
             logger.error("Fabric not loaded")
             return ""
         return line
@@ -220,7 +223,6 @@ To run the complete FABulous flow, type
         superTileByFabric = list(self.fabricGen.fabric.superTileDic.keys())
         self.allTile = list(set(tileByPath) & set(
             tileByFabric + superTileByFabric))
-        print(self.allTile)
         logger.info("Complete")
 
     def complete_load_fabric(self, text, *ignored):
@@ -346,6 +348,8 @@ To run the complete FABulous flow, type
         "generate the fabric base on the loaded fabric"
         logger.info(f"Generating fabric {self.fabricGen.fabric.name}")
         self.do_gen_all_tile()
+        self.fabricGen.setWriterOutputFile(
+            f"./{self.fabricGen.fabric.name}.{self.extension}")
         self.fabricGen.genFabric()
         logger.info("Fabric generation complete")
 
@@ -368,6 +372,8 @@ To run the complete FABulous flow, type
     def do_gen_top_wrapper(self, *ignored):
         "generate the top wrapper of the fabric"
         logger.info("Generating top wrapper")
+        self.fabricGen.setWriterOutputFile(
+            f"./{self.fabricGen.fabric.name}_top.{self.extension}")
         self.fabricGen.genTopWrapper()
         logger.info("Generated top wrapper")
 
@@ -381,30 +387,20 @@ To run the complete FABulous flow, type
         logger.info("FABulous flow complete")
 
     # TODO Update once have transition the model gen to object based
-    def do_gen_model_npnr(self):
+    def do_gen_model_npnr(self, *ignored):
         "generate a npnr model of the fabric"
         logger.info("Generating npnr model")
-        if self.csvFile:
-            FabricFile = [i.strip('\n').split(',') for i in open(self.csvFile)]
-            fabric = GetFabric(FabricFile)
-            fabricObject = genFabricObject(fabric, FabricFile)
-            pipFile = open(f"{metaDataDir}/pips.txt", "w")
-            belFile = open(f"{metaDataDir}/bel.txt", "w")
-            constraintFile = open(
-                f".FABulous/template.pcf", "w")
+        npnrModel = self.fabricGen.genModelNpnr()
 
-            npnrModel = model_gen_npnr.genNextpnrModel(fabricObject, False)
+        with open(f"{metaDataDir}/pips.txt", "w") as f:
+            f.write(npnrModel[0])
 
-            pipFile.write(npnrModel[0])
-            belFile.write(npnrModel[1])
-            constraintFile.write(npnrModel[2])
+        with open(f"{metaDataDir}/bel.txt", "w") as f:
+            f.write(npnrModel[1])
 
-            pipFile.close()
-            belFile.close()
-            constraintFile.close()
+        with open(f"{metaDataDir}/template.pcf", "w") as f:
+            f.write(npnrModel[2])
 
-        else:
-            print("Need to call sec_fabric_csv before running model_gen_npnr")
         logger.info("Generated npnr model")
 
     # TODO updater once have transition the model gen to object based
@@ -421,7 +417,7 @@ To run the complete FABulous flow, type
             constraintFile = open(
                 f"{metaDataDir}/template.pcf", "w")
 
-            npnrModel = model_gen_npnr.genNextpnrModel(fabricObject, False)
+            npnrModel = model_gen_npnr.genNextpnrModelOld(fabricObject, False)
 
             pipFile.write(npnrModel[0])
             belFile.write(npnrModel[1])
@@ -599,6 +595,9 @@ To run the complete FABulous flow, type
     def do_place_and_route_npnr(self, args):
         logger.info("Running Placement and Routing with Nextpnr")
         args = self.parse(args)
+        if len(args) != 1:
+            print("Usage: place_and_route_npnr <dir_to_top_module>")
+            return
         path, name = os.path.split(args[0])
         name = name.split('.')[0]
 
@@ -656,7 +655,7 @@ To run the complete FABulous flow, type
             return
         logger.info("Placement and Routing completed")
 
-    def do_gen_bitstream(self, args):
+    def do_gen_bitStream_binary(self, args):
         logger.info(f"Generating Bitstream for design {self.top}")
         runCmd = ["python3", f"./nextpnr/fabulous/fab_arch/bit_gen.py",
                   "-genBitstream",

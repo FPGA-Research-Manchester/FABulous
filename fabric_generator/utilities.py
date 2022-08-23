@@ -749,7 +749,10 @@ def genFabricObject(fabric: list, FabricFile):
                 # Handle tile attributes depending on their label
                 if wire[0] == "MATRIX":
                     vhdlLoc = wire[1]
-                    csvLoc = vhdlLoc[:-4:] + "csv"
+                    # csvLoc = vhdlLoc[:-4:] + "csv"
+                    csvLoc = vhdlLoc.replace(".vhdl", ".csv")
+                    csvLoc = vhdlLoc.replace(".list", ".csv")
+                    csvLoc = vhdlLoc.replace(".v", ".csv")
                     cTile.matrixFileName = csvLoc
                     try:
                         csvFile = RemoveComments(
@@ -768,7 +771,6 @@ def genFabricObject(fabric: list, FabricFile):
                     belHasClockInput = False
                     try:
                         ports = GetComponentPortsFromFile(wire[1])
-
                         # We also want to check whether the component has a clock input
                         # Get all external (routed to top) ports
                         externalPorts = (GetComponentPortsFromFile(

@@ -99,7 +99,7 @@ def parseFabricCSV(fileName: str) -> Fabric:
                         "Invalid file type, only .vhdl and .v are supported")
                 internal, external, config, shared, configBit, userClk, belMap = result
                 bels.append(Bel(belFilePath, temp[2], internal,
-                            external, config, shared, configBit, belMap))
+                            external, config, shared, configBit, belMap, userClk))
                 withUserCLK |= userClk
             elif temp[0] == "MATRIX":
                 matrixDir = os.path.join(filePath, temp[1])

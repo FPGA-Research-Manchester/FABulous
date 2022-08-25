@@ -1,5 +1,668 @@
+import string
+from sys import prefix
+from typing import List
 from fabric_generator.utilities import *
+from fabric_generator.fabric import IO, Bel, Fabric
 import xml.etree.ElementTree as ET
+import os
+from xml.dom import minidom
+from fabric_generator.file_parser import parseMatrix, parseList
+
+
+def genVPRModel(fabric: Fabric, customXMLfile: str = "") -> str:
+
+    if customXMLfile != "":
+        with open(customXMLfile, 'r') as f:
+            customXML = ET.fromstring(f.read())
+    else:
+        customXML = ET.Element("EMPTY")
+
+    allBelVariant: List[Bel] = []
+    belName: set[str] = set()
+    allCustomXMLBelName = [i.get("name")
+                           for i in customXML.findall("bel_info")]
+    for name, tile in fabric.tileDic.items():
+        for bel in tile.bels:
+            if bel.name not in belName:
+                belName.add(bel.name)
+                allBelVariant.append(bel)
+
+    root = ET.Element("architecture")
+
+    # device block
+    device = ET.SubElement(root, "device")
+    ET.SubElement(device, "sizing", R_minW_nmos="6065.520020",
+                  R_minW_pmos="18138.500000")
+    ET.SubElement(device, "area", grid_logic_tile_area="14813.392")
+    chanWidthDistr = ET.SubElement(device, "chan_width_distr")
+    ET.SubElement(chanWidthDistr, "x", distr="uniform", peak="1.000000")
+    ET.SubElement(chanWidthDistr, "y", distr="uniform", peak="1.000000")
+    ET.SubElement(device, "switch_block", type="universal", fs="3")
+    ET.SubElement(device, "connection_block", input_switch_name="ipin_cblock")
+    ET.SubElement(device, "default_fc", in_type="frac",
+                  in_val="1", out_type="frac", out_val="1")
+
+    # layout block
+    layout = ET.SubElement(root, "layout")
+    fixedLayout = ET.SubElement(layout, "fixed_layout", name="FABulous",
+                                width=str(fabric.numberOfColumns), height=str(fabric.numberOfRows))
+    ET.SubElement(fixedLayout, "single", type="clock_primitive",
+                  priority="1", x="1", y="1")
+    for y, row in enumerate(fabric.tile):
+        for x, tile in enumerate(row):
+            if tile == None:
+                continue
+            single = ET.SubElement(fixedLayout, "single",
+                                   type=tile.name, priority="1", x=str(x+1), y=str(y+1))
+            metaData = ET.SubElement(single, "metadata")
+            prefixList = []
+            if tile.bels == []:
+                prefixList.append(f"X{x}Y{y}.dummy")
+            else:
+                for i, bel in enumerate(tile.bels):
+                    prefixList.append(f"X{x}Y{y}.{string.ascii_uppercase[i]}")
+
+                for port in tile.portsInfo:
+                    if "GND" in port.destinationName or "VCC" in port.destinationName:
+                        prefixList.append(f"X{x}Y{y}.hanging")
+                        break
+
+            ET.SubElement(metaData, "meta",
+                          name="fasm_prefix").text = " ".join(prefixList)
+
+    # Tiles block
+    tiles = ET.SubElement(root, "tiles")
+    tile = ET.SubElement(tiles, "tile", name="clock_primitive")
+    subTile = ET.SubElement(tile, "sub_tile", name="clock_sub")
+    equivalentSite = ET.SubElement(subTile, "equivalent_sites")
+    ET.SubElement(equivalentSite, "site",
+                  pb_type="clock_primitive", pin_mapping="direct")
+    ET.SubElement(subTile, "output", name="clock_out", num_pins="1")
+
+    for name, tile in fabric.tileDic.items():
+        t = ET.SubElement(tiles, "tile", name=name)
+
+        # tile without bel
+        if tile.bels == []:
+            subTile = ET.SubElement(
+                t, "sub_tile", name=f"{name}_dummy", capacity="1")
+            equivalentSite = ET.SubElement(subTile, "equivalent_sites")
+            ET.SubElement(equivalentSite, "site",
+                          pb_type="reserved_dummy", pin_mapping="direct")
+            ET.SubElement(subTile, "input", name="UserCLK", num_pins="1")
+
+        # tile with bel
+        for bel in tile.bels:
+            if bel.inputs + bel.outputs == []:
+                subTile = ET.SubElement(
+                    t, "sub_tile", name=f"{bel.prefix}{bel.name}_dummy", capacity="1")
+                equivalentSite = ET.SubElement(subTile, "equivalent_sites")
+                ET.SubElement(equivalentSite, "site",
+                              pb_type="reserved_dummy", pin_mapping="direct")
+                ET.SubElement(subTile, "input", name="UserCLK", num_pins="1")
+            else:
+                subTile = ET.SubElement(
+                    t, "sub_tile", name=f"{bel.prefix}{bel.name}", capacity="1")
+                equivalentSite = ET.SubElement(subTile, "equivalent_sites")
+                site = ET.SubElement(equivalentSite, "site",
+                                     pb_type=f"{bel.name}_wrapper", pin_mapping="custom")
+                for port in bel.inputs:
+                    ET.SubElement(site, "direct").attrib = {"from": f"{bel.prefix}{bel.name}.{port}",
+                                                            "to": f"{bel.name}_wrapper.{port.removeprefix(bel.prefix)}"}
+
+                for port in bel.outputs:
+                    ET.SubElement(site, "direct").attrib = {"from": f"{bel.name}_wrapper.{port.removeprefix(bel.prefix)}",
+                                                            "to": f"{bel.prefix}{bel.name}.{port}"}
+
+                ET.SubElement(subTile, "input", name="UserCLK", num_pins="1")
+                for i in bel.inputs:
+                    ET.SubElement(subTile, "input", name=i, num_pins="1")
+                for i in bel.outputs:
+                    ET.SubElement(subTile, "output", name=i, num_pins="1")
+
+        if hangingPort := [i.destinationName for i in tile.portsInfo if "GND" in i.destinationName or "VCC" in i.destinationName]:
+            subTile = ET.SubElement(
+                t, "sub_tile", name=f"{name}_hanging", capacity="1")
+            equivalentSite = ET.SubElement(subTile, "equivalent_sites")
+            ET.SubElement(equivalentSite, "site",
+                          pb_type=f"{name}_hanging", pin_mapping="direct")
+            for i in set(hangingPort):
+                ET.SubElement(subTile, "output", name=i, num_pins="1")
+
+    # Model block
+    models = ET.SubElement(root, "models")
+    model = ET.SubElement(models, "model", name="Global_Clock")
+    outputPorts = ET.SubElement(model, "output_ports")
+    ET.SubElement(outputPorts, "port", name="CLK")
+
+    for bel in allBelVariant:
+        if bel.name in allCustomXMLBelName:
+            continue
+        inputStriped = [i.removeprefix(bel.prefix) for i in bel.inputs]
+        outputStriped = [i.removeprefix(bel.prefix) for i in bel.outputs]
+        if inputStriped + outputStriped == []:
+            continue
+
+        model = ET.SubElement(models, "model", name=bel.name)
+        if inputStriped != []:
+            inputPorts = ET.SubElement(model, "input_ports")
+            for input in inputStriped:
+                ET.SubElement(inputPorts, "port",
+                              name=input, combinational_sink_ports=" ".join(outputStriped))
+            if bel.withUserCLK:
+                ET.SubElement(inputPorts, "port", name="UserCLK")
+
+        if outputStriped != []:
+            outputPorts = ET.SubElement(model, "output_ports")
+            for output in outputStriped:
+                ET.SubElement(outputPorts, "port", name=output)
+
+    # complex block list block
+    complexBlockList = ET.SubElement(root, "complexblocklist")
+    outerPbType = ET.SubElement(
+        complexBlockList, "pb_type", name="clock_primitive")
+    pbType = ET.SubElement(outerPbType, "pb_type", name="clock_input",
+                           blif_model=".subckt Global_Clock", num_pb="1")
+    ET.SubElement(pbType, "output", name="CLK", num_pins="1")
+    ET.SubElement(outerPbType, "output", name="clock_out", num_pins="1")
+    interConnect = ET.SubElement(outerPbType, "interconnect")
+    ET.SubElement(interConnect, "direct", name="clock_prim_to_top",
+                  input="clock_input.CLK", output="clock_primitive.clock_out")
+    pbType = ET.SubElement(complexBlockList, "pb_type", name="reserved_dummy")
+    ET.SubElement(pbType, "input", name="UserCLK", num_pins="1")
+    for bel in allBelVariant:
+        pbTypeWrapper = ET.SubElement(
+            complexBlockList, "pb_type", name=f"{bel.name}_wrapper")
+        if bel.name in allCustomXMLBelName:
+            element = [i for i in customXML.findall(
+                "bel_info") if i.get("name") == bel.name][0]
+            pbTypeWrapper.append(element.findall("pb_type")[0])
+        else:
+            pbType = ET.SubElement(
+                pbTypeWrapper, "pb_type", name=f"{bel.name}", num_pb="1", blif_model=f".subckt {bel.name}")
+            interConnect = ET.SubElement(pbTypeWrapper, "interconnect")
+            for i in bel.inputs:
+                for j in bel.outputs:
+                    ET.SubElement(pbType, "delay_constant", max="300e-12",
+                                  in_port=f"{bel.name}.{i.removeprefix(bel.prefix)}", out_port=f"{bel.name}.{j.removeprefix(bel.prefix)}")
+
+            if "UserCLK" in [i[0] for i in bel.sharedPort]:
+                ET.SubElement(pbTypeWrapper, "input",
+                              name="UserCLK", num_pins="1")
+                ET.SubElement(pbType, "input",
+                              name="UserCLK", num_pins="1")
+                ET.SubElement(interConnect, "direct",
+                              name=f"{bel.name}_UserCLK_to_top_child", input=f"{bel.name}_wrapper.UserCLK", output=f"{bel.name}.UserCLK")
+
+            for i in bel.inputs:
+                ET.SubElement(pbTypeWrapper, "input",
+                              name=i.removeprefix(bel.prefix), num_pins="1")
+                ET.SubElement(pbType, "input",
+                              name=i.removeprefix(bel.prefix), num_pins="1")
+                ET.SubElement(interConnect, "direct",
+                              name=f"{bel.name}_{i.removeprefix(bel.prefix)}_top_to_child", input=f"{bel.name}_wrapper.{i.removeprefix(bel.prefix)}", output=f"{bel.name}.{i.removeprefix(bel.prefix)}")
+
+            for i in bel.outputs:
+                ET.SubElement(pbTypeWrapper, "output",
+                              name=i.removeprefix(bel.prefix), num_pins="1")
+                ET.SubElement(pbType, "output",
+                              name=i.removeprefix(bel.prefix), num_pins="1")
+                ET.SubElement(interConnect, "direct",
+                              name=f"{bel.name}_{i.removeprefix(bel.prefix)}_child_to_top", input=f"{bel.name}.{i.removeprefix(bel.prefix)}", output=f"{bel.name}_wrapper.{i.removeprefix(bel.prefix)}")
+
+    # switch list block
+    switchList = ET.SubElement(root, "switchlist")
+    ET.SubElement(switchList, "switch", type="buffer", name="ipin_cblock",
+                  R="551", Cin=".77e-15", Cout="4e-15", Tdel="58e-12", buf_size="27.645901")
+    ET.SubElement(switchList, "switch", type="mux", name="buffer",  R="2e-12", Cin=".77e-15",
+                  Cout="4e-15", Tdel="58e-12", mux_trans_size="2.630740", buf_size="27.645901")
+
+    # segment list block
+    segmentList = ET.SubElement(root, "segmentlist")
+    segment = ET.SubElement(segmentList, "segment", name="dummy", length="1",
+                            freq="1.000000", type="unidir", Rmetal="1e-12", Cmetal="22.5e-15")
+    ET.SubElement(segment, "sb", type="pattern").text = "0 0"
+    ET.SubElement(segment, "cb", type="pattern").text = "0"
+    ET.SubElement(segment, "mux", name="buffer")
+
+    ET.indent(root, space="  ")
+
+    return ET.tostring(root, encoding="unicode")
+
+
+def genVPRRoutingResourceGraph(fabric: Fabric) -> str:
+    root = ET.Element("rr_graph")
+    root.attrib = {"tool_name": "vpr",
+                   "tool_version": "82a3c72",
+                   "tool_comment": "Based on FABulous output"}
+
+    clockX = 1
+    clockY = 1
+
+    rowPtcArr = [0] * fabric.numberOfRows
+    colPtcArr = [2**14] * fabric.numberOfColumns
+    rowMaxPtc = 2**14 - 1
+    colMaxPtc = 2**15 - 1
+
+    curId = 0
+    ptc = 0
+    blockIdMap: dict[str, int] = {}
+    ptcMap: dict[str, dict[str, int]] = {}
+
+    blockTypes = ET.SubElement(root, "block_types")
+    ET.SubElement(blockTypes, "block_type",
+                  id=f"{curId}", name="EMPTY", width="1", height="1")
+    blockIdMap["EMPTY"] = curId
+    curId += 1
+
+    ET.SubElement(blockTypes, "block_type",
+                  id=f"{curId}", name="clock_primitive", width="1", height="1")
+    pinClass = ET.SubElement(blockTypes, "pin_class", type="OUTPUT")
+    ET.SubElement(pinClass, "pin",
+                  ptc=f"{ptc}").text = "clock_primitive.clock_out[0]"
+    ptc += 1
+    blockIdMap["clock_primitive"] = curId
+    curId += 1
+
+    for name, tile in fabric.tileDic.items():
+        tilePtcMap: dict[str, int] = {}
+        ET.SubElement(blockTypes, "block_type",
+                      id=f"{curId}", name=f"{name}", width="1", height="1")
+
+        # If no Bels
+        if tile.bels == []:
+            pinClass = ET.SubElement(blockTypes, "pin_class", type="INPUT")
+            ET.SubElement(pinClass, "pin",
+                          ptc=f"{ptc}").text = f"{name}.UserCLK[0]"
+            ptc += 1
+
+        for bel in tile.bels:
+            # if bel have no inputs and outputs or have clock input
+            if bel.inputs + bel.outputs == [] or bel.withUserCLK:
+                pinClass = ET.SubElement(blockTypes, "pin_class", type="INPUT")
+                ET.SubElement(pinClass, "pin",
+                              ptc=f"{ptc}").text = f"{name}.UserCLK[0]"
+                ptc += 1
+
+            # bel input
+            for i in bel.inputs:
+                pinClass = ET.SubElement(blockTypes, "pin_class", type="INPUT")
+                ET.SubElement(
+                    pinClass, "pin", ptc=f"{ptc}").text = f"{name}.{i.removeprefix(bel.prefix)}[0]"
+                tilePtcMap[i.removeprefix(bel.prefix)] = ptc
+                ptc += 1
+
+            # bel output
+            for i in bel.outputs:
+                pinClass = ET.SubElement(
+                    blockTypes, "pin_class", type="OUTPUT")
+                ET.SubElement(
+                    pinClass, "pin", ptc=f"{ptc}").text = f"{name}.{i.removeprefix(bel.prefix)}[0]"
+                tilePtcMap[i.removeprefix(bel.prefix)] = ptc
+                ptc += 1
+
+            # input of tile
+            for i in [i.destinationName for i in tile.portsInfo if i.inOut == IO.INPUT]:
+                pinClass = ET.SubElement(
+                    blockTypes, "pin_class", type="INPUT")
+                ET.SubElement(
+                    pinClass, "pin", ptc=f"{ptc}").text = f"{name}.{i.removeprefix(bel.prefix)}[0]"
+                tilePtcMap[i] = ptc
+                ptc += 1
+
+            # output of tile
+            for i in [i.sourceName for i in tile.portsInfo if i.inOut == IO.OUTPUT]:
+                pinClass = ET.SubElement(
+                    blockTypes, "pin_class", type="OUTPUT")
+                ET.SubElement(
+                    pinClass, "pin", ptc=f"{ptc}").text = f"{name}.{i.removeprefix(bel.prefix)}[0]"
+                tilePtcMap[i] = ptc
+                ptc += 1
+
+        ptcMap[name] = tilePtcMap
+        blockIdMap[name] = curId
+        curId += 1
+
+    # Node Block
+
+    curNodeId = 0
+    # Dictionary to map a wire source to the relevant wire ID
+    sourceToWireIDMap: dict[str, int] = {}
+    # Dictionary to map a wire destination to the relevant wire ID
+    destToWireIDMap: dict[str, int] = {}
+    maxWidth = 1
+    clockPtc = 0
+    edgeSourceSinkPair = []
+
+    nodes = ET.SubElement(root, "rr_nodes")
+    nodes.append(ET.Comment("Clock output: clock_primitive.clock_out"))
+    node = ET.SubElement(
+        nodes, "node", id=f"{curNodeId}", type="SOURCE", capacity="1")
+    ET.SubElement(
+        node, "loc", xlow=f"{clockX}", ylow=f"{clockY}", xhigh=f"{clockX}", yhigh=f"{clockY}", ptc="0")
+    curNodeId += 1
+
+    node = ET.SubElement(
+        nodes, "node", id=f"{curNodeId}", type="OPIN", capacity="1")
+    ET.SubElement(
+        node, "loc", xlow=f"{clockX}", ylow=f"{clockY}", xhigh=f"{clockX}", yhigh=f"{clockY}", ptc="0")
+    destToWireIDMap[f"X{0}Y{0}.clock_out"] = curNodeId
+    edgeSourceSinkPair.append((curNodeId, curNodeId-1))
+    curNodeId += 1
+    clockPtc += 1
+
+    for y, row in enumerate(fabric.tile):
+        for x, tile in enumerate(row):
+            if tile == None:
+                continue
+
+            node = ET.SubElement(
+                nodes, "node", id=f"{curNodeId}", type="IPIN", capacity="1")
+            ET.SubElement(node, "loc", xlow=f"{x + 1}", ylow=f"{y + 1}",
+                          xhigh=f"{x + 1}", yhigh=f"{y + 1}", ptc="0", side="BOTTOM")
+            sourceToWireIDMap[f"X{x}Y{y}.UserCLK"] = curNodeId
+            curNodeId += 1
+
+            node = ET.SubElement(
+                nodes, "node", id=f"{curNodeId}", type="SINK", capacity="1")
+            ET.SubElement(node, "loc", xlow=f"{x + 1}", ylow=f"{y + 1}",
+                          xhigh=f"{x + 1}", yhigh=f"{y + 1}", ptc="0")
+            curNodeId += 1
+
+            edgeSourceSinkPair.append((curNodeId, curNodeId - 1))
+
+            nodeType = ""
+            for wire in tile.wireList:
+                if wire.xOffset != 0 and wire.yOffset != 0:
+                    raise ValueError(
+                        "Diagonal wires not currently supported for VPR routing resource model")
+
+                if wire.xOffset != 0:
+                    nodeType = "CHANY"
+                elif wire.yOffset != 0:
+                    nodeType = "CHANX"
+                else:
+                    nodeType = "CHANY"
+
+                # Check wire direction and set appropriate values
+                if (nodeType == "CHANX" and wire.xOffset > 0) or (nodeType == "CHANY" and wire.yOffset > 0):
+                    direction = "INC_DIR"
+                    yLow = y
+                    xLow = x
+                    yHigh = y + wire.yOffset
+                    xHigh = x + wire.xOffset
+                else:
+                    direction = "DEC_DIR"
+                    yHigh = y
+                    xHigh = x
+                    yLow = y + wire.yOffset
+                    xLow = x + wire.xOffset
+
+                wireSource = f"X{x}Y{y}.{wire.source}"
+                wireDest = f"X{x + wire.xOffset}Y{y + wire.yOffset}.{wire.destination}"
+
+                if nodeType == "CHANY":
+                    wirePtc = colPtcArr[x]
+                    colPtcArr[x] += 1
+                    if wirePtc > colMaxPtc:
+                        raise ValueError(
+                            "Channel PTC value too high - FABulous' VPR flow may not currently be able to support this many overlapping wires.")
+                else:  # i.e. if nodeType == "CHANX"
+                    wirePtc = rowPtcArr[y]
+                    rowPtcArr[y] += 1
+                    if wirePtc > rowMaxPtc:
+                        raise ValueError(
+                            "Channel PTC value too high - FABulous' VPR flow may not currently be able to support this many overlapping wires.")
+
+                nodes.append(ET.Comment(f"Wire {wireSource} -> {wireDest}"))
+                node = ET.SubElement(
+                    nodes, "node", id=f"{curNodeId}", type=f"{nodeType}", capacity="1", direction=f"{direction}")
+                ET.SubElement(node, "segment", segment_id="0")
+                ET.SubElement(node, "loc", xlow=f"{xLow+1}", ylow=f"{yLow+1}",
+                              xhigh=f"{xHigh+1}", yhigh=f"{yHigh+1}", ptc=f"{wirePtc}")
+
+                sourceToWireIDMap[wireSource] = curNodeId
+                destToWireIDMap[wireDest] = curNodeId
+                curNodeId += 1
+
+            maxWireCount = max([i.wireCount for i in tile.portsInfo])
+            maxWidth = max(maxWidth, maxWireCount)
+
+            for bel in tile.bels:
+                for input in bel.inputs:
+                    if tile.name in ptcMap and input in ptcMap[tile.name]:
+                        thisPtc = ptcMap[tile.name][input]
+                    else:
+                        raise Exception(
+                            "Could not find pin ptc in block_type designation for RR Graph generation.")
+
+                    nodes.append(ET.Comment(f"Bel input: {input}"))
+                    node = ET.SubElement(
+                        nodes, "node", id=f"{curNodeId}", type="IPIN", capacity="1")
+                    ET.SubElement(node, "loc", xlow=f"{x + 1}", ylow=f"{y + 1}",
+                                  xhigh=f"{x + 1}", yhigh=f"{y + 1}", ptc=f"{thisPtc}", side="BOTTOM")
+                    sourceToWireIDMap[f"X{x}Y{y}.{input}"] = curNodeId
+                    curNodeId += 1
+
+                    node = ET.SubElement(
+                        nodes, "node", id=f"{curNodeId}", type="SINK", capacity="1")
+                    ET.SubElement(node, "loc", xlow=f"{x + 1}", ylow=f"{y + 1}",
+                                  xhigh=f"{x + 1}", yhigh=f"{y + 1}", ptc=f"{thisPtc}")
+
+                    edgeSourceSinkPair.append((curNodeId, curNodeId - 1))
+
+                for output in bel.outputs:
+                    if tile.name in ptcMap and output in ptcMap[tile.name]:
+                        thisPtc = ptcMap[tile.name][output]
+                    else:
+                        raise Exception(
+                            "Could not find pin ptc in block_type designation for RR Graph generation.")
+
+                    nodes.append(ET.Comment(f"Bel output: {output}"))
+                    node = ET.SubElement(
+                        nodes, "node", id=f"{curNodeId}", type="OPIN", capacity="1")
+                    ET.SubElement(node, "loc", xlow=f"{x + 1}", ylow=f"{y + 1}",
+                                  xhigh=f"{x + 1}", yhigh=f"{y + 1}", ptc=f"{thisPtc}", side="BOTTOM")
+                    sourceToWireIDMap[f"X{x}Y{y}.{output}"] = curNodeId
+                    curNodeId += 1
+
+                    node = ET.SubElement(
+                        nodes, "node", id=f"{curNodeId}", type="SOURCE", capacity="1")
+                    ET.SubElement(node, "loc", xlow=f"{x + 1}", ylow=f"{y + 1}",
+                                  xhigh=f"{x + 1}", yhigh=f"{y + 1}", ptc=f"{thisPtc}")
+
+                    edgeSourceSinkPair.append((curNodeId, curNodeId - 1))
+                    curNodeId += 1
+
+            doneSet = set()
+            for port in tile.portsInfo:
+                if port.sourceName in doneSet or port.destinationName in doneSet:
+                    continue
+
+                # source port
+                thisPtc = ptcMap[tile.name][port.sourceName]
+                nodes.append(ET.Comment(f"Source: X{x}Y{y}.{port.sourceName}"))
+                node = ET.SubElement(
+                    nodes, "node", id=f"{curNodeId}", type="SOURCE", capacity="1")
+                ET.SubElement(node, "loc", xlow=f"{x + 1}", ylow=f"{y + 1}",
+                              xhigh=f"{x + 1}", yhigh=f"{y + 1}", ptc=f"{thisPtc}")
+
+                curNodeId += 1
+
+                node = ET.SubElement(
+                    nodes, "node", id=f"{curNodeId}", type="OPIN", capacity="1")
+                ET.SubElement(node, "loc", xlow=f"{x + 1}", ylow=f"{y + 1}",
+                              xhigh=f"{x + 1}", yhigh=f"{y + 1}", ptc=f"{thisPtc}", side="BOTTOM")
+
+                destToWireIDMap[f"X{x}Y{y}.{port.sourceName}"] = curNodeId
+                edgeSourceSinkPair.append((curNodeId, curNodeId - 1))
+                curNodeId += 1
+                doneSet.add(port.sourceName)
+
+                # destination port
+                thisPtc = ptcMap[tile.name][port.destinationName]
+                nodes.append(ET.Comment(
+                    f"Sink: X{x}Y{y}.{port.destinationName}"))
+                node = ET.SubElement(
+                    nodes, "node", id=f"{curNodeId}", type="SINK", capacity="1")
+                ET.SubElement(node, "loc", xlow=f"{x + 1}", ylow=f"{y + 1}",
+                              xhigh=f"{x + 1}", yhigh=f"{y + 1}", ptc=f"{thisPtc}")
+
+                curNodeId += 1
+                node = ET.SubElement(
+                    nodes, "node", id=f"{curNodeId}", type="IPIN", capacity="1")
+                ET.SubElement(node, "loc", xlow=f"{x + 1}", ylow=f"{y + 1}",
+                              xhigh=f"{x + 1}", yhigh=f"{y + 1}", ptc=f"{thisPtc}", side="BOTTOM")
+
+                sourceToWireIDMap[f"X{x}Y{y}.{port.destinationName}"] = curNodeId
+                edgeSourceSinkPair.append((curNodeId, curNodeId - 1))
+                curNodeId += 1
+                doneSet.add(port.destinationName)
+
+    # edge block
+    edges = ET.SubElement(root, "rr_edges")
+    for (source, sink) in edgeSourceSinkPair:
+        ET.SubElement(
+            edges, "edge", src_node=f"{source}", sink_node=f"{sink}", switch_id="1")
+
+    for y, row in enumerate(fabric.tile):
+        for x, tile in enumerate(row):
+            if tile == None:
+                continue
+            ET.SubElement(edges, "edge", src_node=f"{destToWireIDMap[f'X{clockX}Y{clockY}.clock_out']}",
+                          sink_node=f"{sourceToWireIDMap[f'X{clockX}Y{clockY}.UserCLK']}", switch_id="1")
+
+            if tile.matrixDir.endswith(".csv"):
+                connection = parseMatrix(tile.matrixDir, tile.name)
+                for source, sinkList in connection.items():
+                    for sink in sinkList:
+                        sourceName = f"X{x}Y{y}.{source}"
+                        sinkName = f"X{x}Y{y}.{sink}"
+                        edge = ET.SubElement(
+                            edges, "edge", src_node=f"{destToWireIDMap[sourceName]}", sink_node=f"{sourceToWireIDMap[sinkName]}", switch_id="1")
+                        metadata = ET.SubElement(edge, "metadata")
+                        ET.SubElement(
+                            metadata, "meta", name="fasm_features").text = f"X{x}Y{y}.{source}.{sink}"
+            elif tile.matrixDir.endswith(".list"):
+                connection = parseList(tile.matrixDir)
+                for sink, source in connection:
+                    sourceName = f"X{x}Y{y}.{source}"
+                    sinkName = f"X{x}Y{y}.{sink}"
+                    edge = ET.SubElement(
+                        edges, "edge", src_node=f"{destToWireIDMap[sourceName]}", sink_node=f"{sourceToWireIDMap[sinkName]}", switch_id="1")
+                    metadata = ET.SubElement(edge, "metadata")
+                    ET.SubElement(
+                        metadata, "meta", name="fasm_features").text = f"X{x}Y{y}.{source}.{sink}"
+            else:
+                raise ValueError(
+                    f"For model generation {tile.matrixDir} need to a csv or list file")
+
+    # channel block
+    channels = ET.SubElement(root, "channels")
+    maxWidth = max(rowPtcArr + colPtcArr)
+    channel = ET.SubElement(channels, "channel", chan_width_max=f"{maxWidth}", x_min="0",
+                            y_min="0", x_max=f"{fabric.numberOfColumns + 1}", y_max=f"{fabric.numberOfRows + 1}")
+
+    for i in range(fabric.numberOfRows + 2):
+        ET.SubElement(channel, "x_list", index=f"{i}", info=f"{maxWidth}")
+
+    for i in range(fabric.numberOfColumns + 2):
+        ET.SubElement(channel, "y_list", index=f"{i}", info=f"{maxWidth}")
+
+    # grid block
+    grid = ET.SubElement(root, "grid")
+    for y, row in enumerate(fabric.tile[::-1]):
+        for x, tile in enumerate(row):
+            # skip clock tile
+            if x == clockX or y == clockY:
+                continue
+            if tile == None:
+                ET.SubElement(grid, "grid_loc",
+                              x=f"{x+1}", y=f"{y+1}", block_type_id=f"{blockIdMap['EMPTY']}", width_offset="0", height_offset="0")
+                continue
+
+            ET.SubElement(grid, "grid_loc",
+                          x=f"{x+1}", y=f"{y+1}", block_type_id=f"{blockIdMap[tile.name]}", width_offset="0", height_offset="0")
+
+    grid.append(ET.Comment(f"EMPTY padding around chip"))
+    for i in range(fabric.numberOfRows + 2):
+        if clockX != 0 or clockY != i:
+            ET.SubElement(grid, "grid_loc",
+                          x="0", y=f"{i}", block_type_id=f"{blockIdMap['EMPTY']}", width_offset="0", height_offset="0")
+        if clockX != fabric.numberOfColumns + 1 or clockY != i:
+            ET.SubElement(grid, "grid_loc",
+                          x=f"{fabric.numberOfColumns+1}", y=f"{i}", block_type_id=f"{blockIdMap['EMPTY']}", width_offset="0", height_offset="0")
+
+    for i in range(fabric.numberOfColumns + 1):
+        if clockX != i or clockY != 0:
+            ET.SubElement(grid, "grid_loc",
+                          x=f"{i}", y=f"{0}", block_type_id=f"{blockIdMap['EMPTY']}", width_offset="0", height_offset="0")
+        if clockX != i or clockY != fabric.numberOfRows + 1:
+            ET.SubElement(grid, "grid_loc",
+                          x=f"{i}", y=f"{fabric.numberOfRows}", block_type_id=f"{blockIdMap['EMPTY']}", width_offset="0", height_offset="0")
+
+    ET.SubElement(grid, "grid_loc",
+                  x=f"{clockX}", y=f"{clockY}", block_type_id=f"{blockIdMap['EMPTY']}", width_offset="0", height_offset="0")
+
+    # switches block
+    switches = ET.SubElement(root, "switches")
+    switch = ET.SubElement(switches, "switch", id="0",
+                           type="mux", name="__vpr_delayless_switch__")
+    ET.SubElement(switch, "timing", R="0", Cin="0", Cout="0", Tdel="0")
+    ET.SubElement(switch, "sizing", mux_trans_size="0", buf_size="0")
+    switch = ET.SubElement(switches, "switch", id="1",
+                           type="mux", name="buffer")
+    ET.SubElement(switch, "timing", R="1.99999999e-12",
+                  Cin="7.70000012e-16", Cout="4.00000001e-15", Tdel="5.80000006e-11")
+    ET.SubElement(switch, "sizing", mux_trans_size="2.63073993",
+                  buf_size="27.6459007")
+
+    # segment block
+    segments = ET.SubElement(root, "segments")
+    segment = ET.SubElement(segments, "segment", id="0", name="dummy")
+    ET.SubElement(segment, "timing", R_per_meter="9.99999996e-13",
+                  C_per_meter="2.25000005e-14")
+
+    ET.indent(root, space="  ")
+    return ET.tostring(root, encoding="unicode")
+
+
+def genVPRConstrainsXML(fabric: Fabric) -> str:
+    letter = string.ascii_uppercase
+    root = ET.Element("vpr_constraints")
+    root.attrib = {"tool_name": "vpr"}
+    partitionList = ET.SubElement(root, "partition_list")
+    unnamedCount = 0
+    for y, row in enumerate(fabric.tile):
+        for x, tile in enumerate(row):
+            for i, bel in enumerate(tile.bels):
+                if bel.name == "IO_1_bidirectional_frame_config_pass":
+                    partition = ET.SubElement(
+                        partitionList, "partition", name=f"Tile_X{x}Y{y}_{letter[i]}")
+                    ET.SubElement(partition, "add_atom",
+                                  name_pattern=f"Tile_X{x}Y{y}_{bel.prefix}O")
+                    ET.SubElement(
+                        partition, "add_region", x_low=f"{x+1}", y_low=f"{y+1}", x_high=f"{x+1}", y_high=f"{y+1}", subtile=f"{i}")
+
+                if bel.name == "InPass4_frame_config":
+                    partition = ET.SubElement(
+                        partitionList, "partition", name=f"Tile_X{x}Y{y}_{letter[i]}")
+                    ET.SubElement(partition, "add_atom",
+                                  name_pattern=f"Tile_X{x}Y{y}_{bel.prefix}O0")
+                    ET.SubElement(
+                        partition, "add_region", x_low=f"{x+1}", y_low=f"{y+1}", x_high=f"{x+1}", y_high=f"{y+1}", subtile=f"{i}")
+
+                if bel.name == "OutPass4_frame_config":
+                    partition = ET.SubElement(
+                        partitionList, "partition", name=f"Tile_X{x}Y{y}_{letter[i]}")
+                    ET.SubElement(partition, "add_atom",
+                                  name_pattern=f"unnamed_subckt{unnamedCount}")
+                    unnamedCount += 1
+                    ET.SubElement(
+                        partition, "add_region", x_low=f"{x+1}", y_low=f"{y+1}", x_high=f"{x+1}", y_high=f"{y+1}", subtile=f"{i}")
+
+    ET.indent(root, space="  ")
+    return ET.tostring(root, encoding="unicode")
 
 
 # Generates constraint XML for VPR flow

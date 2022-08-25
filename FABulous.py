@@ -15,6 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from contextlib import redirect_stdout
+from fabric_generator.model_generation_vpr import genVPRModel
 from fabric_generator.utilities import genFabricObject, GetFabric
 import fabric_generator.model_generation_vpr as model_gen_vpr
 import fabric_generator.model_generation_npnr as model_gen_npnr
@@ -129,6 +130,15 @@ class FABulous:
     def genModelNpnr(self):
         return model_gen_npnr.genNextpnrModel(self.fabric)
 
+    def genModelVPR(self, customXML: str = ""):
+        return model_gen_vpr.genVPRModel(self.fabric, customXML)
+
+    def genModelVPRRoutingResource(self):
+        return model_gen_vpr.genVPRRoutingResourceGraph(self.fabric)
+
+    def genModelVPRConstrains(self):
+        return model_gen_vpr.genVPRConstrainsXML(self.fabric)
+
 
 class FABulousShell(cmd.Cmd):
     intro: str = f"""
@@ -148,7 +158,7 @@ You have started FABlous shell with following options:
 Type help or ? to list commands
 The shell support tab completion for commands and files
 
-To run the complete FABulous flow with the default project, run the following command: 
+To run the complete FABulous flow with the default project, run the following command:
     load_fabric
     run_FABulous_fabric
     run_FABulous_bitstream npnr ./user_design/sequential_16bit_en.v
@@ -181,16 +191,21 @@ To run the complete FABulous flow with the default project, run the following co
             self.fabricLoaded = True
 
     def preloop(self) -> None:
+        tcl = tk.Tcl()
+        script = ""
         if self.script != "":
-            tcl = tk.Tcl()
+            with open(self.script, "r") as f:
+                script = f.read()
             for fun in dir(self.__class__):
                 if fun.startswith("do_"):
                     name = fun.strip("do_")
                     tcl.createcommand(name, getattr(self, fun))
 
-            tcl.evalfile(args.script)
+        os.chdir(args.project_dir)
+        tcl.eval(script)
 
-        # os.chdir(args.project_dir)
+        if "exit" in script:
+            exit(0)
 
     def precmd(self, line: str) -> str:
         if ("gen" in line or "run" in line) and not self.fabricLoaded:
@@ -214,12 +229,12 @@ To run the complete FABulous flow with the default project, run the following co
     def _complete_tileName(self, text):
         return [t for t in self.allTile if t.startswith(text)]
 
-    def do_exit(self, args):
+    def do_exit(self, *ignore):
         "exit FABlous shell"
         logger.info("Exiting FABulous shell")
         return True
 
-    def do_load_fabric(self, args):
+    def do_load_fabric(self, args=""):
         "load csv file and generate an internal representation of the fabric"
         args = self.parse(args)
         # if no argument is given will use the one set by set_fabric_csv
@@ -228,7 +243,6 @@ To run the complete FABulous flow with the default project, run the following co
         if len(args) == 0:
             if self.csvFile != "" and os.path.exists(self.csvFile):
                 self.fabricGen.loadFabric(self.csvFile)
-
             elif os.path.exists("./fabric.csv"):
                 logger.info(
                     "Found fabric.csv in current directory loading that file as the definition of the fabric")
@@ -421,7 +435,6 @@ To run the complete FABulous flow with the default project, run the following co
         logger.info("FABulous fabric flow complete")
         return 0
 
-    # TODO Update once have transition the model gen to object based
     def do_gen_model_npnr(self, *ignored):
         "generate a npnr model of the fabric"
         logger.info("Generating npnr model")
@@ -474,35 +487,26 @@ To run the complete FABulous flow with the default project, run the following co
             print("Need to call sec_fabric_csv before running model_gen_npnr_pair")
         logger.info("Generated pair npnr model")
 
-    # TODO updater once have transition the model gen to object based
-    def do_gen_model_vpr(self):
+    def do_gen_model_vpr(self, args):
         "generate a vpr model of the fabric"
+        args = self.parse(args)
         logger.info("Generating vpr model")
-        if self.csvFile:
-            FabricFile = [i.strip('\n').split(',') for i in open(self.csvFile)]
-            fabric = GetFabric(FabricFile)
-            customXmlFilename = f"{self.projectDir}/custom_info.xml"
+        vprModel = self.fabricGen.genModelVPR(args[0])
+        with open(f"{self.pathToCSVFile}/{metaDataDir}/architecture.xml", "w") as f:
+            f.write(vprModel)
 
-            fabricObject = genFabricObject(fabric, FabricFile)
-            archFile = open(
-                f"{self.pathToCSVFile}/{metaDataDir}/architecture.xml", "w")
-            rrFile = open(
-                f"{self.pathToCSVFile}/{metaDataDir}/routing_resources.xml", "w")
+        vprRoutingResource = self.fabricGen.genModelVPRRoutingResource()
+        with open(f"{self.pathToCSVFile}/{metaDataDir}/routing_resource.xml", "w") as f:
+            f.write(vprRoutingResource)
 
-            archFile = open("vproutput/architecture.xml", "w")
-            archXML = model_gen_vpr.genVPRModelXML(
-                fabricObject, customXmlFilename, False)
-            archFile.write(archXML)
-            archFile.close()
+        vprConstrain = self.fabricGen.genModelVPRConstrains()
+        with open(f"{self.pathToCSVFile}/{metaDataDir}/fab_constraints.xml", "w") as f:
+            f.write(vprConstrain)
 
-            rrFile = open("vproutput/routing_resources.xml", "w")
-            rrGraphXML = model_gen_vpr.genVPRModelRRGraph(fabricObject, False)
-            rrFile.write(rrGraphXML)
-            rrFile.close()
-
-        else:
-            print("Need to call sec_fabric_csv before running model_gen_npnr_pair")
         logger.info("Generated vpr model")
+
+    def complete_gen_model_vpr(self, text, *ignored):
+        return self._complete_path(text)
 
     def do_hls_create_project(self):
         if not os.path.exists(f"./HLS"):
@@ -749,13 +753,42 @@ To run the complete FABulous flow with the default project, run the following co
             self.do_place_and_route_npnr(args[1])
             self.do_gen_bitStream_binary(args[1])
 
-    def complete_run_FABulous_bitstream(self, text, *ignored):
+    def complete_run_FABulous_bitstream(self, text, line, *ignored):
+        value = ["npnr", "vpr"]
+        if "npnr" not in line and "vpr" not in line:
+            return [i for i in value if i.startswith(text)]
+        return self._complete_path(text)
+
+    def do_tcl(self, args):
+        """Execute a TCL script. The directory in the script is relative to the project directory."""
+        args = self.parse(args)
+        if len(args) != 1:
+            logger.error("Usage: tcl <tcl_script>")
+            return
+        path, name = os.path.split(args[0])
+        name = name.split('.')[0]
+        if not os.path.exists(args[0]):
+            logger.error(
+                f"Cannot find {args[0]}")
+            return
+
+        logger.info(f"Execute TCL script {args[0]}")
+        tcl = tk.Tcl()
+        for fun in dir(self.__class__):
+            if fun.startswith("do_"):
+                name = fun.strip("do_")
+                tcl.createcommand(name, getattr(self, fun))
+
+        tcl.evalfile(args[0])
+        logger.info("TCL script executed")
+
+    def complete_tcl(self, text, *ignored):
         return self._complete_path(text)
 
 
 if __name__ == "__main__":
-    if sys.version_info < (3, 8, 10):
-        print("Need Python 3.8.10 or above to run FABulous")
+    if sys.version_info < (3, 9, 0):
+        print("Need Python 3.9 or above to run FABulous")
         exit(-1)
     parser = argparse.ArgumentParser(
         description='The command line interface for FABulous')

@@ -149,8 +149,9 @@ class Bel():
     sharedPort: List[Tuple[str, IO]]
     configBit: int
     belFeatureMap: Dict[str, dict] = field(default_factory=dict)
+    withUserCLK: bool = False
 
-    def __init__(self, src: str, prefix: str, internal, external, configPort, sharedPort, configBit: int, belMap: Dict[str, dict]) -> None:
+    def __init__(self, src: str, prefix: str, internal, external, configPort, sharedPort, configBit: int, belMap: Dict[str, dict], userCLK:bool) -> None:
         self.src = src
         self.prefix = prefix
         self.name = src.split("/")[-1].split(".")[0]
@@ -162,6 +163,7 @@ class Bel():
         self.sharedPort = sharedPort
         self.configBit = configBit
         self.belFeatureMap = belMap
+        self.withUserCLK = userCLK
 
 
 @dataclass(frozen=True, eq=True)
@@ -299,8 +301,8 @@ class Fabric():
     numberOfBRAMs: int = 10
     superTileEnable: bool = True
 
-    tileDic: Dict = field(default_factory=dict)
-    superTileDic: Dict = field(default_factory=dict)
+    tileDic: Dict[str, Tile] = field(default_factory=dict)
+    superTileDic: Dict[str, SuperTile] = field(default_factory=dict)
     # wires: List[Wire] = field(default_factory=list)
     commonWirePair: List[Tuple[str, str]] = field(default_factory=list)
 

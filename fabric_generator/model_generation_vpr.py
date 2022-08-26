@@ -1,12 +1,15 @@
 import string
 from sys import prefix
 from typing import List
+from fabric_generator.fabric_gen import FabricGenerator
 from fabric_generator.utilities import *
 from fabric_generator.fabric import IO, Bel, Fabric
 import xml.etree.ElementTree as ET
 import os
 from xml.dom import minidom
 from fabric_generator.file_parser import parseMatrix, parseList
+import logging
+logger = logging.getLogger(__name__)
 
 
 def genVPRModel(fabric: Fabric, customXMLfile: str = "") -> str:
@@ -170,6 +173,7 @@ def genVPRModel(fabric: Fabric, customXMLfile: str = "") -> str:
                   input="clock_input.CLK", output="clock_primitive.clock_out")
     pbType = ET.SubElement(complexBlockList, "pb_type", name="reserved_dummy")
     ET.SubElement(pbType, "input", name="UserCLK", num_pins="1")
+    ET.SubElement(pbType, "interconnect")
     for bel in allBelVariant:
         pbTypeWrapper = ET.SubElement(
             complexBlockList, "pb_type", name=f"{bel.name}_wrapper")
@@ -255,9 +259,9 @@ def genVPRRoutingResourceGraph(fabric: Fabric) -> str:
     blockIdMap["EMPTY"] = curId
     curId += 1
 
-    ET.SubElement(blockTypes, "block_type",
-                  id=f"{curId}", name="clock_primitive", width="1", height="1")
-    pinClass = ET.SubElement(blockTypes, "pin_class", type="OUTPUT")
+    blockType = ET.SubElement(blockTypes, "block_type",
+                              id=f"{curId}", name="clock_primitive", width="1", height="1")
+    pinClass = ET.SubElement(blockType, "pin_class", type="OUTPUT")
     ET.SubElement(pinClass, "pin",
                   ptc=f"{ptc}").text = "clock_primitive.clock_out[0]"
     ptc += 1
@@ -266,56 +270,54 @@ def genVPRRoutingResourceGraph(fabric: Fabric) -> str:
 
     for name, tile in fabric.tileDic.items():
         tilePtcMap: dict[str, int] = {}
-        ET.SubElement(blockTypes, "block_type",
-                      id=f"{curId}", name=f"{name}", width="1", height="1")
+        blockType = ET.SubElement(blockTypes, "block_type",
+                                  id=f"{curId}", name=f"{name}", width="1", height="1")
+
+        ptc = 0
 
         # If no Bels
         if tile.bels == []:
-            pinClass = ET.SubElement(blockTypes, "pin_class", type="INPUT")
+            pinClass = ET.SubElement(blockType, "pin_class", type="INPUT")
             ET.SubElement(pinClass, "pin",
                           ptc=f"{ptc}").text = f"{name}.UserCLK[0]"
             ptc += 1
 
         for bel in tile.bels:
             # if bel have no inputs and outputs or have clock input
-            if bel.inputs + bel.outputs == [] or bel.withUserCLK:
-                pinClass = ET.SubElement(blockTypes, "pin_class", type="INPUT")
+            if bel.inputs == bel.outputs == [] or tile.withUserCLK:
+                pinClass = ET.SubElement(blockType, "pin_class", type="INPUT")
                 ET.SubElement(pinClass, "pin",
                               ptc=f"{ptc}").text = f"{name}.UserCLK[0]"
                 ptc += 1
 
             # bel input
             for i in bel.inputs:
-                pinClass = ET.SubElement(blockTypes, "pin_class", type="INPUT")
+                pinClass = ET.SubElement(blockType, "pin_class", type="INPUT")
                 ET.SubElement(
-                    pinClass, "pin", ptc=f"{ptc}").text = f"{name}.{i.removeprefix(bel.prefix)}[0]"
-                tilePtcMap[i.removeprefix(bel.prefix)] = ptc
+                    pinClass, "pin", ptc=f"{ptc}").text = f"{name}.{i}[0]"
+                tilePtcMap[i] = ptc
                 ptc += 1
 
             # bel output
             for i in bel.outputs:
                 pinClass = ET.SubElement(
-                    blockTypes, "pin_class", type="OUTPUT")
+                    blockType, "pin_class", type="OUTPUT")
                 ET.SubElement(
-                    pinClass, "pin", ptc=f"{ptc}").text = f"{name}.{i.removeprefix(bel.prefix)}[0]"
-                tilePtcMap[i.removeprefix(bel.prefix)] = ptc
-                ptc += 1
-
-            # input of tile
-            for i in [i.destinationName for i in tile.portsInfo if i.inOut == IO.INPUT]:
-                pinClass = ET.SubElement(
-                    blockTypes, "pin_class", type="INPUT")
-                ET.SubElement(
-                    pinClass, "pin", ptc=f"{ptc}").text = f"{name}.{i.removeprefix(bel.prefix)}[0]"
+                    pinClass, "pin", ptc=f"{ptc}").text = f"{name}.{i}[0]"
                 tilePtcMap[i] = ptc
                 ptc += 1
 
-            # output of tile
-            for i in [i.sourceName for i in tile.portsInfo if i.inOut == IO.OUTPUT]:
+        if hangingPort := [i for i in tile.portsInfo if "GND" in i.destinationName or "VCC" in i.destinationName]:
+            expandedList = []
+            # get expended hanging port list
+            for port in hangingPort:
+                expandedList += port.expandPortInfo()[1]
+
+            for i in set(expandedList):
                 pinClass = ET.SubElement(
-                    blockTypes, "pin_class", type="OUTPUT")
+                    blockType, "pin_class", type="OUTPUT")
                 ET.SubElement(
-                    pinClass, "pin", ptc=f"{ptc}").text = f"{name}.{i.removeprefix(bel.prefix)}[0]"
+                    pinClass, "pin", ptc=f"{ptc}").text = f"{name}.{i}[0]"
                 tilePtcMap[i] = ptc
                 ptc += 1
 
@@ -346,7 +348,7 @@ def genVPRRoutingResourceGraph(fabric: Fabric) -> str:
         nodes, "node", id=f"{curNodeId}", type="OPIN", capacity="1")
     ET.SubElement(
         node, "loc", xlow=f"{clockX}", ylow=f"{clockY}", xhigh=f"{clockX}", yhigh=f"{clockY}", ptc="0")
-    destToWireIDMap[f"X{0}Y{0}.clock_out"] = curNodeId
+    destToWireIDMap[f"X{clockX}Y{clockY}.clock_out"] = curNodeId
     edgeSourceSinkPair.append((curNodeId, curNodeId-1))
     curNodeId += 1
     clockPtc += 1
@@ -369,17 +371,20 @@ def genVPRRoutingResourceGraph(fabric: Fabric) -> str:
                           xhigh=f"{x + 1}", yhigh=f"{y + 1}", ptc="0")
             curNodeId += 1
 
-            edgeSourceSinkPair.append((curNodeId, curNodeId - 1))
+            edgeSourceSinkPair.append((curNodeId-1, curNodeId))
 
             nodeType = ""
+            doneWire = set()
             for wire in tile.wireList:
                 if wire.xOffset != 0 and wire.yOffset != 0:
                     raise ValueError(
                         "Diagonal wires not currently supported for VPR routing resource model")
-
-                if wire.xOffset != 0:
+                if (wire.source, wire.destination) in doneWire:
+                    continue
+                doneWire.add((wire.source, wire.destination))
+                if wire.yOffset != 0:
                     nodeType = "CHANY"
-                elif wire.yOffset != 0:
+                elif wire.xOffset != 0:
                     nodeType = "CHANX"
                 else:
                     nodeType = "CHANY"
@@ -417,9 +422,9 @@ def genVPRRoutingResourceGraph(fabric: Fabric) -> str:
                 nodes.append(ET.Comment(f"Wire {wireSource} -> {wireDest}"))
                 node = ET.SubElement(
                     nodes, "node", id=f"{curNodeId}", type=f"{nodeType}", capacity="1", direction=f"{direction}")
-                ET.SubElement(node, "segment", segment_id="0")
                 ET.SubElement(node, "loc", xlow=f"{xLow+1}", ylow=f"{yLow+1}",
                               xhigh=f"{xHigh+1}", yhigh=f"{yHigh+1}", ptc=f"{wirePtc}")
+                ET.SubElement(node, "segment", segment_id="0")
 
                 sourceToWireIDMap[wireSource] = curNodeId
                 destToWireIDMap[wireDest] = curNodeId
@@ -434,7 +439,7 @@ def genVPRRoutingResourceGraph(fabric: Fabric) -> str:
                         thisPtc = ptcMap[tile.name][input]
                     else:
                         raise Exception(
-                            "Could not find pin ptc in block_type designation for RR Graph generation.")
+                            f"Could not find pin {input} of ptc in block_type {tile.name} designation for RR Graph generation.")
 
                     nodes.append(ET.Comment(f"Bel input: {input}"))
                     node = ET.SubElement(
@@ -463,7 +468,7 @@ def genVPRRoutingResourceGraph(fabric: Fabric) -> str:
                         nodes, "node", id=f"{curNodeId}", type="OPIN", capacity="1")
                     ET.SubElement(node, "loc", xlow=f"{x + 1}", ylow=f"{y + 1}",
                                   xhigh=f"{x + 1}", yhigh=f"{y + 1}", ptc=f"{thisPtc}", side="BOTTOM")
-                    sourceToWireIDMap[f"X{x}Y{y}.{output}"] = curNodeId
+                    destToWireIDMap[f"X{x}Y{y}.{output}"] = curNodeId
                     curNodeId += 1
 
                     node = ET.SubElement(
@@ -471,57 +476,37 @@ def genVPRRoutingResourceGraph(fabric: Fabric) -> str:
                     ET.SubElement(node, "loc", xlow=f"{x + 1}", ylow=f"{y + 1}",
                                   xhigh=f"{x + 1}", yhigh=f"{y + 1}", ptc=f"{thisPtc}")
 
+                    edgeSourceSinkPair.append((curNodeId-1, curNodeId))
+                    curNodeId += 1
+
+            if hangingPort := [i for i in tile.portsInfo if "GND" in i.destinationName or "VCC" in i.destinationName]:
+                expandedList = []
+                # get expended hanging port list
+                for port in hangingPort:
+                    expandedList += port.expandPortInfo()[1]
+                for p in set(expandedList):
+                    thisPtc = ptcMap[tile.name][p]
+                    nodes.append(ET.Comment(
+                        f"Source: X{x}Y{y}.{p}"))
+                    node = ET.SubElement(
+                        nodes, "node", id=f"{curNodeId}", type="SOURCE", capacity="1")
+                    ET.SubElement(node, "loc", xlow=f"{x + 1}", ylow=f"{y + 1}",
+                                  xhigh=f"{x + 1}", yhigh=f"{y + 1}", ptc=f"{thisPtc}")
+
+                    curNodeId += 1
+
+                    node = ET.SubElement(
+                        nodes, "node", id=f"{curNodeId}", type="OPIN", capacity="1")
+                    ET.SubElement(node, "loc", xlow=f"{x + 1}", ylow=f"{y + 1}",
+                                  xhigh=f"{x + 1}", yhigh=f"{y + 1}", ptc=f"{thisPtc}", side="BOTTOM")
+
+                    destToWireIDMap[f"X{x}Y{y}.{p}"] = curNodeId
                     edgeSourceSinkPair.append((curNodeId, curNodeId - 1))
                     curNodeId += 1
 
-            doneSet = set()
-            for port in tile.portsInfo:
-                if port.sourceName in doneSet or port.destinationName in doneSet:
-                    continue
-
-                # source port
-                thisPtc = ptcMap[tile.name][port.sourceName]
-                nodes.append(ET.Comment(f"Source: X{x}Y{y}.{port.sourceName}"))
-                node = ET.SubElement(
-                    nodes, "node", id=f"{curNodeId}", type="SOURCE", capacity="1")
-                ET.SubElement(node, "loc", xlow=f"{x + 1}", ylow=f"{y + 1}",
-                              xhigh=f"{x + 1}", yhigh=f"{y + 1}", ptc=f"{thisPtc}")
-
-                curNodeId += 1
-
-                node = ET.SubElement(
-                    nodes, "node", id=f"{curNodeId}", type="OPIN", capacity="1")
-                ET.SubElement(node, "loc", xlow=f"{x + 1}", ylow=f"{y + 1}",
-                              xhigh=f"{x + 1}", yhigh=f"{y + 1}", ptc=f"{thisPtc}", side="BOTTOM")
-
-                destToWireIDMap[f"X{x}Y{y}.{port.sourceName}"] = curNodeId
-                edgeSourceSinkPair.append((curNodeId, curNodeId - 1))
-                curNodeId += 1
-                doneSet.add(port.sourceName)
-
-                # destination port
-                thisPtc = ptcMap[tile.name][port.destinationName]
-                nodes.append(ET.Comment(
-                    f"Sink: X{x}Y{y}.{port.destinationName}"))
-                node = ET.SubElement(
-                    nodes, "node", id=f"{curNodeId}", type="SINK", capacity="1")
-                ET.SubElement(node, "loc", xlow=f"{x + 1}", ylow=f"{y + 1}",
-                              xhigh=f"{x + 1}", yhigh=f"{y + 1}", ptc=f"{thisPtc}")
-
-                curNodeId += 1
-                node = ET.SubElement(
-                    nodes, "node", id=f"{curNodeId}", type="IPIN", capacity="1")
-                ET.SubElement(node, "loc", xlow=f"{x + 1}", ylow=f"{y + 1}",
-                              xhigh=f"{x + 1}", yhigh=f"{y + 1}", ptc=f"{thisPtc}", side="BOTTOM")
-
-                sourceToWireIDMap[f"X{x}Y{y}.{port.destinationName}"] = curNodeId
-                edgeSourceSinkPair.append((curNodeId, curNodeId - 1))
-                curNodeId += 1
-                doneSet.add(port.destinationName)
-
     # edge block
     edges = ET.SubElement(root, "rr_edges")
-    for (source, sink) in edgeSourceSinkPair:
+    for (source, sink) in set(edgeSourceSinkPair):
         ET.SubElement(
             edges, "edge", src_node=f"{source}", sink_node=f"{sink}", switch_id="1")
 
@@ -533,29 +518,35 @@ def genVPRRoutingResourceGraph(fabric: Fabric) -> str:
                           sink_node=f"{sourceToWireIDMap[f'X{clockX}Y{clockY}.UserCLK']}", switch_id="1")
 
             if tile.matrixDir.endswith(".csv"):
-                connection = parseMatrix(tile.matrixDir, tile.name)
-                for source, sinkList in connection.items():
-                    for sink in sinkList:
-                        sourceName = f"X{x}Y{y}.{source}"
-                        sinkName = f"X{x}Y{y}.{sink}"
-                        edge = ET.SubElement(
-                            edges, "edge", src_node=f"{destToWireIDMap[sourceName]}", sink_node=f"{sourceToWireIDMap[sinkName]}", switch_id="1")
-                        metadata = ET.SubElement(edge, "metadata")
-                        ET.SubElement(
-                            metadata, "meta", name="fasm_features").text = f"X{x}Y{y}.{source}.{sink}"
+                connections = parseMatrix(tile.matrixDir, tile.name)
             elif tile.matrixDir.endswith(".list"):
-                connection = parseList(tile.matrixDir)
-                for sink, source in connection:
-                    sourceName = f"X{x}Y{y}.{source}"
-                    sinkName = f"X{x}Y{y}.{sink}"
+                logger.info(f"TileX{x}Y{y}_{tile.name} matrix is a list file")
+                logger.info(
+                    f"bootstrapping TileX{x}Y{y}_{tile.name} to matrix form and adding the list file to the matrix")
+                matrixDir = tile.matrixDir.replace(".list", ".csv")
+                FabricGenerator.bootstrapSwitchMatrix(tile, matrixDir)
+                FabricGenerator.list2CSV(tile.matrixDir, matrixDir)
+                logger.info(
+                    f"Update matrix directory to {matrixDir} for Fabric TileX{x}Y{y}_{tile.name}")
+                tile.matrixDir = matrixDir
+                connections = parseMatrix(tile.matrixDir, tile.name)
+            else:
+                raise ValueError(
+                    f"For model generation {tile.matrixDir} need to a csv or list file")
+
+            doneEdge = set()
+            for source, sinkList in connections.items():
+                for sink in sinkList:
+                    sinkName = f"X{x}Y{y}.{source}"
+                    sourceName = f"X{x}Y{y}.{sink}"
+                    if (sinkName, sourceName) in doneEdge:
+                        continue
+                    doneEdge.add((sinkName, sourceName))
                     edge = ET.SubElement(
                         edges, "edge", src_node=f"{destToWireIDMap[sourceName]}", sink_node=f"{sourceToWireIDMap[sinkName]}", switch_id="1")
                     metadata = ET.SubElement(edge, "metadata")
                     ET.SubElement(
-                        metadata, "meta", name="fasm_features").text = f"X{x}Y{y}.{source}.{sink}"
-            else:
-                raise ValueError(
-                    f"For model generation {tile.matrixDir} need to a csv or list file")
+                        metadata, "meta", name="fasm_features").text = f"X{x}Y{y}.{sink}.{source}"
 
     # channel block
     channels = ET.SubElement(root, "channels")
@@ -564,45 +555,45 @@ def genVPRRoutingResourceGraph(fabric: Fabric) -> str:
                             y_min="0", x_max=f"{fabric.numberOfColumns + 1}", y_max=f"{fabric.numberOfRows + 1}")
 
     for i in range(fabric.numberOfRows + 2):
-        ET.SubElement(channel, "x_list", index=f"{i}", info=f"{maxWidth}")
+        ET.SubElement(channels, "x_list", index=f"{i}", info=f"{maxWidth}")
 
     for i in range(fabric.numberOfColumns + 2):
-        ET.SubElement(channel, "y_list", index=f"{i}", info=f"{maxWidth}")
+        ET.SubElement(channels, "y_list", index=f"{i}", info=f"{maxWidth}")
 
     # grid block
     grid = ET.SubElement(root, "grid")
-    for y, row in enumerate(fabric.tile[::-1]):
+    for y, row in list(enumerate(fabric.tile))[::-1]:
         for x, tile in enumerate(row):
             # skip clock tile
-            if x == clockX or y == clockY:
+            if x+1 == clockX and y+1 == clockY:
                 continue
             if tile == None:
                 ET.SubElement(grid, "grid_loc",
                               x=f"{x+1}", y=f"{y+1}", block_type_id=f"{blockIdMap['EMPTY']}", width_offset="0", height_offset="0")
                 continue
-
             ET.SubElement(grid, "grid_loc",
                           x=f"{x+1}", y=f"{y+1}", block_type_id=f"{blockIdMap[tile.name]}", width_offset="0", height_offset="0")
 
     grid.append(ET.Comment(f"EMPTY padding around chip"))
     for i in range(fabric.numberOfRows + 2):
-        if clockX != 0 or clockY != i:
+        if clockX+1 != 0 or clockY+1 != i:
             ET.SubElement(grid, "grid_loc",
                           x="0", y=f"{i}", block_type_id=f"{blockIdMap['EMPTY']}", width_offset="0", height_offset="0")
-        if clockX != fabric.numberOfColumns + 1 or clockY != i:
+        if clockX+1 != fabric.numberOfColumns + 1 or clockY+1 != i:
             ET.SubElement(grid, "grid_loc",
                           x=f"{fabric.numberOfColumns+1}", y=f"{i}", block_type_id=f"{blockIdMap['EMPTY']}", width_offset="0", height_offset="0")
 
-    for i in range(fabric.numberOfColumns + 1):
-        if clockX != i or clockY != 0:
+    for i in range(1, fabric.numberOfColumns + 1):
+        if clockX+1 != i or clockY+1 != 0:
             ET.SubElement(grid, "grid_loc",
                           x=f"{i}", y=f"{0}", block_type_id=f"{blockIdMap['EMPTY']}", width_offset="0", height_offset="0")
-        if clockX != i or clockY != fabric.numberOfRows + 1:
+        if clockX+1 != i or clockY+1 != fabric.numberOfRows + 1:
             ET.SubElement(grid, "grid_loc",
-                          x=f"{i}", y=f"{fabric.numberOfRows}", block_type_id=f"{blockIdMap['EMPTY']}", width_offset="0", height_offset="0")
+                          x=f"{i}", y=f"{fabric.numberOfRows+1}", block_type_id=f"{blockIdMap['EMPTY']}", width_offset="0", height_offset="0")
 
+    # lastly add clock tile
     ET.SubElement(grid, "grid_loc",
-                  x=f"{clockX}", y=f"{clockY}", block_type_id=f"{blockIdMap['EMPTY']}", width_offset="0", height_offset="0")
+                  x=f"{clockX}", y=f"{clockY}", block_type_id=f"{blockIdMap['clock_primitive']}", width_offset="0", height_offset="0")
 
     # switches block
     switches = ET.SubElement(root, "switches")
@@ -635,6 +626,8 @@ def genVPRConstrainsXML(fabric: Fabric) -> str:
     unnamedCount = 0
     for y, row in enumerate(fabric.tile):
         for x, tile in enumerate(row):
+            if tile == None:
+                continue
             for i, bel in enumerate(tile.bels):
                 if bel.name == "IO_1_bidirectional_frame_config_pass":
                     partition = ET.SubElement(

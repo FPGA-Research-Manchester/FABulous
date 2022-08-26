@@ -55,7 +55,8 @@ class FabricGenerator:
         self.fabric = fabric
         self.writer = writer
 
-    def bootstrapSwitchMatrix(self, tile: Tile, outputDir: str):
+    @staticmethod
+    def bootstrapSwitchMatrix(tile: Tile, outputDir: str):
         logger.info(
             f"Generate matrix csv for {tile.name} # filename: {outputDir}")
         with open(f"{outputDir}", "w") as f:
@@ -86,7 +87,8 @@ class FabricGenerator:
             for p in sourceName:
                 writer.writerow([p] + [0] * len(destName))
 
-    def list2CSV(self, InFileName, OutFileName):
+    @staticmethod
+    def list2CSV(InFileName, OutFileName):
         # this function is export a given list description into its equivalent CSV switch matrix description
         # format: source,destination (per line)
         # read CSV file into an array of strings
@@ -162,7 +164,8 @@ class FabricGenerator:
                 colCount.append(str(count))
             f.write(f"#,{','.join(colCount)}")
 
-    def CSV2list(self, InFileName, OutFileName):
+    @staticmethod
+    def CSV2list(InFileName, OutFileName):
         # this function is export a given CSV switch matrix description into its equivalent list description
         # format: destination,source (per line)
         # read CSV file into an array of strings
@@ -601,20 +604,19 @@ class FabricGenerator:
             # destination port are input to the tile
             # source port are output of the tile
             for p in l:
-                if p.sourceName != "NULL":
-                    wireSize = (abs(p.xOffset)+abs(p.yOffset)) * p.wireCount-1
-                    self.writer.addPortVector(p.name, p.inOut,
-                                              wireSize, indentLevel=2)
-                    self.writer.addComment(
-                        str(p), indentLevel=2, onNewLine=False)
+                wireSize = (abs(p.xOffset)+abs(p.yOffset)) * p.wireCount-1
+                self.writer.addPortVector(p.name, p.inOut,
+                                          wireSize, indentLevel=2)
+                self.writer.addComment(
+                    str(p), indentLevel=2, onNewLine=False)
 
         # now we have to scan all BELs if they use external pins, because they have to be exported to the tile entity
         externalPorts = []
         for i in tile.bels:
             for p in i.externalInput:
-                self.writer.addPortScalar(i.name, IO.INPUT, indentLevel=2)
+                self.writer.addPortScalar(p, IO.INPUT, indentLevel=2)
             for p in i.externalOutput:
-                self.writer.addPortScalar(i.name, IO.OUTPUT, indentLevel=2)
+                self.writer.addPortScalar(p, IO.OUTPUT, indentLevel=2)
             externalPorts += i.externalInput
             externalPorts += i.externalOutput
 

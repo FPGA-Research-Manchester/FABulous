@@ -1,10 +1,12 @@
 import abc
-from typing import List, Literal
-from xmlrpc.client import Boolean
-from fabric_generator.fabric import Fabric, Tile, Bel, IO, ConfigBitMode
+from typing import List
+from fabric_generator.fabric import Bel, IO, ConfigBitMode
 
 
 class codeGenerator(abc.ABC):
+    """
+    The base class for all code generators.
+    """
 
     @property
     def outFileName(self):
@@ -40,109 +42,369 @@ class codeGenerator(abc.ABC):
         self._add("")
 
     @abc.abstractmethod
-    def addComment(self, comment, onNewLine=False, end="", indentLevel=0) -> None:
+    def addComment(self, comment: str, onNewLine=False, end="", indentLevel=0) -> None:
+        """
+        Add a comment to the code.
+        Verilog: // [comment]
+        VHDL : -- [comment]
+
+        Args:
+            comment (str): The comment
+            onNewLine (bool, optional): If true put the comment on a new line. Defaults to False.
+            end (str, optional): The end token of the comment. Defaults to "".
+            indentLevel (int, optional): The indentation Level. Defaults to 0.
+        """
         pass
 
     @abc.abstractmethod
-    def addHeader(self, name, package='', maxFramesPerCol='', frameBitsPerRow='', ConfigBitMode='FlipFlopChain', indentLevel=0):
+    def addHeader(self, name: str, package='', indentLevel=0):
+        """
+        Add a header to the code.
+        Verilog: module [name]
+        VHDL: library IEEE;
+              use IEEE.std_logic_1164.all;
+              use IEEE.NUMERIC_STD.ALL
+              [package]
+              entity uname] is
+
+        Args:
+            name (str): name of the module
+            package (str, optional): The package used by VHDL. Only useful with VHDL. Defaults to ''.
+            indentLevel (int, optional): The indentation Level. Defaults to 0.
+        """
         pass
 
     @abc.abstractmethod
-    def addHeaderEnd(self, name, indentLevel=0):
+    def addHeaderEnd(self, name: str, indentLevel=0):
+        """
+        Add end to header. Only useful with VHDL.
+        Verilog: 
+        VHDL: end entity [name];
+
+        Args:
+            name (str): name of the module
+            indentLevel (int, optional): The indentation Level. Defaults to 0.
+        """
         pass
 
     @abc.abstractmethod
     def addParameterStart(self, indentLevel=0):
+        """
+        Add start of parameters.
+        Verilog: #(
+        VHDL: Generic(
+
+        Args:
+            indentLevel (int, optional): The indentation Level. Defaults to 0.
+        """
         pass
 
     @abc.abstractmethod
     def addParameterEnd(self, indentLevel=0):
+        """
+        Add end of parameters.
+        Verilog: )
+        VHDL: );
+
+        Args:
+            indentLevel (int, optional): The indentation Level. Defaults to 0.
+        """
         pass
 
     @abc.abstractmethod
-    def addParameter(self, name, type, value, end=False, indentLevel=0):
+    def addParameter(self, name: str, type, value, end=False, indentLevel=0):
+        """
+        Add a parameter.
+        Verilog: parameter [name]=[value]
+        VHDL: [name] : [type] := [value];
+
+        Args:
+            name (str): name of the parameter
+            type (_type_): type of the parameter. Only useful with VHDL.
+            value (_type_): value of the parameter. 
+            end (bool, optional): Indicate is this parameter the last parameter. Only useful with Verilog. Defaults to False.
+            indentLevel (int, optional): The indentation Level. Defaults to 0.
+        """
         pass
 
     @abc.abstractmethod
     def addPortStart(self, indentLevel=0):
+        """
+        Add start of ports.
+        Verilog: (
+        VHDL: port (
+
+        Args:
+            indentLevel (int, optional): The indentation Level. Defaults to 0.
+        """
         pass
 
     @abc.abstractmethod
     def addPortEnd(self, indentLevel=0):
+        """
+        Add end of ports.
+        Verilog: );
+        VHDL: );
+
+        Args:
+            indentLevel (int, optional): The indentation Level. Defaults to 0.
+        """
         pass
 
     @abc.abstractmethod
-    def addPortScalar(self, name, io: IO, end=False, indentLevel=0):
+    def addPortScalar(self, name: str, io: IO, end=False, indentLevel=0):
+        """
+        Add a scalar port.
+        Verilog: [io] [name]
+        VHDL: [name] : [io] STD_LOGIC;
+
+        Args:
+            name (str): name of the port
+            io (IO): direction of the port (input, output, inout)
+            end (bool, optional): Indicate is this port the last port. Only useful with Verilog. Defaults to False.
+            indentLevel (int, optional): The indentation Level. Defaults to 0.
+        """
         pass
 
     @abc.abstractmethod
-    def addPortVector(self, name, io: IO, msbIndex, end=False, indentLevel=0):
+    def addPortVector(self, name: str, io: IO, msbIndex, end=False, indentLevel=0):
+        """
+        Add a vector port.
+        Verilog: [io] [[msbIndex]:0] [name]
+        VHDL: [name] : [io] STD_LOGIC_VECTOR( [msbIndex] downto 0 );
+
+        Args:
+            name (str): name of the port
+            io (IO): direction of the port (input, output, inout)
+            msbIndex (int): index of the MSB of the vector. Can be a string
+            end (bool, optional): Indicate is this port the last port. Only useful with Verilog. Defaults to False.
+            indentLevel (int, optional): The indentation Level. Defaults to 0.
+        """
         pass
 
     @abc.abstractmethod
-    def addDesignDescriptionStart(self, name, indentLevel=0):
+    def addDesignDescriptionStart(self, name: str, indentLevel=0):
+        """
+        Add start of design description. Only useful with VHDL.
+        Verilog:
+        VHDL: architecture Behavioral of [name] is
+
+
+        Args:
+            name (str): _description_
+            indentLevel (int, optional): The indentation Level. Defaults to 0.
+        """
         pass
 
     @abc.abstractmethod
     def addDesignDescriptionEnd(self, indentLevel=0):
+        """
+        Add end of design description. 
+        Verilog: endmodule
+        VHDL: end architecture Behavioral
+
+        Args:
+            indentLevel (int, optional): The indentation Level. Defaults to 0.
+        """
         pass
 
     @abc.abstractmethod
-    def addConstant(self, name, value, indentLevel=0):
+    def addConstant(self, name: str, value, indentLevel=0):
+        """
+        Add a constant.
+        Verilog: parameter [name] = [value];
+        VHDL: constant [name] : STD_LOGIC := '[value]';
+
+        Args:
+            name (str): name of the constant
+            value : The value of the constant.
+            indentLevel (int, optional): The indentation Level. Defaults to 0.
+        """
         pass
 
     @abc.abstractmethod
-    def addConnectionVector(self, name, startIndex, end=0, indentLevel=0):
+    def addConnectionScalar(self, name: str, indentLevel=0):
+        """
+        Add a scalar connection.
+        Verilog: wire [name];
+        VHDL: signal [name] : STD_LOGIC;
+
+        Args:
+            name (str): _description_
+            indentLevel (int, optional): The indentation Level. Defaults to 0.
+        """
         pass
 
     @abc.abstractmethod
-    def addConnectionScalar(self, name):
+    def addConnectionVector(self, name: str, startIndex, endIndex=0, indentLevel=0):
+        """
+        Add a vector connection.
+        Verilog: wire [[startIndex]:[end]] [name];
+        VHDL: signal [name] : STD_LOGIC_VECTOR( [startIndex] downto [endIndex] );
+
+        Args:
+            name (str): name of the connection
+            startIndex : Start index of the vector. Can be a string. 
+            endIndex (int, optional): End index of the vector. Can be a string. Defaults to 0.
+            indentLevel (int, optional): The indentation Level. Defaults to 0.
+        """
         pass
 
     @abc.abstractmethod
     def addLogicStart(self, indentLevel=0):
+        """
+        Add start of logic. Only useful with VHDL.
+        Verilog: 
+        VHDL; begin
+
+        Args:
+            indentLevel (int, optional): The indentation Level. Defaults to 0.
+        """
         pass
 
     @abc.abstractmethod
     def addLogicEnd(self, indentLevel=0):
+        """
+        Add end of logic. Only useful with VHDL.
+        Verilog:
+        VHDL: end
+
+        Args:
+            indentLevel (int, optional): The indentation Level. Defaults to 0.
+        """
         pass
 
     @abc.abstractmethod
-    def addInstantiation(self, compName: str, compInsName: str, compPort: List[str], signal: List[str], paramPort: List[str] = [], paramSignal: List[str] = [], indentLevel=0):
+    def addInstantiation(self, compName: str, compInsName: str, compPorts: List[str], signals: List[str], paramPorts: List[str] = [], paramSignals: List[str] = [], indentLevel=0):
+        """
+        Add an instantiation. This will line up the ports and signals. So ports[0] will have signals[0] and so on. This is also the same case for paramPorts and paramSignals.
+        Verilog: [compName] [compInsName] # (
+                    .[paramPorts[0]]([paramSignals[0]]),
+                    .[paramPorts[1]]([paramSignals[1]]),
+                    ...
+                    .[paramPorts[n]]([paramSignals[n]])
+                    ) ( 
+                    .[compPorts[0]]([signals[0]]),
+                    .[compPorts[1]]([signals[1]]),
+                    ...
+                    .[compPorts[n]]([signals[n]])
+                 );
+        VHDL: compInsName : compName
+                generic map (
+                    [paramPorts[0]] => [paramSignals[0]],
+                    [paramPorts[1]] => [paramSignals[1]],
+                    ...
+                    [paramPorts[i]] => [paramSignals[i]]
+                );
+                Port map (
+                    [compPorts[i]] => [signals[i]],
+                    [compPorts[i]] => [signals[i]],
+                    [compPorts[i]] => [signals[i]]
+                );
+
+
+
+        Args:
+            compName (str): name of the component
+            compInsName (str): name of the component instance
+            compPorts (List[str]): list of ports of the component
+            signals (List[str]): list of signals of the component
+            paramPorts (List[str], optional): list of parameter ports of the component. Defaults to [].
+            paramSignals (List[str], optional): list of parameter signals of the component. Defaults to [].
+            indentLevel (int, optional): The indentation Level. Defaults to 0.
+
+        Raises:
+            ValueError: If the number of compPorts and signals are not equal.
+            ValueError: If the number of paramPorts and paramSignals are not equal.
+        """
         pass
 
     @abc.abstractmethod
-    def addGeneratorStart(self, loopName: str, variableName: str, start, end, indentLevel=0):
+    def addComponentDeclarationForFile(self, fileName: str):
+        """
+        Add a component declaration for a file. Only useful with VHDL. Will copy the entity of the file, and replacing the entity with component for VHDL to work.
+
+        Args:
+            fileName (str): name of the VHDL file
+        """
         pass
 
     @abc.abstractmethod
-    def addGeneratorEnd(self, indentLevel=0):
+    def addShiftRegister(self, configBits: int, indentLevel=0):
+        """
+        Add a shift registers.
+
+        Args:
+            configBits (int): the number of config bits
+            indentLevel (int, optional): The indentation Level. Defaults to 0.
+        """
         pass
 
     @abc.abstractmethod
-    def addComponentDeclarationForFile(self, fileName):
-        pass
+    def addFlipFlopChain(self, configBits: int, indentLevel=0):
+        """
+        Add a flip flop chain.
 
-    @abc.abstractmethod
-    def addShiftRegister(self, configBits, indentLevel=0):
-        pass
-
-    @abc.abstractmethod
-    def addFlipFlopChain(self, configBits, indentLevel=0):
+        Args:
+            configBits (int): the number of config bits
+            indentLevel (int, optional): The indentation Level. Defaults to 0.
+        """
         pass
 
     @abc.abstractmethod
     def addAssignScalar(self, left, right, delay=0, indentLevel=0):
+        """
+        Add a scalar assign statement. Delay is provided by currently not being used by any of the code generator. 
+        If [right] is a list, it will be concatenated. 
+        Verilog will be concatenated with comma ','. 
+        VHDL will be concatenated with ampersand '&'.
+        Verilog: assign [left] = [right];
+        VHDL: [left] <= [right];
+
+        Args:
+            left : The left hand side of the assign statement.
+            right : The right hand side of the assign statement.
+            delay (int, optional): delay in the assignment. Defaults to 0.
+            indentLevel (int, optional): The indentation Level. Defaults to 0.
+        """
         pass
 
     @abc.abstractmethod
     def addAssignVector(self, left, right, widthL, widthR, indentLevel=0):
+        """
+        Add a vector assign statement.
+        Verilog: assign [left] = [right][[widthL]:[widthR]];
+        VHDL: [left] <= [{right]( [widthL] downto [widthR] );
+
+        Args:
+            left : The left hand side of the assign statement.
+            right : The right hand side of the assign statement.
+            widthL : The start index of the vector. Can be a string.
+            widthR : The end index of the vector. Can be a string.
+            indentLevel (int, optional): The indentation Level. Defaults to 0.
+        """
         pass
 
     @abc.abstractmethod
     def addBELInstantiations(self, bel: Bel, configBitCounter: int, mode: ConfigBitMode, belCounter: int = 0):
+        """
+        _summary_
+
+        Args:
+            bel (Bel): _description_
+            configBitCounter (int): _description_
+            mode (ConfigBitMode): _description_
+            belCounter (int, optional): The indentation Level. Defaults to 0.
+        """
         pass
 
     @abc.abstractmethod
     def add_Conf_Instantiation(self, counter: int, close: bool = True):
+        """
+        _summary_
+
+        Args:
+            counter (int): _description_
+            close (bool, optional): _description_. Defaults to True.
+        """
         pass

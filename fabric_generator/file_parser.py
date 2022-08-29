@@ -1,6 +1,7 @@
+from ast import Raise
 import re
 from copy import deepcopy
-from typing import Dict, List, Literal, Tuple, Union
+from typing import Dict, List, Literal, Tuple, Union, overload
 import csv
 import os
 
@@ -17,7 +18,27 @@ oppositeDic = {"NORTH": "SOUTH", "SOUTH": "NORTH",
 
 def parseFabricCSV(fileName: str) -> Fabric:
     """
-    Parses a csv file and returns a Fabric object.
+    Pares a csv file and returns a fabric object.
+
+    Args:
+        fileName (str): the directory of the csv file.
+
+    Raises:
+        ValueError: File provide need to be a csv file.
+        ValueError: The csv file does not exist.
+        ValueError: Cannot find the FabricBegin and FabricEnd region.
+        ValueError: Cannot find the ParametersBegin and ParametersEnd region.
+        ValueError: The bel entry extension can only be ".v" or ".vhdl".
+        ValueError: The matrix entry extension can only be ".list", ".csv", ".v" or ".vhdl".
+        ValueError: Unknown tile description entry in csv file.
+        ValueError: Unknown tile in the fabric entry in csv file.
+        ValueError: Unknown super tile in the super tile entry in csv file.
+        ValueError: Invalid ConfigBitMode in parameter entry in csv file.
+        ValueError: Invalid MultiplexerStyle in parameter entry in csv file.
+        ValueError: Invalid parameter entry in csv file.
+
+    Returns:
+        Fabric: The fabric object.
     """
     if not fileName.endswith(".csv"):
         raise ValueError("File must be a csv file")
@@ -151,12 +172,7 @@ def parseFabricCSV(fileName: str) -> Fabric:
             elif i == "Null" or i == "NULL" or i == "None":
                 fabricLine.append(None)
             else:
-                print("The fabric contains definitions that are not tiles or Null.")
-                print("The following definition is not valid:")
-                print(i)
-                print("The available tiles are:")
-                print(list(tileDic.keys()))
-                exit(-1)
+                raise ValueError(f"Unknown tile {i}")
         fabricTiles.append(fabricLine)
 
     for i in list(tileDic.keys()):
@@ -165,8 +181,8 @@ def parseFabricCSV(fileName: str) -> Fabric:
                 f"Tile {i} is not used in the fabric. Removing from tile dictionary.")
             del tileDic[i]
 
-    superTileDic = {}
     # parse the super tile
+    superTileDic = {}
     for t in superTile:
         description = t.split("\n")
         name = description[0].split(",")[1]
@@ -187,7 +203,7 @@ def parseFabricCSV(fileName: str) -> Fabric:
                     result = parseFileVerilog(belFilePath, line[2])
                 internal, external, config, shared, configBit, userClk, belMap = result
                 bels.append(Bel(belFilePath, line[2], internal,
-                            external, config, shared, configBit, belMap))
+                            external, config, shared, configBit, belMap, userClk))
                 withUserCLK |= userClk
                 continue
 
@@ -205,6 +221,7 @@ def parseFabricCSV(fileName: str) -> Fabric:
             tileMap.append(row)
 
         superTileDic[name] = SuperTile(name, tiles, tileMap, bels, withUserCLK)
+
     # parse the parameters
     height = 0
     width = 0
@@ -248,10 +265,8 @@ def parseFabricCSV(fileName: str) -> Fabric:
         elif i[0].startswith("SuperTileEnable"):
             superTileEnable = i[1] == "TRUE"
         else:
-            print("The parameters section contains an invalid parameter.")
-            print("The following parameter is not valid:")
-            print(i)
-            exit(-1)
+            raise ValueError(f"The following parameter is not valid: {i}")
+
     height = len(fabricTiles)
     width = len(fabricTiles[0])
 
@@ -275,9 +290,30 @@ def parseFabricCSV(fileName: str) -> Fabric:
                   commonWirePair=commonWirePair)
 
 
-def parseList(fileName: str, collect: Literal["", "source", "sink"] = "") -> Union[List[Tuple[str, str]], Dict[str, List[str]]]:
+@overload
+def parseList(fileName: str, collect: Literal["pair"] = "pair") -> List[Tuple[str, str]]:
+    pass
+
+
+@overload
+def parseList(fileName: str, collect: Literal["source", "sink"]) -> Dict[str, List[str]]:
+    pass
+
+
+def parseList(fileName: str, collect: Literal["pair", "source", "sink"] = "pair") -> Union[List[Tuple[str, str]], Dict[str, List[str]]]:
     """
-    Parses a list file and returns a list of tuples.
+    parse a list file and expand the list file information into a list of tuples. 
+
+    Args:
+        fileName (str): ""
+        collect (Literal[&quot;&quot;, &quot;source&quot;, &quot;sink&quot;], optional): Collect value by source, sink or just as pair. Defaults to "pair".
+
+    Raises:
+        ValueError: The file does not exist.
+        ValueError: Invalid format in the list file.
+
+    Returns:
+        Union[List[Tuple[str, str]], Dict[str, List[str]]]: Return either a list of connection pair or a dictionary of lists which is collected by the specified option, source or sink.
     """
 
     if not os.path.exists(fileName):
@@ -326,6 +362,9 @@ def parseList(fileName: str, collect: Literal["", "source", "sink"] = "") -> Uni
 
 
 def _expandListPorts(port, PortList):
+    """
+    expand the .list file entry into list of tuple.
+    """
     # a leading '[' tells us that we have to expand the list
     if "[" in port:
         if "]" not in port:
@@ -350,6 +389,24 @@ def _expandListPorts(port, PortList):
 
 
 def parseFileVHDL(filename: str, belPrefix: str = "") -> Tuple[List[Tuple[str, IO]], List[Tuple[str, IO]], List[Tuple[str, IO]], List[Tuple[str, IO]], int, bool, Dict[str, int]]:
+    """
+    Parse a VHDL bel file and return all the related information of the bel. The tuple returned for relating to ports will
+    be a list of (belName, IO) pair.
+
+    Args:
+        filename (str): The input file name.
+        belPrefix (str, optional): The bel prefix provided by the CSV file. Defaults to "".
+
+    Raises:
+        ValueError: File not found
+        ValueError: No permission to access the file
+        ValueError: Cannot find the port section in the file which defines the bel ports.
+
+    Returns:
+        Tuple[List[Tuple[str, IO]], List[Tuple[str, IO]], List[Tuple[str, IO]], List[Tuple[str, IO]], int, bool, Dict[str, int]]: 
+        Bel internal ports, bel external ports, bel config ports, bel shared ports, number of configuration bit in the bel,
+        whether the bel have UserCLK, and the bel config bit mapping. 
+    """
     internal: List[Tuple[str, IO]] = []
     external: List[Tuple[str, IO]] = []
     config: List[Tuple[str, IO]] = []
@@ -461,7 +518,24 @@ def parseFileVHDL(filename: str, belPrefix: str = "") -> Tuple[List[Tuple[str, I
     return internal, external, config, shared, noConfigBits, userClk, belMapDic
 
 
-def parseFileVerilog(filename: str, belPrefix: str = "") -> Tuple[List[Tuple[str, IO]], List[Tuple[str, IO]], List[Tuple[str, IO]], List[Tuple[str, IO]], int, bool, Dict[str, dict]]:
+def parseFileVerilog(filename: str, belPrefix: str = "") -> Tuple[List[Tuple[str, IO]], List[Tuple[str, IO]], List[Tuple[str, IO]], List[Tuple[str, IO]], int, bool, Dict[str, Dict]]:
+    """
+    Parse a Verilog bel file and return all the related information of the bel. The tuple returned for relating to ports 
+    will be a list of (belName, IO) pair.
+
+    Args:
+        filename (str): The filename of the bel file.
+        belPrefix (str, optional): The bel prefix provided by the CSV file. Defaults to "".
+
+    Raises:
+        ValueError: File not found
+        ValueError: No permission to access the file
+
+    Returns:
+        Tuple[List[Tuple[str, IO]], List[Tuple[str, IO]], List[Tuple[str, IO]], List[Tuple[str, IO]], int, bool, Dict[str, Dict]]: 
+        Bel internal ports, bel external ports, bel config ports, bel shared ports, number of configuration bit in the bel,
+        whether the bel have UserCLK, and the bel config bit mapping. 
+    """
     internal: List[Tuple[str, IO]] = []
     external: List[Tuple[str, IO]] = []
     config: List[Tuple[str, IO]] = []
@@ -592,8 +666,21 @@ def parseFileVerilog(filename: str, belPrefix: str = "") -> Tuple[List[Tuple[str
     return internal, external, config, shared, noConfigBits, userClk, belMapDic
 
 
-# convert the matrix csv into a dictionary from destination to source
 def parseMatrix(fileName: str, tileName: str) -> Dict[str, List[str]]:
+    """
+    parse the matrix csv into a dictionary from destination to source
+
+    Args:
+        fileName (str): directory of the matrix csv file
+        tileName (str): name of the tile need to be parsed
+
+    Raises:
+        ValueError: Non matching matrix file content and tile name
+
+    Returns:
+        Dict[str, List[str]]: dictionary from destination to a list of source
+    """
+
     connectionsDic = {}
     with open(fileName, 'r') as f:
         file = f.read()
@@ -620,6 +707,27 @@ def parseMatrix(fileName: str, tileName: str) -> Dict[str, List[str]]:
 
 
 def parseConfigMem(fileName: str, maxFramePerCol: int, frameBitPerRow: int, globalConfigBits: int) -> List[ConfigMem]:
+    """
+    Parse the config memory csv file into a list of ConfigMem objects
+
+    Args:
+        fileName (str): directory of the config memory csv file
+        maxFramePerCol (int): maximum number of frames per column
+        frameBitPerRow (int): number of bits per row
+        globalConfigBits (int): number of global config bits for the config memory
+
+    Raises:
+        ValueError: Invalid amount of frame entries in the config memory csv file
+        ValueError: Too many value in bit mask
+        ValueError: Length of bit mask does not match with the number of frame bits per row
+        ValueError: Bit mast does not have enough value matching the number of the given config bits
+        ValueError: repeated config bit entry in ':' separated format in config bit range
+        ValueError: repeated config bit entry in list format in config bit range
+        ValueError: Invalid range entry in config bit range
+
+    Returns:
+        List[ConfigMem]: _description_
+    """
     with open(fileName) as f:
         mappingFile = list(csv.DictReader(f))
 

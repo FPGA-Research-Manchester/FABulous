@@ -9,6 +9,10 @@ from fabric_generator.fabric import ConfigBitMode
 
 
 class VHDLWriter(codeGenerator):
+    """
+    The VHDL writer class. This is the template for generating VHDL code.
+
+    """
 
     def addComment(self, comment, onNewLine=False, end="", indentLevel=0) -> None:
         if onNewLine:
@@ -20,7 +24,7 @@ class VHDLWriter(codeGenerator):
             self._add(f"{' ':<{indentLevel*4}}" +
                       f"-- {comment}"f"{end}")
 
-    def addHeader(self, name, package='', maxFramesPerCol='', frameBitsPerRow='', ConfigBitMode='FlipFlopChain', indentLevel=0):
+    def addHeader(self, name, package='', indentLevel=0):
         #   library template
         self._add("library IEEE;", indentLevel)
         self._add("use IEEE.STD_LOGIC_1164.ALL;", indentLevel)
@@ -68,9 +72,9 @@ class VHDLWriter(codeGenerator):
     def addConnectionScalar(self, name, indentLevel=0):
         self._add(f"signal {name} : STD_LOGIC;", indentLevel)
 
-    def addConnectionVector(self, name, startIndex, end=0, indentLevel=0):
+    def addConnectionVector(self, name, startIndex, endIndex=0, indentLevel=0):
         self._add(
-            f"signal {name} : STD_LOGIC_VECTOR( { startIndex } downto {end} );", indentLevel)
+            f"signal {name} : STD_LOGIC_VECTOR( { startIndex } downto {endIndex} );", indentLevel)
 
     def addLogicStart(self, indentLevel=0):
         self._add("\n"f"begin""\n", indentLevel)
@@ -88,40 +92,37 @@ class VHDLWriter(codeGenerator):
         self._add(
             f"{left} <= {right}( {widthL} downto {widthR} );", indentLevel)
 
-    def addInstantiation(self, compName, compInsName, compPort, signal, paramPort=[], paramSignal=[], indentLevel=0):
-        if len(compPort) != len(signal):
+    def addInstantiation(self, compName, compInsName, compPorts, signals, paramPorts=[], paramSignals=[], indentLevel=0):
+        if len(compPorts) != len(signals):
             raise ValueError(
-                f"Number of ports and signals do not match: {compPort} != {signal}")
-        if len(paramPort) != len(paramSignal):
+                f"Number of ports and signals do not match: {compPorts} != {signals}")
+        if len(paramPorts) != len(paramSignals):
             raise ValueError(
-                f"Number of ports and signals do not match: {paramPort} != {paramSignal}")
+                f"Number of ports and signals do not match: {paramPorts} != {paramSignals}")
 
         self._add(f"{compInsName} : {compName}", indentLevel=indentLevel)
-        if paramPort:
+        if paramPorts:
+            connectPair = []
             self._add(f"generic map (", indentLevel=indentLevel+1)
-            for i in range(len(paramPort)):
-                self._add(
-                    f"{paramPort[i]} => {paramSignal[i]};", indentLevel=indentLevel+2)
+            for i in range(len(paramPorts)):
+                connectPair.append(
+                    f"{paramPorts[i]} => {paramSignals[i]}")
+            self._add(
+                (",\n"f"{' ':<{4*(indentLevel + 2)}}").join(connectPair), indentLevel=indentLevel + 2)
             self._add(f")", indentLevel=indentLevel+1)
 
         self._add(f"Port map(", indentLevel=indentLevel + 1)
         connectPair = []
-        for i in range(len(compPort)):
-            if "[" in signal[i]:
-                signal[i] = signal[i].replace("[", "(").replace("]", ")")
-            connectPair.append(f"{compPort[i]} => {signal[i]}")
+        for i in range(len(compPorts)):
+            if "[" in signals[i]:
+                signals[i] = signals[i].replace("[", "(").replace("]", ")")
+            connectPair.append(f"{compPorts[i]} => {signals[i]}")
 
         self._add(
             (",\n"f"{' ':<{4*(indentLevel + 2)}}").join(connectPair), indentLevel=indentLevel + 2)
         self._add(");", indentLevel=indentLevel + 1)
         self.addNewLine()
 
-    def addGeneratorStart(self, loopName, variableName, start, end, indentLevel=0):
-        self._add(
-            f"{loopName}: for {variableName} in {start} to {end} generate", indentLevel=indentLevel)
-
-    def addGeneratorEnd(self, indentLevel=0):
-        self._add("end generate;", indentLevel)
 
     def addComponentDeclarationForFile(self, fileName):
         configPortUsed = 0  # 1 means is used

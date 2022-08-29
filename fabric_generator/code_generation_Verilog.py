@@ -7,6 +7,9 @@ from fabric_generator.code_generator import codeGenerator
 
 
 class VerilogWriter(codeGenerator):
+    """
+    The writer class for generating Verilog code.
+    """
 
     def addComment(self, comment, onNewLine=False, end="", indentLevel=0) -> None:
         if onNewLine:
@@ -18,7 +21,7 @@ class VerilogWriter(codeGenerator):
             self._add(f"{' ':<{indentLevel*4}}" +
                       f"// {comment}"f"{end}")
 
-    def addHeader(self, name, package='', maxFramesPerCol='', frameBitsPerRow='', ConfigBitMode='FlipFlopChain', indentLevel=0):
+    def addHeader(self, name, package='', indentLevel=0):
         self._add(f"module {name}", indentLevel)
 
     def addHeaderEnd(self, name, indentLevel=0):
@@ -43,18 +46,18 @@ class VerilogWriter(codeGenerator):
         self._add(");", indentLevel)
 
     def addPortScalar(self, name, io: IO, end=False, indentLevel=0):
-        t = io.value.lower()
+        ioString = io.value.lower()
         if end:
-            self._add(f"{t} {name}", indentLevel)
+            self._add(f"{ioString} {name}", indentLevel)
         else:
-            self._add(f"{t} {name},", indentLevel)
+            self._add(f"{ioString} {name},", indentLevel)
 
     def addPortVector(self, name, io: IO, msbIndex, end=False, indentLevel=0):
-        t = io.value.lower()
+        ioString = io.value.lower()
         if end:
-            self._add(f"{t} [{msbIndex}:0] {name}", indentLevel)
+            self._add(f"{ioString} [{msbIndex}:0] {name}", indentLevel)
         else:
-            self._add(f"{t} [{msbIndex}:0] {name},", indentLevel)
+            self._add(f"{ioString} [{msbIndex}:0] {name},", indentLevel)
 
     def addDesignDescriptionStart(self, name, indentLevel=0):
         pass
@@ -65,12 +68,12 @@ class VerilogWriter(codeGenerator):
     def addConstant(self, name, value, indentLevel=0):
         self._add(f"parameter {name} = {value};", indentLevel)
 
-    def addConnectionVector(self, name, startIndex, end=0, indentLevel=0):
-        self._add(
-            f"wire[{startIndex}:{end}] {name};", indentLevel)
+    def addConnectionScalar(self, name, indentLevel=0):
+        self._add(f"wire {name};", indentLevel)
 
-    def addConnectionScalar(self, name):
-        self._add(f"wire {name};")
+    def addConnectionVector(self, name, startIndex, endIndex=0, indentLevel=0):
+        self._add(
+            f"wire[{startIndex}:{endIndex}] {name};", indentLevel)
 
     def addLogicStart(self, indentLevel=0):
         pass
@@ -78,39 +81,36 @@ class VerilogWriter(codeGenerator):
     def addLogicEnd(self, indentLevel=0):
         pass
 
-    def addInstantiation(self, compName, compInsName, compPort, signal, paramPort=[], paramSignal=[], indentLevel=0):
-        if len(compPort) != len(signal):
+    def addInstantiation(self, compName, compInsName, compPorts, signals, paramPorts=[], paramSignals=[], indentLevel=0):
+        if len(compPorts) != len(signals):
             raise ValueError(
-                f"Number of ports and signals do not match: {compPort} != {signal}")
-        if len(paramPort) != len(paramSignal):
+                f"Number of ports and signals do not match: {compPorts} != {signals}")
+        if len(paramPorts) != len(paramSignals):
             raise ValueError(
-                f"Number of ports and signals do not match: {paramPort} != {paramSignal}")
+                f"Number of ports and signals do not match: {paramPorts} != {paramSignals}")
 
-        if paramPort:
-            port = [f".{paramPort[i]}({paramSignal[i]})" for i in range(
-                len(paramPort))]
+        if paramPorts:
+            port = [f".{paramPorts[i]}({paramSignals[i]})" for i in range(
+                len(paramPorts))]
             self._add(
-                f"{compName} {compInsName} #({','.join(port)}) (", indentLevel=indentLevel)
+                f"{compName} {compInsName}", indentLevel=indentLevel)
+            self._add("#(", indentLevel=indentLevel+1)
+            self._add(
+                (",\n"f"{' ':<{4*(indentLevel + 1)}}").join(port), indentLevel=indentLevel + 1)
+            self._add(") (", indentLevel=indentLevel+1)
         else:
             self._add(f"{compName} {compInsName} (", indentLevel=indentLevel)
 
         connectPair = []
-        for i in range(len(compPort)):
-            if "(" in signal[i]:
-                signal[i] = signal[i].replace("(", "[").replace(")", "]")
-            connectPair.append(f".{compPort[i]}({signal[i]})")
+        for i in range(len(compPorts)):
+            if "(" in signals[i]:
+                signals[i] = signals[i].replace("(", "[").replace(")", "]")
+            connectPair.append(f".{compPorts[i]}({signals[i]})")
 
         self._add(
             (",\n"f"{' ':<{4*(indentLevel + 1)}}").join(connectPair), indentLevel=indentLevel + 1)
         self._add(");", indentLevel=indentLevel)
         self.addNewLine()
-
-    def addGeneratorStart(self, loopName, variableName, start, end, indentLevel=0):
-        self._add(
-            f"{loopName}: for {variableName} in {start} to {end} generate", indentLevel=indentLevel)
-
-    def addGeneratorEnd(self, indentLevel=0):
-        self._add("end generate;", indentLevel)
 
     def addComponentDeclarationForFile(self, fileName):
         configPortUsed = 0  # 1 means is used
@@ -169,20 +169,6 @@ class VerilogWriter(codeGenerator):
     def addAssignVector(self, left, right, widthL, widthR, indentLevel=0):
         self._add(
             f"assign {left} = {right}[{widthL}:{widthR}];", indentLevel)
-
-    def addLatch(self, frameName, frameBitsPerRow, frameIndex, configBit):
-        latchTemplate = """
-LHQD1 Inst_{frameName}_bit{frameBitsPerRow} (
-    .D(FrameData[{frameBitsPerRow}]),
-    .E(FrameStrobe[{frame}]),
-    .Q(ConfigBits[{configBit}]),
-    .QN(ConfigBits[{configBit}])
-);
-    """
-        self._add(latchTemplate.format(frameName=frameName,
-                                       frameBitsPerRow=frameBitsPerRow,
-                                       frame=frameIndex,
-                                       configBit=configBit))
 
     def addBELInstantiations(self, bel: Bel, configBitCounter, mode=ConfigBitMode.FRAME_BASED, belCounter=0):
         belTemplate = """

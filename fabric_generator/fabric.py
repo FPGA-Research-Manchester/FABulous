@@ -40,6 +40,26 @@ class ConfigBitMode(Enum):
 
 @dataclass(frozen=True, eq=True)
 class Port():
+    """
+    The port data class contains all the port information from the CSV file.
+    The `name`, `inOut` and `sideOfTile` are added attributes to aid the generation of the fabric.
+    The name and inOut are related. If the inOut is "INPUT" then the name is the source name of the port on the tile.
+    Otherwise the name is the destination name of the port on the tile.
+    The `sideOfTile` is where the port physically located on the tile, since for a north direction wire, the input will
+    be physical located on the south side of the tile. The `sideOfTile` will make determine where the port is located
+    much easier.
+
+    Attributes:
+        wireDirection (Direction) : The direction attribute in the CSV file
+        sourceName (str) : The source_name attribute in the CSV file
+        xOffset (int): The X-offset attribute in the CSV file
+        yOffset (int): The Y-offset attribute in the CSV file
+        destinationName (str): The destination_name attribute in the CSV file
+        wireCount (int): The wires attribute in the CSV file
+        name (str): The name of the port
+        inOut (IO): The IO direction of the port
+        sideOfTile (Side): The side which the port is physically located on the tile
+    """
     wireDirection: Direction
     sourceName: str
     xOffset: int
@@ -49,20 +69,22 @@ class Port():
     name: str
     inOut: IO
     sideOfTile: Side
-    # totalWireAmount: int
-
-    # def __init__(self, direction, sourceName, xOffset, yOffset, destinationName, wires) -> None:
-    #     self.wireDirection = direction
-    #     self.sourceName = sourceName
-    #     self.xOffset = xOffset
-    #     self.yOffset = yOffset
-    #     self.destinationName = destinationName
-    #     self.wires = wires
 
     def __repr__(self) -> str:
         return f"wires:{self.wireCount} X_offset:{self.xOffset} Y_offset:{self.yOffset} source_name:{self.sourceName} destination_name:{self.destinationName}"
 
-    def expandPortInfo(self, mode="SwitchMatrix"):
+    def expandPortInfo(self, mode="SwitchMatrix") -> Tuple[List[str], List[str]]:
+        """
+        Expanding the port information to individual bit signal. If indexed is in the mode, then brackets are added to the signal name.
+
+        Args:
+            mode (str, optional): mode for expansion. Defaults to "SwitchMatrix". 
+                                  Possible modes are 'all', 'allIndexed', 'Top', 'TopIndexed', 'AutoTop', 
+                                  'AutoTopIndexed', 'SwitchMatrix', 'SwitchMatrixIndexed', 'AutoSwitchMatrix', 
+                                  'AutoSwitchMatrixIndexed'
+        Returns:
+            Tuple[List[str], List[str]]: A tuple of two lists. The first list contains the source names of the ports and the second list contains the destination names of the ports.
+        """
         inputs, outputs = [], []
         thisRange = 0
         openIndex = ""
@@ -106,19 +128,30 @@ class Port():
             thisRange = 1
 
         for i in range(startIndex, thisRange):
-            if self.destinationName != "NULL":
-                outputs.append(
-                    f"{self.destinationName}{openIndex}{str(i)}{closeIndex}")
-            # if self.sourceName == "NULL":
-            #     print(self)
             if self.sourceName != "NULL":
                 inputs.append(
                     f"{self.sourceName}{openIndex}{str(i)}{closeIndex}")
+
+            if self.destinationName != "NULL":
+                outputs.append(
+                    f"{self.destinationName}{openIndex}{str(i)}{closeIndex}")
         return inputs, outputs
 
 
 @dataclass(frozen=True, eq=True)
 class Wire():
+    """
+    This class is for wire connection that span across multiple tiles. If working for connection between two adjacent tiles, the Port class should have all the required information. The main use of this class is to assist model generation, where information at individual wire level is needed.
+
+    Attributes:
+        direction (Direction): The direction of the wire
+        source (str): The source name of the wire
+        xOffset (int): The X-offset of the wire
+        yOffset (int): The Y-offset of the wire
+        destination (str): The destination name of the wire
+        sourceTile (str): The source tile name of the wire
+        destinationTile (str): The destination tile name of the wire
+    """
     direction: Direction
     source: str
     xOffset: int
@@ -138,6 +171,30 @@ class Wire():
 
 @dataclass
 class Bel():
+    """
+    Contains all the information about a single BEL. The information is parsed from the directory of the BEL in the CSV
+    definition file. There are something to be noted. 
+        * The parsed name will contains the prefix of the bel. 
+        * The `sharedPort` attribute is a list of Tuples with name of the port and IO information which is not expanded out 
+          yet. 
+        * If a port is marked as both shared and external, the port is considered as shared. As a result signal like 
+          UserCLK will be in shared port list, but not in external port list. 
+
+
+    Attributes:
+        src (str): The source directory of the BEL given in the CSV file.
+        prefix (str): The prefix of the BEL given in the CSV file.
+        name (str): The name of the BEL, extracted from the source directory.
+        inputs (List[str]): All the normal input ports of the BEL.
+        outputs (List[str]) : All the normal output ports of the BEL.
+        externalInput (List[str]) : ALL the external input ports of the BEL.
+        externalOutput: (List[str]) : All the external output ports of the BEL.
+        configPort (List[str]) : All the config ports of the BEL.
+        sharedPort (List[Tuple[str, IO]]) : All the shared ports of the BEL.
+        configBit (int) : The number of config bits of the BEL have.
+        belFeatureMap (Dict[str, dict]) : The feature map of the BEL.
+        withUserCLK (bool) : Whether the BEL has userCLK port. Default is False.
+    """
     src: str
     prefix: str
     name: str
@@ -151,7 +208,7 @@ class Bel():
     belFeatureMap: Dict[str, dict] = field(default_factory=dict)
     withUserCLK: bool = False
 
-    def __init__(self, src: str, prefix: str, internal, external, configPort, sharedPort, configBit: int, belMap: Dict[str, dict], userCLK:bool) -> None:
+    def __init__(self, src: str, prefix: str, internal, external, configPort, sharedPort, configBit: int, belMap: Dict[str, dict], userCLK: bool) -> None:
         self.src = src
         self.prefix = prefix
         self.name = src.split("/")[-1].split(".")[0]
@@ -168,6 +225,16 @@ class Bel():
 
 @dataclass(frozen=True, eq=True)
 class ConfigMem():
+    """
+    Data structure to store the information about a config memory. Each structure represent a row of entry in the config memory csv file.
+
+    Attributes:
+        frameName (str) : The name of the frame
+        frameIndex (int) : The index of the frame
+        bitUsedInFrame (int) : The number of bits used in the frame
+        usedBitMask (int) : The bit mask of the bits used in the frame
+        configBitRanges (List[int]) : A list of config bit mapping values 
+    """
     frameName: str
     frameIndex: int
     bitsUsedInFrame: int
@@ -177,6 +244,19 @@ class ConfigMem():
 
 @dataclass
 class Tile():
+    """
+    This class is for storing the information about a tile. 
+
+    attributes:
+        name (str) : The name of the tile
+        portsInfo (List[Port]) : The list of ports of the tile
+        matrixDir (str) : The directory of the tile matrix
+        globalConfigBits (int) : The number of config bits the tile have
+        withUserCLK (bool) : Whether the tile has userCLK port. Default is False.
+        wireList (List[Wire]) : The list of wires of the tile
+        filePath (str) : The path of the matrix file
+    """
+
     name: str
     portsInfo: List[Port]
     bels: List[Bel]
@@ -240,6 +320,17 @@ class Tile():
 
 @ dataclass
 class SuperTile():
+    """
+    This class is for storing the information about a super tile.
+
+    attributes:
+        name (str) : The name of the super tile
+        tiles (List[Tile]) : The list of tiles of that build the super tile
+        tileMap (List[List[Tile]]) : The map of the tiles of which build the super tile
+        bels (List[Bel]) : The list of bels of that the super tile have
+        withUserCLK (bool) : Whether the super tile has userCLK port. Default is False.
+    """
+
     name: str
     tiles: List[Tile]
     tileMap: List[List[Tile]]
@@ -247,23 +338,36 @@ class SuperTile():
     withUserCLK: bool = False
 
     def getPortsAroundTile(self) -> Dict[str, List[List[Port]]]:
+        """
+        Return all the ports that are around the super tile. The dictionary key is the location of where the tile located in the super tile map with the format of "X{x}Y{y}" where x is the x coordinate of the tile and y is the y coordinate of the tile. The top left tile will have key "00".
+
+        Returns:
+            Dict[str, List[List[Port]]]: The dictionary of the ports around the super tile
+        """
         ports = {}
         for y, row in enumerate(self.tileMap):
             for x, tile in enumerate(row):
                 if self.tileMap[y][x] == None:
                     continue
-                ports[f"{x}{y}"] = []
+                ports[f"{x},{y}"] = []
                 if y - 1 < 0 or self.tileMap[y-1][x] == None:
-                    ports[f"{x}{y}"].append(tile.getNorthSidePorts())
+                    ports[f"{x},{y}"].append(tile.getNorthSidePorts())
                 if x + 1 >= len(self.tileMap[y]) or self.tileMap[y][x+1] == None:
-                    ports[f"{x}{y}"].append(tile.getEastSidePorts())
+                    ports[f"{x},{y}"].append(tile.getEastSidePorts())
                 if y + 1 >= len(self.tileMap) or self.tileMap[y+1][x] == None:
-                    ports[f"{x}{y}"].append(tile.getSouthSidePorts())
+                    ports[f"{x},{y}"].append(tile.getSouthSidePorts())
                 if x - 1 < 0 or self.tileMap[y][x-1] == None:
-                    ports[f"{x}{y}"].append(tile.getWestSidePorts())
+                    ports[f"{x},{y}"].append(tile.getWestSidePorts())
         return ports
 
     def getInternalConnections(self) -> List[Tuple[List[Port], int, int]]:
+        """
+        Return all the internal connections of the super tile.
+
+        Returns:
+            List[Tuple[List[Port], int, int]]: A list of tuple which contains the internal connected port and the
+                                               x and y coordinate of the tile.
+        """
         internalConnections = []
         for y, row in enumerate(self.tileMap):
             for x, tile in enumerate(row):
@@ -284,6 +388,31 @@ class SuperTile():
 
 @ dataclass
 class Fabric():
+    """
+    This class is for storing the information and hyper parameter of the fabric. All the information is parsed from the 
+    CSV file. 
+
+    Attributes:
+        tile (List[List[Tile]]) : The tile map of the fabric
+        name (str) : The name of the fabric
+        numberOfRow (int) : The number of row of the fabric
+        numberOfColumn (int) : The number of column of the fabric
+        configMitMode (ConfigBitMode): The configuration bit mode of the fabric. Currently support frame based or ff chain
+        frameBitsPerRow (int) : The number of frame bits per row of the fabric
+        maxFramesPerCol (int) : The maximum number of frames per column of the fabric
+        package (str) : The extra package used by the fabric. Only useful for VHDL output. 
+        generateDelayInSwitchMatrix (int) : The amount of delay in a switch matrix. 
+        multiplexerStyle (MultiplexerStyle) : The style of the multiplexer used in the fabric. Currently support custom or generic
+        frameSelectWidth (int) : The width of the frame select signal.
+        rowSelectWidth (int) : The width of the row select signal.
+        desync_flag (int): 
+        numberOfBRAMs (int) : The number of BRAMs in the fabric.
+        superTileEnable (bool) : Whether the fabric has super tile.
+        tileDic (Dict[str, Tile]) : A dictionary of tiles used in the fabric. The key is the name of the tile and the value is the tile. 
+        superTileDic (Dict[str, SuperTile]) : A dictionary of super tiles used in the fabric. The key is the name of the super tile and the value is the super tile.
+
+    """
+
     tile: List[List[Tile]] = field(default_factory=list)
 
     name: str = "eFPGA"
@@ -307,6 +436,11 @@ class Fabric():
     commonWirePair: List[Tuple[str, str]] = field(default_factory=list)
 
     def __post_init__(self) -> None:
+        """
+        Generate all the wire pair in the fabric and get all the wire in the fabric. 
+        The wire pair are used during model generation when some of the signals have source or destination of "NULL".
+        The wires are used during model generation to work with wire that going cross tile.
+        """
         for row in self.tile:
             for tile in row:
                 if tile == None:

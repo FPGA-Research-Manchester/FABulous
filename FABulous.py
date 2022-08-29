@@ -282,13 +282,6 @@ To run the complete FABulous flow with the default project, run the following co
         args = self.parse(args)
         logger.info(f"Generating Config Memory for {' '.join(args)}")
         for i in args:
-            if os.path.exists(f"{self.pathToCSVFile}/Tile/{i}/{i}_ConfigMem.csv"):
-                logger.info(
-                    f"Found bitstream mapping file {i}_configMem.csv for tile {i}")
-            else:
-                logger.info(f"{i}_configMem.csv does not exist")
-                logger.info(f"Generating a default configMem for {i}")
-
             logger.info(f"Generating configMem for {i}")
             self.fabricGen.setWriterOutputFile(
                 f"{self.pathToCSVFile}/Tile/{i}/{i}_ConfigMem.{self.extension}")
@@ -324,6 +317,7 @@ To run the complete FABulous flow with the default project, run the following co
                     f"{t} is a super tile, generating {t} with sub tiles {' '.join(subTiles)}")
                 for st in subTiles:
                     # Gen switch matrix
+                    logger.info(f"Generating switch matrix for tile {t}")
                     logger.info(f"Generating switch matrix for {st}")
                     self.fabricGen.setWriterOutputFile(
                         f"{self.pathToCSVFile}/Tile/{t}/{st}/{st}_switch_matrix.{self.extension}")
@@ -332,14 +326,6 @@ To run the complete FABulous flow with the default project, run the following co
 
                     # Gen config mem
                     logger.info(f"Generating configMem for tile {t}")
-                    if os.path.exists(f"{self.pathToCSVFile}/Tile/{t}/{st}/{st}_ConfigMem.csv"):
-                        logger.info(
-                            f"Found bitstream mapping file {st}_ConfigMem.csv for tile {st}")
-                    else:
-                        logger.info(f"{st}_ConfigMem.csv does not exist")
-                        logger.info(
-                            f"Generating a default configMem for {st}")
-
                     logger.info(f"Generating ConfigMem for {st}")
                     self.fabricGen.setWriterOutputFile(
                         f"{self.pathToCSVFile}/Tile/{t}/{st}/{st}_ConfigMem.{self.extension}")
@@ -348,6 +334,7 @@ To run the complete FABulous flow with the default project, run the following co
                     logger.info(f"Generated configMem for {st}")
 
                     # Gen tile
+                    logger.info(f"Generating subtile for tile {t}")
                     logger.info(f"Generating subtile {st}")
                     logger.info(
                         f"Output file: {self.pathToCSVFile}/Tile/{t}/{st}/{st}_tile.{self.extension}")

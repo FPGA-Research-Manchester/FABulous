@@ -66,9 +66,9 @@ class FabricGenerator:
         Generates a blank switch matrix csv file for the given tile. The top left corner will 
         contain the name of the tile. Columns are the source signals and rows are the destination signals.
         The order of the signal will be:
-            * standard wire
-            * BEL signal with prefix
-            * jump wire
+        * standard wire
+        * BEL signal with prefix
+        * jump wire
 
         The order is important as this order will be used during switch matrix generation
 

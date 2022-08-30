@@ -60,12 +60,13 @@ class codeGenerator(abc.ABC):
     def addHeader(self, name: str, package='', indentLevel=0):
         """
         Add a header to the code.
+
         Verilog: module [name]
         VHDL: library IEEE;
-              use IEEE.std_logic_1164.all;
-              use IEEE.NUMERIC_STD.ALL
-              [package]
-              entity uname] is
+                use IEEE.std_logic_1164.all;
+                use IEEE.NUMERIC_STD.ALL
+                [package]
+                entity uname] is
 
         Args:
             name (str): name of the module
@@ -278,29 +279,31 @@ class codeGenerator(abc.ABC):
     def addInstantiation(self, compName: str, compInsName: str, compPorts: List[str], signals: List[str], paramPorts: List[str] = [], paramSignals: List[str] = [], indentLevel=0):
         """
         Add an instantiation. This will line up the ports and signals. So ports[0] will have signals[0] and so on. This is also the same case for paramPorts and paramSignals.
-        Verilog: [compName] [compInsName] # (
-                    .[paramPorts[0]]([paramSignals[0]]),
-                    .[paramPorts[1]]([paramSignals[1]]),
-                    ...
-                    .[paramPorts[n]]([paramSignals[n]])
-                    ) ( 
-                    .[compPorts[0]]([signals[0]]),
-                    .[compPorts[1]]([signals[1]]),
-                    ...
-                    .[compPorts[n]]([signals[n]])
-                 );
-        VHDL: compInsName : compName
-                generic map (
-                    [paramPorts[0]] => [paramSignals[0]],
-                    [paramPorts[1]] => [paramSignals[1]],
-                    ...
-                    [paramPorts[i]] => [paramSignals[i]]
-                );
-                Port map (
-                    [compPorts[i]] => [signals[i]],
-                    [compPorts[i]] => [signals[i]],
-                    [compPorts[i]] => [signals[i]]
-                );
+
+        Example:
+            Verilog: [compName] [compInsName] # (
+                        .[paramPorts[0]]([paramSignals[0]]),
+                        .[paramPorts[1]]([paramSignals[1]]),
+                        ...
+                        .[paramPorts[n]]([paramSignals[n]])
+                        ) ( 
+                        .[compPorts[0]]([signals[0]]),
+                        .[compPorts[1]]([signals[1]]),
+                        ...
+                        .[compPorts[n]]([signals[n]])
+                    );
+            VHDL: compInsName : compName
+                    generic map (
+                        [paramPorts[0]] => [paramSignals[0]],
+                        [paramPorts[1]] => [paramSignals[1]],
+                        ...
+                        [paramPorts[i]] => [paramSignals[i]]
+                    );
+                    Port map (
+                        [compPorts[i]] => [signals[i]],
+                        [compPorts[i]] => [signals[i]],
+                        [compPorts[i]] => [signals[i]]
+                    );
 
 
 

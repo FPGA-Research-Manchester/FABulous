@@ -174,11 +174,11 @@ class Bel():
     """
     Contains all the information about a single BEL. The information is parsed from the directory of the BEL in the CSV
     definition file. There are something to be noted. 
-        * The parsed name will contains the prefix of the bel. 
-        * The `sharedPort` attribute is a list of Tuples with name of the port and IO information which is not expanded out 
-          yet. 
-        * If a port is marked as both shared and external, the port is considered as shared. As a result signal like 
-          UserCLK will be in shared port list, but not in external port list. 
+    * The parsed name will contains the prefix of the bel. 
+    * The `sharedPort` attribute is a list of Tuples with name of the port and IO information which is not expanded out 
+        yet. 
+    * If a port is marked as both shared and external, the port is considered as shared. As a result signal like 
+        UserCLK will be in shared port list, but not in external port list. 
 
 
     Attributes:

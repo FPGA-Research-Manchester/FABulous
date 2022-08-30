@@ -6,8 +6,8 @@
 
 FABulous is designed to fulfill the objectives of ease of use, maximum portability to different process nodes, good control for customization, and delivering good area, power, and performance characteristics of the generated FPGA fabrics. The framework provides templates for logic, arithmetic, memory, and I/O blocks that can be easily stitched together, whilst enabling users to add their own fully customized blocks and primitives.
 
-The FABulous ecosystem generates the embedded FPGA fabric for chip fabrication, integrates 
-[SymbiFlow](https://symbiflow.github.io/) 
+The FABulous ecosystem generates the embedded FPGA fabric for chip fabrication, integrates
+[SymbiFlow](https://symbiflow.github.io/)
 toolchain release packages, deals with the bitstream generation and provides after-fabrication tests. Additionally, we plan to provide an emulation path for system development.
 
 This guide describes everything you need to set up your system to use the FABulous ecosystem, and the full project documentation can be found [here](https://fabulous.readthedocs.io/en/latest/).
@@ -23,13 +23,16 @@ Dirk Koch, Nguyen Dao, Bea Healy, Jing Yu, and Andrew Attwood. 2021. FABulous: A
 [Link to Paper](https://dl.acm.org/doi/pdf/10.1145/3431920.3439302)
 
 ## Prerequisites
-The following packages need to be installed for generating fabric HDL models:
- - Python 3.6 or later
+
+The following packages need to be installed for generating fabric HDL models and using the FABulous front end:
+
+- Python 3.9 or later
 
 Install python dependencies
 
 ```
 pip3 install -r requirements.txt
+sudo apt-get install python3-tk
 ```
 
 The following packages need to be installed for CAD toolchain
@@ -42,6 +45,7 @@ The following packages need to be installed for CAD toolchain
 ```
 git clone https://github.com/FPGA-Research-Manchester/FABulous
 cd FABulous
+export FAB_ROOT=`pwd`
 git clone --branch fabulous https://github.com/FPGA-Research-Manchester/nextpnr
 cd nextpnr
 cmake . -DARCH=fabulous
@@ -53,44 +57,30 @@ We have provided a Python Command Line Interface (CLI) as well as a project stru
 
 To create a FABulous project you can run `python3 FABulous.py -c <name_of_project>`
 This command will create a FABulous project that contains all the file for generating a basic FABulous fabric.
-The `src` folder contains all the definitions of the fabric primitive as well as the fabric matrix configuration. `src/fabric.csv` is what defining the architecture of the fabric. The FABulous project folder also contains a `.FABulous` folder which contains all the metadata during the generation of the fabric
+By default it will create a Verilog project which is a copy of the folder in the `fabric_files/FABulous_project_template_verilog`. If you would like to start with a VHDL project use `python3 FABulous.py -w vhdl -c <name_of_project>`
 
-To generate a fabric with the FABulous project you can run `python3 FABulous.py -rf <name_of_project>`
+The `Tile` folder contains all the definitions of the fabric primitive as well as the fabric matrix configuration. `fabric.csv` is what defining the architecture of the fabric. The FABulous project folder also contains a `.FABulous` folder which contains all the metadata during the generation of the fabric.
 
-And to generate a bitstream with the design `user_design/<name_of_project>.v` run `python3 FABulous.py -r <name_of_project>`.
-The bitstream will be output as `<name_of_project>.bin` inside the project folder.
+We can initiate the FABulous shell with `python3 FABulous.py <project_dir>`. After that you will see a shell interface which allow for interactive fabric generation. To generate a fabric we first need to run `load_fabric [fabric_CSV]` to load in the fabric definition. Then we can call `run_FABulous_fabric` to generate a fabric.
 
-For further details of what the CLI can do run `python3 FABulous.py -h` to see further details.
+To generate a model and bitstream for a specific design call `run_FABulous_bitstream npnr <dir_to_top>` which will
+generate a bitstream for the provided design in the same folder as the design.
 
-Command to run from project creation, fabric generation, and binary generation
+To exit the shell simply type `exit` and will terminate the shell.
+
+A demo of the whole flow:
 
 ```
 python3 FABulous.py -c demo
-python3 FABulous.py -rf demo
-python3 FABulous.py -r demo
+# In the FABulous shell
+load_fabric
+run_FABulous_fabric
+run_FABulous_bitstream npnr ./user_design/sequential_16bit_en.v
+exit
 ```
 
-The fabric generator flow can also be run using bash scripts based on the examples provided under `/fabric_files`.
-
-Before you run the flow for the first time, you must generate the basic files using the following commands:
-```
-cd fabric_generator
-./create_basic_files.sh ../fabric_files/generic/fabric.csv
-```
-Then use the following command to build the entire FPGA fabric in both VHDL and Verilog:
-```
-./run_fab_flow.sh
-```
-You are now ready to emulate or synthesise with the netlists in ```/vhdl_output``` or ```/verilog_output```.
-
-A simple example that runs to generate a bitstream can be found under ```nextpnr/fabulous/fab_arch/```
-
-Usage example:
-
-```
-cd ../nextpnr/fabulous/fab_arch/
-./fabulous_flow.sh sequential_16bit_en
-python3 bit_gen.py -genBitstream sequential_16bit_en.fasm meta_data.txt sequential_16bit_en_output.bin
-```
+The tool also support for using TCL script to driven the build process. Assuming you have created a demo project using
+`python3 FABulous.py -c demo`. You can call `python3 FABulous.py demo -s ./demo/FABulous.tcl` to run the demo flow
+though the TCL interface.
 
 More details on bitstream generation can be found [here](https://github.com/FPGA-Research-Manchester/FABulous/tree/master/fabric_generator/bitstream_npnr).

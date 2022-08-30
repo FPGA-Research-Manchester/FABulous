@@ -719,7 +719,7 @@ To run the complete FABulous flow with the default project, run the following co
     def do_gen_bitStream_binary(self, args):
         args = self.parse(args)
         if len(args) != 1:
-            logger.error("Usage: gen_bitStream_binary <dir_to_top_module>")
+            logger.error("Usage: gen_bitStream_binary <dir_to_fasm>")
             return
         path, name = os.path.split(args[0])
         name = name.split('.')[0]

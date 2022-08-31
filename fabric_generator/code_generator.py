@@ -424,27 +424,3 @@ class codeGenerator(abc.ABC):
             indentLevel (int, optional): The indentation Level. Defaults to 0.
         """
         pass
-
-    @abc.abstractmethod
-    def addBELInstantiations(self, bel: Bel, configBitCounter: int, mode: ConfigBitMode, belCounter: int = 0):
-        """
-        _summary_
-
-        Args:
-            bel (Bel): _description_
-            configBitCounter (int): _description_
-            mode (ConfigBitMode): _description_
-            belCounter (int, optional): The indentation Level. Defaults to 0.
-        """
-        pass
-
-    @abc.abstractmethod
-    def add_Conf_Instantiation(self, counter: int, close: bool = True):
-        """
-        _summary_
-
-        Args:
-            counter (int): _description_
-            close (bool, optional): _description_. Defaults to True.
-        """
-        pass

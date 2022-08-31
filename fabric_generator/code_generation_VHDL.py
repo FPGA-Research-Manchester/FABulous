@@ -123,7 +123,6 @@ class VHDLWriter(codeGenerator):
         self._add(");", indentLevel=indentLevel + 1)
         self.addNewLine()
 
-
     def addComponentDeclarationForFile(self, fileName):
         configPortUsed = 0  # 1 means is used
         with open(fileName, 'r') as f:
@@ -178,55 +177,3 @@ CONFout <= ConfigBits(ConfigBits'high);
 
     """
         self._add(template, indentLevel)
-
-    def addBELInstantiations(self, bel: Bel, configBitCounter, mode=ConfigBitMode.FRAME_BASED, belCounter=0):
-        belTemplate = """
-Inst_{prefix}{entity} : {entity}
-        Port Map(
-{portList}
-        -- I/O primitive pins go to tile top level entity (not further parsed)
-{globalAndConfigBits}
-    );
-    """
-        # internal port
-        portList = []
-        globalAndConfigBits = []
-        for port in bel.inputs + bel.outputs:
-            port = re.sub(rf"{bel.prefix}", "", port)
-            portList.append(f"{' ':<8}{port} => {bel.prefix}{port},")
-
-        # normal external port
-        for port in bel.externalInput + bel.externalOutput:
-            if port not in bel.sharedPort:
-                globalAndConfigBits.append(
-                    f"{' ':<8}{port} => {bel.prefix}{port}")
-
-        # shared port
-        # top level I/Os (if any) just get connected directly
-        for ports in bel.sharedPort:
-            globalAndConfigBits.append(f"{' ':<8}{ports[0]} => {ports[0]}")
-
-        if mode == ConfigBitMode.FRAME_BASED:
-            globalAndConfigBits.append(
-                f"{' ':<8}ConfigBits => ConfigBits ( {configBitCounter+bel.configBit} - 1 downto {configBitCounter} )")
-        elif mode == ConfigBitMode.FLIPFLOP_CHAIN:
-            self.add_Conf_Instantiation(belCounter, close=True)
-
-        self._add(belTemplate.format(prefix=bel.prefix,
-                                     entity=bel.src.split(
-                                         "/")[-1].split(".")[0],
-                                     portList='\n'.join(portList),
-                                     globalAndConfigBits=',\n'.join(globalAndConfigBits)))
-
-    def add_Conf_Instantiation(self, counter, close=True):
-        confTemplate = """
-        -- GLOBAL all primitive pins for configuration (not further parsed)
-            MODE    => Mode,
-            CONFin  => conf_data({counter}),
-            CONFout => conf_data({counter2}),
-            CLK     => CLK
-            {end}
-    """
-        self._add(confTemplate.format(counter=counter,
-                                      counter2=counter+1,
-                                      end='' if close else ');'))

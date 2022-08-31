@@ -894,10 +894,50 @@ class FabricGenerator:
         self.writer.addComment("BEL component instantiations", onNewLine=True)
         belCounter = 0
         belConfigBitsCounter = 0
-        for b in tile.bels:
-            self.writer.addBELInstantiations(
-                b, belConfigBitsCounter, self.fabric.configBitMode, belCounter)
-            belConfigBitsCounter += b.configBit
+        for bel in tile.bels:
+            portList = []
+            signal = []
+
+            # internal port
+            for port in bel.inputs + bel.outputs:
+                port = port.removeprefix(bel.prefix)
+                portList.append(port)
+                signal.append(f"{bel.prefix}{port}")
+
+            # normal external port
+            for port in bel.externalInput + bel.externalOutput:
+                portList.append(port)
+                signal.append(port)
+
+            # shared port
+            for port in bel.sharedPort:
+                portList.append(port[0])
+                signal.append(port[0])
+
+            if self.fabric.configBitMode == ConfigBitMode.FRAME_BASED:
+                portList.append(f"ConfigBits")
+                signal.append(
+                    f"ConfigBits[{belConfigBitsCounter+bel.configBit}-1:{belConfigBitsCounter}]")
+            elif self.fabric.configBitMode == ConfigBitMode.FLIPFLOP_CHAIN:
+                portList.append("MODE")
+                signal.append("Mode")
+                portList.append("CONFin")
+                signal.append(f"conf_data({belCounter})")
+                portList.append("CONFout")
+                signal.append(f"conf_data({belCounter+1})")
+                portList.append("CLK")
+                signal.append("CLK")
+
+            self.writer.addInstantiation(compName=bel.name,
+                                         compInsName=f"Inst_{bel.prefix}{bel.name}",
+                                         compPorts=portList,
+                                         signals=signal)
+            belCounter += 2
+            belConfigBitsCounter += bel.configBit
+
+            # self.writer.addBELInstantiations(
+            #     b, belConfigBitsCounter, self.fabric.configBitMode, belCounter)
+            # belConfigBitsCounter += bel.configBit
             # for the next BEL (if any) for cascading configuration chain (this information is also needed for chaining the switch matrix)
             belCounter += 1
 

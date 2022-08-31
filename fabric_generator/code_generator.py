@@ -45,8 +45,10 @@ class codeGenerator(abc.ABC):
     def addComment(self, comment: str, onNewLine=False, end="", indentLevel=0) -> None:
         """
         Add a comment to the code.
-        Verilog: // [comment]
-        VHDL : -- [comment]
+
+        Examples :
+            | Verilog: // **comment**
+            | VHDL : -- **comment**
 
         Args:
             comment (str): The comment
@@ -61,12 +63,13 @@ class codeGenerator(abc.ABC):
         """
         Add a header to the code.
 
-        Verilog: module [name]
-        VHDL: library IEEE;
-                use IEEE.std_logic_1164.all;
-                use IEEE.NUMERIC_STD.ALL
-                [package]
-                entity uname] is
+        Examples :
+            | Verilog: module **name**
+            | VHDL: library IEEE;
+            |       use IEEE.std_logic_1164.all;
+            |       use IEEE.NUMERIC_STD.ALL
+            |       **package**
+            |       entity **name** is
 
         Args:
             name (str): name of the module
@@ -79,8 +82,10 @@ class codeGenerator(abc.ABC):
     def addHeaderEnd(self, name: str, indentLevel=0):
         """
         Add end to header. Only useful with VHDL.
-        Verilog: 
-        VHDL: end entity [name];
+
+        Examples :
+            | Verilog: 
+            | VHDL: end entity **name**;
 
         Args:
             name (str): name of the module
@@ -92,8 +97,10 @@ class codeGenerator(abc.ABC):
     def addParameterStart(self, indentLevel=0):
         """
         Add start of parameters.
-        Verilog: #(
-        VHDL: Generic(
+
+        Examples :
+            | Verilog: #(
+            | VHDL: Generic(
 
         Args:
             indentLevel (int, optional): The indentation Level. Defaults to 0.
@@ -104,8 +111,10 @@ class codeGenerator(abc.ABC):
     def addParameterEnd(self, indentLevel=0):
         """
         Add end of parameters.
-        Verilog: )
-        VHDL: );
+
+        Examples :
+            | Verilog: )
+            | VHDL: );
 
         Args:
             indentLevel (int, optional): The indentation Level. Defaults to 0.
@@ -116,8 +125,10 @@ class codeGenerator(abc.ABC):
     def addParameter(self, name: str, type, value, end=False, indentLevel=0):
         """
         Add a parameter.
-        Verilog: parameter [name]=[value]
-        VHDL: [name] : [type] := [value];
+
+        Examples :
+            | Verilog: parameter **name** = **value**
+            | VHDL: **name** : **type** := **value**;
 
         Args:
             name (str): name of the parameter
@@ -132,8 +143,10 @@ class codeGenerator(abc.ABC):
     def addPortStart(self, indentLevel=0):
         """
         Add start of ports.
-        Verilog: (
-        VHDL: port (
+
+        Examples :
+            | Verilog: (
+            | VHDL: port (
 
         Args:
             indentLevel (int, optional): The indentation Level. Defaults to 0.
@@ -144,8 +157,10 @@ class codeGenerator(abc.ABC):
     def addPortEnd(self, indentLevel=0):
         """
         Add end of ports.
-        Verilog: );
-        VHDL: );
+
+        Examples :
+            | Verilog: );
+            | VHDL: );
 
         Args:
             indentLevel (int, optional): The indentation Level. Defaults to 0.
@@ -156,8 +171,10 @@ class codeGenerator(abc.ABC):
     def addPortScalar(self, name: str, io: IO, end=False, indentLevel=0):
         """
         Add a scalar port.
-        Verilog: [io] [name]
-        VHDL: [name] : [io] STD_LOGIC;
+
+        Examples :
+            | Verilog: **io** **name**
+            | VHDL: **name** : **io** STD_LOGIC;
 
         Args:
             name (str): name of the port
@@ -171,8 +188,10 @@ class codeGenerator(abc.ABC):
     def addPortVector(self, name: str, io: IO, msbIndex, end=False, indentLevel=0):
         """
         Add a vector port.
-        Verilog: [io] [[msbIndex]:0] [name]
-        VHDL: [name] : [io] STD_LOGIC_VECTOR( [msbIndex] downto 0 );
+
+        Examples :
+            | Verilog: **io** [**msbIndex**:0] **name**
+            | VHDL: **name** : **io** STD_LOGIC_VECTOR( **msbIndex** downto 0 );
 
         Args:
             name (str): name of the port
@@ -187,12 +206,14 @@ class codeGenerator(abc.ABC):
     def addDesignDescriptionStart(self, name: str, indentLevel=0):
         """
         Add start of design description. Only useful with VHDL.
-        Verilog:
-        VHDL: architecture Behavioral of [name] is
+
+        Examples :
+            | Verilog:
+            | VHDL: architecture Behavioral of **name** is
 
 
         Args:
-            name (str): _description_
+            name (str): name of the module
             indentLevel (int, optional): The indentation Level. Defaults to 0.
         """
         pass
@@ -201,8 +222,10 @@ class codeGenerator(abc.ABC):
     def addDesignDescriptionEnd(self, indentLevel=0):
         """
         Add end of design description. 
-        Verilog: endmodule
-        VHDL: end architecture Behavioral
+
+        Examples :
+            | Verilog: endmodule
+            | VHDL: end architecture Behavioral
 
         Args:
             indentLevel (int, optional): The indentation Level. Defaults to 0.
@@ -213,8 +236,10 @@ class codeGenerator(abc.ABC):
     def addConstant(self, name: str, value, indentLevel=0):
         """
         Add a constant.
-        Verilog: parameter [name] = [value];
-        VHDL: constant [name] : STD_LOGIC := '[value]';
+
+        Examples :
+            | Verilog: parameter **name** = **value**;
+            | VHDL: constant **name** : STD_LOGIC := **value**;
 
         Args:
             name (str): name of the constant
@@ -227,11 +252,13 @@ class codeGenerator(abc.ABC):
     def addConnectionScalar(self, name: str, indentLevel=0):
         """
         Add a scalar connection.
-        Verilog: wire [name];
-        VHDL: signal [name] : STD_LOGIC;
+
+        Examples :
+            | Verilog: wire **name**;
+            | VHDL: signal **name** : STD_LOGIC;
 
         Args:
-            name (str): _description_
+            name (str): name of the connection
             indentLevel (int, optional): The indentation Level. Defaults to 0.
         """
         pass
@@ -240,8 +267,10 @@ class codeGenerator(abc.ABC):
     def addConnectionVector(self, name: str, startIndex, endIndex=0, indentLevel=0):
         """
         Add a vector connection.
-        Verilog: wire [[startIndex]:[end]] [name];
-        VHDL: signal [name] : STD_LOGIC_VECTOR( [startIndex] downto [endIndex] );
+
+        Examples :
+            | Verilog: wire [**startIndex**:**end**] **name**;
+            | VHDL: signal **name** : STD_LOGIC_VECTOR( **startIndex** downto **endIndex** );
 
         Args:
             name (str): name of the connection
@@ -255,8 +284,10 @@ class codeGenerator(abc.ABC):
     def addLogicStart(self, indentLevel=0):
         """
         Add start of logic. Only useful with VHDL.
-        Verilog: 
-        VHDL; begin
+
+        Examples :
+            | Verilog: 
+            | VHDL: begin
 
         Args:
             indentLevel (int, optional): The indentation Level. Defaults to 0.
@@ -267,8 +298,10 @@ class codeGenerator(abc.ABC):
     def addLogicEnd(self, indentLevel=0):
         """
         Add end of logic. Only useful with VHDL.
-        Verilog:
-        VHDL: end
+
+        Examples :
+            | Verilog:
+            | VHDL: end
 
         Args:
             indentLevel (int, optional): The indentation Level. Defaults to 0.
@@ -280,30 +313,30 @@ class codeGenerator(abc.ABC):
         """
         Add an instantiation. This will line up the ports and signals. So ports[0] will have signals[0] and so on. This is also the same case for paramPorts and paramSignals.
 
-        Example:
-            Verilog: [compName] [compInsName] # (
-                        .[paramPorts[0]]([paramSignals[0]]),
-                        .[paramPorts[1]]([paramSignals[1]]),
-                        ...
-                        .[paramPorts[n]]([paramSignals[n]])
-                        ) ( 
-                        .[compPorts[0]]([signals[0]]),
-                        .[compPorts[1]]([signals[1]]),
-                        ...
-                        .[compPorts[n]]([signals[n]])
-                    );
-            VHDL: compInsName : compName
-                    generic map (
-                        [paramPorts[0]] => [paramSignals[0]],
-                        [paramPorts[1]] => [paramSignals[1]],
-                        ...
-                        [paramPorts[i]] => [paramSignals[i]]
-                    );
-                    Port map (
-                        [compPorts[i]] => [signals[i]],
-                        [compPorts[i]] => [signals[i]],
-                        [compPorts[i]] => [signals[i]]
-                    );
+        Examples :
+            | Verilog: **compName** **compInsName** # (
+            |             . **paramPorts[0]** (**paramSignals[0]**),
+            |             . **paramPorts[1]** (**paramSignals[1]**),
+            |             ...
+            |             . **paramPorts[n]** (**paramSignals[n]**)
+            |             ) ( 
+            |             . **compPorts[0]** (**signals[0]**),
+            |             . **compPorts[1]** (**signals[1]**),
+            |             ...
+            |             . **compPorts[n]** (**signals[n]**)
+            |         );
+            | VHDL: compInsName : compName
+            |         generic map (
+            |             **paramPorts[0]** => **paramSignals[0]**,
+            |             **paramPorts[1]** => **paramSignals[1]**,
+            |             ...
+            |             **paramPorts[i]** => **paramSignals[i]**
+            |         );
+            |         Port map (
+            |             **compPorts[i]** => **signals[i]**,
+            |             **compPorts[i]** => **signals[i]**,
+            |             **compPorts[i]** => **signals[i]**
+            |         );
 
 
 
@@ -358,11 +391,13 @@ class codeGenerator(abc.ABC):
     def addAssignScalar(self, left, right, delay=0, indentLevel=0):
         """
         Add a scalar assign statement. Delay is provided by currently not being used by any of the code generator. 
-        If [right] is a list, it will be concatenated. 
+        If **right** is a list, it will be concatenated. 
         Verilog will be concatenated with comma ','. 
         VHDL will be concatenated with ampersand '&'.
-        Verilog: assign [left] = [right];
-        VHDL: [left] <= [right];
+
+        Examples :
+            | Verilog: assign **left** = **right**;
+            | VHDL: **left** <= **right**;
 
         Args:
             left : The left hand side of the assign statement.
@@ -376,8 +411,10 @@ class codeGenerator(abc.ABC):
     def addAssignVector(self, left, right, widthL, widthR, indentLevel=0):
         """
         Add a vector assign statement.
-        Verilog: assign [left] = [right][[widthL]:[widthR]];
-        VHDL: [left] <= [{right]( [widthL] downto [widthR] );
+
+        Examples :
+            | Verilog: assign **left** = **right** [**widthL**:**widthR**];
+            | VHDL: **left** <= **right** ( **widthL** downto *widthR* );
 
         Args:
             left : The left hand side of the assign statement.

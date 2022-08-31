@@ -174,20 +174,19 @@ class Bel():
     """
     Contains all the information about a single BEL. The information is parsed from the directory of the BEL in the CSV
     definition file. There are something to be noted. 
+
     * The parsed name will contains the prefix of the bel. 
-    * The `sharedPort` attribute is a list of Tuples with name of the port and IO information which is not expanded out 
-        yet. 
-    * If a port is marked as both shared and external, the port is considered as shared. As a result signal like 
-        UserCLK will be in shared port list, but not in external port list. 
+    * The `sharedPort` attribute is a list of Tuples with name of the port and IO information which is not expanded out yet. 
+    * If a port is marked as both shared and external, the port is considered as shared. As a result signal like UserCLK will be in shared port list, but not in external port list. 
 
 
     Attributes:
         src (str): The source directory of the BEL given in the CSV file.
         prefix (str): The prefix of the BEL given in the CSV file.
         name (str): The name of the BEL, extracted from the source directory.
-        inputs (List[str]): All the normal input ports of the BEL.
-        outputs (List[str]) : All the normal output ports of the BEL.
-        externalInput (List[str]) : ALL the external input ports of the BEL.
+        inputs (list[str]): All the normal input ports of the BEL.
+        outputs (list[str]) : All the normal output ports of the BEL.
+        externalInput (list[str]) : ALL the external input ports of the BEL.
         externalOutput: (List[str]) : All the external output ports of the BEL.
         configPort (List[str]) : All the config ports of the BEL.
         sharedPort (List[Tuple[str, IO]]) : All the shared ports of the BEL.

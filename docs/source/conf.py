@@ -21,7 +21,8 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
     'sphinxcontrib.bibtex',
-    'sphinx.ext.napoleon'
+    'sphinx.ext.napoleon',
+    'sphinx-prompt'
 ]
 
 intersphinx_mapping = {

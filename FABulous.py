@@ -143,7 +143,7 @@ class FABulous:
 class FABulousShell(cmd.Cmd):
     intro: str = f"""
 
-    ______      ____        _
+    ______      ____        __
     |  ____/\   |  _ \      | |
     | |__ /  \  | |_) |_   _| | ___  _   _ ___
     |  __/ /\ \ |  _ <| | | | |/ _ \| | | / __|
@@ -156,6 +156,16 @@ You have started FABlous shell with following options:
 {' '.join(sys.argv[1:])}
 
 Type help or ? to list commands
+To see documentation for a command type:
+    help <command> 
+or 
+    ?<command>
+
+To execute a shell command type:
+    shell <command>
+or
+    !<command>
+
 The shell support tab completion for commands and files
 
 To run the complete FABulous flow with the default project, run the following command:
@@ -208,7 +218,7 @@ To run the complete FABulous flow with the default project, run the following co
             exit(0)
 
     def precmd(self, line: str) -> str:
-        if ("gen" in line or "run" in line) and not self.fabricLoaded:
+        if ("gen" in line or "run" in line) and not self.fabricLoaded and "help" not in line and "?" not in line:
             logger.error("Fabric not loaded")
             return ""
         return line
@@ -228,6 +238,14 @@ To run the complete FABulous flow with the default project, run the following co
 
     def _complete_tileName(self, text):
         return [t for t in self.allTile if t.startswith(text)]
+
+    def do_shell(self, args):
+        "Run a shell command"
+        if not args:
+            print("Please provide a command to run")
+            return
+
+        sp.run(args, shell=True)
 
     def do_exit(self, *ignore):
         "exit FABlous shell"
@@ -279,6 +297,7 @@ To run the complete FABulous flow with the default project, run the following co
         return self._complete_path(text)
 
     def do_gen_config_mem(self, args):
+        "Generate the configuration memory of the given tile"
         args = self.parse(args)
         logger.info(f"Generating Config Memory for {' '.join(args)}")
         for i in args:
@@ -293,7 +312,7 @@ To run the complete FABulous flow with the default project, run the following co
         return self._complete_tileName(text)
 
     def do_gen_switch_matrix(self, args):
-        "generate switch matrix of the given tile"
+        "Generate switch matrix of the given tile"
         args = self.parse(args)
         logger.info(f"Generating switch matrix for {' '.join(args)}")
         for i in args:
@@ -307,7 +326,7 @@ To run the complete FABulous flow with the default project, run the following co
         return self._complete_tileName(text)
 
     def do_gen_tile(self, args):
-        "generate the given tile with the switch matrix and configuration memory"
+        "Generate the given tile with the switch matrix and configuration memory"
         if not isinstance(args, list):
             args = self.parse(args)
         logger.info(f"Generating tile {' '.join(args)}")
@@ -370,13 +389,13 @@ To run the complete FABulous flow with the default project, run the following co
         return self._complete_tileName(text)
 
     def do_gen_all_tile(self, *ignored):
-        "generate all tiles"
+        "Generate all tiles"
         logger.info("Generating all tiles")
         self.do_gen_tile(self.allTile)
         logger.info("Generated all tiles")
 
     def do_gen_fabric(self, *ignored):
-        "generate the fabric base on the loaded fabric"
+        "Generate the fabric base on the loaded fabric"
         logger.info(f"Generating fabric {self.fabricGen.fabric.name}")
         self.do_gen_all_tile()
         self.fabricGen.setWriterOutputFile(
@@ -385,7 +404,7 @@ To run the complete FABulous flow with the default project, run the following co
         logger.info("Fabric generation complete")
 
     def do_gen_bitStream_spec(self, *ignored):
-        "generate the bitstream specification of the fabric"
+        "Generate the bitstream specification of the fabric"
         logger.info("Generating bitstream specification")
         specObject = self.fabricGen.genBitStreamSpec()
 
@@ -405,7 +424,7 @@ To run the complete FABulous flow with the default project, run the following co
         logger.info("Generated bitstream specification")
 
     def do_gen_top_wrapper(self, *ignored):
-        "generate the top wrapper of the fabric"
+        "Generate the top wrapper of the fabric"
         logger.info("Generating top wrapper")
         self.fabricGen.setWriterOutputFile(
             f"{self.pathToCSVFile}/Fabric/{self.fabricGen.fabric.name}_top.{self.extension}")
@@ -413,7 +432,7 @@ To run the complete FABulous flow with the default project, run the following co
         logger.info("Generated top wrapper")
 
     def do_run_FABulous_fabric(self, *ignored):
-        "generate the fabric base on the CSV file, create the bitstream specification of the fabric, top wrapper of the fabric and Nextpnr model of the fabric"
+        "Generate the fabric base on the CSV file, create the bitstream specification of the fabric, top wrapper of the fabric and Nextpnr model of the fabric"
         logger.info("Running FABulous")
         self.do_gen_fabric()
         self.do_gen_bitStream_spec()
@@ -423,7 +442,7 @@ To run the complete FABulous flow with the default project, run the following co
         return 0
 
     def do_gen_model_npnr(self, *ignored):
-        "generate a npnr model of the fabric"
+        "Generate a npnr model of the fabric"
         logger.info("Generating npnr model")
         npnrModel = self.fabricGen.genModelNpnr()
 
@@ -445,7 +464,7 @@ To run the complete FABulous flow with the default project, run the following co
 
     # TODO updater once have transition the model gen to object based
     def do_gen_model_npnr_pair(self):
-        "generate a pair npnr model of the fabric"
+        "Generate a pair npnr model of the fabric. (Currently not working)"
         logger.info("Generating pair npnr model")
         if self.csvFile:
             FabricFile = [i.strip('\n').split(',') for i in open(self.csvFile)]
@@ -475,7 +494,7 @@ To run the complete FABulous flow with the default project, run the following co
         logger.info("Generated pair npnr model")
 
     def do_gen_model_vpr(self, args):
-        "generate a vpr model of the fabric"
+        "Generate a vpr model of the fabric"
         args = self.parse(args)
         if len(args) > 1:
             logger.error(f"Usage: gen_model_vpr [path_to_custom_xml]")
@@ -603,6 +622,7 @@ To run the complete FABulous flow with the default project, run the following co
             exit(-1)
 
     def do_synthesis_npnr(self, args):
+        "Run synthesis with Yosys using Nextpnr JSON backend Usage: synthesis_npnr <dir_to_top_module>"
         args = self.parse(args)
         if len(args) != 1:
             logger.error("Usage: synthesis_npnr <dir_to_top_module>")
@@ -622,6 +642,7 @@ To run the complete FABulous flow with the default project, run the following co
         return self._complete_path(text)
 
     def do_synthesis_blif(self, args):
+        "Run synthesis with Yosys using VPR BLIF backend Usage: synthesis_blif <dir_to_top_module>"
         logger.info(
             f"Running synthesis that targeting BLIF with design {args[0]}")
         args = self.parse(args)
@@ -638,6 +659,7 @@ To run the complete FABulous flow with the default project, run the following co
         return self._complete_path(text)
 
     def do_place_and_route_npnr(self, args):
+        "Run place and route with Nextpnr. Need to generate a Nextpnr model first. Usage: place_and_route_npnr <dir_to_top_module>"
         args = self.parse(args)
         if len(args) != 1:
             logger.error("Usage: place_and_route_npnr <dir_to_top_module>")
@@ -684,6 +706,7 @@ To run the complete FABulous flow with the default project, run the following co
         return self._complete_path(text)
 
     def do_place_and_route_vpr(self, args):
+        "Run place and route with VPR. Need to generate a VPR model first. Usage: place_and_route_vpr <dir_to_top_module> (Currently not working)"
         args = self.parse(args)
         if len(args) != 1:
             logger.error("Usage: place_and_route_vpr <dir_to_top_module>")
@@ -717,6 +740,7 @@ To run the complete FABulous flow with the default project, run the following co
         return self._complete_path(text)
 
     def do_gen_bitStream_binary(self, args):
+        "Generate the bitstream of a given design. Need to generate bitstream specification before use. Usage: gen_bitStream_binary <dir_to_top_module>"
         args = self.parse(args)
         if len(args) != 1:
             logger.error("Usage: gen_bitStream_binary <dir_to_fasm>")
@@ -749,6 +773,7 @@ To run the complete FABulous flow with the default project, run the following co
         return self._complete_path(text)
 
     def do_run_FABulous_bitstream(self, *args):
+        "Run FABulous to generate a bitstream on a given design starting from synthesis. Usage: run_FABulous_bitstream <dir_to_top_module> (vpr flow currently not working)"
         if len(args) != 2:
             logger.error(
                 "Usage: run_FABulous_bitstream <npnr|vpr> <dir_to_top>")

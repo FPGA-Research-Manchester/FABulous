@@ -16,8 +16,7 @@ class codeGenerator(abc.ABC):
     def content(self):
         return self._content
 
-    def __init__(self, outFileName):
-        self._outFileName = outFileName
+    def __init__(self):
         self._content = []
 
     def writeToFile(self):
@@ -37,6 +36,9 @@ class codeGenerator(abc.ABC):
             self._content.append(line)
         else:
             self._content.append(f"{' ':<{4*indentLevel}}" + line)
+
+    def popLastLine(self) -> str:
+        return self._content.pop()
 
     def addNewLine(self):
         self._add("")
@@ -122,7 +124,7 @@ class codeGenerator(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def addParameter(self, name: str, type, value, end=False, indentLevel=0):
+    def addParameter(self, name: str, type, value, indentLevel=0):
         """
         Add a parameter.
 
@@ -168,7 +170,7 @@ class codeGenerator(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def addPortScalar(self, name: str, io: IO, end=False, indentLevel=0):
+    def addPortScalar(self, name: str, io: IO, indentLevel=0):
         """
         Add a scalar port.
 
@@ -185,7 +187,7 @@ class codeGenerator(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def addPortVector(self, name: str, io: IO, msbIndex, end=False, indentLevel=0):
+    def addPortVector(self, name: str, io: IO, msbIndex, indentLevel=0):
         """
         Add a vector port.
 

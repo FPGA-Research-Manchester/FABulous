@@ -1,4 +1,4 @@
-module Config (CLK, Rx, ComActive, ReceiveLED, s_clk, s_data, SelfWriteData, SelfWriteStrobe, ConfigWriteData, ConfigWriteStrobe, FrameAddressRegister, LongFrameStrobe, RowSelect);
+module eFPGA_Config (CLK, Rx, ComActive, ReceiveLED, s_clk, s_data, SelfWriteData, SelfWriteStrobe, ConfigWriteData, ConfigWriteStrobe, FrameAddressRegister, LongFrameStrobe, RowSelect);
 	parameter NumberOfRows = 16;
 	parameter RowSelectWidth = 5;
 	parameter FrameBitsPerRow = 32;
@@ -78,15 +78,23 @@ module Config (CLK, Rx, ComActive, ReceiveLED, s_clk, s_data, SelfWriteData, Sel
 //	wire LongFrameStrobe;
 //	wire [RowSelectWidth-1:0] RowSelect;
 	
-	ConfigFSM ConfigFSM_inst #(.NumberOfRows(NumberOfRows), .RowSelectWidth(RowSelectWidth), .FrameBitsPerRow(FrameBitsPerRow), .desync_flag(desync_flag)) (
-	.CLK(CLK),
-	.WriteData(UART_WriteData_Mux),
-	.WriteStrobe(UART_WriteStrobe_Mux),
-	.Reset(Reset),
-	//outputs
-	.FrameAddressRegister(FrameAddressRegister),
-	.LongFrameStrobe(LongFrameStrobe),
-	.RowSelect(RowSelect)
+	ConfigFSM  
+	#(
+		.NumberOfRows(NumberOfRows), 
+		.RowSelectWidth(RowSelectWidth), 
+		.FrameBitsPerRow(FrameBitsPerRow), 
+		.desync_flag(desync_flag)
+	) 
+	ConfigFSM_inst 
+	(
+		.CLK(CLK),
+		.WriteData(UART_WriteData_Mux),
+		.WriteStrobe(UART_WriteStrobe_Mux),
+		.Reset(Reset),
+		//outputs
+		.FrameAddressRegister(FrameAddressRegister),
+		.LongFrameStrobe(LongFrameStrobe),
+		.RowSelect(RowSelect)
 	);
 	
 endmodule

@@ -71,9 +71,19 @@ module BlockRAM_1KB (clk, rd_addr, rd_data, wr_addr, wr_data, C0, C1, C2, C3, C4
         end
     end
     wire [31:0] mem_dout;
-    sram_1rw1r_32_256_8_sky130 memory_cell(                             //dout0 is unused
-    .clk0(clk),.csb0(memWriteEnable),.web0(memWriteEnable),.wmask0(mem_wr_mask),.addr0(wr_addr[7:0]),.din0(muxedDataIn),//.dout0(),
-    .clk1(clk),.csb1(1'b0),.addr1(rd_addr[7:0]),.dout1(mem_dout)
+    //dout0 is unused
+    sram_1rw1r_32_256_8_sky130 memory_cell(
+    .clk0(clk),
+    .csb0(memWriteEnable),
+    .web0(memWriteEnable),
+    .wmask0(mem_wr_mask),
+    .addr0(wr_addr[7:0]),
+    .din0(muxedDataIn),
+    .dout0(),
+    .clk1(clk),
+    .csb1(1'b0),
+    .addr1(rd_addr[7:0]),
+    .dout1(mem_dout)
     );
     reg [1:0] rd_dout_sel;
     always @ (posedge clk) begin

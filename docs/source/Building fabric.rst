@@ -14,7 +14,7 @@ completed.
 
 #. Create a new project
 
-   .. code-block:: console
+   .. prompt:: bash FABulous>
 
         python3 FABulous.py -c demo
 
@@ -22,7 +22,7 @@ This will create a new project named ``demo`` in the current directory.
 
 #. Running the FABulous shell
 
-   .. code-block:: console
+   .. prompt:: bash FABulous>
 
         python3 FABulous.py demo
 
@@ -31,7 +31,7 @@ moved into the project directory, which is ``demo`` in this case.
 
 #. Load the fabric CSV definition file
    
-   .. code-block:: console
+   .. prompt:: bash FABulous>
    
         load_fabric
 
@@ -42,7 +42,8 @@ be relative to where the specified directory of the ``<definition>.csv`` is loca
 located at ``some_path/<definition>.csv``, then all the file's read and write commands will be relative to ``some_path``.
 
 #. Generate switch matrix
-   .. code-block:: console
+
+   .. prompt:: bash FABulous>
 
         gen_switch_matrix LUT4AB RAM_IO
 
@@ -60,7 +61,7 @@ matrix generation for the tile, and will use the provided file as the switch mat
 
 #. Generate the configuration storage (RTL).
 
-   .. code-block:: console
+   .. prompt:: bash FABulous>
 
         gen_config_mem LUT4AB RAM_IO
 
@@ -71,7 +72,7 @@ The above command will generate the configuration storage for the ``LUT4AB`` til
 
 #. Generate the actual tiles (RTL).
 
-   .. code-block:: console
+   .. prompt:: bash FABulous>
 
         gen_tile LUT4AB RAM_IO
 
@@ -83,38 +84,38 @@ We will need to run the above commands for all the tiles to get all the RTL of a
 do. As a result, the following command will generate all the RTL for all the tiles in the fabric including all the super 
 tiles within the fabric.
 
-   .. code-block:: console
+   .. prompt:: bash FABulous>
 
         gen_all_tile
 
 
 #. Generate the entire fabric (RTL).
 
-   .. code-block:: console
+   .. prompt:: bash FABulous>
 
         gen_fabric
 
 #. Generate Verilog top wrapper. 
 
-   .. code-block:: console
+   .. prompt:: bash FABulous>
 
         gen_top_wrapper
 
 
 #. Generate the nextpnr model.
 
-   .. code-block:: console
-
+   .. prompt:: bash FABulous>
+        
         gen_model_npnr
 
 #. Generate the VPR model.
 
-   .. code-block:: console
+   .. prompt:: bash FABulous>
 
         gen_model_vpr
 
 #. Generate the meta data list for FASM --> Bitstream
 
-   .. code-block:: console
+   .. prompt:: bash FABulous>
 
         gen_bitStream_spec

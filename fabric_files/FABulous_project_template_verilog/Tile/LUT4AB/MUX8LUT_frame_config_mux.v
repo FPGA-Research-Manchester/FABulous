@@ -17,7 +17,7 @@
 c0=0,
 c1=1
 *)
-module MUX8LUT_frame_config (A, B, C, D, E, F, G, H, S0, S1, S2, S3, M_AB, M_AD, M_AH, M_EF, ConfigBits);
+module MUX8LUT_frame_config_mux (A, B, C, D, E, F, G, H, S0, S1, S2, S3, M_AB, M_AD, M_AH, M_EF, ConfigBits);
 	parameter NoConfigBits = 2;// has to be adjusted manually (we don't use an arithmetic parser for the value)
 	// IMPORTANT: this has to be in a dedicated line
 	input A; // MUX inputs

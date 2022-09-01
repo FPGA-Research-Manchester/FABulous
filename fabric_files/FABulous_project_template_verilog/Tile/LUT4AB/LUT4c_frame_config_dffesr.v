@@ -13,27 +13,27 @@
 // limitations under the License.
 
 (*FABulous, BelMap,
-INIT[0]=0,
-INIT[1]=1,
-INIT[2]=2,
-INIT[3]=3,
-INIT[4]=4,
-INIT[5]=5,
-INIT[6]=6,
-INIT[7]=7,
-INIT[8]=8,
-INIT[9]=9,
-INIT[10]=10,
-INIT[11]=11,
-INIT[12]=12,
-INIT[13]=13,
-INIT[14]=14,
-INIT[15]=15,
+INIT=0,
+INIT_1=1,
+INIT_2=2,
+INIT_3=3,
+INIT_4=4,
+INIT_5=5,
+INIT_6=6,
+INIT_7=7,
+INIT_8=8,
+INIT_9=9,
+INIT_10=10,
+INIT_11=11,
+INIT_12=12,
+INIT_13=13,
+INIT_14=14,
+INIT_15=15,
 FF=16,
 IOmux=17,
 SET_NORESET=18
 *)
-module LUT4c_frame_config (I0, I1, I2, I3, O, Ci, Co, SR, EN, UserCLK, ConfigBits);
+module LUT4c_frame_config_dffesr (I0, I1, I2, I3, O, Ci, Co, SR, EN, UserCLK, ConfigBits);
 	parameter NoConfigBits = 19 ; // has to be adjusted manually (we don't use an arithmetic parser for the value)
 	// IMPORTANT: this has to be in a dedicated line
 	input I0; // LUT inputs

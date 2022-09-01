@@ -29,7 +29,6 @@ module IO_1_bidirectional_frame_config_pass (I, T, O, Q, I_top, T_top, O_top, Us
 	// Tile IO ports from BELs
 	(* FABulous, EXTERNAL, SHARED_PORT *) input UserCLK; // EXTERNAL // SHARED_PORT // ## the EXTERNAL keyword will send this signal all the way to top and the //SHARED Allows multiple BELs using the same port (e.g. for exporting a clock to the top)
 	// GLOBAL all primitive pins that are connected to the switch matrix have to go before the GLOBAL label
-	//input [NoConfigBits-1 : 0] ConfigBits;
 	(* FABulous, GLOBAL *)
 //                        _____
 //    I////-T_DRIVER////->|PAD|//+//////-> O

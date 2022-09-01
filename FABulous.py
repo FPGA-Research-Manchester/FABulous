@@ -337,16 +337,16 @@ To run the complete FABulous flow with the default project, run the following co
                     logger.info(f"Generating subtile for tile {t}")
                     logger.info(f"Generating subtile {st}")
                     logger.info(
-                        f"Output file: {self.pathToCSVFile}/Tile/{t}/{st}/{st}_tile.{self.extension}")
+                        f"Output file: {self.pathToCSVFile}/Tile/{t}/{st}/{st}.{self.extension}")
                     self.fabricGen.setWriterOutputFile(
-                        f"{self.pathToCSVFile}/Tile/{t}/{st}/{st}_tile.{self.extension}")
+                        f"{self.pathToCSVFile}/Tile/{t}/{st}/{st}.{self.extension}")
                     self.fabricGen.genTile(st)
                     logger.info(f"Generated subtile {st}")
 
                 # Gen super tile
                 logger.info(f"Generating super tile {t}")
                 self.fabricGen.setWriterOutputFile(
-                    f"{self.pathToCSVFile}/Tile/{t}/{t}_tile.{self.extension}")
+                    f"{self.pathToCSVFile}/Tile/{t}/{t}.{self.extension}")
                 self.fabricGen.genSuperTile(t)
                 logger.info(f"Generated super tile {t}")
                 continue
@@ -360,7 +360,7 @@ To run the complete FABulous flow with the default project, run the following co
             logger.info(f"Generating tile {t}")
             # Gen tile
             self.fabricGen.setWriterOutputFile(
-                f"{self.pathToCSVFile}/Tile/{t}/{t}_tile.{self.extension}")
+                f"{self.pathToCSVFile}/Tile/{t}/{t}.{self.extension}")
             self.fabricGen.genTile(t)
             logger.info(f"Generated tile {t}")
 
@@ -849,11 +849,11 @@ if __name__ == "__main__":
         print("The directory provided is not a FABulous project as it does not have a .FABulous folder")
         exit(-1)
     else:
-        writer = VerilogWriter("")
+        writer = VerilogWriter()
         if args.writer == "vhdl":
-            writer = VHDLWriter("")
+            writer = VHDLWriter()
         if args.writer == "verilog":
-            writer = VerilogWriter("")
+            writer = VerilogWriter()
 
         fabShell = FABulousShell(
             FABulous(writer, fabricCSV=args.csv), args.project_dir, args.script)

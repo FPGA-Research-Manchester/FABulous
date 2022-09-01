@@ -80,7 +80,8 @@ exit
 ```
 
 The tool also support for using TCL script to driven the build process. Assuming you have created a demo project using
-`python3 FABulous.py -c demo`. You can call `python3 FABulous.py demo -s ./demo/FABulous.tcl` to run the demo flow
-though the TCL interface.
+`python3 FABulous.py -c demo`. You can call `python3 FABulous.py demo -s ./demo/FABulous.tcl` to run the demo flow with the TCL interface.
 
 More details on bitstream generation can be found [here](https://github.com/FPGA-Research-Manchester/FABulous/tree/master/fabric_generator/bitstream_npnr).
+
+A detailed documentation of the project can be found [here](https://fabulous.readthedocs.io/en/latest/index.html)

@@ -532,19 +532,20 @@ def parseFileVerilog(filename: str, belPrefix: str = "") -> Tuple[List[Tuple[str
     * **EXTERNAL**
     * **SHARED_PORT**
     * **GLOBAL**
+    * **CONFIG_PORT**
 
-    The *BelMap* attribute will specify the bel mapping for the bel. This attribute should be placed before the start of 
+    The **BelMap** attribute will specify the bel mapping for the bel. This attribute should be placed before the start of 
     the module The bel mapping is then used for generating the bitstream specification. Each of the entry in the attribute will have the following format::
 
     <name> = <value>
 
-    <name> is the name of the feature and <value> will be the bit position of the feature. ie. INIT=0 will specify that the feature INIT is located at bit 0.
+    ``<name>`` is the name of the feature and ``<value>`` will be the bit position of the feature. ie. ``INIT=0`` will specify that the feature ``INIT`` is located at bit 0.
     Since a single feature can be mapped to multiple bits, this is currently done by specifying multiple entries for the same feature. This will be changed in the future. The bit specification is done in the following way::
 
         INIT_a_1=1, INIT_a_2=2, ...
 
-    The name of the feature will be converted to INIT_a[1], INIT_a[2] for the above example. This is necessary because 
-    Verilog does not allow square brackets as part of the attribute name. 
+    The name of the feature will be converted to ``INIT_a[1]``, ``INIT_a[2]`` for the above example. This is necessary 
+    because  Verilog does not allow square brackets as part of the attribute name. 
 
     **EXTERNAL** attribute will notify FABulous to put the pin in the top module during the fabric generation.
 
@@ -552,6 +553,8 @@ def parseFileVerilog(filename: str, belPrefix: str = "") -> Tuple[List[Tuple[str
     the **EXTERNAL** attribute.
 
     **GLOBAL** attribute will notify FABulous to stop parsing any pin after this attribute. 
+    
+    **CONFIG_PORT** attribute will notify FABulous the port is for configuration.
 
     Example:
         .. code-block :: verilog
@@ -636,7 +639,7 @@ def parseFileVerilog(filename: str, belPrefix: str = "") -> Tuple[List[Tuple[str
         for bel in belMap:
             bel = bel.split("=")
             belNameTemp = bel[0].rsplit("_", 1)
-            if bel[1].isnumeric():
+            if len(belNameTemp) > 1 and belNameTemp[1].isnumeric():
                 bel[0] = f"{belNameTemp[0]}[{belNameTemp[1]}]"
             belMapDic[bel[0]] = {}
             if bel == ['']:

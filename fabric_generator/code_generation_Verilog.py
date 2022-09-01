@@ -31,33 +31,38 @@ class VerilogWriter(codeGenerator):
         self._add(f"#(", indentLevel)
 
     def addParameterEnd(self, indentLevel=0):
+        temp = self._content.pop()
+        if "//" in temp:
+            temp2 = self._content.pop()[:-1]
+            self._add(temp2)
+            self._add(temp)
+        else:
+            self._add(temp[:-1])
         self._add(")", indentLevel)
 
-    def addParameter(self, name, type, value, end=False, indentLevel=0):
-        if end:
-            self._add(f"parameter {name}={value}", indentLevel)
-        else:
-            self._add(f"parameter {name}={value},", indentLevel)
+    def addParameter(self, name, type, value, indentLevel=0):
+        self._add(f"parameter {name}={value},", indentLevel)
 
     def addPortStart(self, indentLevel=0):
         self._add(f"(", indentLevel)
 
     def addPortEnd(self, indentLevel=0):
+        temp = self._content.pop()
+        if "//" in temp:
+            temp2 = self._content.pop()[:-1]
+            self._add(temp2)
+            self._add(temp)
+        else:
+            self._add(temp[:-1])
         self._add(");", indentLevel)
 
-    def addPortScalar(self, name, io: IO, end=False, indentLevel=0):
+    def addPortScalar(self, name, io: IO, indentLevel=0):
         ioString = io.value.lower()
-        if end:
-            self._add(f"{ioString} {name}", indentLevel)
-        else:
-            self._add(f"{ioString} {name},", indentLevel)
+        self._add(f"{ioString} {name},", indentLevel)
 
-    def addPortVector(self, name, io: IO, msbIndex, end=False, indentLevel=0):
+    def addPortVector(self, name, io: IO, msbIndex, indentLevel=0):
         ioString = io.value.lower()
-        if end:
-            self._add(f"{ioString} [{msbIndex}:0] {name}", indentLevel)
-        else:
-            self._add(f"{ioString} [{msbIndex}:0] {name},", indentLevel)
+        self._add(f"{ioString} [{msbIndex}:0] {name},", indentLevel)
 
     def addDesignDescriptionStart(self, name, indentLevel=0):
         pass
@@ -93,11 +98,13 @@ class VerilogWriter(codeGenerator):
             port = [f".{paramPorts[i]}({paramSignals[i]})" for i in range(
                 len(paramPorts))]
             self._add(
-                f"{compName} {compInsName}", indentLevel=indentLevel)
+                f"{compName}", indentLevel=indentLevel)
             self._add("#(", indentLevel=indentLevel+1)
             self._add(
                 (",\n"f"{' ':<{4*(indentLevel + 1)}}").join(port), indentLevel=indentLevel + 1)
-            self._add(") (", indentLevel=indentLevel+1)
+            self._add(")", indentLevel=indentLevel+1)
+            self._add(f"{compInsName}", indentLevel=indentLevel+1)
+            self._add("(", indentLevel=indentLevel+1)
         else:
             self._add(f"{compName} {compInsName} (", indentLevel=indentLevel)
 
@@ -169,5 +176,3 @@ class VerilogWriter(codeGenerator):
     def addAssignVector(self, left, right, widthL, widthR, indentLevel=0):
         self._add(
             f"assign {left} = {right}[{widthL}:{widthR}];", indentLevel)
-
-

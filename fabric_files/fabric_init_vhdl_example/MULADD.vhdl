@@ -88,6 +88,9 @@ signal OPA : std_logic_vector(7 downto 0);		-- port A
 signal OPB : std_logic_vector(7 downto 0);		-- port B 
 signal OPC : std_logic_vector(19 downto 0);		-- port B  
 
+signal OPAE : std_logic_vector(15 downto 0);		-- port A 
+signal OPBE : std_logic_vector(15 downto 0);		-- port B 
+
 signal ACC  : std_logic_vector(19 downto 0);		-- accumulator register
 signal sum  : unsigned(19 downto 0);		-- port B read data register
 signal sum_in  : std_logic_vector(19 downto 0);		-- port B read data register
@@ -108,7 +111,10 @@ OPC <= C when (ConfigBits(2) = '0') else C_reg;
 
 sum_in <= OPC when (ConfigBits(3) = '0') else ACC;		-- we can
 
-product <= unsigned(OPA) * unsigned(OPB);
+OPAE <= std_logic_vector(resize(unsigned(OPA), 16)) when (ConfigBits(4) = '0') else std_logic_vector(resize(signed(OPA), 16));
+OPBE <= std_logic_vector(resize(unsigned(OPB), 16)) when (ConfigBits(4) = '0') else std_logic_vector(resize(signed(OPB), 16));
+
+product <= resize(unsigned(OPAE) * unsigned(OPBE), 16);
 
 -- The sign extension was not tested
 product_extended <= "0000" & product when (ConfigBits(4) = '0') else product(product'high) & product(product'high) & product(product'high) & product(product'high) & product;

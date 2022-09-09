@@ -47,13 +47,17 @@ class VerilogWriter(codeGenerator):
         self._add(f"(", indentLevel)
 
     def addPortEnd(self, indentLevel=0):
+        def deComma(x):
+            cpos = x.rfind(',')
+            assert cpos != -1, x
+            return x[:cpos] + x[cpos+1:]
         temp = self._content.pop()
-        if "//" in temp:
-            temp2 = self._content.pop()[:-1]
+        if "//" in temp and "," not in temp:
+            temp2 = deComma(self._content.pop())
             self._add(temp2)
             self._add(temp)
         else:
-            self._add(temp[:-1])
+            self._add(deComma(temp))
         self._add(");", indentLevel)
 
     def addPortScalar(self, name, io: IO, indentLevel=0):

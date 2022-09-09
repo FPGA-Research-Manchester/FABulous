@@ -467,12 +467,20 @@ class FabricGenerator:
 
         # constant declaration
         # we may use the following in the switch matrix for providing '0' and '1' to a mux input:
-        self.writer.addConstant("GND0", "'0")
-        self.writer.addConstant("GND", "'0")
-        self.writer.addConstant("VCC0", "'1")
-        self.writer.addConstant("VCC", "'1")
-        self.writer.addConstant("VDD0", "'1")
-        self.writer.addConstant("VDD", "'1")
+        if isinstance(self.writer, VHDLWriter):
+            self.writer.addConstant("GND0", "'0'")
+            self.writer.addConstant("GND", "'0'")
+            self.writer.addConstant("VCC0", "'1'")
+            self.writer.addConstant("VCC", "'1'")
+            self.writer.addConstant("VDD0", "'1'")
+            self.writer.addConstant("VDD", "'1'")
+        else:
+            self.writer.addConstant("GND0", "1'b0")
+            self.writer.addConstant("GND", "1'b0")
+            self.writer.addConstant("VCC0", "1'b1")
+            self.writer.addConstant("VCC", "1'b1")
+            self.writer.addConstant("VDD0", "1'b1")
+            self.writer.addConstant("VDD", "1'b1")
         self.writer.addNewLine()
 
         # signal declaration
@@ -1394,11 +1402,15 @@ class FabricGenerator:
         for y, row in enumerate(self.fabric.tile):
             for x, tile in enumerate(row):
                 if tile != None:
+                    seenPorts = set()
                     for p in tile.portsInfo:
                         wireLength = (abs(p.xOffset)+abs(p.yOffset)
                                       ) * p.wireCount-1
                         if p.sourceName == "NULL" or p.wireDirection == Direction.JUMP:
                             continue
+                        if p.sourceName in seenPorts:
+                            continue
+                        seenPorts.add(p.sourceName)
                         self.writer.addConnectionVector(
                             f"Tile_X{x}Y{y}_{p.sourceName}", wireLength)
         self.writer.addNewLine()

@@ -2,7 +2,7 @@
 C_bit0=0,
 C_bit1=1,
 C_bit2=2,
-C_bit3=3,
+C_bit3=3
 *)
 module Config_access (C_bit0, C_bit1, C_bit2, C_bit3, ConfigBits);
 	parameter NoConfigBits = 4;// has to be adjusted manually (we don't use an arithmetic parser for the value)

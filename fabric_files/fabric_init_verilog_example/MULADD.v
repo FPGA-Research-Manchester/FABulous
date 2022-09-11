@@ -86,9 +86,13 @@ module MULADD (A7, A6, A5, A4, A3, A2, A1, A0, B7, B6, B5, B4, B3, B2, B1, B0, C
 	assign OPB = ConfigBits[1] ? B_reg : B;
 	assign OPC = ConfigBits[2] ? C_reg : C;
 
+	// sign extend inputs when doing a signed multiply
+	wire [15:0] OPAE = ConfigBits[4] ? {{8{OPA[7]}},OPA} : {8'b00000000,OPA};
+	wire [15:0] OPBE = ConfigBits[4] ? {{8{OPB[7]}},OPB} : {8'b00000000,OPB};
+
 	assign sum_in = ConfigBits[3] ? ACC : OPC;// we can
 
-	assign product = OPA * OPB;
+	assign product = OPAE * OPBE;
 
 // The sign extension was not tested
 	assign product_extended = ConfigBits[4] ? {product[15],product[15],product[15],product[15],product} : {4'b0000,product};

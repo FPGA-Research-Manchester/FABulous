@@ -1157,7 +1157,7 @@ class FabricGenerator:
                         f"Tile_X{x}Y{y}_FrameStrobe_O", "MaxFramesPerCol-1", indentLevel=1)
                     self.writer.addConnectionScalar(
                         f"Tile_X{x}Y{y}_userCLKo", indentLevel=1)
-                if 0 <= x - 1 < len(superTile.tileMap) and superTile.tileMap[y][x-1] != None:
+                if 0 <= x - 1 < len(superTile.tileMap[y]) and superTile.tileMap[y][x-1] != None:
                     self.writer.addConnectionVector(
                         f"Tile_X{x}Y{y}_FrameData_O", "FrameBitsPerRow-1", indentLevel=1)
 
@@ -1239,16 +1239,16 @@ class FabricGenerator:
 
                     if self.fabric.configBitMode == ConfigBitMode.FRAME_BASED:
                         # add connection for frameData, frameStrobe and UserCLK
-                        if 0 <= x - 1 < len(superTile.tileMap[0]) - 1 and superTile.tileMap[y][x-1] != None:
+                        if 0 <= x - 1 < len(superTile.tileMap[0]) and superTile.tileMap[y][x-1] != None:
                             combine.append(f"Tile_X{x-1}Y{y}_FrameData_O")
                         else:
                             combine.append(f"Tile_X{x}Y{y}_FrameData")
 
                         combine.append(f"Tile_X{x}Y{y}_FrameData_O")
 
-                        if 0 <= y + 1 < len(superTile.tileMap) - 1 and superTile.tileMap[y+1][x] != None:
+                        if 0 <= y + 1 < len(superTile.tileMap) and superTile.tileMap[y+1][x] != None:
                             combine.append(
-                                f"Tile_X{x}Y{y-1}_FrameStrobe_O")
+                                f"Tile_X{x}Y{y+1}_FrameStrobe_O")
                         else:
                             combine.append(f"Tile_X{x}Y{y}_FrameStrobe")
 

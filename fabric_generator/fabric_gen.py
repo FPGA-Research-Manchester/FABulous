@@ -356,7 +356,7 @@ class FabricGenerator:
                                                  signals=[f"FrameData[{self.fabric.frameBitsPerRow-1-k}]",
                                                           f"FrameStrobe[{i.frameIndex}]",
                                                           f"ConfigBits[{i.configBitRanges[counter]}]",
-                                                          f"ConfigBits[{i.configBitRanges[counter]}]"])
+                                                          f"ConfigBits_N[{i.configBitRanges[counter]}]"])
                     counter += 1
 
         self.writer.addLogicEnd()

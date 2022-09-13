@@ -1808,8 +1808,8 @@ class FabricGenerator:
                                                   f"FrameRegister[{row}*FrameBitsPerRow +: FrameBitsPerRow]", "RowSelect",
                                                   "CLK"],
                                          paramPorts=["FrameBitsPerRow",
-                                                     "RowSelectWidth"],
-                                         paramSignals=["FrameBitsPerRow", "RowSelectWidth"])
+                                                     "RowSelectWidth", "Row"],
+                                         paramSignals=["FrameBitsPerRow", "RowSelectWidth", row])
         self.writer.addNewLine()
 
         # the frame select module
@@ -1823,8 +1823,8 @@ class FabricGenerator:
                                                   "FrameAddressRegister[FrameBitsPerRow-1:FrameBitsPerRow-FrameSelectWidth]",
                                                   "LongFrameStrobe"],
                                          paramPorts=["MaxFramesPerCol",
-                                                     "FrameSelectWidth"],
-                                         paramSignals=["MaxFramesPerCol", "FrameSelectWidth"])
+                                                     "FrameSelectWidth", "Col"],
+                                         paramSignals=["MaxFramesPerCol", "FrameSelectWidth", col])
         self.writer.addNewLine()
 
         # the fabric module

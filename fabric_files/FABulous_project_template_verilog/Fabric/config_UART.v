@@ -3,7 +3,11 @@ module config_UART #(
 						// bin is for faster binary mode, but might not work on all machines/boards
 						// auto uses the MSB in the command byte (the 8th byte in the comload header) to set the mode
 						// "1//- ////" is for hex mode, "0//- ////" for bin mode
+`ifdef SYNTHESIS
 	parameter ComRate = 217 // ComRate = f_CLK / Boud_rate (e.g., 25 MHz/115200 Boud = 217)
+`else
+	parameter ComRate = 7
+`endif
 ) (
 	input CLK,
 	input Rx,

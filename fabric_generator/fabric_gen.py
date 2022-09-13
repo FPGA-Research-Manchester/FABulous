@@ -1671,15 +1671,13 @@ class FabricGenerator:
                                 signal.append(f"Tile_X{x+i}Y{y+j}_FrameData_O")
 
                         # frameStrobe signal
-                        if y == 0:
-                            signal.append(f"Tile_X{x}Y{y+1}_FrameStrobe_O")
+                        if y == len(self.fabric.tile) - 1:
+                            signal.append(f"Tile_X{x}_FrameStrobe")
                         elif (x+i, y+j+1) not in superTileLoc:
                             signal.append(f"Tile_X{x+i}Y{y+j+1}_FrameStrobe_O")
 
                         # frameStrobe_O signal
-                        if y == len(self.fabric.tile) - 1:
-                            signal.append(f"Tile_X{x}_FrameStrobe")
-                        elif (x+i, y+j+1) not in superTileLoc:
+                        if (x+i, y+j+1) not in superTileLoc:
                             signal.append(f"Tile_X{x+i}Y{y+j}_FrameStrobe_O")
 
                 name = ""

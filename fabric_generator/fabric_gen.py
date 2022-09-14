@@ -868,11 +868,10 @@ class FabricGenerator:
                                                   f"{port.sourceName}[{i}]"])
                 added.add((port.sourceName, port.destinationName))
 
-        if tile.withUserCLK:
-            self.writer.addInstantiation("clk_buf",
-                                         f"inst_clk_buf",
-                                         ["A", "X"],
-                                         [f"UserCLK", f"UserCLKo"])
+        self.writer.addInstantiation("clk_buf",
+                                     f"inst_clk_buf",
+                                     ["A", "X"],
+                                     [f"UserCLK", f"UserCLKo"])
 
         self.writer.addNewLine()
         # top configuration data daisy chaining

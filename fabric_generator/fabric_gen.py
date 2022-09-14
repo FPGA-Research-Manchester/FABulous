@@ -1807,7 +1807,7 @@ class FabricGenerator:
                                                   "CLK"],
                                          paramPorts=["FrameBitsPerRow",
                                                      "RowSelectWidth", "Row"],
-                                         paramSignals=["FrameBitsPerRow", "RowSelectWidth", row])
+                                         paramSignals=["FrameBitsPerRow", "RowSelectWidth", row + 1])
         self.writer.addNewLine()
 
         # the frame select module

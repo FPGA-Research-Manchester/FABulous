@@ -1671,7 +1671,7 @@ class FabricGenerator:
                                 signal.append(f"Tile_X{x+i}Y{y+j}_FrameData_O")
 
                         # frameStrobe signal
-                        if y == len(self.fabric.tile) - 1:
+                        if all(self.fabric.tile[yy][x] is None for yy in range(y+1, len(self.fabric.tile))): # top edge
                             signal.append(f"Tile_X{x}_FrameStrobe")
                         elif (x+i, y+j+1) not in superTileLoc:
                             signal.append(f"Tile_X{x+i}Y{y+j+1}_FrameStrobe_O")

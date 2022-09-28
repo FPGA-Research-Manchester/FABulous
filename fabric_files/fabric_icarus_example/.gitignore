@@ -5,3 +5,6 @@ fabric/*
 *.vvp
 *.vcd
 *.log
+test_design/*.vh
+test_design/*.vhd
+*.hex

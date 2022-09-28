@@ -14,6 +14,7 @@ module fab_tb;
     reg s_clk = 1'b0;
     reg s_data = 1'b0;
 
+    // Instantiate both the fabric and the reference DUT
     eFPGA_top top_i (
         .I_top(I_top),
         .T_top(T_top),
@@ -27,14 +28,27 @@ module fab_tb;
         .s_data(s_data)
     );
 
+
+    wire [27:0] I_top_gold, T_top_gold;
+    top dut_i (
+        .clk(CLK),
+        .io_out(I_top_gold),
+        .io_oeb(T_top_gold),
+        .io_in(O_top)
+    );
+
     localparam MAX_BITBYTES = 16384;
     reg [7:0] bitstream[0:MAX_BITBYTES-1];
 
     always #5000 CLK = (CLK === 1'b0);
 
+    integer i;
+    reg have_errors = 1'b0;
     initial begin
+`ifdef CREATE_VCD
         $dumpfile("fab_tb.vcd");
         $dumpvars(0, fab_tb);
+`endif
         $readmemh("bitstream.hex", bitstream);
         #10000;
         repeat (10) @(posedge CLK);
@@ -53,9 +67,15 @@ module fab_tb;
         O_top = 28'b0;
         for (i = 0; i < 100; i = i + 1) begin
             @(negedge CLK);
-            $display("I_top = %b", I_top);
+            $display("fabric = %b gold = %b", I_top, I_top_gold);
+            if (I_top != I_top_gold)
+                have_errors = 1'b1;
         end
-        $finish;
+
+        if (have_errors)
+            $fatal;
+        else
+            $finish;
     end
 
 endmodule

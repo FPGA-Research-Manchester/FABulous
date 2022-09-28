@@ -1,0 +1,7 @@
+fabric/*
+*.json
+*.fasm
+*.bit
+*.vvp
+*.vcd
+*.log

@@ -61,25 +61,25 @@ def main(argv):
     
     
     try:
-        with open("fabulous_top_wrapper/eFPGA_v3_top_sky130_with_BRAM_template.v", 'r') as file :
+        with open("fabulous_top_wrapper_temp/eFPGA_v3_top_sky130_with_BRAM_template.v", 'r') as file :
             wrapper_top_str = file.read()
     except IOError:
         print("eFPGA_v3_top_sky130_with_BRAM_template.v not accessible")
         
     try:
-        with open("fabulous_top_wrapper/Config_template.v", 'r') as file :
+        with open("fabulous_top_wrapper_temp/Config_template.v", 'r') as file :
             config_str = file.read()
     except IOError:
         print("Config_template.v not accessible")
         
     try:
-        with open("fabulous_top_wrapper/ConfigFSM_template.v", 'r') as file :
+        with open("fabulous_top_wrapper_temp/ConfigFSM_template.v", 'r') as file :
             configfsm_str = file.read()
     except IOError:
         print("ConfigFSM_template.v not accessible")
         
     try:
-        with open("fabulous_top_wrapper/tb_bitbang_template.vhd", 'r') as file :
+        with open("fabulous_top_wrapper_temp/tb_bitbang_template.vhd", 'r') as file :
             testbench_str = file.read()
     except IOError:
         print("tb_bitbang_template.vhd not accessible")
@@ -154,7 +154,7 @@ def main(argv):
         wrapper_top_str+='\t);\n\n'
         #data_reg_modules += 'module '+data_reg_name+' (FrameData_I, FrameData_O, RowSelect, CLK);'
         try:
-            with open("fabulous_top_wrapper/Frame_Data_Reg_template.v", 'r') as file :
+            with open("fabulous_top_wrapper_temp/Frame_Data_Reg_template.v", 'r') as file :
                 data_reg_module_temp = file.read()
         except IOError:
             print("Frame_Data_Reg_template.v not accessible")
@@ -178,7 +178,7 @@ def main(argv):
         wrapper_top_str+='\t.FrameStrobe(LongFrameStrobe)\n'
         wrapper_top_str+='\t);\n\n'
         try:
-            with open("fabulous_top_wrapper/Frame_Select_template.v", 'r') as file :
+            with open("fabulous_top_wrapper_temp/Frame_Select_template.v", 'r') as file :
                 strobe_reg_module_temp = file.read()
         except IOError:
             print("Frame_Select_template.v not accessible")

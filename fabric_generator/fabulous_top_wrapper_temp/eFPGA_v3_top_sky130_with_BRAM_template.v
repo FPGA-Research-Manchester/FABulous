@@ -34,33 +34,33 @@ module eFPGA_top (I_top, T_top, O_top, A_config_C, B_config_C, CLK, SelfWriteStr
 
 	// External USER ports 
 	//inout [16-1:0] PAD; // these are for Dirk and go to the pad ring
-	wire [32-1:0] I_top; 
-	wire [32-1:0] T_top;
-	wire [32-1:0] O_top;
-	wire [64-1:0] A_config_C;
-	wire [64-1:0] B_config_C;
+	output wire [32-1:0] I_top; 
+	output wire [32-1:0] T_top;
+	input wire [32-1:0] O_top;
+	output wire [64-1:0] A_config_C;
+	output wire [64-1:0] B_config_C;
 
-	wire CLK; // This clock can go to the CPU (connects to the fabric LUT output flops
+	input wire CLK; // This clock can go to the CPU (connects to the fabric LUT output flops
 
 	// CPU configuration port
-	wire SelfWriteStrobe; // must decode address and write enable
-	wire [32-1:0] SelfWriteData; // configuration data write port
+	input wire SelfWriteStrobe; // must decode address and write enable
+	input wire [32-1:0] SelfWriteData; // configuration data write port
 
 	// UART configuration port
-	wire Rx;
-	wire ComActive;
-	wire ReceiveLED;
+	input wire Rx;
+	output wire ComActive;
+	output wire ReceiveLED;
 
 	// BitBang configuration port
-	wire s_clk;
-	wire s_data;
+	input wire s_clk;
+	input wire s_data;
 
 	//BlockRAM ports
-	wire [64-1:0] RAM2FAB_D;
-	wire [64-1:0] FAB2RAM_D;
-	wire [64-1:0] FAB2RAM_A;
-	wire [64-1:0] FAB2RAM_C;
-	wire [64-1:0] Config_accessC;
+	input wire [64-1:0] RAM2FAB_D;
+	output wire [64-1:0] FAB2RAM_D;
+	output wire [64-1:0] FAB2RAM_A;
+	output wire [64-1:0] FAB2RAM_C;
+	output wire [64-1:0] Config_accessC;
 
 	// Signal declarations
 	wire [(NumberOfRows*FrameBitsPerRow)-1:0] FrameRegister;

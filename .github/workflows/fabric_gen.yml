@@ -19,10 +19,12 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: 3.8
+    - name: Set up OSS CAD suite
+      uses: YosysHQ/setup-oss-cad-suite@v1
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install flake8 pytest
+        python3 -m pip install --upgrade pip
+        pip3 install flake8 pytest
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Lint with flake8
       run: |
@@ -80,6 +82,11 @@ jobs:
         mv -f *.csv ./csv_output
         cp ./npnroutput/{bel.txt,pips.txt,meta_data.txt} ../nextpnr/fabulous/fab_arch/
         cp ./csv_output/fabric.csv ../nextpnr/fabulous/fab_arch/
+    - name: Run simulation smoketest
+      run: |
+        cd fabric_files/fabric_icarus_example
+        ./build_test_design.sh
+        ./run_simulation.sh
     - name: Check pair generation
       run: |
         cd fabric_generator
@@ -127,3 +134,4 @@ jobs:
         mv -f *.csv ./csv_output
         cp ./npnroutput/{bel.txt,pips.txt,meta_data.txt} ../nextpnr/fabulous/fab_arch/
         cp ./csv_output/fabric.csv ../nextpnr/fabulous/fab_arch/
+

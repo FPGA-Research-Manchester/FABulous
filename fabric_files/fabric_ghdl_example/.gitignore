@@ -1,0 +1,10 @@
+*.csv
+*.fasm
+*.json
+*.bit
+*.bin
+*.txt
+*.vh
+*.vhd
+*.hex
+*.cf

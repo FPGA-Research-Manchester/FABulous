@@ -22,10 +22,10 @@ signal S_q, S_qn : std_logic := '0';
 
 begin
 -- master
-M_set_gate   <= D NAND E after 10ns;
-M_reset_gate <= (NOT D) NAND E after 10ns;
-M_q    <= M_qn NAND M_set_gate after 10ns;
-M_qn   <= M_q  NAND M_reset_gate after 10ns;
+M_set_gate   <= D NAND E after 10 ns;
+M_reset_gate <= (NOT D) NAND E after 10 ns;
+M_q    <= M_qn NAND M_set_gate after 10 ns;
+M_qn   <= M_q  NAND M_reset_gate after 10 ns;
 
 Q <= M_q;
 QN <= M_qn;
@@ -54,10 +54,10 @@ signal M_qn      : std_logic := '1';
 
 begin
 -- master
-M_set_gate   <= D NAND E after 10ns;
-M_reset_gate <= (NOT D) NAND E after 10ns;
-M_q    <= M_qn NAND M_set_gate after 10ns;
-M_qn   <= M_q  NAND M_reset_gate after 10ns;
+M_set_gate   <= D NAND E after 10 ns;
+M_reset_gate <= (NOT D) NAND E after 10 ns;
+M_q    <= M_qn NAND M_set_gate after 10 ns;
+M_qn   <= M_q  NAND M_reset_gate after 10 ns;
 
 Q <= M_q;
 

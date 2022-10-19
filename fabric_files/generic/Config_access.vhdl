@@ -1,6 +1,6 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
-use work.my_package.all;
+-- use work.my_package.all;
 
 -- pragma FABulous belMap C_bit0=0, C_bit1=1, C_bit2=2, C_bit3=3 
 entity Config_access is

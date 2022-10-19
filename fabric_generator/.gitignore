@@ -1,0 +1,7 @@
+*.v
+*.vhdl
+*.list
+*.xml
+*.csv
+*.txt
+*.pcf

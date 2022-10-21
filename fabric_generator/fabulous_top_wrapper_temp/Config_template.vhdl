@@ -63,7 +63,7 @@ architecture from_verilog of Config is
       WriteData : in std_logic_vector(31 downto 0);
       WriteStrobe : in std_logic
     );
- fab end component;
+ end component;
   signal FrameAddressRegister_Readable : std_logic_vector(31 downto 0);  -- Needed to connect outputs
   signal LongFrameStrobe_Readable : std_logic;  -- Needed to connect outputs
   signal RowSelect_Readable : std_logic_vector(4 downto 0);  -- Needed to connect outputs

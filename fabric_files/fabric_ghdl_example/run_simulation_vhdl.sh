@@ -94,4 +94,8 @@ $GHDL -a $FLAG $VHDL/eFPGA_top.vhdl \
 
 $GHDL -a $FLAG $VHDL/eFPGA_top.vhdl ./test_design/counter.vhdl ./fabulous_tb.vhdl
 $GHDL -e $FLAG fab_tb
-$GHDL -r $FLAG fab_tb --assert-level=error --ieee-asserts=disable
+$GHDL -r $FLAG fab_tb --assert-level=error --ieee-asserts=disable 
+
+
+# with traces. The wave_filter is a file that contains the signals to be traced
+# $GHDL -r $FLAG fab_tb --assert-level=error --ieee-asserts=disable --vcd=trace.vcd --read-wave-opt=wave_filter

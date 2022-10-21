@@ -1,7 +1,12 @@
-*.v
-*.vhdl
+.v
+.vhdl
 *.list
 *.xml
 *.csv
 *.txt
 *.pcf
+verilog_output
+vhdl_output
+npnroutput
+vproutput
+list_files

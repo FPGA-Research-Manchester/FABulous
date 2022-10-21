@@ -45,10 +45,10 @@ module fab_tb;
     integer i;
     reg have_errors = 1'b0;
     initial begin
-`ifdef CREATE_VCD
+// `ifdef CREATE_VCD
         $dumpfile("fab_tb.vcd");
         $dumpvars(0, fab_tb);
-`endif
+// `endif
         $readmemh("bitstream.hex", bitstream);
         #10000;
         repeat (10) @(posedge CLK);

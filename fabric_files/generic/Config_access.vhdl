@@ -1,6 +1,6 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
-use work.my_package.all;
+-- use work.my_package.all;
 
 entity Config_access is
     Generic ( NoConfigBits : integer := 4 );	-- has to be adjusted manually (we don't use an arithmetic parser for the value)

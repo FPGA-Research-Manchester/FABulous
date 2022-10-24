@@ -87,21 +87,21 @@ architecture Behavior of fab_tb is
   signal A_cfg: std_logic_vector(55 downto 0);
   signal B_cfg: std_logic_vector(55 downto 0);
   
-  signal I_top_gold : unsigned(27 downto 0);  -- Declared at fabulous_tb.v:32
-  signal T_top_gold : unsigned(27 downto 0);  -- Declared at fabulous_tb.v:32
+  signal I_top_gold : unsigned(27 downto 0);  
+  signal T_top_gold : unsigned(27 downto 0);  
   
   signal CLK : std_logic := '0';  
-  signal SelfWriteStrobe : std_logic := '0';  -- Declared at fabulous_tb.v:9
-  signal SelfWriteData : std_logic_vector(31 downto 0) := X"00000000";  -- Declared at fabulous_tb.v:10
-  signal ComActive : std_logic;  -- Declared at fabulous_tb.v:11
-  signal Rx : std_logic := '1';  -- Declared at fabulous_tb.v:11
-  signal s_clk : std_logic := '0';  -- Declared at fabulous_tb.v:14
-  signal s_data : std_logic := '0';  -- Declared at fabulous_tb.v:15
-  signal ReceiveLED : std_logic;  -- Declared at fabulous_tb.v:16
+  signal SelfWriteStrobe : std_logic := '0'; 
+  signal SelfWriteData : std_logic_vector(31 downto 0) := X"00000000";  
+  signal ComActive : std_logic;  
+  signal Rx : std_logic := '1'; 
+  signal s_clk : std_logic := '0'; 
+  signal s_data : std_logic := '0';  
+  signal ReceiveLED : std_logic;  
   
-  signal have_errors : std_logic := '0';  -- Declared at fabulous_tb.v:46
+  signal have_errors : std_logic := '0'; 
   type bitstream_Type is array (MAX_BITBYTES downto 0) of std_logic_vector(7 downto 0);
-  signal bitstream : bitstream_Type;  -- Declared at fabulous_tb.v:41
+  signal bitstream : bitstream_Type;
 
   signal O_top_unsigned : unsigned(27 downto 0);
 
@@ -209,7 +209,8 @@ begin
       -- wait 2 clock cycles
       wait until rising_edge(CLK);
       wait until rising_edge(CLK);
-      report integer'image(i) & " " & to_hstring(SelfWriteData); 
+
+      -- report integer'image(i) & " " & to_hstring(SelfWriteData); 
       SelfWriteStrobe <= '1';
       wait until rising_edge(CLK);
       SelfWriteStrobe <= '0';
@@ -246,13 +247,14 @@ begin
     for Verilog_Repeat in 0 to 100 loop
       wait until falling_edge(CLK);
       report "fabric = " & integer'image(To_Integer(unsigned(I_top))) & " gold = " & integer'image(To_Integer(unsigned(I_top_gold)));
-      if unsigned(I_top) /= unsigned(I_top_gold) then
+      if To_integer(unsigned(I_top)) /= To_integer(unsigned(I_top_gold)) then
         have_errors <= '1';
+        report "Error: I_top:"  & to_hstring(I_top) & " gold:" & to_hstring(I_top_gold);
       end if;
     end loop;
-
-    assert have_errors = '1' report "Error" severity error; 
+    assert have_errors /= '1' report "Error: Miss match between fabric output and golden " severity error; 
     report "SIMULATION FINISHED" severity error;
+
   end process;
 end architecture;
 

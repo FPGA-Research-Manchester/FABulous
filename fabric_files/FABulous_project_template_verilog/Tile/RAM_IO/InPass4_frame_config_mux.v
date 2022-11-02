@@ -17,7 +17,7 @@
 I0_reg=0,
 I1_reg=1,
 I2_reg=2,
-I3_reg=3,
+I3_reg=3
 *)
 module InPass4_frame_config_mux (I0, I1, I2, I3, O0, O1, O2, O3, UserCLK, ConfigBits);
 	parameter NoConfigBits = 4;

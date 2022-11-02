@@ -356,7 +356,7 @@ class FabricGenerator:
                                                  signals=[f"FrameData[{self.fabric.frameBitsPerRow-1-k}]",
                                                           f"FrameStrobe[{i.frameIndex}]",
                                                           f"ConfigBits[{i.configBitRanges[counter]}]",
-                                                          f"ConfigBits[{i.configBitRanges[counter]}]"])
+                                                          f"ConfigBits_N[{i.configBitRanges[counter]}]"])
                     counter += 1
 
         self.writer.addLogicEnd()
@@ -467,12 +467,20 @@ class FabricGenerator:
 
         # constant declaration
         # we may use the following in the switch matrix for providing '0' and '1' to a mux input:
-        self.writer.addConstant("GND0", "'0")
-        self.writer.addConstant("GND", "'0")
-        self.writer.addConstant("VCC0", "'1")
-        self.writer.addConstant("VCC", "'1")
-        self.writer.addConstant("VDD0", "'1")
-        self.writer.addConstant("VDD", "'1")
+        if isinstance(self.writer, VHDLWriter):
+            self.writer.addConstant("GND0", "'0'")
+            self.writer.addConstant("GND", "'0'")
+            self.writer.addConstant("VCC0", "'1'")
+            self.writer.addConstant("VCC", "'1'")
+            self.writer.addConstant("VDD0", "'1'")
+            self.writer.addConstant("VDD", "'1'")
+        else:
+            self.writer.addConstant("GND0", "1'b0")
+            self.writer.addConstant("GND", "1'b0")
+            self.writer.addConstant("VCC0", "1'b1")
+            self.writer.addConstant("VCC", "1'b1")
+            self.writer.addConstant("VDD0", "1'b1")
+            self.writer.addConstant("VDD", "1'b1")
         self.writer.addNewLine()
 
         # signal declaration
@@ -860,11 +868,10 @@ class FabricGenerator:
                                                   f"{port.sourceName}[{i}]"])
                 added.add((port.sourceName, port.destinationName))
 
-        if tile.withUserCLK:
-            self.writer.addInstantiation("clk_buf",
-                                         f"inst_clk_buf",
-                                         ["A", "X"],
-                                         [f"UserCLK", f"UserCLKo"])
+        self.writer.addInstantiation("clk_buf",
+                                     f"inst_clk_buf",
+                                     ["A", "X"],
+                                     [f"UserCLK", f"UserCLKo"])
 
         self.writer.addNewLine()
         # top configuration data daisy chaining
@@ -1149,7 +1156,7 @@ class FabricGenerator:
                         f"Tile_X{x}Y{y}_FrameStrobe_O", "MaxFramesPerCol-1", indentLevel=1)
                     self.writer.addConnectionScalar(
                         f"Tile_X{x}Y{y}_userCLKo", indentLevel=1)
-                if 0 <= x - 1 < len(superTile.tileMap) and superTile.tileMap[y][x-1] != None:
+                if 0 <= x - 1 < len(superTile.tileMap[y]) and superTile.tileMap[y][x-1] != None:
                     self.writer.addConnectionVector(
                         f"Tile_X{x}Y{y}_FrameData_O", "FrameBitsPerRow-1", indentLevel=1)
 
@@ -1231,16 +1238,16 @@ class FabricGenerator:
 
                     if self.fabric.configBitMode == ConfigBitMode.FRAME_BASED:
                         # add connection for frameData, frameStrobe and UserCLK
-                        if 0 <= x - 1 < len(superTile.tileMap[0]) - 1 and superTile.tileMap[y][x-1] != None:
+                        if 0 <= x - 1 < len(superTile.tileMap[0]) and superTile.tileMap[y][x-1] != None:
                             combine.append(f"Tile_X{x-1}Y{y}_FrameData_O")
                         else:
                             combine.append(f"Tile_X{x}Y{y}_FrameData")
 
                         combine.append(f"Tile_X{x}Y{y}_FrameData_O")
 
-                        if 0 <= y + 1 < len(superTile.tileMap) - 1 and superTile.tileMap[y+1][x] != None:
+                        if 0 <= y + 1 < len(superTile.tileMap) and superTile.tileMap[y+1][x] != None:
                             combine.append(
-                                f"Tile_X{x}Y{y-1}_FrameStrobe_O")
+                                f"Tile_X{x}Y{y+1}_FrameStrobe_O")
                         else:
                             combine.append(f"Tile_X{x}Y{y}_FrameStrobe")
 
@@ -1394,11 +1401,15 @@ class FabricGenerator:
         for y, row in enumerate(self.fabric.tile):
             for x, tile in enumerate(row):
                 if tile != None:
+                    seenPorts = set()
                     for p in tile.portsInfo:
                         wireLength = (abs(p.xOffset)+abs(p.yOffset)
                                       ) * p.wireCount-1
                         if p.sourceName == "NULL" or p.wireDirection == Direction.JUMP:
                             continue
+                        if p.sourceName in seenPorts:
+                            continue
+                        seenPorts.add(p.sourceName)
                         self.writer.addConnectionVector(
                             f"Tile_X{x}Y{y}_{p.sourceName}", wireLength)
         self.writer.addNewLine()
@@ -1659,15 +1670,13 @@ class FabricGenerator:
                                 signal.append(f"Tile_X{x+i}Y{y+j}_FrameData_O")
 
                         # frameStrobe signal
-                        if y == 0:
-                            signal.append(f"Tile_X{x}Y{y+1}_FrameStrobe_O")
+                        if all(self.fabric.tile[yy][x] is None for yy in range(y+1, len(self.fabric.tile))): # top edge
+                            signal.append(f"Tile_X{x}_FrameStrobe")
                         elif (x+i, y+j+1) not in superTileLoc:
                             signal.append(f"Tile_X{x+i}Y{y+j+1}_FrameStrobe_O")
 
                         # frameStrobe_O signal
-                        if y == len(self.fabric.tile) - 1:
-                            signal.append(f"Tile_X{x}_FrameStrobe")
-                        elif (x+i, y+j+1) not in superTileLoc:
+                        if (x+i, y+j+1) not in superTileLoc:
                             signal.append(f"Tile_X{x+i}Y{y+j}_FrameStrobe_O")
 
                 name = ""
@@ -1796,8 +1805,8 @@ class FabricGenerator:
                                                   f"FrameRegister[{row}*FrameBitsPerRow +: FrameBitsPerRow]", "RowSelect",
                                                   "CLK"],
                                          paramPorts=["FrameBitsPerRow",
-                                                     "RowSelectWidth"],
-                                         paramSignals=["FrameBitsPerRow", "RowSelectWidth"])
+                                                     "RowSelectWidth", "Row"],
+                                         paramSignals=["FrameBitsPerRow", "RowSelectWidth", row + 1])
         self.writer.addNewLine()
 
         # the frame select module
@@ -1811,8 +1820,8 @@ class FabricGenerator:
                                                   "FrameAddressRegister[FrameBitsPerRow-1:FrameBitsPerRow-FrameSelectWidth]",
                                                   "LongFrameStrobe"],
                                          paramPorts=["MaxFramesPerCol",
-                                                     "FrameSelectWidth"],
-                                         paramSignals=["MaxFramesPerCol", "FrameSelectWidth"])
+                                                     "FrameSelectWidth", "Col"],
+                                         paramSignals=["MaxFramesPerCol", "FrameSelectWidth", col])
         self.writer.addNewLine()
 
         # the fabric module

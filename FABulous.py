@@ -445,7 +445,6 @@ To run the complete FABulous flow with the default project, run the following co
         "Generate a npnr model of the fabric"
         logger.info("Generating npnr model")
         npnrModel = self.fabricGen.genModelNpnr()
-
         logger.info(
             f"output file: {self.pathToCSVFile}/{metaDataDir}/pips.txt")
         with open(f"{self.pathToCSVFile}/{metaDataDir}/pips.txt", "w") as f:
@@ -455,10 +454,14 @@ To run the complete FABulous flow with the default project, run the following co
         with open(f"{self.pathToCSVFile}/{metaDataDir}/bel.txt", "w") as f:
             f.write(npnrModel[1])
 
+        logger.info(f"output file: {self.pathToCSVFile}/{metaDataDir}/bel.v2.txt")
+        with open(f"{self.pathToCSVFile}/{metaDataDir}/bel.v2.txt", "w") as f:
+            f.write(npnrModel[2])
+
         logger.info(
             f"output file: {self.pathToCSVFile}/{metaDataDir}/template.pcf")
         with open(f"{self.pathToCSVFile}/{metaDataDir}/template.pcf", "w") as f:
-            f.write(npnrModel[2])
+            f.write(npnrModel[3])
 
         logger.info("Generated npnr model")
 

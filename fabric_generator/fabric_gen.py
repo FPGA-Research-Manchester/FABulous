@@ -853,7 +853,7 @@ class FabricGenerator:
                     f"{port.sourceName}_i", highBoundIndex - port.wireCount)
                 # using scalar assignment to connect the two vectors
                 self.writer.addAssignScalar(
-                    f"{port.destinationName}_i[{highBoundIndex}-{port.wireCount}:0]", f"{port.destinationName}_i[{highBoundIndex}:{port.wireCount}]")
+                    f"{port.sourceName}_i[{highBoundIndex}-{port.wireCount}:0]", f"{port.destinationName}_i[{highBoundIndex}:{port.wireCount}]")
                 self.writer.addNewLine()
                 for i in range(highBoundIndex - port.wireCount + 1):
                     self.writer.addInstantiation("my_buf",
@@ -1642,7 +1642,7 @@ class FabricGenerator:
 
                 if not superTile:
                     # for userCLK
-                    if y + 1 < self.fabric.numberOfRows:
+                    if y + 1 < self.fabric.numberOfRows and self.fabric.tile[y+1][x] != None:
                         signal.append(f"Tile_X{x}Y{y+1}_UserCLKo")
                     else:
                         signal.append(f"UserCLK")

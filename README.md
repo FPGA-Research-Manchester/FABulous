@@ -55,9 +55,16 @@ sudo make install
 
 We have provided a Python Command Line Interface (CLI) as well as a project structure for easy access of the FABulous toolchain.
 
-To create a FABulous project you can run `python3 FABulous.py -c <name_of_project>`
-This command will create a FABulous project that contains all the file for generating a basic FABulous fabric.
-By default it will create a Verilog project which is a copy of the folder in the `fabric_files/FABulous_project_template_verilog`. If you would like to start with a VHDL project use `python3 FABulous.py -w vhdl -c <name_of_project>`
+Before you run the flow for the first time, you must generate the basic files using the following commands:
+```
+cd fabric_generator
+./create_basic_files.sh ../fabric_files/generic/fabric.csv
+```
+Then use the following command to build the entire FPGA fabric in both VHDL and Verilog (the example has 8 columns and 14 rows):
+```
+./run_fab_flow.sh 8 14
+```
+You are now ready to emulate or synthesise with the netlists in ```/vhdl_output``` or ```/verilog_output```.
 
 The `Tile` folder contains all the definitions of the fabric primitive as well as the fabric matrix configuration. `fabric.csv` is what defining the architecture of the fabric. The FABulous project folder also contains a `.FABulous` folder which contains all the metadata during the generation of the fabric.
 

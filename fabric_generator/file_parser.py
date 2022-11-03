@@ -392,6 +392,8 @@ def parseFileVHDL(filename: str, belPrefix: str = "") -> Tuple[List[Tuple[str, I
     Parse a VHDL bel file and return all the related information of the bel. The tuple returned for relating to ports will
     be a list of (belName, IO) pair.
 
+    For further example of bel mapping please look at parseFileVerilog
+
     Args:
         filename (str): The input file name.
         belPrefix (str, optional): The bel prefix provided by the CSV file. Defaults to "".
@@ -425,12 +427,18 @@ def parseFileVHDL(filename: str, belPrefix: str = "") -> Tuple[List[Tuple[str, I
         print(f"Permission denied to file {filename}.")
         exit(-1)
 
-    belMapDic = {}
-    if result := re.search(r"-- pragma FABulous belMap (.*)", file):
-        result = result.group(1).split(",")
-        for i in result:
-            key, value = i.split("=")
-            belMapDic[key.replace(" ", "")] = int(value)
+    belMapDic = _belMapProcessing(file, filename, "vhdl")
+
+    if result := re.search(r"NoConfigBits.*?=.*?(\d+)", file, re.IGNORECASE):
+        noConfigBits = int(result.group(1))
+    else:
+        print(f"Cannot find NoConfigBits in {filename}")
+        print("Assume the number of configBits is 0")
+        noConfigBits = 0
+
+    if len(belMapDic) != noConfigBits:
+        raise ValueError(
+            f"NoConfigBits does not match with the BEL map in file {filename}, length of BelMap is {len(belMapDic)}, but with {noConfigBits} config bits")
 
     portSection = ""
     if result := re.search(r"port.*?\((.*?)\);", file,
@@ -517,6 +525,7 @@ def parseFileVHDL(filename: str, belPrefix: str = "") -> Tuple[List[Tuple[str, I
     return internal, external, config, shared, noConfigBits, userClk, belMapDic
 
 
+
 def parseFileVerilog(filename: str, belPrefix: str = "") -> Tuple[List[Tuple[str, IO]], List[Tuple[str, IO]], List[Tuple[str, IO]], List[Tuple[str, IO]], int, bool, Dict[str, Dict]]:
     """
     Parse a Verilog bel file and return all the related information of the bel. The tuple returned for relating to ports 
@@ -540,7 +549,8 @@ def parseFileVerilog(filename: str, belPrefix: str = "") -> Tuple[List[Tuple[str
     <name> = <value>
 
     ``<name>`` is the name of the feature and ``<value>`` will be the bit position of the feature. ie. ``INIT=0`` will specify that the feature ``INIT`` is located at bit 0.
-    Since a single feature can be mapped to multiple bits, this is currently done by specifying multiple entries for the same feature. This will be changed in the future. The bit specification is done in the following way::
+    Since a single feature can be mapped to multiple bits, this is currently done by specifying multiple entries for the same feature. This will be changed in the future. 
+    The bit specification is done in the following way::
 
         INIT_a_1=1, INIT_a_2=2, ...
 
@@ -605,67 +615,7 @@ def parseFileVerilog(filename: str, belPrefix: str = "") -> Tuple[List[Tuple[str
         print(f"Permission denied to file {filename}.")
         exit(-1)
 
-    belEnumsDic = {}
-    if belEnums := re.findall(r"\(\*.*?FABulous,.*?BelEnum,(.*?)\*\)", file, re.DOTALL | re.MULTILINE):
-        for enums in belEnums:
-            enums = enums.replace("\n", "").replace(" ", "").replace("\t", "")
-            enums = enums.split(",")
-            enums = [i for i in enums if i != "" and i != " "]
-            if enumParse := re.search(r"(.*?)\[(\d+):(\d+)\]", enums[0]):
-                name = enumParse.group(1)
-                start = int(enumParse.group(2))
-                end = int(enumParse.group(3))
-            else:
-                raise ValueError(
-                    f"Invalid enum {enums[0]} in file {filename}")
-            belEnumsDic[name] = {}
-            for i in enums[1:]:
-                key, value = i.split("=")
-                belEnumsDic[name][key] = {}
-                bitValue = list(value)
-                if start > end:
-                    for j in range(start, end - 1, -1):
-                        belEnumsDic[name][key][j] = bitValue.pop(0)
-                else:
-                    for j in range(start, end + 1):
-                        belEnumsDic[name][key][j] = bitValue.pop(0)
-
-    belMapDic = {}
-    if belMap := re.search(r"\(\*.*FABulous,.*?BelMap,(.*?)\*\)", file, re.DOTALL | re.MULTILINE):
-        belMap = belMap.group(1)
-        belMap = belMap.replace("\n", "").replace(" ", "").replace("\t", "")
-        belMap = belMap.split(",")
-        belMap = [i for i in belMap if i != "" and i != " "]
-        for bel in belMap:
-            bel = bel.split("=")
-            belNameTemp = bel[0].rsplit("_", 1)
-            if len(belNameTemp) > 1 and belNameTemp[1].isnumeric():
-                bel[0] = f"{belNameTemp[0]}[{belNameTemp[1]}]"
-            belMapDic[bel[0]] = {}
-            if bel == ['']:
-                continue
-            if bel[0] in list(belEnumsDic.keys()):
-                belMapDic[bel[0]] = belEnumsDic[bel[0]]
-            elif ":" in bel[1]:
-                start, end = bel[1].split(":")
-                start, end = int(start), int(end)
-                if start > end:
-                    length = start - end + 1
-                    for i in range(2**length-1, -1, -1):
-                        belMapDic[bel[0]][i] = {}
-                        bitMap = list(f"{i:0{length.bit_length()}b}")
-                        for v in range(len(bitMap)-1, -1, -1):
-                            belMapDic[bel[0]][i][v] = bitMap.pop(0)
-                else:
-                    length = end - start + 1
-                    for i in range(0, 2**length):
-                        belMapDic[bel[0]][i] = {}
-                        bitMap = list(
-                            f"{2**length-i-1:0{length.bit_length()}b}")
-                        for v in range(len(bitMap)-1, -1, -1):
-                            belMapDic[bel[0]][i][v] = bitMap.pop(0)
-            else:
-                belMapDic[bel[0]][0] = {0: '1'}
+    belMapDic = _belMapProcessing(file, filename, "verilog")
 
     if result := re.search(r"NoConfigBits.*?=.*?(\d+)", file, re.IGNORECASE):
         noConfigBits = int(result.group(1))
@@ -716,6 +666,77 @@ def parseFileVerilog(filename: str, belPrefix: str = "") -> Tuple[List[Tuple[str
             isShared = False
 
     return internal, external, config, shared, noConfigBits, userClk, belMapDic
+
+def _belMapProcessing(file: str, filename: str, syntax: Literal["vhdl", "verilog"]) -> Dict:
+    pre = ""
+    if syntax == "vhdl":
+        pre = "--.*?"
+
+    belEnumsDic = {}
+    if belEnums := re.findall(pre+r"\(\*.*?FABulous,.*?BelEnum,(.*?)\*\)", file, re.DOTALL | re.MULTILINE):
+        for enums in belEnums:
+            enums = enums.replace("\n", "").replace(" ", "").replace("\t", "")
+            enums = enums.split(",")
+            enums = [i for i in enums if i != "" and i != " "]
+            if enumParse := re.search(r"(.*?)\[(\d+):(\d+)\]", enums[0]):
+                name = enumParse.group(1)
+                start = int(enumParse.group(2))
+                end = int(enumParse.group(3))
+            else:
+                raise ValueError(
+                    f"Invalid enum {enums[0]} in file {filename}")
+            belEnumsDic[name] = {}
+            for i in enums[1:]:
+                key, value = i.split("=")
+                belEnumsDic[name][key] = {}
+                bitValue = list(value)
+                if start > end:
+                    for j in range(start, end - 1, -1):
+                        belEnumsDic[name][key][j] = bitValue.pop(0)
+                else:
+                    for j in range(start, end + 1):
+                        belEnumsDic[name][key][j] = bitValue.pop(0)
+
+    belMapDic = {}
+    if belMap := re.search(pre+r"\(\*.*FABulous,.*?BelMap,(.*?)\*\)", file, re.DOTALL | re.MULTILINE):
+        belMap = belMap.group(1)
+        belMap = belMap.replace("\n", "").replace(" ", "").replace("\t", "")
+        belMap = belMap.split(",")
+        belMap = [i for i in belMap if i != "" and i != " "]
+        for bel in belMap:
+            bel = bel.split("=")
+            belNameTemp = bel[0].rsplit("_", 1)
+            # process scalar 
+            if len(belNameTemp) > 1 and belNameTemp[1].isnumeric():
+                bel[0] = f"{belNameTemp[0]}[{belNameTemp[1]}]"
+            belMapDic[bel[0]] = {}
+            if bel == ['']:
+                continue
+            # process enum data type
+            if bel[0] in list(belEnumsDic.keys()):
+                belMapDic[bel[0]] = belEnumsDic[bel[0]]
+            # process vector input
+            elif ":" in bel[1]:
+                start, end = bel[1].split(":")
+                start, end = int(start), int(end)
+                if start > end:
+                    length = start - end + 1
+                    for i in range(2**length-1, -1, -1):
+                        belMapDic[bel[0]][i] = {}
+                        bitMap = list(f"{i:0{length.bit_length()}b}")
+                        for v in range(len(bitMap)-1, -1, -1):
+                            belMapDic[bel[0]][i][v] = bitMap.pop(0)
+                else:
+                    length = end - start + 1
+                    for i in range(0, 2**length):
+                        belMapDic[bel[0]][i] = {}
+                        bitMap = list(
+                            f"{2**length-i-1:0{length.bit_length()}b}")
+                        for v in range(len(bitMap)-1, -1, -1):
+                            belMapDic[bel[0]][i][v] = bitMap.pop(0)
+            else:
+                belMapDic[bel[0]][0] = {0: '1'}
+    return belMapDic
 
 
 def parseMatrix(fileName: str, tileName: str) -> Dict[str, List[str]]:

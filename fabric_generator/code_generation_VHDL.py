@@ -28,7 +28,7 @@ class VHDLWriter(codeGenerator):
         #   library template
         self._add("library IEEE;", indentLevel)
         self._add("use IEEE.STD_LOGIC_1164.ALL;", indentLevel)
-        self._add("use IEEE.NUMERIC_STD.ALL", indentLevel)
+        self._add("use IEEE.NUMERIC_STD.ALL;", indentLevel)
         if package != "":
             self._add(package, indentLevel)
         self._add(f"entity {name} is", indentLevel)
@@ -40,24 +40,53 @@ class VHDLWriter(codeGenerator):
         self._add("Generic(", indentLevel)
 
     def addParameterEnd(self, indentLevel=0):
+        temp = self._content.pop()
+        if "--" in temp:
+            temp2 = self._content.pop()[:-1]
+            self._add(temp2)
+            self._add(temp)
+        else:
+            self._add(temp[:-1])
         self._add(");", indentLevel)
 
-    def addParameter(self, name, type, value, end=False, indentLevel=0):
+    def addParameter(self, name, type, value, indentLevel=0):
         self._add(f"{name} : {type} := {value};", indentLevel)
+
 
     def addPortStart(self, indentLevel=0):
         self._add("Port (", indentLevel)
 
     def addPortEnd(self, indentLevel=0):
+        def deSemiColon(x):
+            cpos = x.rfind(';')
+            assert cpos != -1, x
+            return x[:cpos] + x[cpos+1:]
+        temp = self._content.pop()
+        if "--" in temp and ";" not in temp:
+            temp2 = deSemiColon(self._content.pop())
+            self._add(temp2)
+            self._add(temp)
+        else:
+            self._add(deSemiColon(temp))
         self._add(");", indentLevel)
 
     def addPortScalar(self, name, io: IO, end=False, indentLevel=0):
-        self._add(f"{name:<10} : {io.value.lower()} STD_LOGIC;",
-                  indentLevel=indentLevel)
+        ioVHDL = ""
+        if io.value.lower() == "input":
+            ioVHDL = "in"
+        elif io.value.lower() == "output":
+            ioVHDL = "out"
+        self._add(f"{name:<10} : {ioVHDL} STD_LOGIC;",
+                indentLevel=indentLevel)
 
-    def addPortVector(self, name, io: IO, msbIndex, end=False, indentLevel=0):
+    def addPortVector(self, name, io: IO, msbIndex, indentLevel=0):
+        ioVHDL = ""
+        if io.value.lower() == "input":
+            ioVHDL = "in"
+        elif io.value.lower() == "output":
+            ioVHDL = "out"
         self._add(
-            f"{name:<10} : {io.value.lower()} STD_LOGIC_VECTOR( {msbIndex} downto 0 );", indentLevel=indentLevel)
+            f"{name:<10} : {ioVHDL} STD_LOGIC_VECTOR( {msbIndex} downto 0 );", indentLevel=indentLevel)
 
     def addDesignDescriptionStart(self, name, indentLevel=0):
         self._add(

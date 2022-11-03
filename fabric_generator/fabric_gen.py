@@ -468,12 +468,12 @@ class FabricGenerator:
         # constant declaration
         # we may use the following in the switch matrix for providing '0' and '1' to a mux input:
         if isinstance(self.writer, VHDLWriter):
-            self.writer.addConstant("GND0", "'0'")
-            self.writer.addConstant("GND", "'0'")
-            self.writer.addConstant("VCC0", "'1'")
-            self.writer.addConstant("VCC", "'1'")
-            self.writer.addConstant("VDD0", "'1'")
-            self.writer.addConstant("VDD", "'1'")
+            self.writer.addConstant("GND0", "0")
+            self.writer.addConstant("GND", "0")
+            self.writer.addConstant("VCC0", "1")
+            self.writer.addConstant("VCC", "1")
+            self.writer.addConstant("VDD0", "1")
+            self.writer.addConstant("VDD", "1")
         else:
             self.writer.addConstant("GND0", "1'b0")
             self.writer.addConstant("GND", "1'b0")
@@ -1127,9 +1127,9 @@ class FabricGenerator:
         BEL_VHDL_riles_processed = []
         if isinstance(self.writer, VHDLWriter):
             for t in superTile.tiles:
-                # This is only relevant to VHDL code generation, will not affect Verilog code genration
+                # This is only relevant to VHDL code generation, will not affect Verilog code generation
                 self.writer.addComponentDeclarationForFile(
-                    f"{t.name}_tile.vhdl")
+                    f"Tile/{superTile.name}/{t.name}/{t.name}.vhdl")
 
         # find all internal connections
         internalConnections = superTile.getInternalConnections()
@@ -1353,7 +1353,11 @@ class FabricGenerator:
         # TODO refactor
         for t in self.fabric.tileDic:
             if isinstance(self.writer, VHDLWriter):
-                self.writer.addComponentDeclarationForFile(f"{t}_tile.vhdl")
+                name = t.split("_")[0]
+                if name not in self.fabric.superTileDic.keys():
+                    self.writer.addComponentDeclarationForFile(f"Tile/{t}/{t}.vhdl")
+                else:
+                    self.writer.addComponentDeclarationForFile(f"Tile/{name}/{name}.vhdl")
 
         # VHDL signal declarations
         self.writer.addComment("signal declarations", onNewLine=True, end="\n")

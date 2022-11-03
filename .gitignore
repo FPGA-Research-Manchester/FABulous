@@ -51,4 +51,4 @@ nextpnr-diko/*.twx
 nextpnr-diko/*.nlf
 nextpnr-diko/*.sdf
 
-demo
+demo*

@@ -2,7 +2,7 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
--- pragma FABulous belMap A_reg=0, B_reg=1, C_reg=2, ACC=3, signExtension=4, ACCout=5
+-- (* FABulous, BelMap, A_reg=0, B_reg=1, C_reg=2, ACC=3, signExtension=4, ACCout=5 *)
 
 entity MULADD is
     Generic ( NoConfigBits : integer := 6 );	-- has to be adjusted manually (we don't use an arithmetic parser for the value)

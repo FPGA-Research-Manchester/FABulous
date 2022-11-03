@@ -24,6 +24,7 @@ class codeGenerator(abc.ABC):
             print("OutFileName is not set")
             exit(-1)
         with open(self._outFileName, 'w') as f:
+            self._content = [i for i in self._content if i is not None]
             f.write("\n".join(self._content))
         self._content = []
 
@@ -136,7 +137,6 @@ class codeGenerator(abc.ABC):
             name (str): name of the parameter
             type (_type_): type of the parameter. Only useful with VHDL.
             value (_type_): value of the parameter. 
-            end (bool, optional): Indicate is this parameter the last parameter. Only useful with Verilog. Defaults to False.
             indentLevel (int, optional): The indentation Level. Defaults to 0.
         """
         pass
@@ -181,7 +181,6 @@ class codeGenerator(abc.ABC):
         Args:
             name (str): name of the port
             io (IO): direction of the port (input, output, inout)
-            end (bool, optional): Indicate is this port the last port. Only useful with Verilog. Defaults to False.
             indentLevel (int, optional): The indentation Level. Defaults to 0.
         """
         pass
@@ -199,7 +198,6 @@ class codeGenerator(abc.ABC):
             name (str): name of the port
             io (IO): direction of the port (input, output, inout)
             msbIndex (int): index of the MSB of the vector. Can be a string
-            end (bool, optional): Indicate is this port the last port. Only useful with Verilog. Defaults to False.
             indentLevel (int, optional): The indentation Level. Defaults to 0.
         """
         pass

@@ -1,8 +1,8 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
-use work.my_package.all;
+-- use work.my_package.all;
 
--- (* FABulous, BelMap, C_bit0=0, C_bit1=1, C_bit2=2, C_bit3=3 *)
+-- pragma FABulous belMap C_bit0=0, C_bit1=1, C_bit2=2, C_bit3=3 
 entity Config_access is
     Generic ( NoConfigBits : integer := 4 );	-- has to be adjusted manually (we don't use an arithmetic parser for the value)
     Port ( 

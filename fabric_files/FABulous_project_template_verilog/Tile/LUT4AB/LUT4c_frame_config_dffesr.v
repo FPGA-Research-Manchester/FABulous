@@ -13,7 +13,7 @@
 // limitations under the License.
 
 (*FABulous, BelMap,
-INIT_0=0,
+INIT=0,
 INIT_1=1,
 INIT_2=2,
 INIT_3=3,

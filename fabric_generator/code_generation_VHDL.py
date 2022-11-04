@@ -29,6 +29,7 @@ class VHDLWriter(codeGenerator):
         self._add("library IEEE;", indentLevel)
         self._add("use IEEE.STD_LOGIC_1164.ALL;", indentLevel)
         self._add("use IEEE.NUMERIC_STD.ALL;", indentLevel)
+        self._add("use work.my_package.all;", indentLevel)
         if package != "":
             self._add(package, indentLevel)
         self._add(f"entity {name} is", indentLevel)
@@ -115,6 +116,8 @@ class VHDLWriter(codeGenerator):
         if type(right) == list:
             self._add(f"{left} <= {' & '.join(right)};", indentLevel)
         else:
+            left = str(left).replace(":", " downto ").replace("[", "(").replace("]", ")")
+            right = str(right).replace(":", " downto ").replace("[", "(").replace("]", ")")
             self._add(f"{left} <= {right};", indentLevel)
 
     def addAssignVector(self, left, right, widthL, widthR, indentLevel=0):
@@ -143,8 +146,10 @@ class VHDLWriter(codeGenerator):
         self._add(f"Port map(", indentLevel=indentLevel + 1)
         connectPair = []
         for i in range(len(compPorts)):
+            if "[" in compPorts[i]:
+                compPorts[i] = compPorts[i].replace("[", "(").replace("]", ")").replace(":", " downto ")
             if "[" in signals[i]:
-                signals[i] = signals[i].replace("[", "(").replace("]", ")")
+                signals[i] = signals[i].replace("[", "(").replace("]", ")").replace(":", " downto ")
             connectPair.append(f"{compPorts[i]} => {signals[i]}")
 
         self._add(

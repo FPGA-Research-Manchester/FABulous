@@ -264,6 +264,7 @@ class Tile():
     withUserCLK: bool = False
     wireList: List[Wire] = field(default_factory=list)
     filePath: str = "."
+    partOfSuperTile = False
 
     # def __repr__(self):
     #     return f"\n{self.name}\n inputPorts:{self.inputs}\n outputPorts:{self.outputs}\n bels:{self.bels}\n Matrix_dir:{self.matrixDir}\n"

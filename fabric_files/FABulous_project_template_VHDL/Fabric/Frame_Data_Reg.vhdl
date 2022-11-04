@@ -5,15 +5,12 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
--- Generated from Verilog module Frame_Data_Reg (Frame_Data_Reg_template.v:1)
---   FrameBitsPerRow = 32
---   Row = 1
---   RowSelectWidth = 5
+
 entity Frame_Data_Reg is
   generic (
+    RowSelectWidth : integer := 5;
     FrameBitsPerRow : integer := 32;
-    Row : integer := 1;
-    RowSelectWidth : integer := 5
+    Row : integer := 1
   );
   port (
     CLK : in std_logic;
@@ -23,10 +20,7 @@ entity Frame_Data_Reg is
   );
 end entity; 
 
--- Generated from Verilog module Frame_Data_Reg (Frame_Data_Reg_template.v:1)
---   FrameBitsPerRow = 32
---   Row = 1
---   RowSelectWidth = 5
+
 architecture from_verilog of Frame_Data_Reg is
   signal FrameData_O_Reg : std_logic_vector(31 downto 0);
 begin

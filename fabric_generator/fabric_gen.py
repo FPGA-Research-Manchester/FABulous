@@ -335,12 +335,12 @@ class FabricGenerator:
         # declare architecture
         self.writer.addDesignDescriptionStart(f"{tile.name}_ConfigMem")
 
-        self.writer.addLogicStart()
         # instantiate latches for only the used frame bits
         for i in configMemList:
             if i.usedBitMask.count("1") > 0:
                 self.writer.addConnectionVector(
                     i.frameName, f"{i.bitsUsedInFrame}-1")
+        self.writer.addLogicStart()
 
         self.writer.addNewLine()
         self.writer.addNewLine()
@@ -359,7 +359,7 @@ class FabricGenerator:
                                                           f"ConfigBits_N[{i.configBitRanges[counter]}]"])
                     counter += 1
 
-        self.writer.addLogicEnd()
+
         self.writer.addDesignDescriptionEnd()
         self.writer.writeToFile()
 
@@ -749,16 +749,26 @@ class FabricGenerator:
                 BEL_VHDL_riles_processed.append(i.src)
                 self.writer.addComponentDeclarationForFile(i.src)
 
-        # insert switch matrix component declaration
-        # specified in the fabric csv file after the 'MATRIX' key word
-        # TODO will not work with VHDL file when matrix dir is not a VHDL file
+        # insert switch matrix and config_mem component declaration
         if isinstance(self.writer, VHDLWriter):
-            if os.path.exists(tile.matrixDir):
-                numberOfSwitchMatricesWithConfigPort += self.writer.addComponentDeclarationForFile(
-                    tile.matrixDir)
+            tileName = tile.name
+            subFolder = "."
+            if tile.partOfSuperTile:
+                tileName = tile.name.rsplit("_", 1)[0]
+                subFolder = tile.name
+
+            if os.path.exists(f"Tile/{tileName}/{subFolder}/{tile.name}_switch_matrix.vhdl"):
+                self.writer.addComponentDeclarationForFile(f"Tile/{tileName}/{subFolder}/{tile.name}_switch_matrix.vhdl")
             else:
                 raise ValueError(
-                    f"Could not find switch matrix definition for tile type {tile.name} in function GenerateTileVHDL")
+                    f"Could not find {tile.name}_switch_matrix.vhdl in Tile/{tileName}/{subFolder}/ Need to run matrix generation first")
+
+            if os.path.exists(f"Tile/{tileName}/{subFolder}/{tile.name}_ConfigMem.vhdl"):
+                self.writer.addComponentDeclarationForFile(f"Tile/{tileName}/{subFolder}/{tile.name}_ConfigMem.vhdl")
+            else:
+                raise ValueError(
+                    f"Could not find {tile.name}_ConfigMem.vhdl in Tile/{tileName}/{subFolder}/ config_mem generation first")  
+                
 
         if self.fabric.configBitMode == ConfigBitMode.FRAME_BASED and tile.globalConfigBits > 0:
             if os.path.exists(f"{tile.name}_ConfigMem.vhdl"):
@@ -798,16 +808,39 @@ class FabricGenerator:
         # however, we leave it and just use this signal as conf_data(0 downto 0) for simply touting through CONFin to CONFout
         # maybe even useful if we want to add a buffer here
 
-        if tile.globalConfigBits > 0:
-            self.writer.addConnectionVector("ConfigBits", "NoConfigBits-1", 0)
-            self.writer.addConnectionVector(
-                "ConfigBits_N", "NoConfigBits-1", 0)
+        # all the signal wire need to declare first for compatibility with VHDL
+        self.writer.addConnectionVector("ConfigBits", "NoConfigBits-1", 0)
+        self.writer.addConnectionVector(
+            "ConfigBits_N", "NoConfigBits-1", 0)
 
-            self.writer.addNewLine()
-            self.writer.addConnectionVector(
-                "FrameData_i", "FrameBitsPerRow-1", 0)
-            self.writer.addConnectionVector(
-                "FrameData_O_i", "FrameBitsPerRow-1", 0)
+        self.writer.addNewLine()
+        self.writer.addConnectionVector(
+            "FrameData_i", "FrameBitsPerRow-1", 0)
+        self.writer.addConnectionVector(
+            "FrameData_O_i", "FrameBitsPerRow-1", 0)
+
+        self.writer.addNewLine()
+        self.writer.addConnectionVector(
+            "FrameStrobe_i", "MaxFramesPerCol-1", 0)
+        self.writer.addConnectionVector(
+            "FrameStrobe_O_i", "MaxFramesPerCol-1", 0)
+        
+        added = set()
+        for port in tile.portsInfo:
+            span = abs(port.xOffset) + abs(port.yOffset)
+            if (port.sourceName, port.destinationName) in added:
+                continue
+            if span >= 2 and port.sourceName != "NULL" and port.destinationName != "NULL":
+                highBoundIndex = span*port.wireCount - 1
+                self.writer.addConnectionVector(
+                    f"{port.destinationName}_i", highBoundIndex)
+                self.writer.addConnectionVector(
+                    f"{port.sourceName}_i", highBoundIndex - port.wireCount)
+                added.add((port.sourceName, port.destinationName))
+        
+        self.writer.addLogicStart()
+
+        if tile.globalConfigBits > 0:
             self.writer.addAssignScalar("FrameData_O_i", "FrameData_i")
             self.writer.addNewLine()
             for i in range(self.fabric.frameBitsPerRow):
@@ -822,11 +855,6 @@ class FabricGenerator:
                                              [f"FrameData_O_i[{i}]", f"FrameData_O[{i}]"])
 
         # strobe is always added even when config bits are 0
-        self.writer.addNewLine()
-        self.writer.addConnectionVector(
-            "FrameStrobe_i", "MaxFramesPerCol-1", 0)
-        self.writer.addConnectionVector(
-            "FrameStrobe_O_i", "MaxFramesPerCol-1", 0)
         self.writer.addAssignScalar("FrameStrobe_O_i", "FrameStrobe_i")
         self.writer.addNewLine()
         for i in range(self.fabric.maxFramesPerCol):
@@ -847,11 +875,8 @@ class FabricGenerator:
                 continue
             if span >= 2 and port.sourceName != "NULL" and port.destinationName != "NULL":
                 highBoundIndex = span*port.wireCount - 1
-                self.writer.addConnectionVector(
-                    f"{port.destinationName}_i", highBoundIndex)
-                self.writer.addConnectionVector(
-                    f"{port.sourceName}_i", highBoundIndex - port.wireCount)
                 # using scalar assignment to connect the two vectors
+                # could replace with assign as vector, but will lose the - wireCount readability
                 self.writer.addAssignScalar(
                     f"{port.sourceName}_i[{highBoundIndex}-{port.wireCount}:0]", f"{port.destinationName}_i[{highBoundIndex}:{port.wireCount}]")
                 self.writer.addNewLine()
@@ -1160,7 +1185,11 @@ class FabricGenerator:
                     self.writer.addConnectionVector(
                         f"Tile_X{x}Y{y}_FrameData_O", "FrameBitsPerRow-1", indentLevel=1)
 
+        # for grounding userCLKo in super tile
         self.writer.addNewLine()
+        self.writer.addConnectionScalar("userCLKo", indentLevel=1)
+
+        self.writer.addLogicStart()
 
         # pair up the connection for tile instantiation
         for y, row in enumerate(superTile.tileMap):
@@ -1350,14 +1379,18 @@ class FabricGenerator:
         self.writer.addDesignDescriptionStart(fabricName)
         self.writer.addNewLine()
 
-        # TODO refactor
-        for t in self.fabric.tileDic:
-            if isinstance(self.writer, VHDLWriter):
+        if isinstance(self.writer, VHDLWriter):
+            added = set()
+            for t in self.fabric.tileDic:
                 name = t.split("_")[0]
+                if name in added:
+                    continue
                 if name not in self.fabric.superTileDic.keys():
                     self.writer.addComponentDeclarationForFile(f"Tile/{t}/{t}.vhdl")
+                    added.add(t)
                 else:
                     self.writer.addComponentDeclarationForFile(f"Tile/{name}/{name}.vhdl")
+                    added.add(name)
 
         # VHDL signal declarations
         self.writer.addComment("signal declarations", onNewLine=True, end="\n")
@@ -1751,8 +1784,8 @@ class FabricGenerator:
         self.writer.addPortScalar("s_clk", IO.INPUT, indentLevel=2)
         self.writer.addPortScalar("s_data", IO.INPUT, indentLevel=2)
         self.writer.addPortEnd()
-        self.writer.addHeaderEnd(f"{self.fabric.name}")
-        self.writer.addDesignDescriptionStart(f"{self.fabric.name}")
+        self.writer.addHeaderEnd(f"{self.fabric.name}_top")
+        self.writer.addDesignDescriptionStart(f"{self.fabric.name}_top")
 
         # all the wires/connection with in the design
         self.writer.addComment("BlockRAM ports", onNewLine=True)
@@ -1779,6 +1812,26 @@ class FabricGenerator:
         self.writer.addConnectionScalar("LocalWriteStrobe")
         self.writer.addConnectionVector("RowSelect", "RowSelectWidth-1")
 
+        if isinstance(self.writer, VHDLWriter):
+            if not os.path.exists("./Fabric/Frame_Data_Reg.vhdl"):
+                raise FileExistsError("Frame_Data_Reg.vhdl not found in Fabric folder")
+            if not os.path.exists("./Fabric/Frame_Select.vhdl"):
+                raise FileExistsError("Frame_Select.vhdl not found in Fabric folder")
+            if not os.path.exists("./Fabric/eFPGA_Config.vhdl"):
+                raise FileExistsError("Config.vhdl not found in Fabric folder")
+            if not os.path.exists("./Fabric/eFPGA.vhdl"):
+                raise FileExistsError("eFPGA.vhdl not found in Fabric folder, need to generate the eFPGA first")
+            if not os.path.exists("./Fabric/BlockRAM_1KB.vhdl"):
+                raise FileExistsError("BlockRAM_1KB.vhdl not found in Fabric folder")
+            self.writer.addComponentDeclarationForFile("./Fabric/Frame_Data_Reg.vhdl")
+            self.writer.addComponentDeclarationForFile("./Fabric/Frame_Select.vhdl")
+            self.writer.addComponentDeclarationForFile("./Fabric/eFPGA_Config.vhdl")
+            self.writer.addComponentDeclarationForFile("./Fabric/eFPGA.vhdl")
+            self.writer.addComponentDeclarationForFile("./Fabric/BlockRAM_1KB.vhdl")
+
+
+
+        self.writer.addLogicStart()
         # the config module
         self.writer.addNewLine()
         self.writer.addInstantiation(compName="eFPGA_Config",
@@ -1806,7 +1859,7 @@ class FabricGenerator:
                                          compPorts=["FrameData_I",
                                                     "FrameData_O", "RowSelect", "CLK"],
                                          signals=["LocalWriteData",
-                                                  f"FrameRegister[{row}*FrameBitsPerRow +: FrameBitsPerRow]", "RowSelect",
+                                                  f"FrameRegister[{row}*FrameBitsPerRow+FrameBitsPerRow-1:{row}*FrameBitsPerRow]", "RowSelect",
                                                   "CLK"],
                                          paramPorts=["FrameBitsPerRow",
                                                      "RowSelectWidth", "Row"],
@@ -1820,7 +1873,7 @@ class FabricGenerator:
                                          compPorts=["FrameStrobe_I",
                                                     "FrameStrobe_O", "FrameSelect", "FrameStrobe"],
                                          signals=["FrameAddressRegister[MaxFramesPerCol-1:0]",
-                                                  f"FrameSelect[{col}*MaxFramesPerCol +: MaxFramesPerCol]",
+                                                  f"FrameSelect[{col}*MaxFramesPerCol+MaxFramesPerCol-1:{col}*MaxFramesPerCol]",
                                                   "FrameAddressRegister[FrameBitsPerRow-1:FrameBitsPerRow-FrameSelectWidth]",
                                                   "LongFrameStrobe"],
                                          paramPorts=["MaxFramesPerCol",
@@ -1941,8 +1994,12 @@ class FabricGenerator:
                                          compInsName=f"Inst_BlockRAM_{i}",
                                          compPorts=portList,
                                          signals=signal)
-        self.writer.addAssignScalar(
-            "FrameData", ["32'h12345678", "FrameRegister", "32'h12345678"])
+        if isinstance(self.writer, VHDLWriter):
+            self.writer.addAssignScalar(
+            "FrameData", ['X"12345678"', "FrameRegister", 'X"12345678"'])
+        else:
+            self.writer.addAssignScalar(
+                "FrameData", ["32'h12345678", "FrameRegister", "32'h12345678"])
         self.writer.addDesignDescriptionEnd()
         self.writer.writeToFile()
 

@@ -2,8 +2,8 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
-Library UNISIM;
-use UNISIM.vcomponents.all;
+-- Library UNISIM;
+-- use UNISIM.vcomponents.all;
 
 
 entity IO_1_bidirectional_frame_config_pass is

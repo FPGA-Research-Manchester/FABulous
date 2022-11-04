@@ -12,7 +12,7 @@ entity bitbang is
   port (
     active : out std_logic;
     clk : in std_logic;
-    data : out unsigned(31 downto 0);
+    data : out std_logic_vector(31 downto 0);
     s_clk : in std_logic;
     s_data : in std_logic;
     strobe : out std_logic
@@ -24,14 +24,14 @@ end entity;
 --   on_pattern = 64177
 architecture from_verilog of bitbang is
   signal active_Reg : std_logic;
-  signal data_Reg : unsigned(31 downto 0);
+  signal data_Reg : std_logic_vector(31 downto 0);
   signal strobe_Reg : std_logic;
   signal local_strobe : std_logic;  -- Declared at bitbang.v:17
   signal old_local_strobe : std_logic;  -- Declared at bitbang.v:18
-  signal s_clk_sample : unsigned(3 downto 0);  -- Declared at bitbang.v:12
-  signal s_data_sample : unsigned(3 downto 0);  -- Declared at bitbang.v:11
-  signal serial_control : unsigned(15 downto 0);  -- Declared at bitbang.v:15
-  signal serial_data : unsigned(31 downto 0);  -- Declared at bitbang.v:14
+  signal s_clk_sample : std_logic_vector(3 downto 0);  -- Declared at bitbang.v:12
+  signal s_data_sample : std_logic_vector(3 downto 0);  -- Declared at bitbang.v:11
+  signal serial_control : std_logic_vector(15 downto 0);  -- Declared at bitbang.v:15
+  signal serial_data : std_logic_vector(31 downto 0);  -- Declared at bitbang.v:14
 begin
   active <= active_Reg;
   data <= data_Reg;

@@ -208,6 +208,8 @@ def parseFabricCSV(fileName: str) -> Fabric:
 
             for j in line:
                 if j in tileDic:
+                    # mark the tile as part of super tile
+                    tileDic[j].partOfSuperTile = True
                     t = deepcopy(tileDic[j])
                     row.append(t)
                     if t not in tiles:

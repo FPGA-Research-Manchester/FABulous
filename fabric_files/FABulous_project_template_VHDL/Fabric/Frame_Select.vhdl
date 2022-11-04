@@ -5,15 +5,12 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
--- Generated from Verilog module Frame_Select (Frame_Select_template.v:1)
---   Col = 18
---   FrameSelectWidth = 5
---   MaxFramesPerCol = 20
+
 entity Frame_Select is
   generic (
-    Col : integer := 18;
     FrameSelectWidth : integer := 5;
-    MaxFramesPerCol : integer := 20
+    MaxFramesPerCol : integer := 20;
+    Col : integer := 18
   );
   port (
     FrameSelect : in std_logic_vector(FrameSelectWidth-1 downto 0);
@@ -23,10 +20,7 @@ entity Frame_Select is
   );
 end entity; 
 
--- Generated from Verilog module Frame_Select (Frame_Select_template.v:1)
---   Col = 18
---   FrameSelectWidth = 5
---   MaxFramesPerCol = 20
+
 architecture from_verilog of Frame_Select is
   signal FrameStrobe_O_Reg : std_logic_vector(19 downto 0);
 begin

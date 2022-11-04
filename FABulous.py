@@ -355,8 +355,6 @@ To run the complete FABulous flow with the default project, run the following co
                     # Gen tile
                     logger.info(f"Generating subtile for tile {t}")
                     logger.info(f"Generating subtile {st}")
-                    logger.info(
-                        f"Output file: {self.pathToCSVFile}/Tile/{t}/{st}/{st}.{self.extension}")
                     self.fabricGen.setWriterOutputFile(
                         f"{self.pathToCSVFile}/Tile/{t}/{st}/{st}.{self.extension}")
                     self.fabricGen.genTile(st)

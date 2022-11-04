@@ -59,13 +59,8 @@ architecture Behavior of fab_tb is
         s_clk : in std_logic;
         s_data : in std_logic;
         SelfWriteData : in std_logic_vector(31 downto 0);
-        SelfWriteStrobe : in std_logic;
-
-        FAB2RAM_A : out std_logic_vector(NumberOfRows * 4 * 2 - 1 downto 0);
-        FAB2RAM_C : out std_logic_vector(NumberOfRows * 4 - 1 downto 0);
-        FAB2RAM_D : out std_logic_vector(NumberOfRows * 4 * 4 -1 downto 0);
-        RAM2FAB_D : in std_logic_vector( NumberOfRows * 4 * 4 - 1 downto 0);
-        Config_accessC : out std_logic_vector(63 downto 0)
+        SelfWriteStrobe : in std_logic
+        
     );
     end component; 
 
@@ -161,13 +156,8 @@ begin
       ComActive => ComActive,
       ReceiveLED => ReceiveLED,
       s_clk => s_clk,
-      s_data => s_data,
-
-      FAB2RAM_A => Open,
-      FAB2RAM_C => Open,
-      FAB2RAM_D => Open,
-      RAM2FAB_D => (others => '0'),
-      Config_accessC => Open
+      s_data => s_data
+      
     );
 
     init_top: top 

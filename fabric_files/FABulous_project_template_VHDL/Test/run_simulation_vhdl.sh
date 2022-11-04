@@ -13,10 +13,18 @@ MAX_BITBYTES=16384
 python3 makehex.py $BITSTREAM $MAX_BITBYTES bitstream.hex
 
 $GHDL -a $FLAG ../Fabric/my_lib.vhdl
-$GHDL -e $FLAG LHD1 
 $GHDL -e $FLAG LHQD1 
 $GHDL -e $FLAG MUX4PTv4 
 $GHDL -e $FLAG MUX16PTv2
+$GHDL -e $FLAG cus_mux161
+$GHDL -e $FLAG cus_mux41
+$GHDL -e $FLAG cus_mux161_buf
+$GHDL -e $FLAG cus_mux41_buf
+$GHDL -e $FLAG cus_mux81
+$GHDL -e $FLAG my_mux2
+$GHDL -e $FLAG cus_mux81_buf
+$GHDL -e $FLAG my_buf
+$GHDL -e $FLAG clk_buf
 
 $GHDL -a $FLAG $VHDL/LUT4AB/LUT4AB_switch_matrix.vhdl \
               $VHDL/LUT4AB/LUT4AB_ConfigMem.vhdl \
@@ -50,6 +58,10 @@ $GHDL -a $FLAG $VHDL/DSP/DSP_bot/DSP_bot_switch_matrix.vhdl \
               $VHDL/DSP/DSP_bot/MULADD.vhdl \
               $VHDL/DSP/DSP_bot/DSP_bot.vhdl
 
+$GHDL -a $FLAG $VHDL/DSP/DSP_top/DSP_top.vhdl \
+                $VHDL/DSP/DSP_bot/DSP_bot.vhdl \
+                $VHDL/DSP/DSP.vhdl
+
 $GHDL -a $FLAG $VHDL/N_term_DSP/N_term_DSP_switch_matrix.vhdl \
               $VHDL/N_term_DSP/N_term_DSP_ConfigMem.vhdl \
               $VHDL/N_term_DSP/N_term_DSP.vhdl
@@ -82,17 +94,19 @@ $GHDL -a $FLAG $VHDL/S_term_single2/S_term_single2_switch_matrix.vhdl \
               $VHDL/S_term_single2/S_term_single2_ConfigMem.vhdl \
               $VHDL/S_term_single2/S_term_single2.vhdl
 
-
 $GHDL -a $FLAG ../Fabric/eFPGA_top.vhdl \
               ../Fabric/config_UART.vhdl\
               ../Fabric/bitbang.vhdl\
-              ../Fabric/Config.vhdl \
+              ../Fabric/eFPGA_Config.vhdl \
               ../Fabric/ConfigFSM.vhdl \
               ../Fabric/Frame_Data_Reg.vhdl \
               ../Fabric/Frame_Select.vhdl \
-              ../Fabric/fabric.vhdl
+              ../Fabric/BlockRAM_1KB.vhdl \
+              ../Fabric/eFPGA.vhdl
 
 $GHDL -a $FLAG ../Fabric/eFPGA_top.vhdl ./test_design/counter.vhdl ./fabulous_tb.vhdl
+
+
 $GHDL -e $FLAG fab_tb
 $GHDL -r $FLAG fab_tb --assert-level=error --ieee-asserts=disable 
 

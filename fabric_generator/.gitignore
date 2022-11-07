@@ -10,3 +10,4 @@ vhdl_output
 npnroutput
 vproutput
 list_files
+__pycache__

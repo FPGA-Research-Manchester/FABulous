@@ -124,33 +124,30 @@ class VHDLWriter(codeGenerator):
         self._add(
             f"{left} <= {right}( {widthL} downto {widthR} );", indentLevel)
 
-    def addInstantiation(self, compName, compInsName, compPorts, signals, paramPorts=[], paramSignals=[], indentLevel=0):
-        if len(compPorts) != len(signals):
-            raise ValueError(
-                f"Number of ports and signals do not match: {compPorts} != {signals}")
-        if len(paramPorts) != len(paramSignals):
-            raise ValueError(
-                f"Number of ports and signals do not match: {paramPorts} != {paramSignals}")
-
+    def addInstantiation(self, compName, compInsName, portPairs, paramPairs=[], indentLevel=0):
         self._add(f"{compInsName} : {compName}", indentLevel=indentLevel)
-        if paramPorts:
+        if paramPairs:
             connectPair = []
             self._add(f"generic map (", indentLevel=indentLevel+1)
-            for i in range(len(paramPorts)):
+            for i in paramPairs:
                 connectPair.append(
-                    f"{paramPorts[i]} => {paramSignals[i]}")
+                    f"{i[0]} => {i[1]}")
             self._add(
                 (",\n"f"{' ':<{4*(indentLevel + 2)}}").join(connectPair), indentLevel=indentLevel + 2)
             self._add(f")", indentLevel=indentLevel+1)
 
         self._add(f"Port map(", indentLevel=indentLevel + 1)
         connectPair = []
-        for i in range(len(compPorts)):
-            if "[" in compPorts[i]:
-                compPorts[i] = compPorts[i].replace("[", "(").replace("]", ")").replace(":", " downto ")
-            if "[" in signals[i]:
-                signals[i] = signals[i].replace("[", "(").replace("]", ")").replace(":", " downto ")
-            connectPair.append(f"{compPorts[i]} => {signals[i]}")
+        for i in portPairs:
+            if "[" in i[0]:
+                port = i[0].replace("[", "(").replace("]", ")").replace(":", " downto ")
+            else:
+                port = i[0]
+            if "[" in i[1]:
+                signal = i[1].replace("[", "(").replace("]", ")").replace(":", " downto ")
+            else:
+                signal = i[1]
+            connectPair.append(f"{port} => {signal}")
 
         self._add(
             (",\n"f"{' ':<{4*(indentLevel + 2)}}").join(connectPair), indentLevel=indentLevel + 2)

@@ -5,6 +5,7 @@ BITSTREAM=test_design/${DESIGN}.bin
 VERILOG=../../fabric_generator/verilog_output
 MAX_BITBYTES=16384
 
+rm -rf tmp
 mkdir tmp
 for i in $(find ../Tile -type f -name "*.v") $(find ../Fabric -type f -name "*.v")
 do 

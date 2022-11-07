@@ -1,5 +1,5 @@
 import abc
-from typing import List
+from typing import List, Tuple
 from fabric_generator.fabric import Bel, IO, ConfigBitMode
 
 
@@ -309,7 +309,7 @@ class codeGenerator(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def addInstantiation(self, compName: str, compInsName: str, compPorts: List[str], signals: List[str], paramPorts: List[str] = [], paramSignals: List[str] = [], indentLevel=0):
+    def addInstantiation(self, compName: str, compInsName: str, portsPairs: List[Tuple[str, str]], paramPairs: List[Tuple[str, str]] = [], indentLevel=0):
         """
         Add an instantiation. This will line up the ports and signals. So ports[0] will have signals[0] and so on. This is also the same case for paramPorts and paramSignals.
 

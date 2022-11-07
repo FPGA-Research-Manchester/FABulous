@@ -90,17 +90,9 @@ class VerilogWriter(codeGenerator):
     def addLogicEnd(self, indentLevel=0):
         pass
 
-    def addInstantiation(self, compName, compInsName, compPorts, signals, paramPorts=[], paramSignals=[], indentLevel=0):
-        if len(compPorts) != len(signals):
-            raise ValueError(
-                f"Number of ports and signals do not match: {compPorts} != {signals}")
-        if len(paramPorts) != len(paramSignals):
-            raise ValueError(
-                f"Number of ports and signals do not match: {paramPorts} != {paramSignals}")
-
-        if paramPorts:
-            port = [f".{paramPorts[i]}({paramSignals[i]})" for i in range(
-                len(paramPorts))]
+    def addInstantiation(self, compName, compInsName, portPairs, paramPairs=[], indentLevel=0):
+        if paramPairs:
+            port = [f".{i[0]}({i[1]})" for i in paramPairs]
             self._add(
                 f"{compName}", indentLevel=indentLevel)
             self._add("#(", indentLevel=indentLevel+1)
@@ -113,10 +105,12 @@ class VerilogWriter(codeGenerator):
             self._add(f"{compName} {compInsName} (", indentLevel=indentLevel)
 
         connectPair = []
-        for i in range(len(compPorts)):
-            if "(" in signals[i]:
-                signals[i] = signals[i].replace("(", "[").replace(")", "]")
-            connectPair.append(f".{compPorts[i]}({signals[i]})")
+        for i in portPairs:
+            if "(" in i[1]:
+                tmp = i[1].replace("(", "[").replace(")", "]")
+            else:
+                tmp = i[1]
+            connectPair.append(f".{i[0]}({tmp})")
 
         self._add(
             (",\n"f"{' ':<{4*(indentLevel + 1)}}").join(connectPair), indentLevel=indentLevel + 1)

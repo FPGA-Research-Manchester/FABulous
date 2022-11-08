@@ -814,12 +814,11 @@ class FabricGenerator:
             "ConfigBits_N", "NoConfigBits-1", 0)
 
         self.writer.addNewLine()
+        self.writer.addComment("Connection for outgoing wires", onNewLine=True)
         self.writer.addConnectionVector(
             "FrameData_i", "FrameBitsPerRow-1", 0)
         self.writer.addConnectionVector(
             "FrameData_O_i", "FrameBitsPerRow-1", 0)
-
-        self.writer.addNewLine()
         self.writer.addConnectionVector(
             "FrameStrobe_i", "MaxFramesPerCol-1", 0)
         self.writer.addConnectionVector(
@@ -838,6 +837,7 @@ class FabricGenerator:
                     f"{port.sourceName}_i", highBoundIndex - port.wireCount)
                 added.add((port.sourceName, port.destinationName))
         
+        self.writer.addNewLine()
         self.writer.addLogicStart()
 
         if tile.globalConfigBits > 0:
@@ -1306,9 +1306,6 @@ class FabricGenerator:
                         ports += ["FrameData", "FrameData_O",
                                   "FrameStrobe", "FrameStrobe_O"]
 
-                    ports = list(dict.fromkeys(ports))
-                    combine = list(dict.fromkeys(combine))
-
                     assert len(ports) == len(combine)
                     self.writer.addInstantiation(compName=tile.name,
                                                  compInsName=f"Tile_X{x}Y{y}_{tile.name}",
@@ -1600,8 +1597,6 @@ class FabricGenerator:
                         tilePortList.append("FrameStrobe")
                         tilePortList.append("FrameStrobe_O")
 
-                # remove all the duplicated edge tile
-                tileLocationOffset = list(dict.fromkeys(tileLocationOffset))
                 signal = []
                 # use the offset to find all the related tile input, output signal
                 # if is a normal tile then the offset is (0, 0)
@@ -1696,14 +1691,17 @@ class FabricGenerator:
                             elif (x+i-1, y+j) not in superTileLoc:
                                 signal.append(f"Tile_X{x+i}Y{y+j}_FrameData_O")
 
+                    for (i, j) in tileLocationOffset:
                         # frameStrobe signal
-                        if all(self.fabric.tile[yy][x] is None for yy in range(y+1, len(self.fabric.tile))): # top edge
+                        if y + 1 >= self.fabric.numberOfRows :
+                            signal.append(f"Tile_X{x}_FrameStrobe")
+                        elif y +1 < self.fabric.numberOfRows and self.fabric.tile[y+1][x] == None:
                             signal.append(f"Tile_X{x}_FrameStrobe")
                         elif (x+i, y+j+1) not in superTileLoc:
-                            signal.append(f"Tile_X{x+i}Y{y+j+1}_FrameStrobe_O")
+                            signal.append(f"Tile_X{x+i}Y{y+j+1}_FrameStrobe_O") 
 
                         # frameStrobe_O signal
-                        if (x+i, y+j+1) not in superTileLoc:
+                        if (x+i, y+j-1) not in superTileLoc:
                             signal.append(f"Tile_X{x+i}Y{y+j}_FrameStrobe_O")
 
                 name = ""
@@ -1712,8 +1710,6 @@ class FabricGenerator:
                 else:
                     name = tile.name
 
-                tilePortList = list(dict.fromkeys(tilePortList))
-                signal = list(dict.fromkeys(signal))
                 assert len(tilePortList) == len(signal)
                 self.writer.addInstantiation(compName=name,
                                              compInsName=f"Tile_X{x}Y{y}_{name}",
@@ -1728,7 +1724,7 @@ class FabricGenerator:
 
         # header
         numberOfRows = self.fabric.numberOfRows - 2
-        numberOfColumns = self.fabric.numberOfColumns - 2
+        numberOfColumns = self.fabric.numberOfColumns
         self.writer.addHeader(f"{self.fabric.name}_top")
         self.writer.addParameterStart(indentLevel=1)
         self.writer.addParameter("include_eFPGA", "integer", 1, indentLevel=2)

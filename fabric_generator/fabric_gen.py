@@ -1275,22 +1275,22 @@ class FabricGenerator:
                     ports = []
                     # all the input port
                     ports += [i.destinationName for i in tile.getNorthPorts()
-                              if i.destinationName != "NULL"]
+                              if i.destinationName != "NULL" and i.inOut == IO.INPUT]
                     ports += [i.destinationName for i in tile.getEastPorts()
-                              if i.destinationName != "NULL"]
+                              if i.destinationName != "NULL" and i.inOut == IO.INPUT]
                     ports += [i.destinationName for i in tile.getSouthPorts()
-                              if i.destinationName != "NULL"]
+                              if i.destinationName != "NULL" and i.inOut == IO.INPUT]
                     ports += [i.destinationName for i in tile.getWestPorts()
-                              if i.destinationName != "NULL"]
+                              if i.destinationName != "NULL" and i.inOut == IO.INPUT]
                     # all the output port
                     ports += [i.sourceName for i in tile.getNorthPorts()
-                              if i.sourceName != "NULL"]
+                              if i.sourceName != "NULL" and i.inOut == IO.OUTPUT]
                     ports += [i.sourceName for i in tile.getEastPorts()
-                              if i.sourceName != "NULL"]
+                              if i.sourceName != "NULL" and i.inOut == IO.OUTPUT]
                     ports += [i.sourceName for i in tile.getSouthPorts()
-                              if i.sourceName != "NULL"]
+                              if i.sourceName != "NULL" and i.inOut == IO.OUTPUT]
                     ports += [i.sourceName for i in tile.getWestPorts()
-                              if i.sourceName != "NULL"]
+                              if i.sourceName != "NULL" and i.inOut == IO.OUTPUT]
 
                     for i in superTile.tiles:
                         for b in i.bels:
@@ -1306,6 +1306,11 @@ class FabricGenerator:
                         ports += ["FrameData", "FrameData_O",
                                   "FrameStrobe", "FrameStrobe_O"]
 
+                    # remove duplicates port since port list have repeated name 
+                    # entry with different inout direction   
+                    # TODO: refactor so the list will not repeat          
+                    ports = list(dict.fromkeys(ports))
+                    combine = list(dict.fromkeys(combine))
                     assert len(ports) == len(combine)
                     self.writer.addInstantiation(compName=tile.name,
                                                  compInsName=f"Tile_X{x}Y{y}_{tile.name}",

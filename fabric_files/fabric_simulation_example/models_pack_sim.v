@@ -179,6 +179,24 @@ module cus_mux41 (A0, A1, A2, A3, S0, S0N, S1, S1N, X);
 	end
 endmodule
 
+module cus_mux41 (A0, A1, A2, A3, S0, S0N, S1, S1N, X);
+	input A0;
+	input A1;
+	input A2;
+	input A3;
+	input S0;
+	input S0N;
+	input S1;
+	input S1N;
+	output X; 
+	reg X;
+	wire [1:0] SEL;
+
+	wire B0 = S0 ? A1 : A0;
+	wire B1 = S0 ? A3 : A2;
+	assign X =  S1 ? B1 : B0;
+endmodule
+
 module cus_mux41_buf (A0, A1, A2, A3, S0, S0N, S1, S1N, X);
 	input A0;
 	input A1;
@@ -189,45 +207,19 @@ module cus_mux41_buf (A0, A1, A2, A3, S0, S0N, S1, S1N, X);
 	input S1;
 	input S1N;
 	output X; 
-	reg mux_out;
-	wire [1:0] SEL;
-	wire S0i,S1i;
-	assign S0i = S0 & ~S0N;
-	assign S1i = S1 & ~S1N;
 
-	assign SEL = {S1i,S0i};
-	assign #0.08 X = mux_out;
-	always @(*) 
-	begin
-		case(SEL)
-			2'b00:mux_out = A0;
-			2'b01:mux_out = A1;
-			2'b10:mux_out = A2;
-			2'b11:mux_out = A3;
-			default:mux_out = 1'b0;
-		endcase
-	end
+	wire B0 = S0 ? A1 : A0;
+	wire B1 = S0 ? A3 : A2;
+	assign X =  S1 ? B1 : B0;
 endmodule
 
 module my_mux2 (A0, A1, S, X);
 	input A0;
 	input A1;
 	input S;
-	output X; 
-	reg mux_out;
-	wire SEL;
-
-	assign SEL = S;
-	assign #0.08 X = mux_out;
-	always @(*) 
-	begin
-		case(SEL)
-			1'b0:mux_out = A0; //#0.08 
-			1'b1:mux_out = A1; //#0.08 
-			default:mux_out = 1'b0;
-		endcase
-	end
-endmodule 
+	output X;
+	assign X = S ? A1 : A0;
+endmodule
 
 module cus_mux81 (A0, A1, A2, A3, A4, A5, A6, A7, S0, S0N, S1, S1N, S2, S2N, X);
 	input A0;

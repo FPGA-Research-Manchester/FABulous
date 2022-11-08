@@ -160,17 +160,9 @@ module cus_mux41 (A0, A1, A2, A3, S0, S0N, S1, S1N, X);
 	reg X;
 	wire [1:0] SEL;
 
-	assign SEL = {S1,S0};
-	always @(*) 
-	begin
-		case(SEL)
-			2'b00:X = A0;
-			2'b01:X = A1;
-			2'b10:X = A2;
-			2'b11:X = A3;
-			default:X = 1'b0;
-		endcase
-	end
+	wire B0 = S0 ? A1 : A0;
+	wire B1 = S0 ? A3 : A2;
+	assign X =  S1 ? B1 : B0;
 endmodule
 
 module cus_mux41_buf (A0, A1, A2, A3, S0, S0N, S1, S1N, X);
@@ -183,40 +175,19 @@ module cus_mux41_buf (A0, A1, A2, A3, S0, S0N, S1, S1N, X);
 	input S1;
 	input S1N;
 	output X; 
-	reg X;
-	wire [1:0] SEL;
 
-	assign SEL = {S1,S0};
-	always @(*) 
-	begin
-		case(SEL)
-			2'b00:X = A0;
-			2'b01:X = A1;
-			2'b10:X = A2;
-			2'b11:X = A3;
-			default:X = 1'b0;
-		endcase
-	end
+	wire B0 = S0 ? A1 : A0;
+	wire B1 = S0 ? A3 : A2;
+	assign X =  S1 ? B1 : B0;
 endmodule
 
 module my_mux2 (A0, A1, S, X);
 	input A0;
 	input A1;
 	input S;
-	output X; 
-	reg X;
-	wire SEL;
-
-	assign SEL = S;
-	always @(*) 
-	begin
-		case(SEL)
-			1'b0:X = A0;
-			1'b1:X = A1;
-			default:X = 1'b0;
-		endcase
-	end
-endmodule 
+	output X;
+	assign X = S ? A1 : A0;
+endmodule
 
 module cus_mux81 (A0, A1, A2, A3, A4, A5, A6, A7, S0, S0N, S1, S1N, S2, S2N, X);
 	input A0;

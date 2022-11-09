@@ -8,12 +8,12 @@ use ieee.numeric_std.all;
 use std.textio.all;
 
 -- Generated from Verilog module clk_buf (fabulous_tb.v:83)
-entity clk_buf is
-  port (
-    A : in std_logic;
-    X : out std_logic
-  );
-end entity; 
+-- entity clk_buf is
+--   port (
+--     A : in std_logic;
+--     X : out std_logic
+--   );
+-- end entity; 
 
 -- Generated from Verilog module clk_buf (fabulous_tb.v:83)
 architecture Behavior of clk_buf is

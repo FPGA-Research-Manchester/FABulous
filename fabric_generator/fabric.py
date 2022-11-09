@@ -79,9 +79,9 @@ class Port():
         else:
             wireCount = self.wireCount
         if not indexed:
-            return [f"{self.name}{i}" for i in range(wireCount)]
+            return [f"{self.name}{i}" for i in range(wireCount) if self.name != "NULL"]
         else:
-            return [f"{self.name}[{i}]" for i in range(wireCount)]
+            return [f"{self.name}[{i}]" for i in range(wireCount) if self.name != "NULL"]
 
     def expandPortInfoByNameTop(self, indexed=False) -> List[str]:
         if self.sourceName == "NULL" or self.destinationName == "NULL":
@@ -93,9 +93,9 @@ class Port():
         wireCount = (abs(self.xOffset)+abs(self.yOffset)) * self.wireCount
 
         if not indexed:
-            return [f"{self.name}{i}" for i in range(startIndex, wireCount)]
+            return [f"{self.name}{i}" for i in range(startIndex, wireCount) if self.name != "NULL"]
         else:
-            return [f"{self.name}[{i}]" for i in range(startIndex, wireCount)]
+            return [f"{self.name}[{i}]" for i in range(startIndex, wireCount) if self.name != "NULL"]
 
     def expandPortInfo(self, mode="SwitchMatrix") -> Tuple[List[str], List[str]]:
         """
@@ -290,9 +290,6 @@ class Tile():
     filePath: str = "."
     partOfSuperTile = False
 
-    # def __repr__(self):
-    #     return f"\n{self.name}\n inputPorts:{self.inputs}\n outputPorts:{self.outputs}\n bels:{self.bels}\n Matrix_dir:{self.matrixDir}\n"
-
     def __init__(self, name: str, ports: List[Port], bels: List[Bel], matrixDir: str, userCLK: bool, configBit: int = 0) -> None:
         self.name = name
         self.portsInfo = ports
@@ -323,17 +320,17 @@ class Tile():
     def getSouthSidePorts(self) -> List[Port]:
         return [p for p in self.portsInfo if p.sideOfTile == Side.SOUTH and p.name != "NULL"]
 
-    def getNorthPorts(self) -> List[Port]:
-        return list(dict.fromkeys([p for p in self.portsInfo if p.wireDirection == Direction.NORTH]))
+    def getNorthPorts(self, io: IO) -> List[Port]:
+        return [p for p in self.portsInfo if p.wireDirection == Direction.NORTH and p.name != "NULL" and p.inOut == io]
 
-    def getSouthPorts(self) -> List[Port]:
-        return list(dict.fromkeys([p for p in self.portsInfo if p.wireDirection == Direction.SOUTH]))
+    def getSouthPorts(self, io: IO) -> List[Port]:
+        return [p for p in self.portsInfo if p.wireDirection == Direction.SOUTH and p.name != "NULL" and p.inOut == io]
 
-    def getEastPorts(self) -> List[Port]:
-        return list(dict.fromkeys([p for p in self.portsInfo if p.wireDirection == Direction.EAST]))
+    def getEastPorts(self, io: IO) -> List[Port]:
+        return [p for p in self.portsInfo if p.wireDirection == Direction.EAST and p.name != "NULL" and p.inOut == io]
 
-    def getWestPorts(self) -> List[Port]:
-        return list(dict.fromkeys([p for p in self.portsInfo if p.wireDirection == Direction.WEST]))
+    def getWestPorts(self, io: IO) -> List[Port]:
+        return [p for p in self.portsInfo if p.wireDirection == Direction.WEST and p.name != "NULL" and p.inOut == io]
 
     def getTileInputNames(self) -> List[str]:
         return [p.destinationName for p in self.portsInfo if p.destinationName != "NULL" and p.wireDirection != Direction.JUMP]

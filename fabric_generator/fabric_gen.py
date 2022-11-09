@@ -1420,13 +1420,13 @@ class FabricGenerator:
                 # get all the ports of the tile. If is a super tile, we loop over the
                 # tile map and find all the offset of the subtile, and all their related
                 # ports.
-                for k, v in self.fabric.superTileDic.items():
-                    if tile.name in [i.name for i in v.tiles]:
-                        if tile.name == "":
-                            continue
-                        superTile = self.fabric.superTileDic[k]
-                        break
-                if self.fabric.superTileEnable and superTile:
+                if tile.partOfSuperTile:
+                    for k, v in self.fabric.superTileDic.items():
+                        if tile.name in [i.name for i in v.tiles]:
+                            superTile = self.fabric.superTileDic[k]
+                            break
+
+                if superTile:
                     portsAround = superTile.getPortsAroundTile()
                     cord = [(i.split(",")[0], i.split(",")[1])
                             for i in list(portsAround.keys())]
@@ -1434,139 +1434,185 @@ class FabricGenerator:
                         tileLocationOffset.append((int(i), int(j)))
                         instantiatedPosition.append((x+int(i), y+int(j)))
                         superTileLoc.append((x+int(i), y+int(j)))
-
-                    cord = list(zip(cord, portsAround.values()))
-                    # all input port of the tile
-                    for (i, j), around in cord:
-                        for ports in around:
-                            for port in ports:
-                                if port.inOut == IO.INPUT and port.sourceName != "NULL" and port.destinationName != "NULL":
-                                    tilePortList.append(
-                                        f"Tile_X{i}Y{j}_{port.name}")
-
-                    # all output port of the tile
-                    for (i, j), around in cord:
-                        for ports in around:
-                            for port in ports:
-                                if port.inOut == IO.OUTPUT and port.sourceName != "NULL" and port.destinationName != "NULL":
-                                    tilePortList.append(
-                                        f"Tile_X{i}Y{j}_{port.name}")
-
-                    for t in superTile.tiles:
-                        for b in t.bels:
-                            for p in b.externalInput:
-                                tilePortList.append(p)
-                            for p in b.externalOutput:
-                                tilePortList.append(p)
-                            for p in b.sharedPort:
-                                if "UserCLK" not in p:
-                                    tilePortList.append(p[0])
-
-                    withUserCLK = False
-                    for t in superTile.tiles:
-                        withUserCLK |= t.withUserCLK
-                    if withUserCLK:
-                        tilePortList.append("UserCLK")
-                    else:
-                        tilePortList.append("UserCLK")
-                        tilePortList.append("UserCLKo")
-
-                    if self.fabric.configBitMode == ConfigBitMode.FRAME_BASED:
-                        # frame data port
-                        for j, row in enumerate(superTile.tileMap):
-                            for i, _ in enumerate(row):
-                                if superTile.tileMap[j][i] == None:
-                                    continue
-                                if i - 1 < 0 or superTile.tileMap[j][i-1] == None:
-                                    tilePortList.append(
-                                        f"Tile_X{i}Y{j}_FrameData")
-                                if i + 1 >= len(superTile.tileMap[0]) or superTile.tileMap[y][i+1] == None:
-                                    tilePortList.append(
-                                        f"Tile_X{i}Y{j}_FrameData_O")
-
-                        # frame strobe port
-                        for j, row in enumerate(superTile.tileMap):
-                            for i, _ in enumerate(row):
-                                if superTile.tileMap[j][i] == None:
-                                    continue
-                                if j + 1 >= len(superTile.tileMap) or superTile.tileMap[j+1][i] == None:
-                                    tilePortList.append(
-                                        f"Tile_X{i}Y{j}_FrameStrobe")
-                                if j - 1 < 0 or superTile.tileMap[j-1][i] == None:
-                                    tilePortList.append(
-                                        f"Tile_X{i}Y{j}_FrameStrobe_O")
                 else:
-                    instantiatedPosition.append((x, y))
                     tileLocationOffset.append((0, 0))
-                    tilePortsInfo.append((tile.getNorthSidePorts(), 0, 0))
-                    tilePortsInfo.append((tile.getEastSidePorts(), 0, 0))
-                    tilePortsInfo.append((tile.getSouthSidePorts(), 0, 0))
-                    tilePortsInfo.append((tile.getWestSidePorts(), 0, 0))
 
-                    # all the input port of a single normal tile
-                    for port, i, j in tilePortsInfo:
-                        for p in port:
-                            if p.name != "NULL" and p.inOut == IO.INPUT:
-                                tilePortList.append(f"{p.name}")
+                # if self.fabric.superTileEnable and superTile:
+                #     portsAround = superTile.getPortsAroundTile()
+                #     cord = [(i.split(",")[0], i.split(",")[1])
+                #             for i in list(portsAround.keys())]
+                #     for (i, j) in cord:
+                #         tileLocationOffset.append((int(i), int(j)))
+                #         instantiatedPosition.append((x+int(i), y+int(j)))
+                #         superTileLoc.append((x+int(i), y+int(j)))
 
-                    # all the output port of a single normal tile
-                    for port, i, j in tilePortsInfo:
-                        for p in port:
-                            if p.name != "NULL" and p.inOut == IO.OUTPUT:
-                                tilePortList.append(f"{p.name}")
+                #     cord = list(zip(cord, portsAround.values()))
+                #     # all input port of the tile
+                #     for (i, j), around in cord:
+                #         for ports in around:
+                #             for port in ports:
+                #                 if port.inOut == IO.INPUT and port.sourceName != "NULL" and port.destinationName != "NULL":
+                #                     tilePortList.append(
+                #                         f"Tile_X{i}Y{j}_{port.name}")
 
-                    for b in tile.bels:
-                        for p in b.externalInput:
-                            tilePortList.append(p)
-                        for p in b.externalOutput:
-                            tilePortList.append(p)
-                        for p in b.sharedPort:
-                            if "UserCLK" not in p[0]:
-                                tilePortList.append(p[0])
+                #     # all output port of the tile
+                #     for (i, j), around in cord:
+                #         for ports in around:
+                #             for port in ports:
+                #                 if port.inOut == IO.OUTPUT and port.sourceName != "NULL" and port.destinationName != "NULL":
+                #                     tilePortList.append(
+                #                         f"Tile_X{i}Y{j}_{port.name}")
 
-                    if superTile:
-                        tilePortList.append("UserCLK")
-                    else:
-                        tilePortList.append("UserCLK")
-                        tilePortList.append("UserCLKo")
+                #     for t in superTile.tiles:
+                #         for b in t.bels:
+                #             for p in b.externalInput:
+                #                 tilePortList.append(p)
+                #             for p in b.externalOutput:
+                #                 tilePortList.append(p)
+                #             for p in b.sharedPort:
+                #                 if "UserCLK" not in p:
+                #                     tilePortList.append(p[0])
 
-                    if self.fabric.configBitMode == ConfigBitMode.FRAME_BASED:
-                        # only add frame data port when there are config bits in the tile
-                        if tile.globalConfigBits > 0:
-                            tilePortList.append("FrameData")
-                            tilePortList.append("FrameData_O")
-                        tilePortList.append("FrameStrobe")
-                        tilePortList.append("FrameStrobe_O")
+                #     withUserCLK = False
+                #     for t in superTile.tiles:
+                #         withUserCLK |= t.withUserCLK
+                #     if withUserCLK:
+                #         tilePortList.append("UserCLK")
+                #     else:
+                #         tilePortList.append("UserCLK")
+                #         tilePortList.append("UserCLKo")
 
-                signal = []
+                #     if self.fabric.configBitMode == ConfigBitMode.FRAME_BASED:
+                #         # frame data port
+                #         for j, row in enumerate(superTile.tileMap):
+                #             for i, _ in enumerate(row):
+                #                 if superTile.tileMap[j][i] == None:
+                #                     continue
+                #                 if i - 1 < 0 or superTile.tileMap[j][i-1] == None:
+                #                     tilePortList.append(
+                #                         f"Tile_X{i}Y{j}_FrameData")
+                #                 if i + 1 >= len(superTile.tileMap[0]) or superTile.tileMap[y][i+1] == None:
+                #                     tilePortList.append(
+                #                         f"Tile_X{i}Y{j}_FrameData_O")
+
+                #         # frame strobe port
+                #         for j, row in enumerate(superTile.tileMap):
+                #             for i, _ in enumerate(row):
+                #                 if superTile.tileMap[j][i] == None:
+                #                     continue
+                #                 if j + 1 >= len(superTile.tileMap) or superTile.tileMap[j+1][i] == None:
+                #                     tilePortList.append(
+                #                         f"Tile_X{i}Y{j}_FrameStrobe")
+                #                 if j - 1 < 0 or superTile.tileMap[j-1][i] == None:
+                #                     tilePortList.append(
+                #                         f"Tile_X{i}Y{j}_FrameStrobe_O")
+                # else:
+                #     instantiatedPosition.append((x, y))
+                #     tileLocationOffset.append((0, 0))
+                #     tilePortsInfo.append((tile.getNorthSidePorts(), 0, 0))
+                #     tilePortsInfo.append((tile.getEastSidePorts(), 0, 0))
+                #     tilePortsInfo.append((tile.getSouthSidePorts(), 0, 0))
+                #     tilePortsInfo.append((tile.getWestSidePorts(), 0, 0))
+
+                #     # all the input port of a single normal tile
+                #     for port, i, j in tilePortsInfo:
+                #         for p in port:
+                #             if p.name != "NULL" and p.inOut == IO.INPUT:
+                #                 tilePortList.append(f"{p.name}")
+
+                #     # all the output port of a single normal tile
+                #     for port, i, j in tilePortsInfo:
+                #         for p in port:
+                #             if p.name != "NULL" and p.inOut == IO.OUTPUT:
+                #                 tilePortList.append(f"{p.name}")
+
+                #     for b in tile.bels:
+                #         for p in b.externalInput:
+                #             tilePortList.append(p)
+                #         for p in b.externalOutput:
+                #             tilePortList.append(p)
+                #         for p in b.sharedPort:
+                #             if "UserCLK" not in p[0]:
+                #                 tilePortList.append(p[0])
+
+                #     if superTile:
+                #         tilePortList.append("UserCLK")
+                #     else:
+                #         tilePortList.append("UserCLK")
+                #         tilePortList.append("UserCLKo")
+
+                #     if self.fabric.configBitMode == ConfigBitMode.FRAME_BASED:
+                #         # only add frame data port when there are config bits in the tile
+                #         if tile.globalConfigBits > 0:
+                #             tilePortList.append("FrameData")
+                #             tilePortList.append("FrameData_O")
+                #         tilePortList.append("FrameStrobe")
+                #         tilePortList.append("FrameStrobe_O")
+
+                # signal = []
+                portsPairs = []
                 # use the offset to find all the related tile input, output signal
                 # if is a normal tile then the offset is (0, 0)
                 for i, j in tileLocationOffset:
-                    # input connection from south side of the north tile
-                    if 0 <= y - 1 < len(self.fabric.tile) and self.fabric.tile[y+j-1][x+i] != None and (x+i, y+j-1) not in superTileLoc:
-                        for p in self.fabric.tile[y+j-1][x+i].getSouthSidePorts():
-                            if p.inOut == IO.OUTPUT:
-                                signal.append(
-                                    f"Tile_X{x+i}Y{y+j-1}_{p.name}")
-                    # input connection from west side of the east tile
-                    if 0 <= x + 1 < len(self.fabric.tile[0]) and self.fabric.tile[y+j][x+i+1] != None and (x+i+1, y+j) not in superTileLoc:
-                        for p in self.fabric.tile[y+j][x+i+1].getWestSidePorts():
-                            if p.inOut == IO.OUTPUT:
-                                signal.append(
-                                    f"Tile_X{x+i+1}Y{y+j}_{p.name}")
                     # input connection from north side of the south tile
                     if 0 <= y + 1 < len(self.fabric.tile) and self.fabric.tile[y+j+1][x+i] != None and (x+i, y+j+1) not in superTileLoc:
-                        for p in self.fabric.tile[y+j+1][x+i].getNorthSidePorts():
-                            if p.inOut == IO.OUTPUT:
-                                signal.append(
-                                    f"Tile_X{x+i}Y{y+j+1}_{p.name}")
+                        # for p in self.fabric.tile[y+j+1][x+i].getNorthSidePorts():
+                        #     if p.inOut == IO.OUTPUT:
+                        #         signal.append(
+                        #             f"Tile_X{x+i}Y{y+j+1}_{p.name}")
+                        if self.fabric.tile[y+j][x+i].partOfSuperTile:
+                            northPorts = [
+                                f"Tile_X{i}Y{j}_{p.name}" for p in self.fabric.tile[y+j][x+i].getNorthPorts(IO.INPUT)]
+                        else:
+                            northPorts = [
+                                i.name for i in self.fabric.tile[y+j][x+i].getNorthPorts(IO.INPUT)]
+
+                        northInput = [
+                            f"Tile_X{x+i}Y{y+j+1}_{p.name}" for p in self.fabric.tile[y+j+1][x+i].getNorthPorts(IO.OUTPUT)]
+                        portsPairs += list(zip(northPorts, northInput))
 
                     # input connection from east side of the west tile
                     if 0 <= x - 1 < len(self.fabric.tile[0]) and self.fabric.tile[y+j][x+i-1] != None and (x+i-1, y+j) not in superTileLoc:
-                        for p in self.fabric.tile[y+j][x+i-1].getEastSidePorts():
-                            if p.inOut == IO.OUTPUT:
-                                signal.append(
-                                    f"Tile_X{x+i-1}Y{y+j}_{p.name}")
+                        if self.fabric.tile[y+j][x+i].partOfSuperTile:
+                            eastPorts = [
+                                f"Tile_X{i}Y{j}_{p.name}" for p in self.fabric.tile[y+j][x+i].getEastPorts(IO.INPUT)]
+                        else:
+                            eastPorts = [
+                                i.name for i in self.fabric.tile[y+j][x+i].getEastPorts(IO.INPUT)]
+
+                        eastInput = [
+                            f"Tile_X{x+i-1}Y{y+j}_{p.name}" for p in self.fabric.tile[y+j][x+i-1].getEastPorts(IO.OUTPUT)]
+                        portsPairs += list(zip(eastPorts, eastInput))
+
+                    # input connection from south side of the north tile
+                    if 0 <= y - 1 < len(self.fabric.tile) and self.fabric.tile[y+j-1][x+i] != None and (x+i, y+j-1) not in superTileLoc:
+                        if self.fabric.tile[y+j][x+i].partOfSuperTile:
+                            southPorts = [
+                                f"Tile_X{i}Y{j}_{p.name}" for p in self.fabric.tile[y+j][x+i].getSouthPorts(IO.INPUT)]
+                        else:
+                            southPorts = [
+                                i.name for i in self.fabric.tile[y+j][x+i].getSouthPorts(IO.INPUT)]
+
+                        southInput = [
+                            f"Tile_X{x+i}Y{y+j-1}_{p.name}" for p in self.fabric.tile[y+j-1][x+i].getSouthPorts(IO.OUTPUT)]
+                        portsPairs += list(zip(southPorts, southInput))
+
+                    # input connection from west side of the east tile
+                    if 0 <= x + 1 < len(self.fabric.tile[0]) and self.fabric.tile[y+j][x+i+1] != None and (x+i+1, y+j) not in superTileLoc:
+                        # for p in self.fabric.tile[y+j][x+i+1].getWestSidePorts():
+                        #     if p.inOut == IO.OUTPUT:
+                        #         signal.append(
+                        #             f"Tile_X{x+i+1}Y{y+j}_{p.name}")
+                        if self.fabric.tile[y+j][x+i].partOfSuperTile:
+                            westPorts = [
+                                f"Tile_X{i}Y{j}_{p.name}" for p in self.fabric.tile[y+j][x+i].getWestPorts(IO.INPUT)]
+                        else:
+                            westPorts = [
+                                i.name for i in self.fabric.tile[y+j][x+i].getWestPorts(IO.INPUT)]
+
+                        westInput = [
+                            f"Tile_X{x+i+1}Y{y+j}_{p.name}" for p in self.fabric.tile[y+j][x+i+1].getWestPorts(IO.OUTPUT)]
+                        portsPairs += list(zip(westPorts, westInput))
 
                 # output signal name is same as the output port name
                 if superTile:
@@ -1578,17 +1624,14 @@ class FabricGenerator:
                         for ports in around:
                             for port in ports:
                                 if port.inOut == IO.OUTPUT and port.name != "NULL":
-                                    outputSignalList.append(
-                                        f"Tile_X{x+int(i)}Y{y+int(j)}_{port.name}")
+                                    portsPairs.append(
+                                        (f"Tile_X{int(i)}Y{int(j)}_{port.name}", f"Tile_X{x+int(i)}Y{y+int(j)}_{port.name}"))
                 else:
-                    for ports, i, j in tilePortsInfo:
-                        for p in ports:
-                            if p.inOut == IO.OUTPUT and p.name != "NULL":
-                                outputSignalList.append(
-                                    f"Tile_X{x+i}Y{y+j}_{p.name}")
+                    for i in tile.getTileOutputNames():
+                        portsPairs.append((i, f"Tile_X{x}Y{y}_{i}"))
 
                 # combine = northInput + eastInput + southInput + westInput + outputSignalList
-                signal += outputSignalList
+                # signal += outputSignalList
 
                 self.writer.addNewLine()
                 self.writer.addComment(
@@ -1596,54 +1639,80 @@ class FabricGenerator:
                 for (i, j) in tileLocationOffset:
                     for b in self.fabric.tile[y+j][x+i].bels:
                         for p in b.externalInput:
-                            signal.append(f"Tile_X{x}Y{y}_{p}")
+                            portsPairs.append((p, f"Tile_X{x+i}Y{y+j}_{p}"))
+                            # signal.append(f"Tile_X{x}Y{y}_{p}")
                         for p in b.externalOutput:
-                            signal.append(f"Tile_X{x}Y{y}_{p}")
+                            portsPairs.append((p, f"Tile_X{x+i}Y{y+j}_{p}"))
+                            # signal.append(f"Tile_X{x}Y{y}_{p}")
                         for p in b.sharedPort:
                             if "UserCLK" not in p[0]:
-                                signal.append(f"{p[0]}")
+                                portsPairs.append(("UserCLK", p[0]))
+                                # signal.append(f"{p[0]}")
 
                 if not superTile:
                     # for userCLK
                     if y + 1 < self.fabric.numberOfRows and self.fabric.tile[y+1][x] != None:
-                        signal.append(f"Tile_X{x}Y{y+1}_UserCLKo")
+                        portsPairs.append(
+                            ("UserCLK", f"Tile_X{x}Y{y+1}_UserCLKo"))
+                        # signal.append(f"Tile_X{x}Y{y+1}_UserCLKo")
                     else:
-                        signal.append(f"UserCLK")
+                        portsPairs.append(("UserCLK", "UserCLK"))
+                        # signal.append(f"UserCLK")
                     # for userCLKo
-                    signal.append(f"Tile_X{x}Y{y}_UserCLKo")
+                    portsPairs.append(("UserCLKo", f"Tile_X{x}Y{y}_UserCLKo"))
+                    # signal.append(f"Tile_X{x}Y{y}_UserCLKo")
                 else:
                     if y + 1 < self.fabric.numberOfRows:
-                        signal.append(f"Tile_X{x}Y{y+1}_UserCLKo")
+                        portsPairs.append(
+                            ("UserCLK", f"Tile_X{x}Y{y+1}_UserCLKo"))
+                        # signal.append(f"Tile_X{x}Y{y+1}_UserCLKo")
                     else:
-                        signal.append(f"UserCLK")
+                        portsPairs.append(("UserCLK", "UserCLK"))
+                        # signal.append(f"UserCLK")
 
                 if self.fabric.configBitMode == ConfigBitMode.FRAME_BASED:
                     for (i, j) in tileLocationOffset:
                         if tile.globalConfigBits > 0 or superTile:
                             # frameData signal
                             if x == 0:
-                                signal.append(f"Tile_Y{y}_FrameData")
+                                portsPairs.append(
+                                    (f"FrameData", f"Tile_Y{y}_FrameData"))
+                                # signal.append(f"Tile_Y{y}_FrameData")
                             elif (x+i-1, y+j) not in superTileLoc:
-                                signal.append(
-                                    f"Tile_X{x+i-1}Y{y+j}_FrameData_O")
+                                portsPairs.append(
+                                    (f"FrameData", f"Tile_X{x+i-1}Y{y+j}_FrameData_O"))
+                                # signal.append(
+                                #     f"Tile_X{x+i-1}Y{y+j}_FrameData_O")
                             # frameData_O signal
                             if x == len(self.fabric.tile[0]) - 1:
-                                signal.append(f"Tile_X{x}Y{y}_FrameData_O")
+                                portsPairs.append(
+                                    (f"FrameData_O", f"Tile_X{x}Y{y}_FrameData_O"))
+                                # signal.append(f"Tile_X{x}Y{y}_FrameData_O")
                             elif (x+i-1, y+j) not in superTileLoc:
-                                signal.append(f"Tile_X{x+i}Y{y+j}_FrameData_O")
+                                portsPairs.append(
+                                    (f"FrameData_O", f"Tile_X{x+i}Y{y+j}_FrameData_O"))
+                                # signal.append(f"Tile_X{x+i}Y{y+j}_FrameData_O")
 
                     for (i, j) in tileLocationOffset:
                         # frameStrobe signal
                         if y + 1 >= self.fabric.numberOfRows:
-                            signal.append(f"Tile_X{x}_FrameStrobe")
+                            portsPairs.append(
+                                ("FrameStrobe", f"Tile_X{x}_FrameStrobe"))
+                            # signal.append(f"Tile_X{x}_FrameStrobe")
                         elif y + 1 < self.fabric.numberOfRows and self.fabric.tile[y+1][x] == None:
-                            signal.append(f"Tile_X{x}_FrameStrobe")
+                            portsPairs.append(
+                                ("FrameStrobe", f"Tile_X{x}_FrameStrobe"))
+                            # signal.append(f"Tile_X{x}_FrameStrobe")
                         elif (x+i, y+j+1) not in superTileLoc:
-                            signal.append(f"Tile_X{x+i}Y{y+j+1}_FrameStrobe_O")
+                            portsPairs.append(
+                                ("FrameStrobe", f"Tile_X{x+i}Y{y+j+1}_FrameStrobe"))
+                            # signal.append(f"Tile_X{x+i}Y{y+j+1}_FrameStrobe_O")
 
                         # frameStrobe_O signal
                         if (x+i, y+j-1) not in superTileLoc:
-                            signal.append(f"Tile_X{x+i}Y{y+j}_FrameStrobe_O")
+                            portsPairs.append(
+                                ("FrameStrobe_O", f"Tile_X{x+i}Y{y+j}_FrameStrobe_O"))
+                            # signal.append(f"Tile_X{x+i}Y{y+j}_FrameStrobe_O")
 
                 name = ""
                 if superTile:
@@ -1651,10 +1720,9 @@ class FabricGenerator:
                 else:
                     name = tile.name
 
-                assert len(tilePortList) == len(signal)
                 self.writer.addInstantiation(compName=name,
                                              compInsName=f"Tile_X{x}Y{y}_{name}",
-                                             portsPairs=list(zip(tilePortList, signal)))
+                                             portsPairs=portsPairs)
         self.writer.addDesignDescriptionEnd()
         self.writer.writeToFile()
 

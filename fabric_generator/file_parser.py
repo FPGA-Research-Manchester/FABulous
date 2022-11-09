@@ -157,29 +157,6 @@ def parseFabricCSV(fileName: str) -> Fabric:
     fabricTiles = []
     tileDic = dict(zip(tileTypes, tileDefs))
 
-    usedTile = set()
-    for f in fabricDescription:
-        fabricLineTmp = f.split(",")
-        fabricLineTmp = [i for i in fabricLineTmp if i != ""]
-        if not fabricLineTmp:
-            continue
-        fabricLine = []
-        for i in fabricLineTmp:
-            if i in tileDic:
-                fabricLine.append(deepcopy(tileDic[i]))
-                usedTile.add(i)
-            elif i == "Null" or i == "NULL" or i == "None":
-                fabricLine.append(None)
-            else:
-                raise ValueError(f"Unknown tile {i}")
-        fabricTiles.append(fabricLine)
-
-    for i in list(tileDic.keys()):
-        if i not in usedTile:
-            print(
-                f"Tile {i} is not used in the fabric. Removing from tile dictionary.")
-            del tileDic[i]
-
     # parse the super tile
     superTileDic = {}
     for t in superTile:
@@ -222,6 +199,30 @@ def parseFabricCSV(fileName: str) -> Fabric:
             tileMap.append(row)
 
         superTileDic[name] = SuperTile(name, tiles, tileMap, bels, withUserCLK)
+
+    # form the fabric data structure
+    usedTile = set()
+    for f in fabricDescription:
+        fabricLineTmp = f.split(",")
+        fabricLineTmp = [i for i in fabricLineTmp if i != ""]
+        if not fabricLineTmp:
+            continue
+        fabricLine = []
+        for i in fabricLineTmp:
+            if i in tileDic:
+                fabricLine.append(deepcopy(tileDic[i]))
+                usedTile.add(i)
+            elif i == "Null" or i == "NULL" or i == "None":
+                fabricLine.append(None)
+            else:
+                raise ValueError(f"Unknown tile {i}")
+        fabricTiles.append(fabricLine)
+
+    for i in list(tileDic.keys()):
+        if i not in usedTile:
+            print(
+                f"Tile {i} is not used in the fabric. Removing from tile dictionary.")
+            del tileDic[i]
 
     # parse the parameters
     height = 0

@@ -333,10 +333,10 @@ class Tile():
         return [p for p in self.portsInfo if p.wireDirection == Direction.WEST and p.name != "NULL" and p.inOut == io]
 
     def getTileInputNames(self) -> List[str]:
-        return [p.destinationName for p in self.portsInfo if p.destinationName != "NULL" and p.wireDirection != Direction.JUMP]
+        return [p.destinationName for p in self.portsInfo if p.destinationName != "NULL" and p.wireDirection != Direction.JUMP and p.inOut == IO.INPUT]
 
     def getTileOutputNames(self) -> List[str]:
-        return [p.sourceName for p in self.portsInfo if p.sourceName != "NULL" and p.wireDirection != Direction.JUMP]
+        return [p.sourceName for p in self.portsInfo if p.sourceName != "NULL" and p.wireDirection != Direction.JUMP and p.inOut == IO.OUTPUT]
 
 
 @ dataclass

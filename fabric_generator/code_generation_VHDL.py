@@ -53,7 +53,6 @@ class VHDLWriter(codeGenerator):
     def addParameter(self, name, type, value, indentLevel=0):
         self._add(f"{name} : {type} := {value};", indentLevel)
 
-
     def addPortStart(self, indentLevel=0):
         self._add("Port (", indentLevel)
 
@@ -78,7 +77,7 @@ class VHDLWriter(codeGenerator):
         elif io.value.lower() == "output":
             ioVHDL = "out"
         self._add(f"{name:<10} : {ioVHDL} STD_LOGIC;",
-                indentLevel=indentLevel)
+                  indentLevel=indentLevel)
 
     def addPortVector(self, name, io: IO, msbIndex, indentLevel=0):
         ioVHDL = ""
@@ -116,15 +115,17 @@ class VHDLWriter(codeGenerator):
         if type(right) == list:
             self._add(f"{left} <= {' & '.join(right)};", indentLevel)
         else:
-            left = str(left).replace(":", " downto ").replace("[", "(").replace("]", ")")
-            right = str(right).replace(":", " downto ").replace("[", "(").replace("]", ")")
+            left = str(left).replace(":", " downto ").replace(
+                "[", "(").replace("]", ")")
+            right = str(right).replace(":", " downto ").replace(
+                "[", "(").replace("]", ")")
             self._add(f"{left} <= {right};", indentLevel)
 
     def addAssignVector(self, left, right, widthL, widthR, indentLevel=0):
         self._add(
             f"{left} <= {right}( {widthL} downto {widthR} );", indentLevel)
 
-    def addInstantiation(self, compName, compInsName, portPairs, paramPairs=[], indentLevel=0):
+    def addInstantiation(self, compName, compInsName, portsPairs, paramPairs=[], indentLevel=0):
         self._add(f"{compInsName} : {compName}", indentLevel=indentLevel)
         if paramPairs:
             connectPair = []
@@ -138,13 +139,15 @@ class VHDLWriter(codeGenerator):
 
         self._add(f"Port map(", indentLevel=indentLevel + 1)
         connectPair = []
-        for i in portPairs:
+        for i in portsPairs:
             if "[" in i[0]:
-                port = i[0].replace("[", "(").replace("]", ")").replace(":", " downto ")
+                port = i[0].replace(
+                    "[", "(").replace("]", ")").replace(":", " downto ")
             else:
                 port = i[0]
             if "[" in i[1]:
-                signal = i[1].replace("[", "(").replace("]", ")").replace(":", " downto ")
+                signal = i[1].replace(
+                    "[", "(").replace("]", ")").replace(":", " downto ")
             else:
                 signal = i[1]
             connectPair.append(f"{port} => {signal}")

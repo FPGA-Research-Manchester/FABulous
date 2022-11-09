@@ -351,12 +351,13 @@ class FabricGenerator:
                 if i.usedBitMask[k] == "1":
                     self.writer.addInstantiation(compName="LHQD1",
                                                  compInsName=f"Inst_{i.frameName}_bit{self.fabric.frameBitsPerRow-1-k}",
-                                                 portPairs=[("D",f"FrameData[{self.fabric.frameBitsPerRow-1-k}]"), 
-                                                            ("E",f"FrameStrobe[{i.frameIndex}]"), 
-                                                            ("Q",f"ConfigBits[{i.configBitRanges[counter]}]"),
-                                                            ("QN",f"ConfigBits_N[{i.configBitRanges[counter]}]")])
+                                                 portsPairs=[("D", f"FrameData[{self.fabric.frameBitsPerRow-1-k}]"),
+                                                             ("E",
+                                                              f"FrameStrobe[{i.frameIndex}]"),
+                                                             ("Q", f"ConfigBits[{i.configBitRanges[counter]}]"),
+                                                             ("QN", f"ConfigBits_N[{i.configBitRanges[counter]}]")]
+                                                 )
                     counter += 1
-
 
         self.writer.addDesignDescriptionEnd()
         self.writer.writeToFile()
@@ -558,8 +559,7 @@ class FabricGenerator:
                 # this is the case for a configurable switch matrix multiplexer
                 old_ConfigBitstreamPosition = configBitstreamPosition
                 # len(connections[portName]).bit_length()-1 tells us how many configuration bits a multiplexer takes
-                configBitstreamPosition += len(
-                    connections[portName]).bit_length()-1
+
                 numGnd = 0
                 muxComponentName = ""
                 if (self.fabric.multiplexerStyle == MultiplexerStyle.CUSTOM) and (muxSize == 2):
@@ -574,34 +574,27 @@ class FabricGenerator:
                     muxComponentName = 'cus_mux161_buf'
                     numGnd = 16-muxSize
 
-                portList, signalList = [], []
+                portsPairs = []
                 start = 0
                 for start in range(muxSize):
-                    portList.append(f"A{start}")
-                    signalList.append(f"{portName}_input[{start}]")
+                    portsPairs.append(
+                        (f"A{start}", f"{portName}_input[{start}]"))
 
                 for end in range(start, numGnd):
-                    portList.append(f"A{end}")
-                    signalList.append(f"GND0")
+                    portsPairs.append((f"A{end}", "GND0"))
 
                 if self.fabric.multiplexerStyle == MultiplexerStyle.CUSTOM:
                     if muxSize == 2:
-                        portList.append(f"S")
-                        signalList.append(
-                            f"ConfigBits[{old_ConfigBitstreamPosition}+0]")
+                        portsPairs.append(
+                            ("S", f"ConfigBits[{configBitstreamPosition}+0]"))
                     else:
-                        for i in range(int(math.ceil(math.log2(muxSize)))):
-                            portList.append(f"S{i}")
-                            portList.append(f"S{i}N")
-                            signalList.append(
-                                f"ConfigBits[{old_ConfigBitstreamPosition}+{i}]")
-                            signalList.append(
-                                f"ConfigBits_N[{old_ConfigBitstreamPosition}+{i}]")
+                        for i in range(muxSize.bit_length()-1):
+                            portsPairs.append(
+                                (f"S{i}", f"ConfigBits[{configBitstreamPosition}+{i}]"))
+                            portsPairs.append(
+                                (f"S{i}N", f"ConfigBits_N[{configBitstreamPosition}+{i}]"))
 
-                portList.append("X")
-                signalList.append(f"{portName}")
-
-                assert len(portList) == len(signalList)
+                portsPairs.append((f"X", f"{portName}"))
 
                 if (self.fabric.multiplexerStyle == MultiplexerStyle.CUSTOM):
                     # we add the input signal in reversed order
@@ -609,17 +602,20 @@ class FabricGenerator:
                     # This was done such that the index from left-to-right in the adjacency matrix corresponds with the multiplexer select input (index)
                     self.writer.addAssignScalar(
                         f"{portName}_input", connections[portName][::-1], self.fabric.generateDelayInSwitchMatrix)
-                    assert len(portList) == len(signalList)
                     self.writer.addInstantiation(compName=muxComponentName,
                                                  compInsName=f"inst_{muxComponentName}_{portName}",
-                                                 portPairs=list(zip(portList, signalList)))
+                                                 portsPairs=portsPairs)
                     if muxSize != 2 and muxSize != 4 and muxSize != 8 and muxSize != 16:
                         print(
                             f"HINT: creating a MUX-{muxSize} for port {portName} using MUX-{muxSize} in switch matrix for tile {tile.name}")
                 else:
                     # generic multiplexer
                     self.writer.addAssignScalar(
-                        portName, f"{portName}_input[ConfigBits[{configBitstreamPosition-1}:{old_ConfigBitstreamPosition}]]")
+                        portName, f"{portName}_input[ConfigBits[{configBitstreamPosition-1}:{configBitstreamPosition}]]")
+
+                # update the configuration bitstream position
+                configBitstreamPosition += len(
+                    connections[portName]).bit_length()-1
 
         ### SwitchMatrixDebugSignals ### SwitchMatrixDebugSignals ###
         ### SwitchMatrixDebugSignals ### SwitchMatrixDebugSignals ###
@@ -758,17 +754,18 @@ class FabricGenerator:
                 subFolder = tile.name
 
             if os.path.exists(f"Tile/{tileName}/{subFolder}/{tile.name}_switch_matrix.vhdl"):
-                self.writer.addComponentDeclarationForFile(f"Tile/{tileName}/{subFolder}/{tile.name}_switch_matrix.vhdl")
+                self.writer.addComponentDeclarationForFile(
+                    f"Tile/{tileName}/{subFolder}/{tile.name}_switch_matrix.vhdl")
             else:
                 raise ValueError(
                     f"Could not find {tile.name}_switch_matrix.vhdl in Tile/{tileName}/{subFolder}/ Need to run matrix generation first")
 
             if os.path.exists(f"Tile/{tileName}/{subFolder}/{tile.name}_ConfigMem.vhdl"):
-                self.writer.addComponentDeclarationForFile(f"Tile/{tileName}/{subFolder}/{tile.name}_ConfigMem.vhdl")
+                self.writer.addComponentDeclarationForFile(
+                    f"Tile/{tileName}/{subFolder}/{tile.name}_ConfigMem.vhdl")
             else:
                 raise ValueError(
-                    f"Could not find {tile.name}_ConfigMem.vhdl in Tile/{tileName}/{subFolder}/ config_mem generation first")  
-                
+                    f"Could not find {tile.name}_ConfigMem.vhdl in Tile/{tileName}/{subFolder}/ config_mem generation first")
 
         if self.fabric.configBitMode == ConfigBitMode.FRAME_BASED and tile.globalConfigBits > 0:
             if os.path.exists(f"{tile.name}_ConfigMem.vhdl"):
@@ -823,7 +820,7 @@ class FabricGenerator:
             "FrameStrobe_i", "MaxFramesPerCol-1", 0)
         self.writer.addConnectionVector(
             "FrameStrobe_O_i", "MaxFramesPerCol-1", 0)
-        
+
         added = set()
         for port in tile.portsInfo:
             span = abs(port.xOffset) + abs(port.yOffset)
@@ -836,7 +833,7 @@ class FabricGenerator:
                 self.writer.addConnectionVector(
                     f"{port.sourceName}_i", highBoundIndex - port.wireCount)
                 added.add((port.sourceName, port.destinationName))
-        
+
         self.writer.addNewLine()
         self.writer.addLogicStart()
 
@@ -846,13 +843,13 @@ class FabricGenerator:
             for i in range(self.fabric.frameBitsPerRow):
                 self.writer.addInstantiation("my_buf",
                                              f"data_inbuf_{i}",
-                                             portPairs=[("A", f"FrameData[{i}]"),
-                                                        ("X", f"FrameData_i[{i}]")])
+                                             portsPairs=[("A", f"FrameData[{i}]"),
+                                                         ("X", f"FrameData_i[{i}]")])
             for i in range(self.fabric.frameBitsPerRow):
                 self.writer.addInstantiation("my_buf",
                                              f"data_outbuf_{i}",
-                                             portPairs=[("A", f"FrameData_O_i[{i}]" ), 
-                                                        ("X", f"FrameData_O[{i}]")])
+                                             portsPairs=[("A", f"FrameData_O_i[{i}]"),
+                                                         ("X", f"FrameData_O[{i}]")])
 
         # strobe is always added even when config bits are 0
         self.writer.addAssignScalar("FrameStrobe_O_i", "FrameStrobe_i")
@@ -860,14 +857,14 @@ class FabricGenerator:
         for i in range(self.fabric.maxFramesPerCol):
             self.writer.addInstantiation("my_buf",
                                          f"strobe_inbuf_{i}",
-                                         portPairs=[("A", f"FrameStrobe[{i}]"), 
-                                                    ("X", f"FrameStrobe_i[{i}]")])
-                                
+                                         portsPairs=[("A", f"FrameStrobe[{i}]"),
+                                                     ("X", f"FrameStrobe_i[{i}]")])
+
         for i in range(self.fabric.maxFramesPerCol):
             self.writer.addInstantiation("my_buf",
                                          f"strobe_outbuf_{i}",
-                                         portPairs=[("A", f"FrameStrobe_O_i[{i}]"), 
-                                                    ("X", f"FrameStrobe_O[{i}]")])
+                                         portsPairs=[("A", f"FrameStrobe_O_i[{i}]"),
+                                                     ("X", f"FrameStrobe_O[{i}]")])
 
         added = set()
         for port in tile.portsInfo:
@@ -884,20 +881,20 @@ class FabricGenerator:
                 for i in range(highBoundIndex - port.wireCount + 1):
                     self.writer.addInstantiation("my_buf",
                                                  f"{port.destinationName}_inbuf_{i}",
-                                                portPairs=[("A", f"{port.destinationName}[{i+port.wireCount}]"), 
-                                                           ("X", f"{port.destinationName}_i[{i+port.wireCount}]")])
+                                                 portsPairs=[("A", f"{port.destinationName}[{i+port.wireCount}]"),
+                                                             ("X", f"{port.destinationName}_i[{i+port.wireCount}]")])
                 for i in range(highBoundIndex - port.wireCount + 1):
                     self.writer.addInstantiation("my_buf",
                                                  f"{port.sourceName}_outbuf_{i}",
-                                                    portPairs=[("A", f"{port.sourceName}_i[{i}]"),
-                                                               ("X", f"{port.sourceName}[{i}]")])
+                                                 portsPairs=[("A", f"{port.sourceName}_i[{i}]"),
+                                                             ("X", f"{port.sourceName}[{i}]")])
 
                 added.add((port.sourceName, port.destinationName))
 
         self.writer.addInstantiation("clk_buf",
                                      f"inst_clk_buf",
-                                     portPairs=[("A", f"UserCLK"),
-                                                ("X", f"UserCLKo")])
+                                     portsPairs=[("A", f"UserCLK"),
+                                                 ("X", f"UserCLKo")])
 
         self.writer.addNewLine()
         # top configuration data daisy chaining
@@ -916,46 +913,48 @@ class FabricGenerator:
                 "configuration storage latches", onNewLine=True)
             self.writer.addInstantiation(compName=f"{tile.name}_ConfigMem",
                                          compInsName=f"Inst_{tile.name}_ConfigMem",
-                                         portPairs=[("FrameData", "FrameData"),
-                                                    ("FrameStrobe", "FrameStrobe"),
-                                                    ("ConfigBits", "ConfigBits"),
-                                                    ("ConfigBits_N", "ConfigBits_N")])
+                                         portsPairs=[("FrameData", "FrameData"),
+                                                     ("FrameStrobe",
+                                                      "FrameStrobe"),
+                                                     ("ConfigBits", "ConfigBits"),
+                                                     ("ConfigBits_N", "ConfigBits_N")])
 
         # BEL component instantiations
         self.writer.addComment("BEL component instantiations", onNewLine=True)
         belCounter = 0
         belConfigBitsCounter = 0
         for bel in tile.bels:
-            portPairs = []
+            portsPairs = []
             portList = []
             signal = []
 
             # internal port
             for port in bel.inputs + bel.outputs:
                 port = port.removeprefix(bel.prefix)
-                portPairs.append((port, f"{bel.prefix}{port}"))
+                portsPairs.append((port, f"{bel.prefix}{port}"))
 
             # external port
             for port in bel.externalInput + bel.externalOutput:
                 port = port.removeprefix(bel.prefix)
-                portPairs.append((port, f"{bel.prefix}{port}"))
+                portsPairs.append((port, f"{bel.prefix}{port}"))
 
             # shared port
             for port in bel.sharedPort:
-                portPairs.append((port[0], port[0]))
+                portsPairs.append((port[0], port[0]))
 
             if self.fabric.configBitMode == ConfigBitMode.FRAME_BASED:
                 if bel.configBit > 0:
-                    portPairs.append(("ConfigBits", f"ConfigBits[{belConfigBitsCounter+bel.configBit}-1:{belConfigBitsCounter}]"))
+                    portsPairs.append(
+                        ("ConfigBits", f"ConfigBits[{belConfigBitsCounter+bel.configBit}-1:{belConfigBitsCounter}]"))
             elif self.fabric.configBitMode == ConfigBitMode.FLIPFLOP_CHAIN:
-                portPairs.append(("MODE", "Mode"))
-                portPairs.append(("CONFin", f"conf_data({belCounter})"))
-                portPairs.append(("CONFout", f"conf_data({belCounter+1})"))
-                portPairs.append(("CLK", "CLK"))
+                portsPairs.append(("MODE", "Mode"))
+                portsPairs.append(("CONFin", f"conf_data({belCounter})"))
+                portsPairs.append(("CONFout", f"conf_data({belCounter+1})"))
+                portsPairs.append(("CLK", "CLK"))
 
             self.writer.addInstantiation(compName=bel.name,
                                          compInsName=f"Inst_{bel.prefix}{bel.name}",
-                                         portPairs=portPairs)
+                                         portsPairs=portsPairs)
 
             belCounter += 2
             belConfigBitsCounter += bel.configBit
@@ -1041,22 +1040,24 @@ class FabricGenerator:
             jumpWire + portTopInput + belInputs + jumpWire
 
         assert len(portList) == len(signal)
-        portPairs = list(zip(portList, signal))
+        portsPairs = list(zip(portList, signal))
 
         if self.fabric.configBitMode == ConfigBitMode.FLIPFLOP_CHAIN:
-            portPairs.append(("MODE", "Mode"))
-            portPairs.append(("CONFin", f"conf_data({belCounter})"))
-            portPairs.append(("CONFout", f"conf_data({belCounter+1})"))
-            portPairs.append(("CLK", "CLK"))
- 
+            portsPairs.append(("MODE", "Mode"))
+            portsPairs.append(("CONFin", f"conf_data({belCounter})"))
+            portsPairs.append(("CONFout", f"conf_data({belCounter+1})"))
+            portsPairs.append(("CLK", "CLK"))
+
         if self.fabric.configBitMode == ConfigBitMode.FRAME_BASED:
             if tile.globalConfigBits > 0:
-                portPairs.append(("ConfigBits", f"ConfigBits[{tile.globalConfigBits}-1:{belConfigBitsCounter}]"))
-                portPairs.append(("ConfigBits_N", f"ConfigBits_N[{tile.globalConfigBits}-1:{belConfigBitsCounter}]"))
+                portsPairs.append(
+                    ("ConfigBits", f"ConfigBits[{tile.globalConfigBits}-1:{belConfigBitsCounter}]"))
+                portsPairs.append(
+                    ("ConfigBits_N", f"ConfigBits_N[{tile.globalConfigBits}-1:{belConfigBitsCounter}]"))
 
         self.writer.addInstantiation(compName=f"{tile.name}_switch_matrix",
                                      compInsName=f"Inst_{tile.name}_switch_matrix",
-                                     portPairs=portPairs)
+                                     portsPairs=portsPairs)
 
         self.writer.addDesignDescriptionEnd()
         self.writer.writeToFile()
@@ -1306,15 +1307,15 @@ class FabricGenerator:
                         ports += ["FrameData", "FrameData_O",
                                   "FrameStrobe", "FrameStrobe_O"]
 
-                    # remove duplicates port since port list have repeated name 
-                    # entry with different inout direction   
-                    # TODO: refactor so the list will not repeat          
+                    # remove duplicates port since port list have repeated name
+                    # entry with different inout direction
+                    # TODO: refactor so the list will not repeat
                     ports = list(dict.fromkeys(ports))
                     combine = list(dict.fromkeys(combine))
                     assert len(ports) == len(combine)
                     self.writer.addInstantiation(compName=tile.name,
                                                  compInsName=f"Tile_X{x}Y{y}_{tile.name}",
-                                                 portPairs=list(zip(ports, combine)))
+                                                 portsPairs=list(zip(ports, combine)))
         self.writer.addDesignDescriptionEnd()
         self.writer.writeToFile()
 
@@ -1378,10 +1379,12 @@ class FabricGenerator:
                 if name in added:
                     continue
                 if name not in self.fabric.superTileDic.keys():
-                    self.writer.addComponentDeclarationForFile(f"Tile/{t}/{t}.vhdl")
+                    self.writer.addComponentDeclarationForFile(
+                        f"Tile/{t}/{t}.vhdl")
                     added.add(t)
                 else:
-                    self.writer.addComponentDeclarationForFile(f"Tile/{name}/{name}.vhdl")
+                    self.writer.addComponentDeclarationForFile(
+                        f"Tile/{name}/{name}.vhdl")
                     added.add(name)
 
         # VHDL signal declarations
@@ -1698,12 +1701,12 @@ class FabricGenerator:
 
                     for (i, j) in tileLocationOffset:
                         # frameStrobe signal
-                        if y + 1 >= self.fabric.numberOfRows :
+                        if y + 1 >= self.fabric.numberOfRows:
                             signal.append(f"Tile_X{x}_FrameStrobe")
-                        elif y +1 < self.fabric.numberOfRows and self.fabric.tile[y+1][x] == None:
+                        elif y + 1 < self.fabric.numberOfRows and self.fabric.tile[y+1][x] == None:
                             signal.append(f"Tile_X{x}_FrameStrobe")
                         elif (x+i, y+j+1) not in superTileLoc:
-                            signal.append(f"Tile_X{x+i}Y{y+j+1}_FrameStrobe_O") 
+                            signal.append(f"Tile_X{x+i}Y{y+j+1}_FrameStrobe_O")
 
                         # frameStrobe_O signal
                         if (x+i, y+j-1) not in superTileLoc:
@@ -1718,7 +1721,7 @@ class FabricGenerator:
                 assert len(tilePortList) == len(signal)
                 self.writer.addInstantiation(compName=name,
                                              compInsName=f"Tile_X{x}Y{y}_{name}",
-                                             portPairs=list(zip(tilePortList, signal)))
+                                             portsPairs=list(zip(tilePortList, signal)))
         self.writer.addDesignDescriptionEnd()
         self.writer.writeToFile()
 
@@ -1805,43 +1808,56 @@ class FabricGenerator:
 
         if isinstance(self.writer, VHDLWriter):
             if not os.path.exists("./Fabric/Frame_Data_Reg.vhdl"):
-                raise FileExistsError("Frame_Data_Reg.vhdl not found in Fabric folder")
+                raise FileExistsError(
+                    "Frame_Data_Reg.vhdl not found in Fabric folder")
             if not os.path.exists("./Fabric/Frame_Select.vhdl"):
-                raise FileExistsError("Frame_Select.vhdl not found in Fabric folder")
+                raise FileExistsError(
+                    "Frame_Select.vhdl not found in Fabric folder")
             if not os.path.exists("./Fabric/eFPGA_Config.vhdl"):
                 raise FileExistsError("Config.vhdl not found in Fabric folder")
             if not os.path.exists("./Fabric/eFPGA.vhdl"):
-                raise FileExistsError("eFPGA.vhdl not found in Fabric folder, need to generate the eFPGA first")
+                raise FileExistsError(
+                    "eFPGA.vhdl not found in Fabric folder, need to generate the eFPGA first")
             if not os.path.exists("./Fabric/BlockRAM_1KB.vhdl"):
-                raise FileExistsError("BlockRAM_1KB.vhdl not found in Fabric folder")
-            self.writer.addComponentDeclarationForFile("./Fabric/Frame_Data_Reg.vhdl")
-            self.writer.addComponentDeclarationForFile("./Fabric/Frame_Select.vhdl")
-            self.writer.addComponentDeclarationForFile("./Fabric/eFPGA_Config.vhdl")
+                raise FileExistsError(
+                    "BlockRAM_1KB.vhdl not found in Fabric folder")
+            self.writer.addComponentDeclarationForFile(
+                "./Fabric/Frame_Data_Reg.vhdl")
+            self.writer.addComponentDeclarationForFile(
+                "./Fabric/Frame_Select.vhdl")
+            self.writer.addComponentDeclarationForFile(
+                "./Fabric/eFPGA_Config.vhdl")
             self.writer.addComponentDeclarationForFile("./Fabric/eFPGA.vhdl")
-            self.writer.addComponentDeclarationForFile("./Fabric/BlockRAM_1KB.vhdl")
-
-
+            self.writer.addComponentDeclarationForFile(
+                "./Fabric/BlockRAM_1KB.vhdl")
 
         self.writer.addLogicStart()
         # the config module
         self.writer.addNewLine()
         self.writer.addInstantiation(compName="eFPGA_Config",
                                      compInsName="eFPGA_Config_inst",
-                                     portPairs=[("CLK", "CLK"), 
-                                                ("Rx", "Rx"), 
-                                                ("ComActive", "ComActive"), 
-                                                ("ReceiveLED", "ReceiveLED"), 
-                                                ("s_clk", "s_clk"), 
-                                                ("s_data", "s_data"), 
-                                                ("SelfWriteData", "SelfWriteData"), 
-                                                ("SelfWriteStrobe", "SelfWriteStrobe"), 
-                                                ("ConfigWriteData", "LocalWriteData"), 
-                                                ("ConfigWriteStrobe", "LocalWriteStrobe"), 
-                                                ("FrameAddressRegister", "FrameAddressRegister"), 
-                                                ("LongFrameStrobe", "LongFrameStrobe"),
-                                                ("RowSelect", "RowSelect")],
+                                     portsPairs=[("CLK", "CLK"),
+                                                 ("Rx", "Rx"),
+                                                 ("ComActive", "ComActive"),
+                                                 ("ReceiveLED", "ReceiveLED"),
+                                                 ("s_clk", "s_clk"),
+                                                 ("s_data", "s_data"),
+                                                 ("SelfWriteData",
+                                                  "SelfWriteData"),
+                                                 ("SelfWriteStrobe",
+                                                 "SelfWriteStrobe"),
+                                                 ("ConfigWriteData",
+                                                 "LocalWriteData"),
+                                                 ("ConfigWriteStrobe",
+                                                 "LocalWriteStrobe"),
+                                                 ("FrameAddressRegister",
+                                                 "FrameAddressRegister"),
+                                                 ("LongFrameStrobe",
+                                                 "LongFrameStrobe"),
+                                                 ("RowSelect", "RowSelect")],
                                      paramPairs=[("RowSelectWidth", "RowSelectWidth"),
-                                                 ("FrameBitsPerRow", "FrameBitsPerRow"),
+                                                 ("FrameBitsPerRow",
+                                                  "FrameBitsPerRow"),
                                                  ("NumberOfRows", "NumberOfRows"),
                                                  ("desync_flag", "desync_flag")])
         self.writer.addNewLine()
@@ -1850,26 +1866,28 @@ class FabricGenerator:
         for row in range(numberOfRows):
             self.writer.addInstantiation(compName=f"Frame_Data_Reg",
                                          compInsName=f"inst_Frame_Data_Reg_{row}",
-                                         portPairs=[("FrameData_I", "LocalWriteData"),
-                                                    ("FrameData_O", f"FrameRegister[{row}*FrameBitsPerRow+FrameBitsPerRow-1:{row}*FrameBitsPerRow]"),
-                                                    ("RowSelect", "RowSelect"),
-                                                    ("CLK", "CLK")],
+                                         portsPairs=[("FrameData_I", "LocalWriteData"),
+                                                     ("FrameData_O", f"FrameRegister[{row}*FrameBitsPerRow+FrameBitsPerRow-1:{row}*FrameBitsPerRow]"),
+                                                     ("RowSelect", "RowSelect"),
+                                                     ("CLK", "CLK")],
                                          paramPairs=[("FrameBitsPerRow", "FrameBitsPerRow"),
-                                                     ("RowSelectWidth", "RowSelectWidth"),
-                                                     ("Row", row+1)])
+                                                     ("RowSelectWidth",
+                                                      "RowSelectWidth"),
+                                                     ("Row", str(row+1))])
         self.writer.addNewLine()
 
         # the frame select module
         for col in range(numberOfColumns):
             self.writer.addInstantiation(compName=f"Frame_Select",
                                          compInsName=f"inst_Frame_Select_{col}",
-                                         portPairs=[("FrameStrobe_I", "FrameAddressRegister[MaxFramesPerCol-1:0]"),
-                                                    ("FrameStrobe_O", f"FrameSelect[{col}*MaxFramesPerCol+MaxFramesPerCol-1:{col}*MaxFramesPerCol]"),
-                                                    ("FrameSelect", "FrameAddressRegister[FrameBitsPerRow-1:FrameBitsPerRow-FrameSelectWidth]"),
-                                                    ("FrameStrobe", "LongFrameStrobe")],
+                                         portsPairs=[("FrameStrobe_I", "FrameAddressRegister[MaxFramesPerCol-1:0]"),
+                                                     ("FrameStrobe_O", f"FrameSelect[{col}*MaxFramesPerCol+MaxFramesPerCol-1:{col}*MaxFramesPerCol]"),
+                                                     ("FrameSelect", "FrameAddressRegister[FrameBitsPerRow-1:FrameBitsPerRow-FrameSelectWidth]"),
+                                                     ("FrameStrobe", "LongFrameStrobe")],
                                          paramPairs=[("MaxFramesPerCol", "MaxFramesPerCol"),
-                                                     ("FrameSelectWidth", "FrameSelectWidth"),
-                                                     ("Col", col)])
+                                                     ("FrameSelectWidth",
+                                                      "FrameSelectWidth"),
+                                                     ("Col", str(col))])
         self.writer.addNewLine()
 
         # the fabric module
@@ -1959,8 +1977,8 @@ class FabricGenerator:
         assert len(portList) == len(signal)
         self.writer.addInstantiation(compName=self.fabric.name,
                                      compInsName=f"{self.fabric.name}_inst",
-                                     portPairs=list(zip(portList, signal)))
-                                     
+                                     portsPairs=list(zip(portList, signal)))
+
         self.writer.addNewLine()
 
         # the BRAM module
@@ -1984,10 +2002,10 @@ class FabricGenerator:
                       ]
             self.writer.addInstantiation(compName="BlockRAM_1KB",
                                          compInsName=f"Inst_BlockRAM_{i}",
-                                         portPairs=list(zip(portList, signal)))
+                                         portsPairs=list(zip(portList, signal)))
         if isinstance(self.writer, VHDLWriter):
             self.writer.addAssignScalar(
-            "FrameData", ['X"12345678"', "FrameRegister", 'X"12345678"'])
+                "FrameData", ['X"12345678"', "FrameRegister", 'X"12345678"'])
         else:
             self.writer.addAssignScalar(
                 "FrameData", ["32'h12345678", "FrameRegister", "32'h12345678"])

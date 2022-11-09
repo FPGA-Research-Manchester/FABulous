@@ -90,7 +90,7 @@ class VerilogWriter(codeGenerator):
     def addLogicEnd(self, indentLevel=0):
         pass
 
-    def addInstantiation(self, compName, compInsName, portPairs, paramPairs=[], indentLevel=0):
+    def addInstantiation(self, compName, compInsName, portsPairs, paramPairs=[], indentLevel=0):
         if paramPairs:
             port = [f".{i[0]}({i[1]})" for i in paramPairs]
             self._add(
@@ -105,7 +105,7 @@ class VerilogWriter(codeGenerator):
             self._add(f"{compName} {compInsName} (", indentLevel=indentLevel)
 
         connectPair = []
-        for i in portPairs:
+        for i in portsPairs:
             if "(" in i[1]:
                 tmp = i[1].replace("(", "[").replace(")", "]")
             else:

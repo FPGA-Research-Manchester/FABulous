@@ -71,7 +71,31 @@ class Port():
     sideOfTile: Side
 
     def __repr__(self) -> str:
-        return f"wires:{self.wireCount} X_offset:{self.xOffset} Y_offset:{self.yOffset} source_name:{self.sourceName} destination_name:{self.destinationName}"
+        return f"Port(Name={self.name}, IO={self.inOut.value}, XOffset={self.xOffset}, YOffset={self.yOffset}, WireCount={self.wireCount}, Side={self.sideOfTile.value})"
+
+    def expandPortInfoByName(self, indexed=False) -> List[str]:
+        if self.sourceName == "NULL" or self.destinationName == "NULL":
+            wireCount = (abs(self.xOffset)+abs(self.yOffset)) * self.wireCount
+        else:
+            wireCount = self.wireCount
+        if not indexed:
+            return [f"{self.name}{i}" for i in range(wireCount)]
+        else:
+            return [f"{self.name}[{i}]" for i in range(wireCount)]
+
+    def expandPortInfoByNameTop(self, indexed=False) -> List[str]:
+        if self.sourceName == "NULL" or self.destinationName == "NULL":
+            startIndex = 0
+        else:
+            startIndex = (
+                (abs(self.xOffset)+abs(self.yOffset))-1) * self.wireCount
+
+        wireCount = (abs(self.xOffset)+abs(self.yOffset)) * self.wireCount
+
+        if not indexed:
+            return [f"{self.name}{i}" for i in range(startIndex, wireCount)]
+        else:
+            return [f"{self.name}[{i}]" for i in range(startIndex, wireCount)]
 
     def expandPortInfo(self, mode="SwitchMatrix") -> Tuple[List[str], List[str]]:
         """

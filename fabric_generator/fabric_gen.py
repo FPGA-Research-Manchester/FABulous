@@ -45,8 +45,8 @@ logger = logging.getLogger(__name__)
 class FabricGenerator:
     """
     This class contains all the function require to generate a fabric from csv files
-    to RTL file. To use the class the information will need to be parsed first using the 
-    function from file_parser.py. 
+    to RTL file. To use the class the information will need to be parsed first using the
+    function from file_parser.py.
 
     Attributes:
         fabric (Fabric): The parsed fabric object from CSV definition files
@@ -63,7 +63,7 @@ class FabricGenerator:
     @staticmethod
     def bootstrapSwitchMatrix(tile: Tile, outputDir: str) -> None:
         """
-        Generates a blank switch matrix csv file for the given tile. The top left corner will 
+        Generates a blank switch matrix csv file for the given tile. The top left corner will
         contain the name of the tile. Columns are the source signals and rows are the destination signals.
         The order of the signal will be:
         * standard wire
@@ -111,7 +111,7 @@ class FabricGenerator:
         """
         This function is export a given list description into its equivalent CSV switch matrix description.
         A comment will be appended to the end of the column and row of the matrix, which will indicate the number
-        of signal in a given row. 
+        of signal in a given row.
 
         Args:
             InFileName (str): The input file name of the list file
@@ -223,10 +223,10 @@ class FabricGenerator:
 
     def generateConfigMemInit(self, file: str, globalConfigBitsCounter: int) -> None:
         """
-        This function is used to generate the config memory initialization file for a given amount of configuration 
+        This function is used to generate the config memory initialization file for a given amount of configuration
         bits. THe amount of configuration bits is determined by the `frameBitsPerRow` attribute of the fabric.
-        The function will pack the configuration bit from the highest to the lowest bit in the config memory. 
-        ie. if have 100 configuration bits, with 32 frame bit per row, the function will pack from bit 99 starting from bit 31 of frame 0 to bit 28 of frame 3. 
+        The function will pack the configuration bit from the highest to the lowest bit in the config memory.
+        ie. if have 100 configuration bits, with 32 frame bit per row, the function will pack from bit 99 starting from bit 31 of frame 0 to bit 28 of frame 3.
 
         Args:
             file (str): The output file of the config memory initialization file
@@ -279,7 +279,7 @@ class FabricGenerator:
 
     def generateConfigMem(self, tile: Tile, configMemCsv: str) -> None:
         """
-        This function will generate the RTL code for configuration memory of the given tile. It the given configMemCsv file does not exist, it will be created using `generateConfigMemInit`. 
+        This function will generate the RTL code for configuration memory of the given tile. It the given configMemCsv file does not exist, it will be created using `generateConfigMemInit`.
 
         Args:
             tile (Tile): A tile object
@@ -364,11 +364,11 @@ class FabricGenerator:
 
     def genTileSwitchMatrix(self, tile: Tile) -> None:
         """
-        This function will generate the RTL code for the tile switch matrix of the given tile. The switch matrix 
-        generated will be based on `matrixDir` attribute of the tile. If the given file format is CSV type it will be 
-        parsed as a switch matrix CSV file. If the given file format is a `.list` file, the tool will convert the `.list` 
-        file into a switch matrix with specific ordering first before progressing. If the given file format is Verilog of 
-        VHDL, then the function will not generate anything. 
+        This function will generate the RTL code for the tile switch matrix of the given tile. The switch matrix
+        generated will be based on `matrixDir` attribute of the tile. If the given file format is CSV type it will be
+        parsed as a switch matrix CSV file. If the given file format is a `.list` file, the tool will convert the `.list`
+        file into a switch matrix with specific ordering first before progressing. If the given file format is Verilog of
+        VHDL, then the function will not generate anything.
 
         Args:
             tile (Tile): _description_
@@ -435,6 +435,7 @@ class FabricGenerator:
                 input, output = i.expandPortInfo("AutoSwitchMatrix")
                 destName += input
                 sourceName += output
+
         sourceName = list(dict.fromkeys(sourceName))
         destName = list(dict.fromkeys(destName))
 
@@ -442,10 +443,12 @@ class FabricGenerator:
             if "GND" in port or "VCC" in port:
                 continue
             self.writer.addPortScalar(port, IO.INPUT, indentLevel=2)
+
         for port in destName:
             if "GND" in port or "VCC" in port:
                 continue
             self.writer.addPortScalar(port, IO.OUTPUT, indentLevel=2)
+
         self.writer.addComment("global", onNewLine=True)
         if noConfigBits > 0:
             if self.fabric.configBitMode == ConfigBitMode.FLIPFLOP_CHAIN:
@@ -640,7 +643,7 @@ class FabricGenerator:
 
     def generateTile(self, tile: Tile) -> None:
         """
-        Generate the RTL code for a tile given the tile object. 
+        Generate the RTL code for a tile given the tile object.
 
         Args:
             tile (Tile): The tile object
@@ -979,68 +982,47 @@ class FabricGenerator:
         # 3.b) JUMP wire OUTPUTS
         # The switch matrix uses single bit ports (std_logic and not std_logic_vector)!!!
 
-        switchMatrixConfigPort = 5
-        portInputIndexed = []
-        portOutputIndexed = []
-        portTopInput = []
-        portTopOutputs = []
-        jumpWire = []
-        sourceName, destName = [], []
-        # normal wire
+        portsPairs = []
+        # normal input wire
         for i in tile.portsInfo:
-            if i.wireDirection != Direction.JUMP:
-                input, output = i.expandPortInfo("AutoSwitchMatrix")
-                sourceName += input
-                destName += output
-        # bel wire
-        for b in tile.bels:
-            for p in b.inputs:
-                sourceName.append(f"{p}")
-            for p in b.outputs:
-                destName.append(f"{p}")
+            if i.wireDirection != Direction.JUMP and i.inOut == IO.INPUT and i.name != "NULL":
+                portsPairs += list(zip(i.expandPortInfoByName(),
+                                   i.expandPortInfoByName(indexed=True)))
+        # bel input wire (bel output is input to switch matrix)
+        for bel in tile.bels:
+            for p in bel.outputs:
+                portsPairs.append((p, p))
 
-        # jump wire
+        # jump input wire
+        port, signal = [], []
         for i in tile.portsInfo:
-            if i.wireDirection == Direction.JUMP:
-                input, output = i.expandPortInfo("AutoSwitchMatrix")
-                sourceName += input
-                destName += output
-        # removing duplicates
-        sourceName = list(dict.fromkeys(sourceName))
-        destName = list(dict.fromkeys(destName))
-        # get indexed version of the port of the tile
-        for p in tile.portsInfo:
-            if p.wireDirection != Direction.JUMP:
-                input, output = p.expandPortInfo(
-                    mode="AutoSwitchMatrixIndexed")
-                portInputIndexed += input
-                portOutputIndexed += output
-                input, output = p.expandPortInfo(mode="AutoTopIndexed")
-                portTopInput += input
-                portTopOutputs += output
-            else:
-                input, output = p.expandPortInfo(
-                    mode="AutoSwitchMatrixIndexed")
-                input = [i for i in input if "GND" not in i and "VCC" not in i]
-                jumpWire += input
+            if i.wireDirection == Direction.JUMP and i.inOut == IO.INPUT and i.name != "NULL":
+                port += i.expandPortInfoByName()
+            if i.wireDirection == Direction.JUMP and i.inOut == IO.OUTPUT and i.name != "NULL":
+                signal += i.expandPortInfoByName(indexed=True)
 
-        belOutputs = []
-        belInputs = []
-        # removing duplicates
-        portOutputIndexed = list(dict.fromkeys(portOutputIndexed))
-        portTopInput = list(dict.fromkeys(portTopInput))
-        jumpWire = list(dict.fromkeys(jumpWire))
-        for b in tile.bels:
-            belOutputs += b.outputs
-            belInputs += b.inputs
+        portsPairs += list(zip(port, signal))
 
-        portList = [i for i in (destName + sourceName)
-                    if "GND" not in i and "VCC" not in i]
-        signal = portOutputIndexed + belOutputs + \
-            jumpWire + portTopInput + belInputs + jumpWire
+        # normal output wire
+        for i in tile.portsInfo:
+            if i.wireDirection != Direction.JUMP and i.inOut == IO.OUTPUT and i.name != "NULL":
+                portsPairs += list(zip(i.expandPortInfoByName(),
+                                   i.expandPortInfoByNameTop(indexed=True)))
 
-        assert len(portList) == len(signal)
-        portsPairs = list(zip(portList, signal))
+        # bel output wire (bel input is input to switch matrix)
+        for bel in tile.bels:
+            for p in bel.inputs:
+                portsPairs.append((p, p))
+
+        # jump output wire
+        port, signal = [], []
+        for i in tile.portsInfo:
+            if i.wireDirection == Direction.JUMP and i.inOut == IO.OUTPUT and i.name != "NULL":
+                port += i.expandPortInfoByName()
+            if i.wireDirection == Direction.JUMP and i.inOut == IO.OUTPUT and i.name != "NULL":
+                signal += i.expandPortInfoByName(indexed=True)
+
+        portsPairs += list(zip(port, signal))
 
         if self.fabric.configBitMode == ConfigBitMode.FLIPFLOP_CHAIN:
             portsPairs.append(("MODE", "Mode"))
@@ -1321,7 +1303,7 @@ class FabricGenerator:
 
     def generateFabric(self) -> None:
         """
-        Generate the fabric. The fabric description will be a flat description. 
+        Generate the fabric. The fabric description will be a flat description.
         """
 
         # There are of course many possibilities for generating the fabric.

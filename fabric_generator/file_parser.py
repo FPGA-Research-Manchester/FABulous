@@ -107,7 +107,7 @@ def parseFabricCSV(fileName: str) -> Fabric:
                 ports.append(Port(Direction.JUMP, temp[1], int(
                     temp[2]), int(temp[3]), temp[4], int(temp[5]), temp[1], IO.OUTPUT, Side.ANY))
                 ports.append(Port(Direction.JUMP, temp[1], int(
-                    temp[2]), int(temp[3]), temp[4], int(temp[5]), temp[1], IO.INOUT, Side.ANY))
+                    temp[2]), int(temp[3]), temp[4], int(temp[5]), temp[4], IO.INPUT, Side.ANY))
             elif temp[0] == "BEL":
                 belFilePath = os.path.join(filePath, temp[1])
                 if temp[1].endswith(".vhdl"):
@@ -527,7 +527,6 @@ def parseFileVHDL(filename: str, belPrefix: str = "") -> Tuple[List[Tuple[str, I
     return internal, external, config, shared, noConfigBits, userClk, belMapDic
 
 
-
 def parseFileVerilog(filename: str, belPrefix: str = "") -> Tuple[List[Tuple[str, IO]], List[Tuple[str, IO]], List[Tuple[str, IO]], List[Tuple[str, IO]], int, bool, Dict[str, Dict]]:
     """
     Parse a Verilog bel file and return all the related information of the bel. The tuple returned for relating to ports 
@@ -565,7 +564,7 @@ def parseFileVerilog(filename: str, belPrefix: str = "") -> Tuple[List[Tuple[str
     the **EXTERNAL** attribute.
 
     **GLOBAL** attribute will notify FABulous to stop parsing any pin after this attribute. 
-    
+
     **CONFIG_PORT** attribute will notify FABulous the port is for configuration.
 
     Example:
@@ -669,6 +668,7 @@ def parseFileVerilog(filename: str, belPrefix: str = "") -> Tuple[List[Tuple[str
 
     return internal, external, config, shared, noConfigBits, userClk, belMapDic
 
+
 def _belMapProcessing(file: str, filename: str, syntax: Literal["vhdl", "verilog"]) -> Dict:
     pre = ""
     if syntax == "vhdl":
@@ -708,7 +708,7 @@ def _belMapProcessing(file: str, filename: str, syntax: Literal["vhdl", "verilog
         for bel in belMap:
             bel = bel.split("=")
             belNameTemp = bel[0].rsplit("_", 1)
-            # process scalar 
+            # process scalar
             if len(belNameTemp) > 1 and belNameTemp[1].isnumeric():
                 bel[0] = f"{belNameTemp[0]}[{belNameTemp[1]}]"
             belMapDic[bel[0]] = {}

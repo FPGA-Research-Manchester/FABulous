@@ -405,47 +405,46 @@ class FabricGenerator:
         # This simplifies it to generate the configuration port only if needed later when building the fabric where we are only working with the VHDL files
 
         # VHDL header
-        self.writer.addComment(
-            f"NumberOfConfigBits: {noConfigBits}")
+        self.writer.addComment(f"NumberOfConfigBits: {noConfigBits}")
         self.writer.addHeader(f"{tile.name}_switch_matrix")
         self.writer.addParameterStart(indentLevel=1)
-        self.writer.addParameter("NoConfigBits", "integer",
-                                 noConfigBits, indentLevel=2)
+        self.writer.addParameter("NoConfigBits", "integer", noConfigBits, indentLevel=2)
         self.writer.addParameterEnd(indentLevel=1)
         self.writer.addPortStart(indentLevel=1)
-        sourceName, destName = [], []
-        # normal wire
+        
+        # normal wire input
         for i in tile.portsInfo:
-            if i.wireDirection != Direction.JUMP:
-                input, output = i.expandPortInfo("AutoSwitchMatrix")
-                destName += input
-                sourceName += output
-        # bel wire
+            if i.wireDirection != Direction.JUMP and i.inOut == IO.INPUT:
+                for p in i.expandPortInfoByName():
+                    self.writer.addPortScalar(p, IO.INPUT, indentLevel=2)
+
+        # bel wire input 
         for b in tile.bels:
-            for p in list(dict.fromkeys(b.inputs)):
-                destName.append(f"{p}")
-            for p in list(dict.fromkeys(b.outputs)):
-                sourceName.append(f"{p}")
+            for p in b.outputs:
+                self.writer.addPortScalar(p, IO.INPUT, indentLevel=2)
 
-        # jump wire
+        # jump wire input
         for i in tile.portsInfo:
-            if i.wireDirection == Direction.JUMP:
-                input, output = i.expandPortInfo("AutoSwitchMatrix")
-                destName += input
-                sourceName += output
+            if i.wireDirection == Direction.JUMP and i.inOut == IO.INPUT:
+                for p in i.expandPortInfoByName():
+                    self.writer.addPortScalar(p, IO.INPUT, indentLevel=2)
 
-        sourceName = list(dict.fromkeys(sourceName))
-        destName = list(dict.fromkeys(destName))
+        # normal wire output
+        for i in tile.portsInfo:
+            if i.wireDirection != Direction.JUMP and i.inOut == IO.OUTPUT:
+                for p in i.expandPortInfoByName():
+                    self.writer.addPortScalar(p, IO.OUTPUT, indentLevel=2)
 
-        for port in sourceName:
-            if "GND" in port or "VCC" in port:
-                continue
-            self.writer.addPortScalar(port, IO.INPUT, indentLevel=2)
+        # bel wire output 
+        for b in tile.bels:
+            for p in b.inputs:
+                self.writer.addPortScalar(p, IO.OUTPUT, indentLevel=2)
 
-        for port in destName:
-            if "GND" in port or "VCC" in port:
-                continue
-            self.writer.addPortScalar(port, IO.OUTPUT, indentLevel=2)
+        # jump wire output
+        for i in tile.portsInfo:
+            if i.wireDirection == Direction.JUMP and i.inOut == IO.OUTPUT:
+                for p in i.expandPortInfoByName():
+                    self.writer.addPortScalar(p, IO.OUTPUT, indentLevel=2)
 
         self.writer.addComment("global", onNewLine=True)
         if noConfigBits > 0:

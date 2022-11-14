@@ -1215,8 +1215,7 @@ class FabricGenerator:
                         (p.name, f"Tile_X{x}Y{y}_{p.name}"))
 
                 # add clock to tile
-                if tile.withUserCLK:
-                    portsPairs.append(("UserCLK", "userCLK"))
+                portsPairs.append(("UserCLK", "userCLK"))
                 portsPairs.append(("UserCLKo", "userCLKo"))
 
                 if self.fabric.configBitMode == ConfigBitMode.FRAME_BASED:
@@ -1768,19 +1767,26 @@ class FabricGenerator:
 
         # the fabric module
         portList = []
+        signal = []
 
         # W_IO ports
         for i in range(1, self.fabric.numberOfRows - 1):
             portList.append(f"Tile_X0Y{i}_A_I_top")
             portList.append(f"Tile_X0Y{i}_B_I_top")
 
+        signal += [f"I_top[{i}]" for i in range(numberOfRows*2-1, -1, -1)]
+
         for i in range(1, self.fabric.numberOfRows - 1):
             portList.append(f"Tile_X0Y{i}_A_T_top")
             portList.append(f"Tile_X0Y{i}_B_T_top")
 
+        signal += [f"T_top[{i}]" for i in range(numberOfRows*2-1, -1, -1)]
+
         for i in range(1, self.fabric.numberOfRows - 1):
             portList.append(f"Tile_X0Y{i}_A_O_top")
             portList.append(f"Tile_X0Y{i}_B_O_top")
+
+        signal += [f"O_top[{i}]" for i in range(numberOfRows*2-1, -1, -1)]
 
         for i in range(1, self.fabric.numberOfRows - 1):
             portList.append(f"Tile_X0Y{i}_A_config_C_bit0")
@@ -1788,11 +1794,16 @@ class FabricGenerator:
             portList.append(f"Tile_X0Y{i}_A_config_C_bit2")
             portList.append(f"Tile_X0Y{i}_A_config_C_bit3")
 
+        signal += [f"A_config_C[{i}]" for i in range(numberOfRows*4-1, -1, -1)]
+
         for i in range(1, self.fabric.numberOfRows - 1):
             portList.append(f"Tile_X0Y{i}_B_config_C_bit0")
             portList.append(f"Tile_X0Y{i}_B_config_C_bit1")
             portList.append(f"Tile_X0Y{i}_B_config_C_bit2")
             portList.append(f"Tile_X0Y{i}_B_config_C_bit3")
+
+        signal += [f"B_config_C[{i}]" for i in range(numberOfRows*4-1, -1, -1)]
+        
 
         # RAM_IO ports
         for i in range(1, self.fabric.numberOfRows - 1):
@@ -1801,11 +1812,15 @@ class FabricGenerator:
                     portList.append(
                         f"Tile_X{self.fabric.numberOfColumns-1}Y{i}_RAM2FAB_D{j}_I{k}")
 
+        signal += [f"RAM2FAB_D[{i}]" for i in range(numberOfRows*4*4-1, -1, -1)]
+
         for i in range(1, self.fabric.numberOfRows - 1):
             for j in range(4):
                 for k in range(4):
                     portList.append(
                         f"Tile_X{self.fabric.numberOfColumns-1}Y{i}_FAB2RAM_D{j}_O{k}")
+
+        signal += [f"FAB2RAM_D[{i}]" for i in range(numberOfRows*4*4-1, -1, -1)]
 
         for i in range(1, self.fabric.numberOfRows - 1):
             for j in range(2):
@@ -1813,10 +1828,14 @@ class FabricGenerator:
                     portList.append(
                         f"Tile_X{self.fabric.numberOfColumns-1}Y{i}_FAB2RAM_A{j}_O{k}")
 
+        signal += [f"FAB2RAM_A[{i}]" for i in range(numberOfRows*2*4-1, -1, -1)]
+
         for i in range(1, self.fabric.numberOfRows - 1):
             for j in range(4):
                 portList.append(
                     f"Tile_X{self.fabric.numberOfColumns-1}Y{i}_FAB2RAM_C_O{j}")
+
+        signal += [f"FAB2RAM_C[{i}]" for i in range(numberOfRows*4-1, -1, -1)]
 
         for i in range(1, self.fabric.numberOfRows - 1):
             portList.append(
@@ -1827,29 +1846,19 @@ class FabricGenerator:
                 f"Tile_X{self.fabric.numberOfColumns-1}Y{i}_Config_accessC_bit2")
             portList.append(
                 f"Tile_X{self.fabric.numberOfColumns-1}Y{i}_Config_accessC_bit3")
+        
+        signal += [f"Config_accessC[{i}]" for i in range(numberOfRows*4-1, -1, -1)]
+
 
         portList.append("UserCLK")
-        portList.append("FrameData")
-        portList.append("FrameStrobe")
-
-        signal = []
-        signal += [f"I_top[{i}]" for i in range(numberOfRows*2-1, -1, -1)]
-        signal += [f"T_top[{i}]" for i in range(numberOfRows*2-1, -1, -1)]
-        signal += [f"O_top[{i}]" for i in range(numberOfRows*2-1, -1, -1)]
-        signal += [f"A_config_C[{i}]" for i in range(numberOfRows*4-1, -1, -1)]
-        signal += [f"B_config_C[{i}]" for i in range(numberOfRows*4-1, -1, -1)]
-        signal += [f"RAM2FAB_D[{i}]" for i in range(
-            numberOfRows*4*4-1, -1, -1)]
-        signal += [f"FAB2RAM_D[{i}]" for i in range(
-            numberOfRows*4*4-1, -1, -1)]
-        signal += [f"FAB2RAM_A[{i}]" for i in range(
-            numberOfRows*2*4-1, -1, -1)]
-        signal += [f"FAB2RAM_C[{i}]" for i in range(numberOfRows*4-1, -1, -1)]
-        signal += [f"Config_accessC[{i}]" for i in range(
-            numberOfRows*4-1, -1, -1)]
         signal.append("CLK")
+
+        portList.append("FrameData")
         signal.append("FrameData")
+        
+        portList.append("FrameStrobe")
         signal.append("FrameSelect")
+
         assert len(portList) == len(signal)
         self.writer.addInstantiation(compName=self.fabric.name,
                                      compInsName=f"{self.fabric.name}_inst",
@@ -1858,27 +1867,25 @@ class FabricGenerator:
         self.writer.addNewLine()
 
         # the BRAM module
-        portList = ["clk", "rd_addr", "rd_data", "wr_addr",
-                    "wr_data", "C0", "C1", "C2", "C3", "C4", "C5"]
-        data_cap = int((numberOfRows*4*4)/self.fabric.numberOfBRAMs)
-        addr_cap = int((numberOfRows*4*2)/self.fabric.numberOfBRAMs)
-        config_cap = int((numberOfRows*4)/self.fabric.numberOfBRAMs)
+        data_cap = int((numberOfRows*4*4)/(self.fabric.numberOfBRAMs-1))
+        addr_cap = int((numberOfRows*4*2)/(self.fabric.numberOfBRAMs-1))
+        config_cap = int((numberOfRows*4)/(self.fabric.numberOfBRAMs-1))
         for i in range(self.fabric.numberOfBRAMs-1):
-            signal = ["CLK",
-                      f"FAB2RAM_A[{addr_cap*i+8-1}:{addr_cap*i}]",
-                      f"RAM2FAB_D[{addr_cap*i+32-1}:{addr_cap*i}]",
-                      f"FAB2RAM_A[{addr_cap *i+16-1}:{addr_cap*i+8}]",
-                      f"FAB2RAM_D[{data_cap*i+32-1}:{data_cap*i}]",
-                      f"FAB2RAM_C[{config_cap*i}]",
-                      f"FAB2RAM_C[{config_cap*i+1}]",
-                      f"FAB2RAM_C[{config_cap*i+2}]",
-                      f"FAB2RAM_C[{config_cap*i+3}]",
-                      f"FAB2RAM_C[{config_cap*i+4}]",
-                      f"FAB2RAM_C[{config_cap*i+5}]"
+            portsPairs = [("clk" ,"CLK"),
+                          ("rd_addr" , f"FAB2RAM_A[{addr_cap*i+8-1}:{addr_cap*i}]"),
+                          ("rd_data", f"RAM2FAB_D[{data_cap*i+32-1}:{data_cap*i}]"),
+                          ("wr_addr", f"FAB2RAM_A[{addr_cap *i+16-1}:{addr_cap*i+8}]"),
+                          ("wr_data", f"FAB2RAM_D[{data_cap*i+32-1}:{data_cap*i}]"),
+                          ("C0", f"FAB2RAM_C[{config_cap*i}]"),
+                          ("C1", f"FAB2RAM_C[{config_cap*i+1}]"),
+                          ("C2", f"FAB2RAM_C[{config_cap*i+2}]"),
+                          ("C3", f"FAB2RAM_C[{config_cap*i+3}]"),
+                          ("C4", f"FAB2RAM_C[{config_cap*i+4}]"),
+                          ("C5", f"FAB2RAM_C[{config_cap*i+5}]")
                       ]
             self.writer.addInstantiation(compName="BlockRAM_1KB",
                                          compInsName=f"Inst_BlockRAM_{i}",
-                                         portsPairs=list(zip(portList, signal)))
+                                         portsPairs=portsPairs)
         if isinstance(self.writer, VHDLWriter):
             self.writer.addAssignScalar(
                 "FrameData", ['X"12345678"', "FrameRegister", 'X"12345678"'])

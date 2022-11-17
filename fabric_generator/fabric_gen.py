@@ -2471,6 +2471,7 @@ def GenerateTileVerilog( tile_description, module, file ):
         if GlobalConfigBitsCounter > 0:
             #module_header_ports += ', FrameData, FrameStrobe'
             module_header_ports += ', FrameData, FrameData_O, FrameStrobe, FrameStrobe_O'
+            module_header_ports += '\n`ifdef EMULATION_MODE\n, Emulate_Bitstream\n`endif\n'
         else :
             module_header_ports += ', FrameStrobe, FrameStrobe_O'
     else:
@@ -2569,6 +2570,9 @@ def GenerateTileVerilog( tile_description, module, file ):
             print('\toutput [FrameBitsPerRow-1:0] FrameData_O;', file=file)
             print('\tinput [MaxFramesPerCol-1:0] FrameStrobe; //CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register', file=file)
             print('\toutput [MaxFramesPerCol-1:0] FrameStrobe_O;', file=file)
+            print('`ifdef EMULATION_MODE', file=file)
+            print(f'\tinput [MaxFramesPerCol*FrameBitsPerRow-1:0] Emulate_Bitstream;', file=file)
+            print('`endif', file=file)
         else :
             # print('\tinput [FrameBitsPerRow-1:0] FrameData; //CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register', file=file)
             # print('\toutput [FrameBitsPerRow-1:0] FrameData_O;', file=file)
@@ -2703,13 +2707,17 @@ def GenerateTileVerilog( tile_description, module, file ):
     # the <module>_ConfigMem module is only parametrized through generics, so we hard code its instantiation here
     if ConfigBitMode == 'frame_based' and GlobalConfigBitsCounter > 0:
         print('\n// configuration storage latches', file=file)
+        print('`ifdef EMULATION_MODE', file=file)
+        print('\tassign ConfigBits = Emulate_Bitstream;', file=file)
+        print('\tassign ConfigBits_N = ~Emulate_Bitstream;', file=file)
+        print('`else', file=file)
         print('\t'+module+'_ConfigMem Inst_'+module+'_ConfigMem (', file=file)
         print('\t.FrameData(FrameData),', file=file)
         print('\t.FrameStrobe(FrameStrobe),', file=file)
         print('\t.ConfigBits(ConfigBits),', file=file)
         print('\t.ConfigBits_N(ConfigBits_N)', file=file)
         print('\t);', file=file)
-
+        print('`endif', file=file)
     # BEL component instantiations
     print('\n//BEL component instantiations', file=file)
     All_BEL_Inputs = []                # the right hand signal name which gets a BEL prefix
@@ -2855,6 +2863,7 @@ def GenerateSuperTileVerilog(super_tile_description, module, file):
     x_tiles=len(super_tile_description[0])   # get the number of tiles in horizontal direction
     TileTypes = GetCellTypes(super_tile_description)
     module_header_ports_list = []
+    emulation_header_ports_list = []
     module_header_files = []
     TileTypeOutputPorts = []
     
@@ -2868,6 +2877,7 @@ def GenerateSuperTileVerilog(super_tile_description, module, file):
     SharedExternalPorts = []
     port_list = []
     external_port_list = ['\t// Tile IO ports from BELs']
+    emulation_ext_ports_list = []
     wire_list = []
     module_header_ports = ''
 
@@ -2983,8 +2993,15 @@ def GenerateSuperTileVerilog(super_tile_description, module, file):
                         external_port_list.append('\toutput [FrameBitsPerRow-1:0] '+port_prefix+'_'+'FrameData_O;   // CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register ')
                     else:
                         wire_list.append('\twire [FrameBitsPerRow-1:0] '+port_prefix+'_'+'FrameData_O;   // CONFIG_PORT this is a keyword needed to connect the tile to the bitstream frame register ')
-
+                    if GlobalConfigBitsCounter > 0:
+                        emulation_header_ports_list.append(port_prefix+'_'+'Emulate_Bitstream')
+                        emulation_ext_ports_list.append(f'\tinput [MaxFramesPerCol*FrameBitsPerRow-1:0] {port_prefix}_Emulate_Bitstream; ')
     module_header_ports += ', '.join(module_header_ports_list)
+    if len(emulation_header_ports_list) > 0:
+        module_header_ports += '\n`ifdef EMULATION_MODE\n'
+        module_header_ports += ', ' + ', '.join(emulation_header_ports_list) + '\n'
+        module_header_ports += '`endif\n'
+
     GenerateVerilog_Header(module_header_ports, file, module,  MaxFramesPerCol=str(MaxFramesPerCol), FrameBitsPerRow=str(FrameBitsPerRow),module_header_files = module_header_files)
     print('',file=file)
     
@@ -2992,6 +3009,11 @@ def GenerateSuperTileVerilog(super_tile_description, module, file):
         print(line_print, file=file)
     for line_print in external_port_list:
         print(line_print, file=file)
+    if len(emulation_ext_ports_list):
+        print('`ifdef EMULATION_MODE', file=file)
+        for line_print in emulation_ext_ports_list:
+            print(line_print, file=file)
+        print('`endif', file=file)
     #GenerateVerilog_PortsFooter(file, module)
     print('//signal declarations', file=file)
     for line_print in wire_list:
@@ -3226,6 +3248,9 @@ def GenerateSuperTileVerilog(super_tile_description, module, file):
                                     print('\t.FrameStrobe_O('+'Tile_X'+str(x)+'Y'+str(y)+'_FrameStrobe_O)' , file=file)
                                 print('\t);\n', file=file)
                             else:
+                                print('`ifdef EMULATION_MODE', file=file)
+                                print('\t.Emulate_Bitstream(Tile_X'+str(x)+'Y'+str(y)+'_Emulate_Bitstream), ' , file=file)
+                                print('`endif', file=file)
                                 if left_edge:
                                     print('\t.FrameData(Tile_X'+str(x)+'Y'+str(y)+'_FrameData), ' , file=file)
                                     print('\t.FrameData_O(Tile_X'+str(x)+'Y'+str(y)+'_FrameData_O), ' , file=file)
@@ -3694,9 +3719,9 @@ def GenerateFabricVerilog( FabricFile, file, module = 'eFPGA' ):
                                                         f.write('\t.'+port_prefix+'FrameStrobe_O('+'Tile_X'+str(x)+'Y'+str(y)+'_FrameStrobe_O),\n' )
                                             #f.write('`endif\n')
                                         else:
-                                            #f.write('`ifdef EMULATION_MODE\n')
-                                            #f.write('\t.'+port_prefix+'Emulate_Bitstream('+'`Tile_X'+str(x)+'Y'+str(y)+'_Emulate_Bitstream)\n')
-                                            #f.write('`else\n')
+                                            f.write('`ifdef EMULATION_MODE\n')
+                                            f.write('\t.'+port_prefix+'Emulate_Bitstream('+'`Tile_X'+str(x)+'Y'+str(y)+'_Emulate_Bitstream),\n')
+                                            f.write('`endif\n')
                                             if x == 0: #left_edge
                                                 if left_edge:
                                                     f.write('\t.'+port_prefix+'FrameData('+'Tile_Y'+str(y)+'_FrameData),\n' )
@@ -3955,6 +3980,9 @@ def GenerateFabricVerilog( FabricFile, file, module = 'eFPGA' ):
                                         print('\t.FrameStrobe('+'Tile_X'+str(x)+'Y'+str(y+1)+'_FrameStrobe_O),' , file=file)
                                         print('\t.FrameStrobe_O('+'Tile_X'+str(x)+'Y'+str(y)+'_FrameStrobe_O)\n\t);\n' , file=file)
                             else:
+                                print('`ifdef EMULATION_MODE', file=file)
+                                print('\t.Emulate_Bitstream('+'`Tile_X'+str(x)+'Y'+str(y)+'_Emulate_Bitstream),', file=file)
+                                print('`endif', file=file)
                                 if x == 0 and y == y_tiles-1: #left_bottom_corner
                                     print('\t.FrameData('+'Tile_Y'+str(y)+'_FrameData), ' , file=file)
                                     print('\t.FrameData_O('+'Tile_X'+str(x)+'Y'+str(y)+'_FrameData_O), ' , file=file)
@@ -4018,7 +4046,7 @@ def GenerateFabricVerilog( FabricFile, file, module = 'eFPGA' ):
             d = f.readlines()
             f.seek(0)
             for i in d:
-                if i not in lines_seen:
+                if i[0] == '`' or i not in lines_seen:
                     print(i, end='', file=file)
                     lines_seen.add(i)
             f.truncate()

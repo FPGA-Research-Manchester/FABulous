@@ -1,0 +1,12 @@
+set_io -nowarn CLK        35
+set_frequency CLK 12
+
+set_io -nowarn BTN_N      10
+set_io -nowarn LEDR_N     11
+set_io -nowarn LEDG_N     37
+
+set_io -nowarn LED1       26
+set_io -nowarn LED2       27
+set_io -nowarn LED3       25
+set_io -nowarn LED4       23
+set_io -nowarn LED5       21

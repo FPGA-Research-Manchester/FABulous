@@ -1,4 +1,5 @@
 Chip Gallery
 ============
+.. image:: FORTE_tapeouts.svg
+  :width: 800
 
-ASICs that had been implemented with FABulous

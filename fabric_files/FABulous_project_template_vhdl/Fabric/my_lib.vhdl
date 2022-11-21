@@ -1,11 +1,7 @@
--- This VHDL was converted from Verilog using the
--- Icarus Verilog VHDL Code Generator 11.0 (stable) ()
-
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
--- Generated from Verilog module LHQD1 (./models_pack.v:54)
 entity LHQD1 is
   port (
     D : in std_logic;
@@ -15,20 +11,13 @@ entity LHQD1 is
   );
 end entity; 
 
--- Generated from Verilog module LHQD1 (./models_pack.v:54)
 architecture from_verilog of LHQD1 is
-  signal Q_Reg : std_logic;
-  signal QN_Reg : std_logic;
 begin
-  Q <= Q_Reg;
-  QN <= QN_Reg;
-  
-  -- Generated from always process in LHQD1 (./models_pack.v:55)
   process (E, D) is
   begin
-    if E = '1' then
-      Q_Reg <= D;
-      QN_Reg <= not D;
+    if rising_edge(E) then
+      Q <= D;
+      QN <= not D;
     end if;
   end process;
 end architecture;
@@ -37,7 +26,6 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
--- Generated from Verilog module MUX16PTv2 (./models_pack.v:93)
 entity MUX16PTv2 is
   port (
     IN1 : in std_logic;
@@ -64,61 +52,35 @@ entity MUX16PTv2 is
   );
 end entity; 
 
--- Generated from Verilog module MUX16PTv2 (./models_pack.v:93)
 architecture from_verilog of MUX16PTv2 is
-  signal O_Reg : std_logic;
-  signal SEL : unsigned(3 downto 0);  -- Declared at ./models_pack.v:116
+  signal SEL : unsigned(3 downto 0); 
 begin
-  O <= O_Reg;
   SEL <= S4 & S3 & S2 & S1;
-  
-  -- Generated from always process in MUX16PTv2 (./models_pack.v:119)
-  process (SEL, IN1, IN2, IN3, IN4, IN5, IN6, IN7, IN8, IN9, IN10, IN11, IN12, IN13, IN14, IN15, IN16) is
-  begin
-    case SEL is
-      when X"0" =>
-        O_Reg <= IN1;
-      when X"1" =>
-        O_Reg <= IN2;
-      when X"2" =>
-        O_Reg <= IN3;
-      when X"3" =>
-        O_Reg <= IN4;
-      when X"4" =>
-        O_Reg <= IN5;
-      when X"5" =>
-        O_Reg <= IN6;
-      when X"6" =>
-        O_Reg <= IN7;
-      when X"7" =>
-        O_Reg <= IN8;
-      when X"8" =>
-        O_Reg <= IN9;
-      when X"9" =>
-        O_Reg <= IN10;
-      when X"a" =>
-        O_Reg <= IN11;
-      when X"b" =>
-        O_Reg <= IN12;
-      when X"c" =>
-        O_Reg <= IN13;
-      when X"d" =>
-        O_Reg <= IN14;
-      when X"e" =>
-        O_Reg <= IN15;
-      when X"f" =>
-        O_Reg <= IN16;
-      when others =>
-        O_Reg <= '0';
-    end case;
-  end process;
+  with SEL select
+    O <= IN1 after 1 ps  when X"0",
+        IN2 after 1 ps  when X"1",
+        IN3 after 1 ps  when X"2",
+        IN4 after 1 ps when X"3",
+        IN5 after 1 ps when X"4",
+        IN6 after 1 ps when X"5",
+        IN7 after 1 ps when X"6",
+        IN8 after 1 ps when X"7",
+        IN9 after 1 ps when X"8",
+        IN10 after 1 ps when X"9",
+        IN11 after 1 ps when X"a",
+        IN12 after 1 ps when X"b",
+        IN13 after 1 ps when X"c",
+        IN14 after 1 ps when X"d",
+        IN15 after 1 ps when X"e",
+        IN16 after 1 ps when X"f",
+        '0'  when others;
+
 end architecture;
 
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
--- Generated from Verilog module MUX4PTv4 (./models_pack.v:68)
 entity MUX4PTv4 is
   port (
     IN1 : in std_logic;
@@ -131,37 +93,24 @@ entity MUX4PTv4 is
   );
 end entity; 
 
--- Generated from Verilog module MUX4PTv4 (./models_pack.v:68)
 architecture from_verilog of MUX4PTv4 is
-  signal O_Reg : std_logic;
-  signal SEL : unsigned(1 downto 0);  -- Declared at ./models_pack.v:77
+  signal SEL : unsigned(1 downto 0); 
 begin
-  O <= O_Reg;
   SEL <= S2 & S1;
+
+  with SEL select
+    O <= IN1 after 1 ps when "00",
+         IN2 after 1 ps when "01",
+         IN3 after 1 ps when "10",
+         IN4 after 1 ps when "11",
+         '0' after 1 ps when others ;
   
-  -- Generated from always process in MUX4PTv4 (./models_pack.v:80)
-  process (SEL, IN1, IN2, IN3, IN4) is
-  begin
-    case SEL is
-      when "00" =>
-        O_Reg <= IN1;
-      when "01" =>
-        O_Reg <= IN2;
-      when "10" =>
-        O_Reg <= IN3;
-      when "11" =>
-        O_Reg <= IN4;
-      when others =>
-        O_Reg <= '0';
-    end case;
-  end process;
 end architecture;
 
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
--- Generated from Verilog module cus_mux161 (./models_pack.v:325)
 entity cus_mux161 is
   port (
     A0 : in std_logic;
@@ -192,12 +141,11 @@ entity cus_mux161 is
   );
 end entity; 
 
--- Generated from Verilog module cus_mux161 (./models_pack.v:325)
 architecture from_verilog of cus_mux161 is
-  signal cus_mux41_out0 : std_logic;  -- Declared at ./models_pack.v:352
-  signal cus_mux41_out1 : std_logic;  -- Declared at ./models_pack.v:353
-  signal cus_mux41_out2 : std_logic;  -- Declared at ./models_pack.v:354
-  signal cus_mux41_out3 : std_logic;  -- Declared at ./models_pack.v:355
+  signal cus_mux41_out0 : std_logic;
+  signal cus_mux41_out1 : std_logic;
+  signal cus_mux41_out2 : std_logic;
+  signal cus_mux41_out3 : std_logic;
   
   component cus_mux41 is
     port (
@@ -212,10 +160,9 @@ architecture from_verilog of cus_mux161 is
       X : out std_logic
     );
   end component;
-  signal X_Readable : std_logic;  -- Needed to connect outputs
+  signal X_Readable : std_logic;
 begin
   
-  -- Generated from instantiation at ./models_pack.v:357
   cus_mux41_inst0: cus_mux41
     port map (
       A0 => A0,
@@ -229,7 +176,6 @@ begin
       X => cus_mux41_out0
     );
   
-  -- Generated from instantiation at ./models_pack.v:369
   cus_mux41_inst1: cus_mux41
     port map (
       A0 => A4,
@@ -243,7 +189,6 @@ begin
       X => cus_mux41_out1
     );
   
-  -- Generated from instantiation at ./models_pack.v:381
   cus_mux41_inst2: cus_mux41
     port map (
       A0 => A8,
@@ -257,7 +202,6 @@ begin
       X => cus_mux41_out2
     );
   
-  -- Generated from instantiation at ./models_pack.v:393
   cus_mux41_inst3: cus_mux41
     port map (
       A0 => A12,
@@ -272,7 +216,6 @@ begin
     );
   X <= X_Readable;
   
-  -- Generated from instantiation at ./models_pack.v:405
   cus_mux41_inst4: cus_mux41
     port map (
       A0 => cus_mux41_out0,
@@ -291,7 +234,6 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
--- Generated from Verilog module cus_mux41 (./models_pack.v:150)
 entity cus_mux41 is
   port (
     A0 : in std_logic;
@@ -306,39 +248,27 @@ entity cus_mux41 is
   );
 end entity; 
 
--- Generated from Verilog module cus_mux41 (./models_pack.v:150)
 architecture from_verilog of cus_mux41 is
-  signal X_Reg : std_logic;
-  signal SEL : unsigned(1 downto 0);  -- Declared at ./models_pack.v:161
+  signal SEL : unsigned(1 downto 0);
+  signal X_reg : std_logic;
   signal LPM_d0_ivl_1 : std_logic;
   signal LPM_d1_ivl_1 : std_logic;
 begin
-  X <= X_Reg;
   SEL <= S1 & S0;
-  
-  -- Generated from always process in cus_mux41 (./models_pack.v:164)
-  process (SEL, A0, A1, A2, A3) is
-  begin
-    case SEL is
-      when "00" =>
-        X_Reg <= A0;
-      when "01" =>
-        X_Reg <= A1;
-      when "10" =>
-        X_Reg <= A2;
-      when "11" =>
-        X_Reg <= A3;
-      when others =>
-        X_Reg <= '0';
-    end case;
-  end process;
+
+  with SEL select
+    X <= A0 after 1 ps when "00",
+         A1 after 1 ps when "01",
+         A2 after 1 ps when "10",
+         A3 after 1 ps when "11",
+         '0' after 1 ps when others;
+
 end architecture;
 
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
--- Generated from Verilog module cus_mux161_buf (./models_pack.v:418)
 entity cus_mux161_buf is
   port (
     A0 : in std_logic;
@@ -371,10 +301,10 @@ end entity;
 
 -- Generated from Verilog module cus_mux161_buf (./models_pack.v:418)
 architecture from_verilog of cus_mux161_buf is
-  signal cus_mux41_buf_out0 : std_logic;  -- Declared at ./models_pack.v:445
-  signal cus_mux41_buf_out1 : std_logic;  -- Declared at ./models_pack.v:446
-  signal cus_mux41_buf_out2 : std_logic;  -- Declared at ./models_pack.v:447
-  signal cus_mux41_buf_out3 : std_logic;  -- Declared at ./models_pack.v:448
+  signal cus_mux41_buf_out0 : std_logic;
+  signal cus_mux41_buf_out1 : std_logic; 
+  signal cus_mux41_buf_out2 : std_logic; 
+  signal cus_mux41_buf_out3 : std_logic; 
   
   component cus_mux41_buf is
     port (
@@ -389,10 +319,8 @@ architecture from_verilog of cus_mux161_buf is
       X : out std_logic
     );
   end component;
-  signal X_Readable : std_logic;  -- Needed to connect outputs
+  signal X_Readable : std_logic; 
 begin
-  
-  -- Generated from instantiation at ./models_pack.v:450
   cus_mux41_buf_inst0: cus_mux41_buf
     port map (
       A0 => A0,
@@ -406,7 +334,6 @@ begin
       X => cus_mux41_buf_out0
     );
   
-  -- Generated from instantiation at ./models_pack.v:462
   cus_mux41_buf_inst1: cus_mux41_buf
     port map (
       A0 => A4,
@@ -419,8 +346,7 @@ begin
       S1N => S1N,
       X => cus_mux41_buf_out1
     );
-  
-  -- Generated from instantiation at ./models_pack.v:474
+
   cus_mux41_buf_inst2: cus_mux41_buf
     port map (
       A0 => A8,
@@ -434,7 +360,6 @@ begin
       X => cus_mux41_buf_out2
     );
   
-  -- Generated from instantiation at ./models_pack.v:486
   cus_mux41_buf_inst3: cus_mux41_buf
     port map (
       A0 => A12,
@@ -448,8 +373,7 @@ begin
       X => cus_mux41_buf_out3
     );
   X <= X_Readable;
-  
-  -- Generated from instantiation at ./models_pack.v:498
+
   cus_mux41_buf_inst4: cus_mux41_buf
     port map (
       A0 => cus_mux41_buf_out0,
@@ -468,7 +392,6 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
--- Generated from Verilog module cus_mux41_buf (./models_pack.v:176)
 entity cus_mux41_buf is
   port (
     A0 : in std_logic;
@@ -483,39 +406,25 @@ entity cus_mux41_buf is
   );
 end entity; 
 
--- Generated from Verilog module cus_mux41_buf (./models_pack.v:176)
 architecture from_verilog of cus_mux41_buf is
-  signal X_Reg : std_logic;
-  signal SEL : unsigned(1 downto 0);  -- Declared at ./models_pack.v:187
+  signal SEL : unsigned(1 downto 0); 
   signal LPM_d0_ivl_1 : std_logic;
   signal LPM_d1_ivl_1 : std_logic;
 begin
-  X <= X_Reg;
   SEL <= S1 & S0;
-  
-  -- Generated from always process in cus_mux41_buf (./models_pack.v:190)
-  process (SEL, A0, A1, A2, A3) is
-  begin
-    case SEL is
-      when "00" =>
-        X_Reg <= A0;
-      when "01" =>
-        X_Reg <= A1;
-      when "10" =>
-        X_Reg <= A2;
-      when "11" =>
-        X_Reg <= A3;
-      when others =>
-        X_Reg <= '0';
-    end case;
-  end process;
+  with SEL select
+    X <= A0 after 1 ps when "00",
+         A1 after 1 ps when "01",
+         A2 after 1 ps when "10",
+         A3 after 1 ps when "11",
+        '0' after 1 ps when others;
+
 end architecture;
 
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
--- Generated from Verilog module cus_mux81 (./models_pack.v:221)
 entity cus_mux81 is
   port (
     A0 : in std_logic;
@@ -536,10 +445,9 @@ entity cus_mux81 is
   );
 end entity; 
 
--- Generated from Verilog module cus_mux81 (./models_pack.v:221)
 architecture from_verilog of cus_mux81 is
-  signal cus_mux41_out0 : std_logic;  -- Declared at ./models_pack.v:238
-  signal cus_mux41_out1 : std_logic;  -- Declared at ./models_pack.v:239
+  signal cus_mux41_out0 : std_logic;  
+  signal cus_mux41_out1 : std_logic; 
   
   component cus_mux41 is
     port (
@@ -563,10 +471,9 @@ architecture from_verilog of cus_mux81 is
       X : out std_logic
     );
   end component;
-  signal X_Readable : std_logic;  -- Needed to connect outputs
+  signal X_Readable : std_logic; 
 begin
   
-  -- Generated from instantiation at ./models_pack.v:241
   cus_mux41_inst0: cus_mux41
     port map (
       A0 => A0,
@@ -580,7 +487,6 @@ begin
       X => cus_mux41_out0
     );
   
-  -- Generated from instantiation at ./models_pack.v:253
   cus_mux41_inst1: cus_mux41
     port map (
       A0 => A4,
@@ -595,7 +501,6 @@ begin
     );
   X <= X_Readable;
   
-  -- Generated from instantiation at ./models_pack.v:265
   my_mux2_inst: my_mux2
     port map (
       A0 => cus_mux41_out0,
@@ -609,7 +514,6 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
--- Generated from Verilog module my_mux2 (./models_pack.v:202)
 entity my_mux2 is
   port (
     A0 : in std_logic;
@@ -619,26 +523,16 @@ entity my_mux2 is
   );
 end entity; 
 
--- Generated from Verilog module my_mux2 (./models_pack.v:202)
 architecture from_verilog of my_mux2 is
-  signal X_Reg : std_logic;
-  signal SEL : std_logic;  -- Declared at ./models_pack.v:208
+  signal SEL : std_logic;
 begin
-  X <= X_Reg;
   SEL <= S;
+
+  with SEL select
+    X <= A0 after 1 ps when '0',
+         A1 after 1 ps when '1',
+        '0' after 1 ps when others;
   
-  -- Generated from always process in my_mux2 (./models_pack.v:211)
-  process (SEL, A0, A1) is
-  begin
-    case SEL is
-      when '0' =>
-        X_Reg <= A0;
-      when '1' =>
-        X_Reg <= A1;
-      when others =>
-        X_Reg <= '0';
-    end case;
-  end process;
 end architecture;
 
 library ieee;

@@ -37,13 +37,6 @@ begin
   data <= data_Reg;
   strobe <= strobe_Reg;
   
-  -- Generated from initial process in bitbang (bitbang.v:1)
-  process is
-  begin
-    active_Reg <= '0';
-    wait;
-  end process;
-  
   -- Generated from always process in bitbang (bitbang.v:20)
   process (clk) is
   begin

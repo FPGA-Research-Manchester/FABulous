@@ -113,13 +113,13 @@ class VHDLWriter(codeGenerator):
 
     def addAssignScalar(self, left, right, delay=0, indentLevel=0):
         if type(right) == list:
-            self._add(f"{left} <= {' & '.join(right)};", indentLevel)
+            self._add(f"{left} <= {' & '.join(right)} after {delay} ps;", indentLevel)
         else:
             left = str(left).replace(":", " downto ").replace(
                 "[", "(").replace("]", ")")
             right = str(right).replace(":", " downto ").replace(
                 "[", "(").replace("]", ")")
-            self._add(f"{left} <= {right};", indentLevel)
+            self._add(f"{left} <= {right} after {delay} ps;", indentLevel)
 
     def addAssignVector(self, left, right, widthL, widthR, indentLevel=0):
         self._add(

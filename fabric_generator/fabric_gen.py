@@ -553,7 +553,7 @@ class FabricGenerator:
                     self.writer.addAssignScalar(portName, 1)
                 else:
                     self.writer.addAssignScalar(
-                        portName, connections[portName][0])
+                        portName, connections[portName][0], delay=self.fabric.generateDelayInSwitchMatrix)
                 self.writer.addNewLine()
             elif muxSize >= 2:
                 # this is the case for a configurable switch matrix multiplexer
@@ -601,7 +601,7 @@ class FabricGenerator:
                     # Changed it such that the left-most entry is located at the end of the concatenated vector for the multiplexing
                     # This was done such that the index from left-to-right in the adjacency matrix corresponds with the multiplexer select input (index)
                     self.writer.addAssignScalar(
-                        f"{portName}_input", connections[portName][::-1], self.fabric.generateDelayInSwitchMatrix)
+                        f"{portName}_input", connections[portName][::-1], delay=self.fabric.generateDelayInSwitchMatrix)
                     self.writer.addInstantiation(compName=muxComponentName,
                                                  compInsName=f"inst_{muxComponentName}_{portName}",
                                                  portsPairs=portsPairs)

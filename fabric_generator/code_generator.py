@@ -397,7 +397,7 @@ class codeGenerator(abc.ABC):
 
         Examples :
             | Verilog: assign **left** = **right**;
-            | VHDL: **left** <= **right**;
+            | VHDL: **left** <= **right** after **delay** ps;
 
         Args:
             left : The left hand side of the assign statement.

@@ -2,10 +2,9 @@
 set -ex
 DESIGN=counter
 BITSTREAM=test_design/${DESIGN}.bin
-VHDL=../Tile
 FLAG=--std=08
-# GHDL=./ghdl-macos-12-llvm/bin/ghdl
 GHDL=ghdl
+VHDL=../Tile
 
 
 MAX_BITBYTES=16384
@@ -104,12 +103,12 @@ $GHDL -a $FLAG ../Fabric/eFPGA_top.vhdl \
               ../Fabric/BlockRAM_1KB.vhdl \
               ../Fabric/eFPGA.vhdl
 
-$GHDL -a $FLAG ../Fabric/eFPGA_top.vhdl ./test_design/counter.vhdl ./fabulous_tb.vhdl
+$GHDL -a $FLAG ../Fabric/eFPGA_top.vhdl ./test_design/${DESIGN}.vhdl ./fabulous_tb.vhdl
 
 
 $GHDL -e $FLAG fab_tb
-$GHDL -r $FLAG fab_tb --assert-level=error --ieee-asserts=disable 
-
+$GHDL -r $FLAG fab_tb --assert-level=error --ieee-asserts=disable --stop-time=206980ns
+rm work-obj08.cf
 
 # with traces. The wave_filter is a file that contains the signals to be traced
-# $GHDL -r $FLAG fab_tb --assert-level=error --ieee-asserts=disable --vcd=trace.vcd --read-wave-opt=wave_filter
+# $GHDL -r $FLAG fab_tb --assert-level=error --ieee-asserts=disable --stop-time=206980ns --vcd=trace.vcd --read-wave-opt=wave_filter

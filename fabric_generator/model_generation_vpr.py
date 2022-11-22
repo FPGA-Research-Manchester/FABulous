@@ -48,7 +48,7 @@ def genVPRModel(fabric: Fabric, customXMLfile: str = "") -> str:
     # layout block
     layout = ET.SubElement(root, "layout")
     fixedLayout = ET.SubElement(layout, "fixed_layout", name="FABulous",
-                                width=str(fabric.numberOfColumns), height=str(fabric.numberOfRows))
+                                width=str(fabric.numberOfColumns-2), height=str(fabric.numberOfRows-2))
     ET.SubElement(fixedLayout, "single", type="clock_primitive",
                   priority="1", x="1", y="1")
     for y, row in enumerate(fabric.tile):
@@ -114,8 +114,12 @@ def genVPRModel(fabric: Fabric, customXMLfile: str = "") -> str:
                                                             "to": f"{bel.name}_wrapper.{port.removeprefix(bel.prefix)}"}
 
                 for port in bel.outputs:
-                    ET.SubElement(site, "direct").attrib = {"from": f"{bel.name}_wrapper.{port.removeprefix(bel.prefix)}",
-                                                            "to": f"{bel.prefix}{bel.name}.{port}"}
+                    ET.SubElement(site, "direct").attrib = {"to": f"{bel.name}_wrapper.{port.removeprefix(bel.prefix)}",
+                                                            "from": f"{bel.prefix}{bel.name}.{port}"}
+
+                if bel.withUserCLK:
+                    ET.SubElement(site, "direct").attrib = {"from": f"{bel.prefix}{bel.name}.UserCLK",
+                                                            "to": f"{bel.name}_wrapper.UserCLK"}
 
                 ET.SubElement(subTile, "input", name="UserCLK", num_pins="1")
                 for i in bel.inputs:
@@ -140,6 +144,9 @@ def genVPRModel(fabric: Fabric, customXMLfile: str = "") -> str:
 
     for bel in allBelVariant:
         if bel.name in allCustomXMLBelName:
+            element = customXML.find(f".//bel_info[@name='{bel.name}']//model")
+            if element is not None:
+                models.append(element)
             continue
         inputStriped = [i.removeprefix(bel.prefix) for i in bel.inputs]
         outputStriped = [i.removeprefix(bel.prefix) for i in bel.outputs]
@@ -147,72 +154,89 @@ def genVPRModel(fabric: Fabric, customXMLfile: str = "") -> str:
             continue
 
         model = ET.SubElement(models, "model", name=bel.name)
-        if inputStriped != []:
-            inputPorts = ET.SubElement(model, "input_ports")
-            for input in inputStriped:
+        inputPorts = ET.SubElement(model, "input_ports")
+        for input in inputStriped:
                 ET.SubElement(inputPorts, "port",
                               name=input, combinational_sink_ports=" ".join(outputStriped))
-            if bel.withUserCLK:
-                ET.SubElement(inputPorts, "port", name="UserCLK")
+        ET.SubElement(inputPorts, "port", name="UserCLK")
 
-        if outputStriped != []:
-            outputPorts = ET.SubElement(model, "output_ports")
-            for output in outputStriped:
+        outputPorts = ET.SubElement(model, "output_ports")
+        for output in outputStriped:
                 ET.SubElement(outputPorts, "port", name=output)
 
     # complex block list block
     complexBlockList = ET.SubElement(root, "complexblocklist")
-    outerPbType = ET.SubElement(
+
+    # clock primitive
+    pbTypeClockPrim = ET.SubElement(
         complexBlockList, "pb_type", name="clock_primitive")
-    pbType = ET.SubElement(outerPbType, "pb_type", name="clock_input",
+    pbTypeClock_input = ET.SubElement(pbTypeClockPrim, "pb_type", name="clock_input",
                            blif_model=".subckt Global_Clock", num_pb="1")
-    ET.SubElement(pbType, "output", name="CLK", num_pins="1")
-    ET.SubElement(outerPbType, "output", name="clock_out", num_pins="1")
-    interConnect = ET.SubElement(outerPbType, "interconnect")
+    ET.SubElement(pbTypeClock_input, "output", name="CLK", num_pins="1")
+    ET.SubElement(pbTypeClockPrim, "output", name="clock_out", num_pins="1")
+    interConnect = ET.SubElement(pbTypeClockPrim, "interconnect")
     ET.SubElement(interConnect, "direct", name="clock_prim_to_top",
                   input="clock_input.CLK", output="clock_primitive.clock_out")
-    pbType = ET.SubElement(complexBlockList, "pb_type", name="reserved_dummy")
-    ET.SubElement(pbType, "input", name="UserCLK", num_pins="1")
-    ET.SubElement(pbType, "interconnect")
+
+    # reserved dummy
+    pbTypeDummy = ET.SubElement(complexBlockList, "pb_type", name="reserved_dummy")
+    ET.SubElement(pbTypeDummy, "input", name="UserCLK", num_pins="1")
+    ET.SubElement(pbTypeDummy, "interconnect")
+
+    for name, tile in fabric.tileDic.items():
+        hangingPort = [i.destinationName for i in tile.portsInfo if "GND" in i.destinationName or "VCC" in i.destinationName]
+        if hangingPort:
+            pbTypeHang = ET.SubElement(complexBlockList, "pb_type", name=f"{tile.name}_hanging")
+            ET.SubElement(pbTypeHang, "interconnect")
+        for p in list(set(hangingPort)):
+            ET.SubElement(pbTypeHang, "output", name=p, num_pins="1")
+
     for bel in allBelVariant:
+        pbType = None
+        if bel.inputs + bel.outputs == []:
+            continue
         pbTypeWrapper = ET.SubElement(
             complexBlockList, "pb_type", name=f"{bel.name}_wrapper")
+        
         if bel.name in allCustomXMLBelName:
-            element = [i for i in customXML.findall(
-                "bel_info") if i.get("name") == bel.name][0]
-            pbTypeWrapper.append(element.findall("pb_type")[0])
+            element = customXML.find(f".//bel_info[@name='{bel.name}']//pb_type") 
+            pbTypeWrapper.append(element)
         else:
             pbType = ET.SubElement(
                 pbTypeWrapper, "pb_type", name=f"{bel.name}", num_pb="1", blif_model=f".subckt {bel.name}")
-            interConnect = ET.SubElement(pbTypeWrapper, "interconnect")
             for i in bel.inputs:
                 for j in bel.outputs:
                     ET.SubElement(pbType, "delay_constant", max="300e-12",
                                   in_port=f"{bel.name}.{i.removeprefix(bel.prefix)}", out_port=f"{bel.name}.{j.removeprefix(bel.prefix)}")
 
-            if "UserCLK" in [i[0] for i in bel.sharedPort]:
-                ET.SubElement(pbTypeWrapper, "input",
-                              name="UserCLK", num_pins="1")
+        interConnect = ET.SubElement(pbTypeWrapper, "interconnect")
+        if "UserCLK" in [i[0] for i in bel.sharedPort]:
+            ET.SubElement(pbTypeWrapper, "input",
+                            name="UserCLK", num_pins="1")
+            if pbType != None:
                 ET.SubElement(pbType, "input",
-                              name="UserCLK", num_pins="1")
-                ET.SubElement(interConnect, "direct",
-                              name=f"{bel.name}_UserCLK_to_top_child", input=f"{bel.name}_wrapper.UserCLK", output=f"{bel.name}.UserCLK")
+                                name="UserCLK", num_pins="1")
+            ET.SubElement(interConnect, "direct",
+                            name=f"{bel.name}_UserCLK_to_top_child", input=f"{bel.name}_wrapper.UserCLK", output=f"{bel.name}.UserCLK")
 
-            for i in bel.inputs:
-                ET.SubElement(pbTypeWrapper, "input",
-                              name=i.removeprefix(bel.prefix), num_pins="1")
+        for i in bel.inputs:
+            ET.SubElement(pbTypeWrapper, "input",
+                            name=i.removeprefix(bel.prefix), num_pins="1")
+            if pbType != None:
                 ET.SubElement(pbType, "input",
-                              name=i.removeprefix(bel.prefix), num_pins="1")
-                ET.SubElement(interConnect, "direct",
-                              name=f"{bel.name}_{i.removeprefix(bel.prefix)}_top_to_child", input=f"{bel.name}_wrapper.{i.removeprefix(bel.prefix)}", output=f"{bel.name}.{i.removeprefix(bel.prefix)}")
+                            name=i.removeprefix(bel.prefix), num_pins="1")
+            ET.SubElement(interConnect, "direct",
+                            name=f"{bel.name}_{i.removeprefix(bel.prefix)}_top_to_child", input=f"{bel.name}_wrapper.{i.removeprefix(bel.prefix)}", output=f"{bel.name}.{i.removeprefix(bel.prefix)}")
 
-            for i in bel.outputs:
-                ET.SubElement(pbTypeWrapper, "output",
-                              name=i.removeprefix(bel.prefix), num_pins="1")
+        for i in bel.outputs:
+            ET.SubElement(pbTypeWrapper, "output",
+                            name=i.removeprefix(bel.prefix), num_pins="1")
+            if pbType != None:
                 ET.SubElement(pbType, "output",
-                              name=i.removeprefix(bel.prefix), num_pins="1")
-                ET.SubElement(interConnect, "direct",
-                              name=f"{bel.name}_{i.removeprefix(bel.prefix)}_child_to_top", input=f"{bel.name}.{i.removeprefix(bel.prefix)}", output=f"{bel.name}_wrapper.{i.removeprefix(bel.prefix)}")
+                            name=i.removeprefix(bel.prefix), num_pins="1")
+            ET.SubElement(interConnect, "direct",
+                            name=f"{bel.name}_{i.removeprefix(bel.prefix)}_child_to_top", input=f"{bel.name}.{i.removeprefix(bel.prefix)}", output=f"{bel.name}_wrapper.{i.removeprefix(bel.prefix)}")
+    
 
     # switch list block
     switchList = ET.SubElement(root, "switchlist")
@@ -615,6 +639,11 @@ def genVPRRoutingResourceGraph(fabric: Fabric) -> str:
                   C_per_meter="2.25000005e-14")
 
     ET.indent(root, space="  ")
+
+    with open(".FABulous/maxWidth.txt", "w") as f:
+        logger.info("Output file: ./.FABulous/maxWidth.txt")
+        f.write(f"{maxWidth}")
+
     return ET.tostring(root, encoding="unicode")
 
 

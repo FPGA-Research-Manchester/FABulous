@@ -1,7 +1,7 @@
 <custom_xml_spec>
-  <bel_info name="LUT4c_frame_config">
+  <bel_info name="LUT4c_frame_config_dffesr">
     <bel_pb>
-      <pb_type name="LUT4c_frame_config" num_pb="1">
+      <pb_type name="LUT4c_frame_config_dffesr" num_pb="1">
         <pb_type name="lut4" blif_model=".names" num_pb="1" class="lut">
           <input name="in" num_pins="4" port_class="lut_in"/>
           <output name="out" num_pins="1" port_class="lut_out"/>
@@ -36,17 +36,17 @@
         <input name="SR" num_pins="1"/>
         <input name="EN" num_pins="1"/>
         <interconnect>
-          <direct name="I0_to_LUT_in" input="LUT4c_frame_config.I0" output="lut4.in[0]"/>
-          <direct name="I1_to_LUT_in" input="LUT4c_frame_config.I1" output="lut4.in[1]"/>
-          <direct name="I2_to_LUT_in" input="LUT4c_frame_config.I2" output="lut4.in[2]"/>
-          <direct name="I3_to_LUT_in" input="LUT4c_frame_config.I3" output="lut4.in[3]"/>
+          <direct name="I0_to_LUT_in" input="LUT4c_frame_config_dffesr.I0" output="lut4.in[0]"/>
+          <direct name="I1_to_LUT_in" input="LUT4c_frame_config_dffesr.I1" output="lut4.in[1]"/>
+          <direct name="I2_to_LUT_in" input="LUT4c_frame_config_dffesr.I2" output="lut4.in[2]"/>
+          <direct name="I3_to_LUT_in" input="LUT4c_frame_config_dffesr.I3" output="lut4.in[3]"/>
           <direct name="LUT_out_to_ff" input="lut4.out" output="ff.D">
             <pack_pattern name="lut_with_ff" in_port="lut4.out" out_port="ff.D"/>
           </direct>
-          <direct name="clock_pb_to_lut" input="LUT4c_frame_config.UserCLK" output="ff.clk"/>
-          <mux name="lut4c_out_mux" input="ff.Q lut4.out" output="LUT4c_frame_config.O">
-            <delay_constant max="25e-12" in_port="lut4.out" out_port="LUT4c_frame_config.O"/>
-            <delay_constant max="45e-12" in_port="ff.Q" out_port="LUT4c_frame_config.O"/>
+          <direct name="clock_pb_to_lut" input="LUT4c_frame_config_dffesr.UserCLK" output="ff.clk"/>
+          <mux name="lut4c_out_mux" input="ff.Q lut4.out" output="LUT4c_frame_config_dffesr.O">
+            <delay_constant max="25e-12" in_port="lut4.out" out_port="LUT4c_frame_config_dffesr.O"/>
+            <delay_constant max="45e-12" in_port="ff.Q" out_port="LUT4c_frame_config_dffesr.O"/>
             <metadata>
               <meta name="fasm_mux">
         						ff.Q: FF

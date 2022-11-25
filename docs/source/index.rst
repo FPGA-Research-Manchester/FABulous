@@ -36,11 +36,9 @@ Contents
    Usage
    Building fabric
    fabric_definition
-   ASIC/index
    FPGA_CAD-tools/index
    FPGA-to-bitstream/index
    simulation/index
-   references/index
    gallery/index
    definitions
    contact

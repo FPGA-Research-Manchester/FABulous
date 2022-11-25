@@ -41,7 +41,7 @@ The following block provides a fabric.csv example.
    ConfigBitMode, frame_based        # default is FlipFlopChain
    FrameBitsPerRow, 32               # configuration bits per tile row 
    MaxFramesPerCol, 20               # configuration bits per tile column
-   Package, use work.my_package.all; # populate package fiels in VHDL code generation
+   Package, use work.my_package.all; # populate package fields in VHDL code generation
    GenerateDelayInSwitchMatrix, 80   # we can annotate some delay to multiplexers
    MultiplexerStyle, custom          # 
    ParametersEnd        
@@ -55,7 +55,7 @@ The following block provides a fabric.csv example.
    MATRIX,   LUT4AB_switch_matrix.vhdl               
    EndTILE        
 
-   TILE, DSP         # all other tiles folow the same sheme
+   TILE, DSP         # all other tiles follow the same scheme
    ...   
 
 .. _fabric_csv:
@@ -69,7 +69,7 @@ Fabric CSV description
 
 * Parameters that relate to the fabric specification are encapsulated between the key words ``ParametersBegin`` and ``ParametersEnd``.
 
-  Parameters that relate to the flow are passed as comand line arguments.
+  Parameters that relate to the flow are passed as command line arguments.
   
   Parameters have the format <key>,<value>
   
@@ -476,7 +476,7 @@ The BEL statements in the previous example instantiate a LUT4 which has the foll
 	Ci	: in	STD_LOGIC; -- carry chain input
 	Co	: out	STD_LOGIC; -- carry chain output
 	UserCLK : in	STD_LOGIC; -- EXTERNAL -- SHARED_PORT 
-	-- the # EXTERNAL keyword will send this sisgnal all the way to top and 
+	-- the # EXTERNAL keyword will send this signal all the way to top and 
 	-- #SHARED allows multiple BELs using same port (exports 1 clock to top)
 	ConfigBits : in 	 STD_LOGIC_VECTOR( NoConfigBits -1 downto 0 )
 	);
@@ -543,7 +543,7 @@ Bitstream remapping
 ~~~~~~~~~~~~~~~~~~~
 
 FABulous will take care when implementing the configuration logic and bitstream encoding and the mapping of this into configuration bitstreams. This can be done automatically.
-However, users can influence the mapping of configuration bits into the bitstream. We use this in TODO for optimizing the bitstream layout. Moreover, for our first chip, we used remapping to create a human readable bitstream which is more convenient to modify in a hex editor, as dsscribed later in this subsection).
+However, users can influence the mapping of configuration bits into the bitstream. For our first chip, we used remapping to create a human readable bitstream which is more convenient to modify in a hex editor, as described later in this subsection.
 
 In the code example for a LUT, it was shown that the configuration bits are exported into the LUT interface:
 
@@ -738,7 +738,7 @@ The left example concentrates the DSP functionality in the bottom tile and is mo
    EndTILE                 
 
 The right example provides the tile functionality in the supertile wrapper and is modelled as shown in the next code block.
-(Note the two wire entries with the LOCAL attribute in each basic tile to define that these wires are useable in the supertile wrapper. Furthermore, configuration bits for the DSP primitive will be provided through a ConfigBits BEL. This allows it to distribute the number of configuration bits among the basic tiles as needed. Note that configuration bits are organized at basic tile level.)
+(Note the two wire entries with the LOCAL attribute in each basic tile to define that these wires are usable in the supertile wrapper. Furthermore, configuration bits for the DSP primitive will be provided through a ConfigBits BEL. This allows it to distribute the number of configuration bits among the basic tiles as needed. Note that configuration bits are organized at basic tile level.)
 
 .. code-block:: python
    :emphasize-lines: 1,8,9,12,14,21,22,25,27,30,31
@@ -769,7 +769,7 @@ The right example provides the tile functionality in the supertile wrapper and i
    MATRIX,     DSP_top_switch_matrix.vhdl      
    EndTILE                 
                        
-   SuperTILE   DSP     # declace supetile DSP      
+   SuperTILE   DSP     # declare supertile DSP      
    DSP_top                 
    DSP_bot    
    BEL,        MULADD.vhdl   

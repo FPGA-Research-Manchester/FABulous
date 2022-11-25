@@ -14,14 +14,13 @@ This guide describes everything you need to set up your system to develop for FA
     :width: 80%
     :align: center
     
-    Fabulous workflows and dependencies.
+    FABulous workflows and dependencies.
 
 .. figure:: figs/fabulous_ecosystem.*
     :width: 80%
     :align: center
 
-Check out the :doc:`Usage` section for further information, including
-how to :ref:`setup`.
+Check out the :doc:`Usage` section for further information, including :ref:`setup`.
 
 .. note::
 

@@ -775,4 +775,3 @@ The right example provides the tile functionality in the supertile wrapper and i
    BEL,        MULADD.vhdl   
    EndTILE                 
 
-test

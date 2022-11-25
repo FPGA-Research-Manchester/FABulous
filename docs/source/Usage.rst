@@ -74,7 +74,7 @@ Example:
 
 The output <benchmark_name>_output.bin can be used in further simulation.
 
-VPR models can be found under ``/vproutput``
+VPR models can be found under ``$FAB_ROOT/fabric_generator/vproutput``
 
 Build options
 -------------

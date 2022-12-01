@@ -38,33 +38,35 @@ sudo apt-get install python3-tk
 The following packages need to be installed for CAD toolchain
 
 - [Yosys](https://github.com/YosysHQ/yosys)
-- FABulous' nextpnr fork (covered in instructions below)
+- [Nextpnr-generic](https://github.com/YosysHQ/nextpnr#nextpnr-generic)
 
 ## Getting started
+
+To set up FABulous:
 
 ```
 git clone https://github.com/FPGA-Research-Manchester/FABulous
 cd FABulous
 export FAB_ROOT=`pwd`
 git clone --branch fabulous https://github.com/FPGA-Research-Manchester/nextpnr
-cd nextpnr
-cmake . -DARCH=fabulous
-make -j$(nproc)
-sudo make install
 ```
 
 We have provided a Python Command Line Interface (CLI) as well as a project structure for easy access of the FABulous toolchain.
 
 Before you run the flow for the first time, you must generate the basic files using the following commands:
+
 ```
 cd fabric_generator
 ./create_basic_files.sh ../fabric_files/generic/fabric.csv
 ```
+
 Then use the following command to build the entire FPGA fabric in both VHDL and Verilog (the example has 8 columns and 14 rows):
+
 ```
 ./run_fab_flow.sh 8 14
 ```
-You are now ready to emulate or synthesise with the netlists in ```/vhdl_output``` or ```/verilog_output```.
+
+You are now ready to emulate or synthesise with the netlists in `/vhdl_output` or `/verilog_output`.
 
 The `Tile` folder contains all the definitions of the fabric primitive as well as the fabric matrix configuration. `fabric.csv` is what defining the architecture of the fabric. The FABulous project folder also contains a `.FABulous` folder which contains all the metadata during the generation of the fabric.
 

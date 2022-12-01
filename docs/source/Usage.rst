@@ -27,17 +27,9 @@ The following packages need to be installed for the CAD toolchain
 :`Yosys <https://github.com/YosysHQ/yosys>`_:
  version > 0.10
 
+:`Nextpnr-generic <https://github.com/YosysHQ/nextpnr#nextpnr-generic>`_:
+ version > 0.4-28-gac17c36b
 
-.. note:: In the following, :term:`$FAB_ROOT` means the root directory of the Fabulous source code tree.
-
-:nextpnr-fabulous:
-
-.. code-block:: console
-
-   cd $FAB_ROOT/nextpnr
-   cmake . -DARCH=fabulous
-   make -j$(nproc)
-   sudo make install
 
 Building Fabric and Bitstream
 -----------------------------

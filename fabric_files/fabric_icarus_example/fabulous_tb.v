@@ -62,9 +62,9 @@ module fab_tb;
             repeat (2) @(posedge CLK);
         end
         repeat (100) @(posedge CLK);
-        O_top = 28'b1; // reset
+        O_top = 28'd1; // reset (rst = io_in[0])
         repeat (5) @(posedge CLK);
-        O_top = 28'b0;
+        O_top = 28'd2; // enable (en = io_in[1])
         for (i = 0; i < 100; i = i + 1) begin
             @(negedge CLK);
             $display("fabric = %b gold = %b", I_top, I_top_gold);

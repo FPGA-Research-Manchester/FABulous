@@ -189,7 +189,6 @@ module cus_mux41 (A0, A1, A2, A3, S0, S0N, S1, S1N, X);
 	input S1;
 	input S1N;
 	output X; 
-	reg X;
 	wire [1:0] SEL;
 
 	wire B0 = S0 ? A1 : A0;

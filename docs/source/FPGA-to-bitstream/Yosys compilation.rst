@@ -43,11 +43,11 @@ file is located at ``user_design/sequential_16bit_en.v`` then the result of the 
 
 Manual Synthesis
 ^^^^^^^^^^^^^^^^
-A pre-defined Yosys TCL script is under ``$FAB_ROOT/nextpnr/fabulous/synth/synth_fabulous_dffesr.tcl`` for FABulous version3. If the output file, denoted below as ``<JSON_or_BLIF_file>``, has a ``.blif`` file extension, then the output will be produced in the Berkeley Logic Interchange Format (BLIF) and will be synthesised appropriately for the VPR flow. Otherwise, the output will be produced as JSON, synthesised for the nextpnr flow.
+A pre-defined Yosys TCL script is under ``$FAB_ROOT/nextpnr/fabulous/synth/synth_fabulous.tcl`` for FABulous version3. If the output file, denoted below as ``<JSON_or_BLIF_file>``, has a ``.blif`` file extension, then the output will be produced in the Berkeley Logic Interchange Format (BLIF) and will be synthesised appropriately for the VPR flow. Otherwise, the output will be produced as JSON, synthesised for the nextpnr flow.
 
 .. code-block:: console
 
-	yosys -p "tcl <path/to/TCL/File>/synth_fabulous_dffesr.tcl <K-LUT> <top_module> <JSON_or_BLIF_file>" <benchmark_netlist>
+	yosys -qp "tcl <path/to/TCL/File>/synth_fabulous.tcl <K-LUT> <top_module> <JSON_or_BLIF_file>" <benchmark_netlist>
 
 +---------------------+-------------------------------------------------------------------+
 | <K-LUT>             | Number of LUT inputs, 4 is for LUT4                               |
@@ -73,7 +73,7 @@ The following are simple commands to synthesise the netlist ``sequential_16bit_e
 
 .. code-block:: console
 
-	yosys -p "tcl ../synth/synth_fabulous_dffesr.tcl 4 sequential_16bit_en sequential_16bit_en.json" sequential_16bit_en.v
+	yosys -qp "tcl ../synth/synth_fabulous.tcl 4 sequential_16bit_en sequential_16bit_en.json" sequential_16bit_en.v
 
 
 

@@ -8,3 +8,4 @@ fabric/*
 test_design/*.vh
 test_design/*.vhd
 *.hex
+*.fst

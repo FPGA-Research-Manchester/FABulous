@@ -29,13 +29,15 @@ module fab_tb;
     );
 
 
-    wire [27:0] I_top_gold, T_top_gold;
+    wire [27:0] I_top_gold, oeb_gold, T_top_gold;
     top dut_i (
         .clk(CLK),
         .io_out(I_top_gold),
-        .io_oeb(T_top_gold),
+        .io_oeb(oeb_gold),
         .io_in(O_top)
     );
+
+    assign T_top_gold = ~oeb_gold;
 
     localparam MAX_BITBYTES = 16384;
     reg [7:0] bitstream[0:MAX_BITBYTES-1];

@@ -5,6 +5,6 @@ BITSTREAM=test_design/${DESIGN}.bin
 VERILOG=../../fabric_generator/verilog_output
 MAX_BITBYTES=16384
 
-iverilog -s fab_tb -o fab_tb.vvp $VERILOG/* test_design/${DESIGN}.v fabulous_tb.v 
+iverilog -s fab_tb -o fab_tb.vvp $VERILOG/* test_design/${DESIGN}.v fabulous_tb.v ${IVFLAGS}
 python3 makehex.py $BITSTREAM $MAX_BITBYTES bitstream.hex
-vvp fab_tb.vvp
+vvp fab_tb.vvp -fst

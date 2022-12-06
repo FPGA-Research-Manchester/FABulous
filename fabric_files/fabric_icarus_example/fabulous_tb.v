@@ -45,8 +45,8 @@ module fab_tb;
     integer i;
     reg have_errors = 1'b0;
     initial begin
-`ifdef CREATE_VCD
-        $dumpfile("fab_tb.vcd");
+`ifdef CREATE_FST
+        $dumpfile("fab_tb.fst");
         $dumpvars(0, fab_tb);
 `endif
         $readmemh("bitstream.hex", bitstream);

@@ -11,7 +11,7 @@ module ConfigFSM (CLK, WriteData, WriteStrobe, Reset, FrameAddressRegister, Long
 	input Reset;
 	
 	output reg [FrameBitsPerRow-1:0] FrameAddressRegister;
-	output reg LongFrameStrobe = 0;
+	output reg LongFrameStrobe;
 	output reg [RowSelectWidth-1:0] RowSelect;
 	
 	reg FrameStrobe = 0;

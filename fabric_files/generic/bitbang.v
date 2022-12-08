@@ -5,7 +5,7 @@ module bitbang (s_clk, s_data, strobe, data, active, clk);
 	input s_data;
 	output reg strobe;
 	output reg [31:0] data;
-	output reg active;
+	output wire active;
 	input clk; 
 
 	reg [3:0] s_data_sample;
@@ -16,6 +16,7 @@ module bitbang (s_clk, s_data, strobe, data, active, clk);
 
 	reg local_strobe;
 	reg old_local_strobe;
+	reg active_reg = 1'b0;
 
 	always @ (posedge clk)
 	begin : p_input_sync
@@ -54,12 +55,13 @@ module bitbang (s_clk, s_data, strobe, data, active, clk);
 	always @ (posedge clk)
 	begin : active_FSM
 		if (serial_control == on_pattern) begin// x"FAB1" then      
-			active <= 1'b1;
+			active_reg <= 1'b1;
 		end
 		if (serial_control == off_pattern) begin// x"FAB0" then      
-			active <= 1'b0;
+			active_reg <= 1'b0;
 		end
 	end
+	assign active = active_reg;
 
 // the following is just copy and past, in case we want use the bitbang interface to shift in other data (let's say to drive CPU port)
 // we can also read back the data by loading the parallel shift and shifting the content to an output pin

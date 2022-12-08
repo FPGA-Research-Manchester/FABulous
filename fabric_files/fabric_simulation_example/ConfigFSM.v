@@ -13,7 +13,7 @@ module ConfigFSM (CLK, WriteData, WriteStrobe, Reset, FrameAddressRegister, Long
 	input Reset;
 	
 	output reg [FrameBitsPerRow-1:0] FrameAddressRegister;
-	output reg LongFrameStrobe;
+	output wire LongFrameStrobe;
 	output reg [RowSelectWidth-1:0] RowSelect;
 	
 	reg FrameStrobe = 0;
@@ -74,9 +74,11 @@ module ConfigFSM (CLK, WriteData, WriteStrobe, Reset, FrameAddressRegister, Long
 	end
 	
 	reg oldFrameStrobe = 0;
+	reg LongFrameStrobe_reg = 0;
 	always @ (posedge CLK) begin : P_StrobeREG
 		oldFrameStrobe <= FrameStrobe;
-		LongFrameStrobe <= (FrameStrobe || oldFrameStrobe);
+		LongFrameStrobe_reg <= (FrameStrobe || oldFrameStrobe);
 	end//CLK
+	assign LongFrameStrobe = LongFrameStrobe_reg;
 	
 endmodule

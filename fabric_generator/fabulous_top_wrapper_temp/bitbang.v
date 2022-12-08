@@ -5,7 +5,7 @@ module bitbang (s_clk, s_data, strobe, data, active, clk);
 	input s_data;
 	output reg strobe;
 	output reg [31:0] data;
-	output reg active = 1'b0;
+	output reg active;
 	input clk; 
 
 	reg [3:0] s_data_sample;

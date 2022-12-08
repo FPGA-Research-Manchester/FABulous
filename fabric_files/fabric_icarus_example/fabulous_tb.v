@@ -70,9 +70,9 @@ module fab_tb;
         for (i = 0; i < 100; i = i + 1) begin
             @(negedge CLK);
             $display("fabric(I_top) = 0x%X gold = 0x%X, fabric(T_top) = 0x%X gold = 0x%X", I_top, I_top_gold, T_top, T_top_gold);
-            if (I_top != I_top_gold)
+            if (I_top !== I_top_gold)
                 have_errors = 1'b1;
-            if (T_top != T_top_gold)
+            if (T_top !== T_top_gold)
                 have_errors = 1'b1;
         end
 

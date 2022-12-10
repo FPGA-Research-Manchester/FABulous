@@ -1,9 +1,10 @@
-module Config (CLK, Rx, ComActive, ReceiveLED, s_clk, s_data, SelfWriteData, SelfWriteStrobe, ConfigWriteData, ConfigWriteStrobe, FrameAddressRegister, LongFrameStrobe, RowSelect);
+module Config (CLK, resetn, Rx, ComActive, ReceiveLED, s_clk, s_data, SelfWriteData, SelfWriteStrobe, ConfigWriteData, ConfigWriteStrobe, FrameAddressRegister, LongFrameStrobe, RowSelect);
 	//parameter NumberOfRows = 16;
 	parameter RowSelectWidth = 5;
 	parameter FrameBitsPerRow = 32;
 	//parameter desync_flag = 20;
 	input CLK;
+	input resetn;
 	// UART configuration port
 	input Rx;
 	output ComActive;
@@ -36,10 +37,11 @@ module Config (CLK, Rx, ComActive, ReceiveLED, s_clk, s_data, SelfWriteData, Sel
 	wire BitBangWriteStrobe_Mux;
 	wire BitBangActive;
 	
-	wire Reset;
+	wire FSM_Reset;
 
 	config_UART INST_config_UART (
 	.CLK(CLK),
+	.resetn(resetn),
 	.Rx(Rx),
 	.WriteData(UART_WriteData),
 	.ComActive(UART_ComActive),
@@ -55,7 +57,8 @@ module Config (CLK, Rx, ComActive, ReceiveLED, s_clk, s_data, SelfWriteData, Sel
 	.strobe(BitBangWriteStrobe),
 	.data(BitBangWriteData),
 	.active(BitBangActive),
-	.clk(CLK)
+	.clk(CLK),
+	.resetn(resetn)
 	);
 	
 	// BitBangActive is used to switch between bitbang or internal configuration port (BitBang has therefore higher priority)
@@ -69,7 +72,7 @@ module Config (CLK, Rx, ComActive, ReceiveLED, s_clk, s_data, SelfWriteData, Sel
 	assign ConfigWriteData = UART_WriteData_Mux;
 	assign ConfigWriteStrobe = UART_WriteStrobe_Mux;
 	
-	assign Reset = UART_ComActive || BitBangActive;
+	assign FSM_Reset = UART_ComActive || BitBangActive;
 
 	assign ComActive = UART_ComActive;
 	assign ReceiveLED = UART_LED^BitBangWriteStrobe;   
@@ -80,9 +83,10 @@ module Config (CLK, Rx, ComActive, ReceiveLED, s_clk, s_data, SelfWriteData, Sel
 	
 	ConfigFSM ConfigFSM_inst (
 	.CLK(CLK),
+	.resetn(resetn),
 	.WriteData(UART_WriteData_Mux),
 	.WriteStrobe(UART_WriteStrobe_Mux),
-	.Reset(Reset),
+	.FSM_Reset(FSM_Reset),
 	//outputs
 	.FrameAddressRegister(FrameAddressRegister),
 	.LongFrameStrobe(LongFrameStrobe),

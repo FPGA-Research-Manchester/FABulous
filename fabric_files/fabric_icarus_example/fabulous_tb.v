@@ -6,6 +6,7 @@ module fab_tb;
     wire [55:0] A_cfg, B_cfg;
 
     reg CLK = 1'b0;
+    reg resetn = 1'b1;
     reg SelfWriteStrobe = 1'b0;
     reg [31:0] SelfWriteData = 1'b0;
     reg Rx = 1'b1;
@@ -20,7 +21,8 @@ module fab_tb;
         .T_top(T_top),
         .O_top(O_top),
         .A_config_C(A_cfg), .B_config_C(B_cfg),
-        .CLK(CLK), .SelfWriteStrobe(SelfWriteStrobe), .SelfWriteData(SelfWriteData),
+        .CLK(CLK), .resetn(resetn),
+        .SelfWriteStrobe(SelfWriteStrobe), .SelfWriteData(SelfWriteData),
         .Rx(Rx),
         .ComActive(ComActive),
         .ReceiveLED(ReceiveLED),
@@ -52,8 +54,12 @@ module fab_tb;
         $dumpvars(0, fab_tb);
 `endif
         $readmemh("bitstream.hex", bitstream);
+        #100;
+        resetn = 1'b0;
         #10000;
-        repeat (10) @(posedge CLK);
+        resetn = 1'b1;
+        #10000;
+        repeat (20) @(posedge CLK);
         #2500;
         for (i = 0; i < MAX_BITBYTES; i = i + 4) begin
             SelfWriteData <= {bitstream[i], bitstream[i+1], bitstream[i+2], bitstream[i+3]};

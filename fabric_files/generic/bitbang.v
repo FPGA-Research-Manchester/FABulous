@@ -1,12 +1,13 @@
-module bitbang (s_clk, s_data, strobe, data, active, clk);
+module bitbang (s_clk, s_data, strobe, data, active, clk, resetn);
 	localparam on_pattern = 16'hFAB1; 
 	localparam off_pattern = 16'hFAB0; 
 	input s_clk;
 	input s_data;
 	output reg strobe;
 	output reg [31:0] data;
-	output reg active = 1'b0;
+	output reg active;
 	input clk; 
+	input resetn;
 
 	reg [3:0] s_data_sample;
 	reg [3:0] s_clk_sample;
@@ -17,47 +18,68 @@ module bitbang (s_clk, s_data, strobe, data, active, clk);
 	reg local_strobe;
 	reg old_local_strobe;
 
-	always @ (posedge clk)
+	always @ (posedge clk, negedge resetn)
 	begin : p_input_sync
-		s_data_sample <= {s_data_sample[3-1:0],s_data};
-		s_clk_sample  <= {s_clk_sample[3-1:0],s_clk};
+		if (!resetn) begin
+			s_data_sample <= 4'b0;
+			s_clk_sample <= 4'b0;
+		end else begin
+			s_data_sample <= {s_data_sample[3-1:0],s_data};
+			s_clk_sample  <= {s_clk_sample[3-1:0],s_clk};
+		end
 	end
 
-	always @ (posedge clk)
+	always @ (posedge clk, negedge resetn)
 	begin : p_in_shift
-		// on s_clk_sample rising edge, we sample in a serial_data bit
-		if ((s_clk_sample[3] == 1'b0) && (s_clk_sample[3-1] == 1'b1)) begin
-			serial_data <= {serial_data[31-1:0],s_data_sample[3]};
-		end
-		// on s_clk_sample faling edge, we sample in a serial_data bit
-		if ((s_clk_sample[3] == 1'b1) && (s_clk_sample[3-1] == 1'b0)) begin
-			serial_control <= {serial_control[15-1:0],s_data_sample[3]}; // its data again, but its sampled on the other edge
+		if (!resetn) begin
+			serial_data <= 32'b0;
+			serial_control <= 16'b0;
+		end else begin
+			// on s_clk_sample rising edge, we sample in a serial_data bit
+			if ((s_clk_sample[3] == 1'b0) && (s_clk_sample[3-1] == 1'b1)) begin
+				serial_data <= {serial_data[31-1:0],s_data_sample[3]};
+			end
+			// on s_clk_sample faling edge, we sample in a serial_data bit
+			if ((s_clk_sample[3] == 1'b1) && (s_clk_sample[3-1] == 1'b0)) begin
+				serial_control <= {serial_control[15-1:0],s_data_sample[3]}; // its data again, but its sampled on the other edge
+			end
 		end
 	end
 
 // we could replicate the following 
-	always @ (posedge clk)
+	always @ (posedge clk, negedge resetn)
 	begin : p_parallel_load
-		local_strobe <= 1'b0; // will be overwritten if next conditional is true
-		if (serial_control == on_pattern) begin// x"FAB1" then      
-			data <= serial_data;
-			local_strobe <= 1'b1;
-		end //else begin
-		//	data <= data;
-		//	local_strobe <= 1'b0;
-		// end
-		old_local_strobe <= local_strobe;
-		strobe <= local_strobe & ~old_local_strobe; // activates strobe for one clock cycle after "FAB0" was detected
+		if (!resetn) begin
+			local_strobe <= 1'b0;
+			data <= 32'b0;
+			old_local_strobe <= 1'b0;
+			strobe <= 1'b0;
+		end else begin
+			local_strobe <= 1'b0; // will be overwritten if next conditional is true
+			if (serial_control == on_pattern) begin// x"FAB1" then      
+				data <= serial_data;
+				local_strobe <= 1'b1;
+			end //else begin
+			//	data <= data;
+			//	local_strobe <= 1'b0;
+			// end
+			old_local_strobe <= local_strobe;
+			strobe <= local_strobe & ~old_local_strobe; // activates strobe for one clock cycle after "FAB0" was detected
+		end
 	end
 
 // we could replicate the following 
-	always @ (posedge clk)
+	always @ (posedge clk, negedge resetn)
 	begin : active_FSM
-		if (serial_control == on_pattern) begin// x"FAB1" then      
-			active <= 1'b1;
-		end
-		if (serial_control == off_pattern) begin// x"FAB0" then      
+		if (!resetn) begin
 			active <= 1'b0;
+		end else begin
+			if (serial_control == on_pattern) begin// x"FAB1" then      
+				active <= 1'b1;
+			end
+			if (serial_control == off_pattern) begin// x"FAB0" then      
+				active <= 1'b0;
+			end
 		end
 	end
 

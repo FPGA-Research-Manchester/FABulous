@@ -13,7 +13,7 @@ if FABulous_root is None:
     print('FABulous_root is not set!')
     print('Set FABulous_root with the following command:')
     print('export FABulous_root=<path to FABulous root>')
-    sys.exit()
+    sys.exit(1)
 
 NumberOfRows = 16
 NumberOfCols = 19

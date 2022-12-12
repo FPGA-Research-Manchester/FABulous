@@ -9,3 +9,10 @@
 *.hex
 *.cf
 *.vcd
+*.o
+
+/fab_tb
+/lhd1
+/lhqd1
+/mux16ptv2
+/mux4ptv4

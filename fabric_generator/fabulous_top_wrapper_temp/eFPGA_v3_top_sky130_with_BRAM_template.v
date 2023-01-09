@@ -21,7 +21,7 @@
 	input   user_clock2
 ); */
 
-module eFPGA_top (I_top, T_top, O_top, A_config_C, B_config_C, CLK, SelfWriteStrobe, SelfWriteData, Rx, ComActive, ReceiveLED, s_clk, s_data);
+module eFPGA_top (I_top, T_top, O_top, A_config_C, B_config_C, CLK, resetn, SelfWriteStrobe, SelfWriteData, Rx, ComActive, ReceiveLED, s_clk, s_data);
 
 	localparam include_eFPGA = 1;
 	localparam NumberOfRows = 16;
@@ -41,6 +41,7 @@ module eFPGA_top (I_top, T_top, O_top, A_config_C, B_config_C, CLK, SelfWriteStr
 	output wire [64-1:0] B_config_C;
 
 	input wire CLK; // This clock can go to the CPU (connects to the fabric LUT output flops
+	input wire resetn; // active low async reset for all the config logic
 
 	// CPU configuration port
 	input wire SelfWriteStrobe; // must decode address and write enable
@@ -216,6 +217,7 @@ module eFPGA_top (I_top, T_top, O_top, A_config_C, B_config_C, CLK, SelfWriteStr
 
 Config Config_inst (
 	.CLK(CLK),
+	.resetn(resetn),
 	.Rx(Rx),
 	.ComActive(ComActive),
 	.ReceiveLED(ReceiveLED),

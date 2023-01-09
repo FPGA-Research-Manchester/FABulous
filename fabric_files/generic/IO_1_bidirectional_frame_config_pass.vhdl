@@ -5,7 +5,6 @@ use IEEE.NUMERIC_STD.ALL;
 -- Library UNISIM;
 -- use UNISIM.vcomponents.all;
 
-
 entity IO_1_bidirectional_frame_config_pass is
     -- Generic ( NoConfigBits : integer := 0 );	-- has to be adjusted manually (we don't use an arithmetic parser for the value)
     Port ( 

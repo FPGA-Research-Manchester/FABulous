@@ -646,13 +646,16 @@ To run the complete FABulous flow with the default project, run the following co
 
     def do_synthesis_blif(self, args):
         "Run synthesis with Yosys using VPR BLIF backend Usage: synthesis_blif <dir_to_top_module>"
+        args = self.parse(args)
+        if len(args) != 1:
+            logger.error("Usage: synthesis_blif <dir_to_top_module>")
+            return
         logger.info(
             f"Running synthesis that targeting BLIF with design {args[0]}")
-        args = self.parse(args)
         path, name = os.path.split(args[0])
         name = name.split('.')[0]
         runCmd = ["yosys",
-                  "-p", f"tcl {fabulousRoot}/nextpnr/fabulous/synth/synth_fabulous.tcl 4 top_wrapper {self.pathToCSVFile}/{path}/{name}.blif",
+                  "-qp", f"tcl {fabulousRoot}/nextpnr/fabulous/synth/synth_fabulous.tcl 4 top_wrapper {self.pathToCSVFile}/{path}/{name}.blif",
                   f"{self.pathToCSVFile}/{args[0]}",
                   f"{self.pathToCSVFile}/{path}/top_wrapper.v",
                   "-l", f"{self.pathToCSVFile}/{path}/{name}_yosys_log.txt"]
@@ -722,6 +725,7 @@ To run the complete FABulous flow with the default project, run the following co
                       f".FABulous/architecture.xml",
                       f"{self.pathToCSVFile}/user_design/{name}.blif",
                       "--read_rr_graph", f".FABulous/routing_resources.xml",
+                      "--echo_file", "on",
                       "--route_chan_width", "16"]
             sp.run(runCmd, check=True)
         else:

@@ -26,18 +26,13 @@ The following packages need to be installed for the CAD toolchain
 
 :`Yosys <https://github.com/YosysHQ/yosys>`_:
  version > 0.10
+:`nextpnr <https://github.com/YosysHQ/nextpnr>`_ "generic" architecture:
+ version >= 0.5
 
+Both can be obtained prebuilt for multiple operating systems from `OSS CAD suite <https://github.com/YosysHQ/oss-cad-suite-build/releases/>`_.
 
 .. note:: In the following, :term:`$FAB_ROOT` means the root directory of the Fabulous source code tree.
 
-:nextpnr-fabulous:
-
-.. code-block:: console
-
-   cd $FAB_ROOT/nextpnr
-   cmake . -DARCH=fabulous
-   make -j$(nproc)
-   sudo make install
 
 Building Fabric
 ---------------
@@ -59,20 +54,15 @@ Generating Bitstream
 
 Nextpnr models can be found under ``$FAB_ROOT/fabric_generator/npnroutput``
 
-To run nextpnr compilation
- 
-.. code-block:: console
-
-   cd $FAB_ROOT/nextpnr/fabulous/fab_arch/
-   ./fabulous_flow.sh <benchmark_name>
-
-Example:
+Inside ``$FAB_ROOT/fabric_files/fabric_icarus_example`` is an example of building a small test design and simulating the fabric with the produced bitstream.
 
 .. code-block:: console
 
-   ./fabulous_flow.sh sequential_16bit_en
+   cd $FAB_ROOT/fabric_files/fabric_icarus_example
+   ./build_test_design.sh
+   ./run_simulation.sh
 
-The output <benchmark_name>_output.bin can be used in further simulation.
+An example of using "emulation" and avoiding the need for simulating the slow configuration interface and configuration memory can be found inside ``$FAB_ROOT/fabric_files/fabric_emulation_example``.
 
 VPR models can be found under ``$FAB_ROOT/fabric_generator/vproutput``
 

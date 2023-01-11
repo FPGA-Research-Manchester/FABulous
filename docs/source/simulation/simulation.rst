@@ -1,7 +1,7 @@
 Simulation setup
 ================
 
-A simulation example can be found under ``$FAB_ROOT/fabric_files/fabric_simulation_example/``. This has been tested using the Vivado simulator.
+A simulation example can be found under ``$FAB_ROOT/fabric_files/fabric_icarus_example/``. This has been tested using the open source Icarus Verillog simulator.
 
 To setup the simulation enviroment, an eFPGA top module to instantiate the fabric and the `configuration module`_ are required, as in the example ``eFPGA_v2_top_sky130_sim.v``
 
@@ -43,44 +43,7 @@ To setup the simulation enviroment, an eFPGA top module to instantiate the fabri
         );
         endmodule
 
-Next, you can assign the input signals to ``tb_O_top`` and the output signals to ``tb_I_top`` under the ``tb_eFPGA_verilog.v`` testbench. If you have not set the IO constraints in the benchmark netlist, nextpnr will assign inputs and outputs automatically. To find out the specific inputs and outputs of the benchmark netlist, the fasm file and eFPGA top module can be used for reference.
-
-FASM example
-
-.. code-block:: none
-
-        # Cell counter[0]$iob at X0Y9.A
-        X0Y9.GND0.A_T
-        # Cell counter[10]$iob at X0Y11.B
-        X0Y11.GND0.B_T
-        # Cell counter[11]$iob at X0Y13.B
-        X0Y13.GND0.B_T
-        # Cell counter[12]$iob at X0Y11.A
-        X0Y11.GND0.A_T
-        # Cell counter[13]$iob at X0Y12.A
-        X0Y12.GND0.A_T
-        # Cell counter[14]$iob at X0Y15.B
-        X0Y15.GND0.B_T
-        # Cell counter[15]$iob at X0Y12.B
-        X0Y12.GND0.B_T
-        # Cell counter[1]$iob at X0Y10.B
-        X0Y10.GND0.B_T
-        # Cell counter[2]$iob at X0Y10.A
-        X0Y10.GND0.A_T
-        # Cell counter[3]$iob at X0Y9.B
-        X0Y9.GND0.B_T
-        # Cell counter[4]$iob at X0Y16.A
-        X0Y16.GND0.A_T
-        # Cell counter[5]$iob at X0Y15.A
-        X0Y15.GND0.A_T
-        # Cell counter[6]$iob at X0Y14.A
-        X0Y14.GND0.A_T
-        # Cell counter[7]$iob at X0Y13.A
-        X0Y13.GND0.A_T
-        # Cell counter[8]$iob at X0Y14.B
-        X0Y14.GND0.B_T
-        # Cell counter[9]$iob at X0Y16.B
-        X0Y16.GND0.B_T
+Next, you can assign the input signals to ``O_top`` and the output signals to ``I_top`` under the ``fabulous_tb.v`` testbench. IO mappings are fixed for the top-level user design in the ``test_design/io_wrapper.v``. You will need to modify the number and position of bel mappings in this file if you have changed the height of the fabric from the default of 14 (2 IOs per tile give 28 IO total).
 
 FABulous comes with 3 different simulation methods _`configuration module`,
 
@@ -88,7 +51,7 @@ FABulous comes with 3 different simulation methods _`configuration module`,
 
    Send configuration in through UART 
 
-#. Parallel (Mode 1)
+#. Parallel (Mode 1) - default in the testbench
    
    Use parallel configuration port
 

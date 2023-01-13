@@ -1,37 +1,7 @@
 Yosys models
 ============
 
-** Yosys models files, all can be found under ``$FAB_ROOT/nextpnr/fabulous/synth``
-
-.. code-block:: console
-   :emphasize-lines: 14,15
-
-        set LUT_K 4
-        if {$argc > 0} { set LUT_K [lindex $argv 0] }
-        yosys read_verilog -lib [file dirname [file normalize $argv0]]/prims_ff.v
-        yosys hierarchy -check -top [lindex $argv 1]
-        yosys proc
-        yosys flatten
-        yosys tribuf -logic
-        yosys deminout
-        yosys synth -run coarse
-        yosys memory_map
-        yosys opt -full
-        yosys techmap -map +/techmap.v
-        yosys opt -fast
-        yosys dfflegalize -cell \$_DFF_P_ 0 -cell \$_DFFE_PP_ 0 -cell \$_SDFF_PP?_ 0 -cell \$_SDFFCE_PP?P_ 0 -cell \$_DLATCH_?_ x
-        yosys techmap -map [file dirname [file normalize $argv0]]/ff_map.v
-        yosys opt_expr -mux_undef
-        yosys simplemap
-        yosys techmap -map [file dirname [file normalize $argv0]]/latches_map.v
-        yosys abc -lut $LUT_K -dress
-        yosys clean
-        yosys techmap -D LUT_K=$LUT_K -map [file dirname [file normalize $argv0]]/cells_map_ff.v
-        yosys clean
-        yosys hierarchy -check
-        yosys stat
-
-        if {$argc > 1} { yosys write_json [lindex $argv 2] }
+** Yosys models files, all can be found in the :`Yosys repository <https://github.com/YosysHQ/yosys>`_: under ``$YOSYS_ROOT/techlibs/fabulous/`` **
 
 +---------------+-----------------------------------------------------------------------+
 | File Name     | Description                                                           |
@@ -45,7 +15,7 @@ Yosys models
 | cells_map_ff.v| LUT-4 technology mapping (can be modified to LUT-6)                   |
 +---------------+-----------------------------------------------------------------------+
 
-The ``synth_fabulous_dffesr.tcl`` is built for FABulous version3. Compared to the previous two versions, the new version supports **ENABLE** and **SET/RESET** functions in D-type Flip-flops (DFF) (Line 14 and 15 of TCL script). Under line 14, Yosys represents cells ``$_DFF_P_``, ``$_DFFE_PP_``, ``$_SDFF_PP?_`` and ``$_SDFFCE_PP?P_`` for DFFs (More DFF cells definitions can be found in the 
+The current synthesis pass is built for FABulous version3. Unlike the previous two versions, the new version supports **ENABLE** and **SET/RESET** functions in D-type Flip-flops (DFF). In the pass, Yosys represents cells ``$_DFF_P_``, ``$_DFFE_PP_``, ``$_SDFF_PP?_`` and ``$_SDFFCE_PP?P_`` for DFFs (More DFF cells definitions can be found in the 
 `Yosys manual <https://github.com/YosysHQ/yosys-manual-build/releases/download/manual/manual.pdf>`_
 Chapter 5.2). User should also define different types of DFF in the ``ff_map.v`` for DFF technology mapping.
 

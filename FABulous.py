@@ -634,10 +634,9 @@ To run the complete FABulous flow with the default project, run the following co
         path, name = os.path.split(args[0])
         name = name.split('.')[0]
         runCmd = ["yosys",
-                  "-qp", f"tcl {fabulousRoot}/nextpnr/fabulous/synth/synth_fabulous.tcl 4 top_wrapper {self.pathToCSVFile}/{path}/{name}.json",
+                  "-p", f"synth_fabulous -top top_wrapper -json {self.pathToCSVFile}/{path}/{name}.json",
                   f"{self.pathToCSVFile}/{args[0]}",
-                  f"{self.pathToCSVFile}/{path}/top_wrapper.v",
-                  "-l", f"{self.pathToCSVFile}/{path}/{name}_yosys_log.txt"]
+                  f"{self.pathToCSVFile}/{path}/top_wrapper.v", ]
         sp.run(runCmd, check=True)
         logger.info("Synthesis completed")
 
@@ -655,10 +654,9 @@ To run the complete FABulous flow with the default project, run the following co
         path, name = os.path.split(args[0])
         name = name.split('.')[0]
         runCmd = ["yosys",
-                  "-qp", f"tcl {fabulousRoot}/nextpnr/fabulous/synth/synth_fabulous.tcl 4 top_wrapper {self.pathToCSVFile}/{path}/{name}.blif",
+                  "-p", f"synth_fabulous -top top_wrapper -blif {self.pathToCSVFile}/{path}/{name}.blif -vpr",
                   f"{self.pathToCSVFile}/{args[0]}",
-                  f"{self.pathToCSVFile}/{path}/top_wrapper.v",
-                  "-l", f"{self.pathToCSVFile}/{path}/{name}_yosys_log.txt"]
+                  f"{self.pathToCSVFile}/{path}/top_wrapper.v", ]
         sp.run(runCmd, check=True)
         logger.info("Synthesis completed")
 

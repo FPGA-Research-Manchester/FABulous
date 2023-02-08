@@ -35,10 +35,7 @@ file is located at ``user_design/sequential_16bit_en.v`` then the result of the 
 ``sequential_16bit_en.blif`` depends on which command is being used. 
 
 .. note::
-        The underlying of the command is a python subprocess call to the Yosys command line with the exact command 
-        example used in manual synthesis, and as a result, any modifications to the pre-defined Yosys script will be 
-        applied as well. Most of the time the CLI synthesis should be sufficient for most users. If some extra toggles 
-        need to be used for Yosys then the CLI synthesis is not sufficient for now. (We might add flag pass-through from the CLI in later iterations). 
+        The underlying of the command is a python subprocess call to the Yosys command line with the exact command example used in manual synthesis If some extra toggles need to be used for Yosys then the CLI synthesis is not sufficient for now. (We might add flag pass-through from the CLI in later iterations). 
 
 
 Manual Synthesis

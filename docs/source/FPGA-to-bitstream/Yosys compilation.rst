@@ -45,19 +45,7 @@ Manual Synthesis
 ^^^^^^^^^^^^^^^^
 A pre-defined Yosys TCL script is under ``$FAB_ROOT/nextpnr/fabulous/synth/synth_fabulous.tcl`` for FABulous version3. If the output file, denoted below as ``<JSON_or_BLIF_file>``, has a ``.blif`` file extension, then the output will be produced in the Berkeley Logic Interchange Format (BLIF) and will be synthesised appropriately for the VPR flow. Otherwise, the output will be produced as JSON, synthesised for the nextpnr flow.
 
-.. code-block:: console
-
-	yosys -qp "tcl <path/to/TCL/File>/synth_fabulous.tcl <K-LUT> <top_module> <JSON_or_BLIF_file>" <benchmark_netlist>
-
-+---------------------+-------------------------------------------------------------------+
-| <K-LUT>             | Number of LUT inputs, 4 is for LUT4                               |
-+---------------------+-------------------------------------------------------------------+
-| <top_module>        | The name of top module in the benchmark                           |
-+---------------------+-------------------------------------------------------------------+
-| <JSON_file>         | User can define the name of output JSON file with ``.json`` format|
-+---------------------+-------------------------------------------------------------------+
-| <benchmark_netlist> | Benchmark RTL netlist in verilog format                           |
-+---------------------+-------------------------------------------------------------------+
+If you are synthesizing for use in the VPR flow, then run this command: ``yosys -p "synth_fabulous -top <toplevel> -blif <out.blif> -vpr" <files.v>``.
 
 * For any clocked benchmark, a clock tile blackbox module must be instantiated in the top module for clock generation.
 
@@ -65,16 +53,4 @@ A pre-defined Yosys TCL script is under ``$FAB_ROOT/nextpnr/fabulous/synth/synth
 
         wire clk;
         (* keep *) Global_Clock inst_clk (.CLK(clk));
-
-Example
--------
-
-The following are simple commands to synthesise the netlist ``sequential_16bit_en`` into JSON netlist.
-
-.. code-block:: console
-
-	yosys -qp "tcl ../synth/synth_fabulous.tcl 4 sequential_16bit_en sequential_16bit_en.json" sequential_16bit_en.v
-
-
-
 

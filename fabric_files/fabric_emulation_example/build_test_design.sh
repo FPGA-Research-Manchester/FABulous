@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-SYNTH_TCL=../../nextpnr/fabulous/synth/synth_fabulous.tcl
-BIT_GEN=../../nextpnr/fabulous/fab_arch/bit_gen.py
+SYNTH_TCL=../../fabric_cad/synth/synth_fabulous.tcl
+BIT_GEN=../../fabric_cad/bit_gen.py
 
 if [[ -z "${DESIGN}" ]]; then
 	DESIGN=shiftreg

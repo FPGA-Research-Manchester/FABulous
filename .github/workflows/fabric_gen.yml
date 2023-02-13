@@ -1,94 +1,92 @@
 name: Test fabric_gen.py
 
 on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+    push:
+        branches: [master]
+    pull_request:
+        branches: [master]
 
 jobs:
-  build_and_run:
+    build_and_run:
+        runs-on: ubuntu-latest
 
-    runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+              with:
+                  submodules: recursive
+            - name: Set up Python 3.9
+              uses: actions/setup-python@v2
+              with:
+                  python-version: 3.9
+            - name: Set up OSS CAD suite
+              uses: YosysHQ/setup-oss-cad-suite@v1
+            - name: Install dependencies
+              run: |
+                  python3 -m pip install --upgrade pip
+                  pip3 install flake8 pytest
+                  if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+                  if [ -f requirements.txt ]; then python3.9 -m pip install -r requirements.txt; fi
+                  sudo apt update
+                  sudo apt install python-tk -y
+            - name: Lint with flake8
+              run: |
+                  # stop the build if there are Python syntax errors or undefined names
+                  flake8 fabric_generator/ --count --select=E9,F63,F7,F82 --show-source --statistics
+                  # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+                  flake8 fabric_generator --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+            - name: Run fabric generator flow
+              run: |
+                  export FAB_ROOT=.
+                  python3.9 FABulous.py -c demo
+                  python3.9 FABulous.py demo --script ./demo/FABulous.tcl
 
-    steps:
-    - uses: actions/checkout@v2
-      with:
-        submodules: recursive
-    - name: Set up Python 3.9
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
-    - name: Set up OSS CAD suite
-      uses: YosysHQ/setup-oss-cad-suite@v1
-    - name: Install dependencies
-      run: |
-        python3 -m pip install --upgrade pip
-        pip3 install flake8 pytest
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-        if [ -f requirements.txt ]; then python3.9 -m pip install -r requirements.txt; fi
-        apt update
-        apt install python-tk -y
-    - name: Lint with flake8
-      run: |
-        # stop the build if there are Python syntax errors or undefined names
-        flake8 fabric_generator/ --count --select=E9,F63,F7,F82 --show-source --statistics
-        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        flake8 fabric_generator --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    - name: Run fabric generator flow
-      run: |
-        export FAB_ROOT=.
-        python3.9 FABulous.py -c demo
-        python3.9 FABulous.py demo --script ./demo/FABulous.tcl
-
-    - name: Run simulation smoketest
-      run: |
-        cd ./demo/Test
-        ./build_test_design.sh
-        ./run_simulation.sh
-    # - name: Check pair generation
-    #   run: |
-    #     cd fabric_generator
-    #     ./create_basic_files.sh ../fabric_files/generic/fabric.csv
-    #     python3 fabric_gen.py -GenTileSwitchMatrixCSV
-    #     python3 fabric_gen.py -AddList2CSV LUT4AB_switch_matrix.list LUT4AB_switch_matrix.csv
-    #     python3 fabric_gen.py -AddList2CSV N_term_single_switch_matrix.list N_term_single_switch_matrix.csv
-    #     python3 fabric_gen.py -AddList2CSV S_term_single_switch_matrix.list S_term_single_switch_matrix.csv
-    #     python3 fabric_gen.py -AddList2CSV N_term_RAM_IO_switch_matrix.list N_term_RAM_IO_switch_matrix.csv
-    #     python3 fabric_gen.py -AddList2CSV S_term_RAM_IO_switch_matrix.list S_term_RAM_IO_switch_matrix.csv
-    #     python3 fabric_gen.py -AddList2CSV N_term_single2_switch_matrix.list N_term_single2_switch_matrix.csv
-    #     python3 fabric_gen.py -AddList2CSV S_term_single2_switch_matrix.list S_term_single2_switch_matrix.csv
-    #     python3 fabric_gen.py -AddList2CSV N_term_DSP_switch_matrix.list N_term_DSP_switch_matrix.csv
-    #     python3 fabric_gen.py -AddList2CSV S_term_DSP_switch_matrix.list S_term_DSP_switch_matrix.csv
-    #     python3 fabric_gen.py -AddList2CSV RAM_IO_switch_matrix.list RAM_IO_switch_matrix.csv
-    #     python3 fabric_gen.py -AddList2CSV W_IO_switch_matrix.list W_IO_switch_matrix.csv
-    #     python3 fabric_gen.py -AddList2CSV RegFile_switch_matrix.list RegFile_switch_matrix.csv
-    #     python3 fabric_gen.py -AddList2CSV DSP_top_switch_matrix.list DSP_top_switch_matrix.csv
-    #     python3 fabric_gen.py -AddList2CSV DSP_bot_switch_matrix.list DSP_bot_switch_matrix.csv
-    #     python3 fabric_gen.py -GenTileSwitchMatrixVHDL
-    #     python3 fabric_gen.py -GenTileSwitchMatrixVerilog
-    #     python3 fabric_gen.py -GenTileConfigMemVHDL
-    #     python3 fabric_gen.py -GenTileConfigMemVerilog
-    #     python3 fabric_gen.py -GenTileHDL
-    #     python3 fabric_gen.py -GenTileVerilog
-    #     python3 fabric_gen.py -GenFabricHDL
-    #     python3 fabric_gen.py -GenFabricVerilog
-    #     rm N_term_DSP_ConfigMem.v
-    #     rm N_term_RAM_IO_ConfigMem.v
-    #     rm N_term_single_ConfigMem.v
-    #     rm N_term_single2_ConfigMem.v
-    #     rm S_term_DSP_ConfigMem.v
-    #     rm S_term_RAM_IO_ConfigMem.v
-    #     rm S_term_single_ConfigMem.v
-    #     rm S_term_single2_ConfigMem.v
-    #     python3 fabulous_top_wrapper_temp/top_wrapper_generator_with_BRAM.py -c 8 -r 14
-    #     python3 fabric_gen.py -GenNextpnrModel_pair
-    #     mkdir -p verilog_output
-    #     mv -f *.v ./verilog_output
-    #     mkdir -p vhdl_output
-    #     mv -f *.vhdl ./vhdl_output
-    #     mkdir -p list_files
-    #     mv -f *.list ./list_files
-    #     mkdir -p csv_output
-    #     mv -f *.csv ./csv_output
-
+            - name: Run simulation smoketest
+              run: |
+                  cd ./demo/Test
+                  ./build_test_design.sh
+                  ./run_simulation.sh
+        # - name: Check pair generation
+        #   run: |
+        #     cd fabric_generator
+        #     ./create_basic_files.sh ../fabric_files/generic/fabric.csv
+        #     python3 fabric_gen.py -GenTileSwitchMatrixCSV
+        #     python3 fabric_gen.py -AddList2CSV LUT4AB_switch_matrix.list LUT4AB_switch_matrix.csv
+        #     python3 fabric_gen.py -AddList2CSV N_term_single_switch_matrix.list N_term_single_switch_matrix.csv
+        #     python3 fabric_gen.py -AddList2CSV S_term_single_switch_matrix.list S_term_single_switch_matrix.csv
+        #     python3 fabric_gen.py -AddList2CSV N_term_RAM_IO_switch_matrix.list N_term_RAM_IO_switch_matrix.csv
+        #     python3 fabric_gen.py -AddList2CSV S_term_RAM_IO_switch_matrix.list S_term_RAM_IO_switch_matrix.csv
+        #     python3 fabric_gen.py -AddList2CSV N_term_single2_switch_matrix.list N_term_single2_switch_matrix.csv
+        #     python3 fabric_gen.py -AddList2CSV S_term_single2_switch_matrix.list S_term_single2_switch_matrix.csv
+        #     python3 fabric_gen.py -AddList2CSV N_term_DSP_switch_matrix.list N_term_DSP_switch_matrix.csv
+        #     python3 fabric_gen.py -AddList2CSV S_term_DSP_switch_matrix.list S_term_DSP_switch_matrix.csv
+        #     python3 fabric_gen.py -AddList2CSV RAM_IO_switch_matrix.list RAM_IO_switch_matrix.csv
+        #     python3 fabric_gen.py -AddList2CSV W_IO_switch_matrix.list W_IO_switch_matrix.csv
+        #     python3 fabric_gen.py -AddList2CSV RegFile_switch_matrix.list RegFile_switch_matrix.csv
+        #     python3 fabric_gen.py -AddList2CSV DSP_top_switch_matrix.list DSP_top_switch_matrix.csv
+        #     python3 fabric_gen.py -AddList2CSV DSP_bot_switch_matrix.list DSP_bot_switch_matrix.csv
+        #     python3 fabric_gen.py -GenTileSwitchMatrixVHDL
+        #     python3 fabric_gen.py -GenTileSwitchMatrixVerilog
+        #     python3 fabric_gen.py -GenTileConfigMemVHDL
+        #     python3 fabric_gen.py -GenTileConfigMemVerilog
+        #     python3 fabric_gen.py -GenTileHDL
+        #     python3 fabric_gen.py -GenTileVerilog
+        #     python3 fabric_gen.py -GenFabricHDL
+        #     python3 fabric_gen.py -GenFabricVerilog
+        #     rm N_term_DSP_ConfigMem.v
+        #     rm N_term_RAM_IO_ConfigMem.v
+        #     rm N_term_single_ConfigMem.v
+        #     rm N_term_single2_ConfigMem.v
+        #     rm S_term_DSP_ConfigMem.v
+        #     rm S_term_RAM_IO_ConfigMem.v
+        #     rm S_term_single_ConfigMem.v
+        #     rm S_term_single2_ConfigMem.v
+        #     python3 fabulous_top_wrapper_temp/top_wrapper_generator_with_BRAM.py -c 8 -r 14
+        #     python3 fabric_gen.py -GenNextpnrModel_pair
+        #     mkdir -p verilog_output
+        #     mv -f *.v ./verilog_output
+        #     mkdir -p vhdl_output
+        #     mv -f *.vhdl ./vhdl_output
+        #     mkdir -p list_files
+        #     mv -f *.list ./list_files
+        #     mkdir -p csv_output
+        #     mv -f *.csv ./csv_output

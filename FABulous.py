@@ -757,7 +757,7 @@ To run the complete FABulous flow with the default project, run the following co
             f"Generating Bitstream for design {self.projectDir}/{args[0]}")
         logger.info(f"Outputting to {self.projectDir}/{path}/{name}.bin")
         name = name.split('.')[0]
-        runCmd = ["python3", f"{fabulousRoot}/nextpnr/fabulous/fab_arch/bit_gen.py",
+        runCmd = ["python3", f"{fabulousRoot}/fabric_cad/bit_gen.py",
                   "-genBitstream",
                   f"{self.projectDir}/{path}/{name}_des.fasm",
                   f"{self.projectDir}/.FABulous/bitStreamSpec.bin",

@@ -16,7 +16,7 @@ The following packages need to be installed for generating fabric HDLs
     git clone --recurse-submodules https://github.com/FPGA-Research-Manchester/FABulous
 
 :Python: 
- version > 3.5
+ version >= 3.9
 
 :python dependencies:
 
@@ -24,10 +24,16 @@ The following packages need to be installed for generating fabric HDLs
 
     pip3 install -r requirements.txt
 
+This will also require to install `Tkinter` for the TCL facilities. To install `Tkinter` on Ubuntu, run:
+
+.. code-block:: console
+
+    sudo apt-get install python3-tk
+
 The following packages need to be installed for the CAD toolchain
 
 :`Yosys <https://github.com/YosysHQ/yosys>`_:
- version > 0.10
+ version > 0.26+0
 
 :`Nextpnr-generic <https://github.com/YosysHQ/nextpnr#nextpnr-generic>`_:
  version > 0.4-28-gac17c36b

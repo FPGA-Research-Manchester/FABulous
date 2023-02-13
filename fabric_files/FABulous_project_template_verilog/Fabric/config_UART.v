@@ -3,13 +3,10 @@ module config_UART #(
 						// bin is for faster binary mode, but might not work on all machines/boards
 						// auto uses the MSB in the command byte (the 8th byte in the comload header) to set the mode
 						// "1//- ////" is for hex mode, "0//- ////" for bin mode
-`ifdef SYNTHESIS
 	parameter ComRate = 217 // ComRate = f_CLK / Boud_rate (e.g., 25 MHz/115200 Boud = 217)
-`else
-	parameter ComRate = 7
-`endif
 ) (
 	input CLK,
+	input resetn,
 	input Rx,
 	output reg [31:0] WriteData,
 	output ComActive,
@@ -57,7 +54,7 @@ module config_UART #(
 	//typedef enum{HighNibble, LowNibble} ReceiveStateType; //systemverilog
 	localparam HighNibble = 1, LowNibble = 0;
 	//ReceiveStateType ReceiveState;
-	reg ReceiveState = HighNibble;
+	reg ReceiveState;
 	reg [3:0] HighReg;
 	wire [4:0] HexValue; // a 1'b0 MSB indicates a valid value on [3..0]
 	reg [7:0] HexData; // the received byte in hexmode mode
@@ -68,7 +65,7 @@ module config_UART #(
 	//typedef enum{WaitForStartBit, DelayAfterStartBit, GetBit0, GetBit1, GetBit2, GetBit3, GetBit4, GetBit5, GetBit6, GetBit7, GetStopBit} ComStateType;
 	//ComStateType ComState;
 	localparam WaitForStartBit=0, DelayAfterStartBit=1, GetBit0=2, GetBit1=3, GetBit2=4, GetBit3=5, GetBit4=6, GetBit5=7, GetBit6=8, GetBit7=9, GetStopBit=10;
-	reg [3:0] ComState = WaitForStartBit;
+	reg [3:0] ComState;
 	reg [7:0] ReceivedWord;
 	reg RxLocal;
 
@@ -89,12 +86,12 @@ module config_UART #(
 	//typedef enum{Idle, GetID_00, GetID_AA, GetID_FF, GetCommand, EvalCommand, GetData} PresentType;
 	//PresentType PresentState;
 	localparam Idle=0, GetID_00=1, GetID_AA=2, GetID_FF=3, GetCommand=4, EvalCommand=5, GetData=6;
-	reg [2:0] PresentState = Idle;
+	reg [2:0] PresentState;
 
 	//typedef enum{Word0, Word1, Word2, Word3} GetWordType;
 	//GetWordType GetWordState;
 	localparam Word0=0, Word1=1, Word2=2, Word3=3;
-	reg [1:0] GetWordState=Word0;
+	reg [1:0] GetWordState;
 
 	reg LocalWriteStrobe;
 
@@ -108,291 +105,328 @@ module config_UART #(
 	//wire [7:0] ReceivedWordDebug;
 	reg [22:0] blink;
 
-	initial begin
-	CRCReg = TestFileChecksum;
-	b_counter = TestFileChecksum;
-	blink = 23'b00000000000000000000000;
-	end
-
-	always @ (posedge CLK)
+	always @ (posedge CLK, negedge resetn)
 	begin : P_sync
-		RxLocal <= Rx;
+		if (!resetn)
+			RxLocal <= 1'b1;
+		else
+			RxLocal <= Rx;
 	end// CLK;
 
-	always @ (posedge CLK)
+	always @ (posedge CLK, negedge resetn)
 	begin : P_com_en
-		if (ComState == WaitForStartBit) begin
-			ComCount <= ComRate/2;// @ 25 MHz
-			ComTick <= 1'b0;
-		end else if (ComCount==0) begin
-			ComCount <= ComRate;
-			ComTick <= 1'b1;
+		if (!resetn) begin
+			ComCount <= 0;
+			ComTick <= 0;
 		end else begin
-			ComCount <= ComCount - 1;
-			ComTick <= 1'b0;
+			if (ComState == WaitForStartBit) begin
+				ComCount <= ComRate/2;// @ 25 MHz
+				ComTick <= 1'b0;
+			end else if (ComCount==0) begin
+				ComCount <= ComRate;
+				ComTick <= 1'b1;
+			end else begin
+				ComCount <= ComCount - 1;
+				ComTick <= 1'b0;
+			end
 		end
 	end
 
-	always @ (posedge CLK)
+	always @ (posedge CLK, negedge resetn)
 	begin : P_COM
-		case(ComState)
-		WaitForStartBit: begin
-			if (RxLocal==1'b0) begin
-				ComState <= DelayAfterStartBit;
-				ReceivedWord <= 0;
+		if (!resetn) begin
+			ComState <= WaitForStartBit;
+			ReceivedWord <= 8'b0;
+			ID_Reg <= 24'b0;
+			Start_Reg <= 32'b0;
+			Command_Reg <= 8'b0;
+		end else begin
+			case(ComState)
+			WaitForStartBit: begin
+				if (RxLocal==1'b0) begin
+					ComState <= DelayAfterStartBit;
+					ReceivedWord <= 0;
+				end
 			end
-		end
-		DelayAfterStartBit: begin
-			if (ComTick==1'b1) begin
-				ComState <= GetBit0;
+			DelayAfterStartBit: begin
+				if (ComTick==1'b1) begin
+					ComState <= GetBit0;
+				end
 			end
-		end
-		GetBit0: begin
-			if (ComTick==1'b1) begin
-				ComState <= GetBit1;
-				ReceivedWord[0] <= RxLocal;
+			GetBit0: begin
+				if (ComTick==1'b1) begin
+					ComState <= GetBit1;
+					ReceivedWord[0] <= RxLocal;
+				end
 			end
-		end
-		GetBit1: begin
-			if (ComTick==1'b1) begin
-				ComState <= GetBit2;
-				ReceivedWord[1] <= RxLocal;
+			GetBit1: begin
+				if (ComTick==1'b1) begin
+					ComState <= GetBit2;
+					ReceivedWord[1] <= RxLocal;
+				end
 			end
-		end
-		GetBit2: begin
-			if (ComTick==1'b1) begin
-				ComState <= GetBit3;
-				ReceivedWord[2] <= RxLocal;
+			GetBit2: begin
+				if (ComTick==1'b1) begin
+					ComState <= GetBit3;
+					ReceivedWord[2] <= RxLocal;
+				end
 			end
-		end
-		GetBit3: begin
-			if (ComTick==1'b1) begin
-				ComState <= GetBit4;
-				ReceivedWord[3] <= RxLocal;
+			GetBit3: begin
+				if (ComTick==1'b1) begin
+					ComState <= GetBit4;
+					ReceivedWord[3] <= RxLocal;
+				end
 			end
-		end
-		GetBit4: begin
-			if (ComTick==1'b1) begin
-				ComState <= GetBit5;
-				ReceivedWord[4] <= RxLocal;
+			GetBit4: begin
+				if (ComTick==1'b1) begin
+					ComState <= GetBit5;
+					ReceivedWord[4] <= RxLocal;
+				end
 			end
-		end
-		GetBit5: begin
-			if (ComTick==1'b1) begin
-				ComState <= GetBit6;
-				ReceivedWord[5] <= RxLocal;
+			GetBit5: begin
+				if (ComTick==1'b1) begin
+					ComState <= GetBit6;
+					ReceivedWord[5] <= RxLocal;
+				end
 			end
-		end
-		GetBit6: begin
-			if (ComTick==1'b1) begin
-				ComState <= GetBit7;
-				ReceivedWord[6] <= RxLocal;
+			GetBit6: begin
+				if (ComTick==1'b1) begin
+					ComState <= GetBit7;
+					ReceivedWord[6] <= RxLocal;
+				end
 			end
-		end
-		GetBit7: begin
-			if (ComTick==1'b1) begin
-				ComState <= GetStopBit;
-				ReceivedWord[7] <= RxLocal;
+			GetBit7: begin
+				if (ComTick==1'b1) begin
+					ComState <= GetStopBit;
+					ReceivedWord[7] <= RxLocal;
+				end
 			end
-		end
-		GetStopBit: begin
-			if (ComTick==1'b1) begin
-				ComState <= WaitForStartBit;
+			GetStopBit: begin
+				if (ComTick==1'b1) begin
+					ComState <= WaitForStartBit;
+				end
 			end
-		end
-		endcase
-// scan order:
-// <-to_modules_scan_in <- LSB_W0..MSB_W0 <- LSB_W1.... <- LSB_W7 <- from_modules_scan_out
-// W8(7..1)
-		if (ComState==GetStopBit && ComTick==1'b1) begin
-			case (PresentState)
-				GetID_00: ID_Reg[23:16] <= ReceivedWord;
-				GetID_AA: ID_Reg[15:8] <= ReceivedWord;
-				GetID_FF: ID_Reg[7:0] <= ReceivedWord;
-//         when GetSize0 => Size_Reg(15 downto 8) <= ReceivedWord;
-//         when GetSize1 => Size_Reg(7 downto 0) <= ReceivedWord;
-//         when GetCRC_H => CRC_Reg(15 downto 8) <= ReceivedWord;
-//         when GetCRC_L => CRC_Reg(7 downto 0) <= ReceivedWord;
-				GetCommand: Command_Reg <= ReceivedWord;
-				GetData: Data_Reg <= ReceivedWord;
 			endcase
+	// scan order:
+	// <-to_modules_scan_in <- LSB_W0..MSB_W0 <- LSB_W1.... <- LSB_W7 <- from_modules_scan_out
+	// W8(7..1)
+			if (ComState==GetStopBit && ComTick==1'b1) begin
+				case (PresentState)
+					GetID_00: ID_Reg[23:16] <= ReceivedWord;
+					GetID_AA: ID_Reg[15:8] <= ReceivedWord;
+					GetID_FF: ID_Reg[7:0] <= ReceivedWord;
+	//         when GetSize0 => Size_Reg(15 downto 8) <= ReceivedWord;
+	//         when GetSize1 => Size_Reg(7 downto 0) <= ReceivedWord;
+	//         when GetCRC_H => CRC_Reg(15 downto 8) <= ReceivedWord;
+	//         when GetCRC_L => CRC_Reg(7 downto 0) <= ReceivedWord;
+					GetCommand: Command_Reg <= ReceivedWord;
+					GetData: Data_Reg <= ReceivedWord;
+				endcase
+			end
 		end
 	end//CLK
 
-	always @(posedge CLK)
+	always @(posedge CLK, negedge resetn)
 	begin : P_FSM
-		case(PresentState)
-		Idle: begin
-			if (ComState==WaitForStartBit && RxLocal==1'b0) begin 
-				PresentState <= GetID_00;
+		if (!resetn) begin
+			PresentState <= Idle;
+		end else begin
+			case(PresentState)
+			Idle: begin
+				if (ComState==WaitForStartBit && RxLocal==1'b0) begin 
+					PresentState <= GetID_00;
+				end
 			end
-		end
-		GetID_00: begin
-			if (TimeToSend==1'b1) begin 
-				PresentState<=Idle;
-			end else if (ComState==GetStopBit && ComTick==1'b1) begin
-				PresentState <= GetID_AA;
+			GetID_00: begin
+				if (TimeToSend==1'b1) begin 
+					PresentState<=Idle;
+				end else if (ComState==GetStopBit && ComTick==1'b1) begin
+					PresentState <= GetID_AA;
+				end
 			end
-		end
-		GetID_AA: begin
-			if (TimeToSend==1'b1) begin
-				PresentState<=Idle;
-			end else if (ComState==GetStopBit && ComTick==1'b1) begin
-				PresentState <= GetID_FF;
+			GetID_AA: begin
+				if (TimeToSend==1'b1) begin
+					PresentState<=Idle;
+				end else if (ComState==GetStopBit && ComTick==1'b1) begin
+					PresentState <= GetID_FF;
+				end
 			end
-		end
-		GetID_FF: begin
-			if (TimeToSend==1'b1) begin
-				PresentState<=Idle;
-			end else if (ComState==GetStopBit && ComTick==1'b1) begin 
-				PresentState <= GetCommand;
+			GetID_FF: begin
+				if (TimeToSend==1'b1) begin
+					PresentState<=Idle;
+				end else if (ComState==GetStopBit && ComTick==1'b1) begin 
+					PresentState <= GetCommand;
+				end
 			end
-		end
-//		GetSize1:
-//        if TimeToSend=1'b1 begin PresentState<=Idle;
-//        elsif ComState=GetStopBit && ComTick=1'b1 begin PresentState <= GetSize0; end if;
-//		GetSize0:
-//        if TimeToSend=1'b1 begin PresentState<=Idle;
-//        elsif ComState=GetStopBit && ComTick=1'b1 begin PresentState <= GetCommand; end if;
-		GetCommand: begin
-			if (TimeToSend==1'b1) begin
-				PresentState<=Idle;
-			end else if (ComState==GetStopBit && ComTick==1'b1) begin 
-				PresentState <= EvalCommand;
+	//		GetSize1:
+	//        if TimeToSend=1'b1 begin PresentState<=Idle;
+	//        elsif ComState=GetStopBit && ComTick=1'b1 begin PresentState <= GetSize0; end if;
+	//		GetSize0:
+	//        if TimeToSend=1'b1 begin PresentState<=Idle;
+	//        elsif ComState=GetStopBit && ComTick=1'b1 begin PresentState <= GetCommand; end if;
+			GetCommand: begin
+				if (TimeToSend==1'b1) begin
+					PresentState<=Idle;
+				end else if (ComState==GetStopBit && ComTick==1'b1) begin 
+					PresentState <= EvalCommand;
+				end
 			end
-		end
-		EvalCommand: begin
-			if (ID_Reg==24'h00AAFF && (Command_Reg[6:0]=={3'b000,4'h1} || Command_Reg[6:0]=={3'b000,4'h2})) begin
-				PresentState <= GetData;
-			end else begin
-				PresentState <= Idle;
+			EvalCommand: begin
+				if (ID_Reg==24'h00AAFF && (Command_Reg[6:0]=={3'b000,4'h1} || Command_Reg[6:0]=={3'b000,4'h2})) begin
+					PresentState <= GetData;
+				end else begin
+					PresentState <= Idle;
+				end
 			end
-		end
-		GetData: begin
-			if (TimeToSend==1'b1) begin 
-				PresentState<=Idle; 
+			GetData: begin
+				if (TimeToSend==1'b1) begin 
+					PresentState<=Idle; 
+				end
 			end
+			endcase
 		end
-		endcase
 	end//CLK
 	assign Command = Command_Reg;
 
 	if (Mode==0 || Mode==1) begin : L_hexmode// mode [0:auto|1:hex|2:bin]
 		assign HexValue = ASCII2HEX(ReceivedWord);
-		always @ (posedge CLK)
+		always @ (posedge CLK, negedge resetn)
 		begin
-			if (PresentState!=GetData) begin
+			if (!resetn) begin
 				ReceiveState <= HighNibble;
-			end else if (ComState==GetStopBit && ComTick==1'b1 && HexValue[4]==1'b0) begin
-				if(ReceiveState==HighNibble) begin
-					ReceiveState <= LowNibble;
-				end
-			end else begin
-			  ReceiveState <= HighNibble;
-			end
-		//end// CLK
-			if (ComState==GetStopBit && ComTick==1'b1 && HexValue[4]==1'b0) begin
-				if(ReceiveState==HighNibble) begin
-					HighReg <= HexValue[3:0];
-					HexWriteStrobe <= 1'b0;
-				end else begin// LowNibble
-					HexData <= {HighReg,HexValue[3:0]};
-					HexWriteStrobe <= 1'b1;
-				end
-			end else begin
+				HexData <= 8'b0;
+				HighReg <= 4'b0;
 				HexWriteStrobe <= 1'b0;
+			end else begin
+				if (PresentState!=GetData) begin
+					ReceiveState <= HighNibble;
+				end else if (ComState==GetStopBit && ComTick==1'b1 && HexValue[4]==1'b0) begin
+					if(ReceiveState==HighNibble) begin
+						ReceiveState <= LowNibble;
+					end
+				end else begin
+				  ReceiveState <= HighNibble;
+				end
+			//end// CLK
+				if (ComState==GetStopBit && ComTick==1'b1 && HexValue[4]==1'b0) begin
+					if(ReceiveState==HighNibble) begin
+						HighReg <= HexValue[3:0];
+						HexWriteStrobe <= 1'b0;
+					end else begin// LowNibble
+						HexData <= {HighReg,HexValue[3:0]};
+						HexWriteStrobe <= 1'b1;
+					end
+				end else begin
+					HexWriteStrobe <= 1'b0;
+				end
 			end
 		end// CLK
 	end
 
-	always @(posedge CLK)
+	always @(posedge CLK, negedge resetn)
 	begin : P_checksum
-		if (PresentState==GetCommand) begin // init before data arrives 
-			CRCReg <= 0;
-			b_counter <= 0;
-		end else if (Mode==1 || (Mode==0 && Command_Reg[7]==1'b1)) begin // mode [0:auto|1:hex|2:bin]
-			// if hex mode or if auto mode with detected hex mode in the command register
-			if (ComState==GetStopBit && ComTick==1'b1 && HexValue[4]==1'b0 && PresentState==GetData && ReceiveState==LowNibble) begin
-				CRCReg <= CRCReg + {HighReg,HexValue[3:0]};
-				b_counter <= b_counter+1;
-			end
-		end else begin// binary mode
-			if (ComState==GetStopBit && ComTick==1'b1 && (PresentState==GetData)) begin
-				CRCReg <= CRCReg + ReceivedWord;
-				b_counter <= b_counter +1;
-			end
-		end// checksum computation
-
-		if (PresentState==GetData) begin
-			ReceiveLED <= 1'b1; // receive process in progress
-		end else if ((PresentState==Idle) && (CRCReg!=TestFileChecksum)) begin
-			//ReceiveLED <= blink(blink'high);
-			ReceiveLED <= blink[22];
+		if (!resetn) begin
+			CRCReg <= TestFileChecksum;
+			b_counter <= TestFileChecksum;
+			blink <= 23'b0;
 		end else begin
-			ReceiveLED <= 1'b0; // receive process was OK
+			if (PresentState==GetCommand) begin // init before data arrives 
+				CRCReg <= 0;
+				b_counter <= 0;
+			end else if (Mode==1 || (Mode==0 && Command_Reg[7]==1'b1)) begin // mode [0:auto|1:hex|2:bin]
+				// if hex mode or if auto mode with detected hex mode in the command register
+				if (ComState==GetStopBit && ComTick==1'b1 && HexValue[4]==1'b0 && PresentState==GetData && ReceiveState==LowNibble) begin
+					CRCReg <= CRCReg + {HighReg,HexValue[3:0]};
+					b_counter <= b_counter+1;
+				end
+			end else begin// binary mode
+				if (ComState==GetStopBit && ComTick==1'b1 && (PresentState==GetData)) begin
+					CRCReg <= CRCReg + ReceivedWord;
+					b_counter <= b_counter +1;
+				end
+			end// checksum computation
+
+			if (PresentState==GetData) begin
+				ReceiveLED <= 1'b1; // receive process in progress
+			end else if ((PresentState==Idle) && (CRCReg!=TestFileChecksum)) begin
+				//ReceiveLED <= blink(blink'high);
+				ReceiveLED <= blink[22];
+			end else begin
+				ReceiveLED <= 1'b0; // receive process was OK
+			end
+
+			blink <= blink-1;
 		end
-
-		blink <= blink-1;
-
 	end //CLK
 
-	always @(posedge CLK)
+	always @(posedge CLK, negedge resetn)
 	begin : P_bus
-		if (PresentState==EvalCommand) begin
+		if (!resetn) begin
 			LocalWriteStrobe <= 1'b0;
-		end else if (PresentState==GetData && ComState==GetStopBit && ComTick==1'b1) begin
-			LocalWriteStrobe <= 1'b1;
+			ByteWriteStrobe <= 1'b0;
 		end else begin
-			LocalWriteStrobe <= 1'b0;
-		end
+			if (PresentState==EvalCommand) begin
+				LocalWriteStrobe <= 1'b0;
+			end else if (PresentState==GetData && ComState==GetStopBit && ComTick==1'b1) begin
+				LocalWriteStrobe <= 1'b1;
+			end else begin
+				LocalWriteStrobe <= 1'b0;
+			end
 
-		if (Mode==2 || (Mode==0 && Command_Reg[7]==1'b0)) begin // mode [0:auto|1:hex|2:bin]
-		// if binary mode or if auto mode with detected binary mode in the command register
-			ByteWriteStrobe <= LocalWriteStrobe; // delay Strobe to ensure that data is valid when applying CLK
-													// should further prevent glitches in ICAP CLK
-		end else begin
-			ByteWriteStrobe <= HexWriteStrobe;
+			if (Mode==2 || (Mode==0 && Command_Reg[7]==1'b0)) begin // mode [0:auto|1:hex|2:bin]
+			// if binary mode or if auto mode with detected binary mode in the command register
+				ByteWriteStrobe <= LocalWriteStrobe; // delay Strobe to ensure that data is valid when applying CLK
+														// should further prevent glitches in ICAP CLK
+			end else begin
+				ByteWriteStrobe <= HexWriteStrobe;
+			end
 		end
 	end// CLK
 
-	always @(posedge CLK)
+	always @(posedge CLK, negedge resetn)
 	begin : P_WordMode
-		if (PresentState==EvalCommand) begin
+		if (!resetn) begin
 			GetWordState <= Word0;
-			WriteData <= 0;
-		end else begin
-			case(GetWordState)
-			Word0: begin
-				if (ByteWriteStrobe==1'b1) begin
-					WriteData[31:24] <= ReceivedByte;
-					GetWordState <= Word1;
-				end
-			end
-			Word1: begin
-				if (ByteWriteStrobe==1'b1) begin
-					WriteData[23:16] <= ReceivedByte;
-					GetWordState <= Word2;
-				end
-			end
-			Word2: begin
-				if (ByteWriteStrobe==1'b1) begin
-					WriteData[15:8] <= ReceivedByte;
-					GetWordState <= Word3;
-				end
-			end
-			Word3: begin
-				if (ByteWriteStrobe==1'b1) begin
-					WriteData[7:0] <= ReceivedByte;
-					GetWordState <= Word0;
-				end
-			end
-			endcase
-		end
-
-		if (ByteWriteStrobe==1'b1 && GetWordState==Word3) begin
-			WriteStrobe <= 1'b1;
-		end else begin
+			WriteData <= 32'b0;
 			WriteStrobe <= 1'b0;
+		end else begin
+			if (PresentState==EvalCommand) begin
+				GetWordState <= Word0;
+				WriteData <= 0;
+			end else begin
+				case(GetWordState)
+				Word0: begin
+					if (ByteWriteStrobe==1'b1) begin
+						WriteData[31:24] <= ReceivedByte;
+						GetWordState <= Word1;
+					end
+				end
+				Word1: begin
+					if (ByteWriteStrobe==1'b1) begin
+						WriteData[23:16] <= ReceivedByte;
+						GetWordState <= Word2;
+					end
+				end
+				Word2: begin
+					if (ByteWriteStrobe==1'b1) begin
+						WriteData[15:8] <= ReceivedByte;
+						GetWordState <= Word3;
+					end
+				end
+				Word3: begin
+					if (ByteWriteStrobe==1'b1) begin
+						WriteData[7:0] <= ReceivedByte;
+						GetWordState <= Word0;
+					end
+				end
+				endcase
+			end
+
+			if (ByteWriteStrobe==1'b1 && GetWordState==Word3) begin
+				WriteStrobe <= 1'b1;
+			end else begin
+				WriteStrobe <= 1'b0;
+			end
 		end
 	end// CLK
 
@@ -402,18 +436,23 @@ module config_UART #(
 	// ReceivedWordDebug <= Data_Reg when (Mode="bin" OR (Mode="auto" && Command_Reg(7)=1'b0)) else HexData;
 	assign ComActive = (PresentState==GetData) ? 1'b1 : 1'b0;
 
-	always @(posedge CLK)
+	always @(posedge CLK, negedge resetn)
 	begin : P_TimeOut
-		if (PresentState==Idle || ComState==GetStopBit) begin
-		//Init TimeOut
+		if (!resetn) begin
 			TimeToSendCounter <= TimeToSendValue;
-			TimeToSend <= 1'b0;
-		end else if (TimeToSendCounter>0) begin
-			TimeToSendCounter <= TimeToSendCounter - 1;
-			TimeToSend <= 1'b0;
+			TimeToSendCounter <= 1'b0;
 		end else begin
-			TimeToSendCounter <= TimeToSendCounter;
-			TimeToSend <= 1'b1; // force FSM to go back to idle when inactive
+			if (PresentState==Idle || ComState==GetStopBit) begin
+			//Init TimeOut
+				TimeToSendCounter <= TimeToSendValue;
+				TimeToSend <= 1'b0;
+			end else if (TimeToSendCounter>0) begin
+				TimeToSendCounter <= TimeToSendCounter - 1;
+				TimeToSend <= 1'b0;
+			end else begin
+				TimeToSendCounter <= TimeToSendCounter;
+				TimeToSend <= 1'b1; // force FSM to go back to idle when inactive
+			end
 		end
 	end//CLK
 

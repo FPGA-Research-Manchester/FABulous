@@ -181,7 +181,6 @@ To run the complete FABulous flow with the default project, run the following co
     csvFile: str
     extension: str = "v"
     fabricLoaded: bool = False
-    pathToCSVFile: str = ""
     script: str = ""
 
     def __init__(self, fab: FABulous, projectDir: str, script: str = ""):
@@ -211,7 +210,7 @@ To run the complete FABulous flow with the default project, run the following co
                     name = fun.strip("do_")
                     tcl.createcommand(name, getattr(self, fun))
 
-        os.chdir(args.project_dir)
+        # os.chdir(args.project_dir)
         tcl.eval(script)
 
         if "exit" in script:
@@ -261,11 +260,11 @@ To run the complete FABulous flow with the default project, run the following co
         if len(args) == 0:
             if self.csvFile != "" and os.path.exists(self.csvFile):
                 self.fabricGen.loadFabric(self.csvFile)
-            elif os.path.exists("./fabric.csv"):
+            elif os.path.exists(f"{self.projectDir}/fabric.csv"):
                 logger.info(
-                    "Found fabric.csv in current directory loading that file as the definition of the fabric")
-                self.fabricGen.loadFabric("./fabric.csv")
-                self.csvFile = "./fabric.csv"
+                    "Found fabric.csv in the project directory loading that file as the definition of the fabric")
+                self.fabricGen.loadFabric(f"{self.projectDir}/fabric.csv")
+                self.csvFile = f"{self.projectDir}/fabric.csv"
             else:
                 logger.error(
                     "No argument is given and no csv file is set or the file does not exist")
@@ -275,9 +274,9 @@ To run the complete FABulous flow with the default project, run the following co
             self.csvFile = args[0]
 
         self.fabricLoaded = True
-        self.pathToCSVFile = os.path.split(self.csvFile)[0]
+        # self.projectDir = os.path.split(self.csvFile)[0]
         tileByPath = [f.name for f in os.scandir(
-            f"{self.pathToCSVFile}/Tile/") if f.is_dir()]
+            f"{self.projectDir}/Tile/") if f.is_dir()]
         tileByFabric = list(self.fabricGen.fabric.tileDic.keys())
         superTileByFabric = list(self.fabricGen.fabric.superTileDic.keys())
         self.allTile = list(set(tileByPath) & set(
@@ -303,9 +302,9 @@ To run the complete FABulous flow with the default project, run the following co
         for i in args:
             logger.info(f"Generating configMem for {i}")
             self.fabricGen.setWriterOutputFile(
-                f"{self.pathToCSVFile}/Tile/{i}/{i}_ConfigMem.{self.extension}")
+                f"{self.projectDir}/Tile/{i}/{i}_ConfigMem.{self.extension}")
             self.fabricGen.genConfigMem(
-                i, f"{self.pathToCSVFile}/Tile/{i}/{i}_ConfigMem.csv")
+                i, f"{self.projectDir}/Tile/{i}/{i}_ConfigMem.csv")
         logger.info(f"Generating configMem complete")
 
     def complete_gen_config_mem(self, text, *ignored):
@@ -318,7 +317,7 @@ To run the complete FABulous flow with the default project, run the following co
         for i in args:
             logger.info(f"Generating switch matrix for {i}")
             self.fabricGen.setWriterOutputFile(
-                f"{self.pathToCSVFile}/Tile/{i}/{i}_switch_matrix.{self.extension}")
+                f"{self.projectDir}/Tile/{i}/{i}_switch_matrix.{self.extension}")
             self.fabricGen.genSwitchMatrix(i)
         logger.info("Switch matrix generation complete")
 
@@ -331,7 +330,7 @@ To run the complete FABulous flow with the default project, run the following co
             args = self.parse(args)
         logger.info(f"Generating tile {' '.join(args)}")
         for t in args:
-            if subTiles := [f.name for f in os.scandir(f"{self.pathToCSVFile}/Tile/{t}") if f.is_dir()]:
+            if subTiles := [f.name for f in os.scandir(f"{self.projectDir}/Tile/{t}") if f.is_dir()]:
                 logger.info(
                     f"{t} is a super tile, generating {t} with sub tiles {' '.join(subTiles)}")
                 for st in subTiles:
@@ -339,7 +338,7 @@ To run the complete FABulous flow with the default project, run the following co
                     logger.info(f"Generating switch matrix for tile {t}")
                     logger.info(f"Generating switch matrix for {st}")
                     self.fabricGen.setWriterOutputFile(
-                        f"{self.pathToCSVFile}/Tile/{t}/{st}/{st}_switch_matrix.{self.extension}")
+                        f"{self.projectDir}/Tile/{t}/{st}/{st}_switch_matrix.{self.extension}")
                     self.fabricGen.genSwitchMatrix(st)
                     logger.info(f"Generated switch matrix for {st}")
 
@@ -347,23 +346,23 @@ To run the complete FABulous flow with the default project, run the following co
                     logger.info(f"Generating configMem for tile {t}")
                     logger.info(f"Generating ConfigMem for {st}")
                     self.fabricGen.setWriterOutputFile(
-                        f"{self.pathToCSVFile}/Tile/{t}/{st}/{st}_ConfigMem.{self.extension}")
+                        f"{self.projectDir}/Tile/{t}/{st}/{st}_ConfigMem.{self.extension}")
                     self.fabricGen.genConfigMem(
-                        st, f"{self.pathToCSVFile}/Tile/{t}/{st}/{st}_ConfigMem.csv")
+                        st, f"{self.projectDir}/Tile/{t}/{st}/{st}_ConfigMem.csv")
                     logger.info(f"Generated configMem for {st}")
 
                     # Gen tile
                     logger.info(f"Generating subtile for tile {t}")
                     logger.info(f"Generating subtile {st}")
                     self.fabricGen.setWriterOutputFile(
-                        f"{self.pathToCSVFile}/Tile/{t}/{st}/{st}.{self.extension}")
+                        f"{self.projectDir}/Tile/{t}/{st}/{st}.{self.extension}")
                     self.fabricGen.genTile(st)
                     logger.info(f"Generated subtile {st}")
 
                 # Gen super tile
                 logger.info(f"Generating super tile {t}")
                 self.fabricGen.setWriterOutputFile(
-                    f"{self.pathToCSVFile}/Tile/{t}/{t}.{self.extension}")
+                    f"{self.projectDir}/Tile/{t}/{t}.{self.extension}")
                 self.fabricGen.genSuperTile(t)
                 logger.info(f"Generated super tile {t}")
                 continue
@@ -377,7 +376,7 @@ To run the complete FABulous flow with the default project, run the following co
             logger.info(f"Generating tile {t}")
             # Gen tile
             self.fabricGen.setWriterOutputFile(
-                f"{self.pathToCSVFile}/Tile/{t}/{t}.{self.extension}")
+                f"{self.projectDir}/Tile/{t}/{t}.{self.extension}")
             self.fabricGen.genTile(t)
             logger.info(f"Generated tile {t}")
 
@@ -397,7 +396,7 @@ To run the complete FABulous flow with the default project, run the following co
         logger.info(f"Generating fabric {self.fabricGen.fabric.name}")
         self.do_gen_all_tile()
         self.fabricGen.setWriterOutputFile(
-            f"{self.pathToCSVFile}/Fabric/{self.fabricGen.fabric.name}.{self.extension}")
+            f"{self.projectDir}/Fabric/{self.fabricGen.fabric.name}.{self.extension}")
         self.fabricGen.genFabric()
         logger.info("Fabric generation complete")
 
@@ -407,13 +406,13 @@ To run the complete FABulous flow with the default project, run the following co
         specObject = self.fabricGen.genBitStreamSpec()
 
         logger.info(
-            f"output file: {self.pathToCSVFile}/{metaDataDir}/bitStreamSpec.bin")
-        with open(f"{self.pathToCSVFile}/{metaDataDir}/bitStreamSpec.bin", "wb") as outFile:
+            f"output file: {self.projectDir}/{metaDataDir}/bitStreamSpec.bin")
+        with open(f"{self.projectDir}/{metaDataDir}/bitStreamSpec.bin", "wb") as outFile:
             pickle.dump(specObject, outFile)
 
         logger.info(
-            f"output file: {self.pathToCSVFile}/{metaDataDir}/bitStreamSpec.csv")
-        with open(f"{self.pathToCSVFile}/{metaDataDir}/bitStreamSpec.csv", "w") as f:
+            f"output file: {self.projectDir}/{metaDataDir}/bitStreamSpec.csv")
+        with open(f"{self.projectDir}/{metaDataDir}/bitStreamSpec.csv", "w") as f:
             w = csv.writer(f)
             for key1 in specObject["TileSpecs"]:
                 w.writerow([key1])
@@ -425,7 +424,7 @@ To run the complete FABulous flow with the default project, run the following co
         "Generate the top wrapper of the fabric"
         logger.info("Generating top wrapper")
         self.fabricGen.setWriterOutputFile(
-            f"{self.pathToCSVFile}/Fabric/{self.fabricGen.fabric.name}_top.{self.extension}")
+            f"{self.projectDir}/Fabric/{self.fabricGen.fabric.name}_top.{self.extension}")
         self.fabricGen.genTopWrapper()
         logger.info("Generated top wrapper")
 
@@ -444,22 +443,22 @@ To run the complete FABulous flow with the default project, run the following co
         logger.info("Generating npnr model")
         npnrModel = self.fabricGen.genModelNpnr()
         logger.info(
-            f"output file: {self.pathToCSVFile}/{metaDataDir}/pips.txt")
-        with open(f"{self.pathToCSVFile}/{metaDataDir}/pips.txt", "w") as f:
+            f"output file: {self.projectDir}/{metaDataDir}/pips.txt")
+        with open(f"{self.projectDir}/{metaDataDir}/pips.txt", "w") as f:
             f.write(npnrModel[0])
 
-        logger.info(f"output file: {self.pathToCSVFile}/{metaDataDir}/bel.txt")
-        with open(f"{self.pathToCSVFile}/{metaDataDir}/bel.txt", "w") as f:
+        logger.info(f"output file: {self.projectDir}/{metaDataDir}/bel.txt")
+        with open(f"{self.projectDir}/{metaDataDir}/bel.txt", "w") as f:
             f.write(npnrModel[1])
 
         logger.info(
-            f"output file: {self.pathToCSVFile}/{metaDataDir}/bel.v2.txt")
-        with open(f"{self.pathToCSVFile}/{metaDataDir}/bel.v2.txt", "w") as f:
+            f"output file: {self.projectDir}/{metaDataDir}/bel.v2.txt")
+        with open(f"{self.projectDir}/{metaDataDir}/bel.v2.txt", "w") as f:
             f.write(npnrModel[2])
 
         logger.info(
-            f"output file: {self.pathToCSVFile}/{metaDataDir}/template.pcf")
-        with open(f"{self.pathToCSVFile}/{metaDataDir}/template.pcf", "w") as f:
+            f"output file: {self.projectDir}/{metaDataDir}/template.pcf")
+        with open(f"{self.projectDir}/{metaDataDir}/template.pcf", "w") as f:
             f.write(npnrModel[3])
 
         logger.info("Generated npnr model")
@@ -472,12 +471,12 @@ To run the complete FABulous flow with the default project, run the following co
             FabricFile = [i.strip('\n').split(',') for i in open(self.csvFile)]
             fabric = GetFabric(FabricFile)
             fabricObject = genFabricObject(fabric, FabricFile)
-            pipFile = open(f"{self.pathToCSVFile}/{metaDataDir}/pips.txt", "w")
-            belFile = open(f"{self.pathToCSVFile}/{metaDataDir}/bel.txt", "w")
+            pipFile = open(f"{self.projectDir}/{metaDataDir}/pips.txt", "w")
+            belFile = open(f"{self.projectDir}/{metaDataDir}/bel.txt", "w")
             pairFile = open(
-                f"{self.pathToCSVFile}/{metaDataDir}/wirePairs.csv", "w")
+                f"{self.projectDir}/{metaDataDir}/wirePairs.csv", "w")
             constraintFile = open(
-                f"{self.pathToCSVFile}/{metaDataDir}/template.pcf", "w")
+                f"{self.projectDir}/{metaDataDir}/template.pcf", "w")
 
             npnrModel = model_gen_npnr.genNextpnrModelOld(fabricObject, False)
 
@@ -510,20 +509,20 @@ To run the complete FABulous flow with the default project, run the following co
         logger.info("Generating vpr model")
         vprModel = self.fabricGen.genModelVPR(args)
         logger.info(
-            f"Output file: {self.pathToCSVFile}/{metaDataDir}/architecture.xml")
-        with open(f"{self.pathToCSVFile}/{metaDataDir}/architecture.xml", "w") as f:
+            f"Output file: {self.projectDir}/{metaDataDir}/architecture.xml")
+        with open(f"{self.projectDir}/{metaDataDir}/architecture.xml", "w") as f:
             f.write(vprModel)
 
         vprRoutingResource = self.fabricGen.genModelVPRRoutingResource()
         logger.info(
-            f"Output file: {self.pathToCSVFile}/{metaDataDir}/routing_resource.xml")
-        with open(f"{self.pathToCSVFile}/{metaDataDir}/routing_resource.xml", "w") as f:
+            f"Output file: {self.projectDir}/{metaDataDir}/routing_resource.xml")
+        with open(f"{self.projectDir}/{metaDataDir}/routing_resource.xml", "w") as f:
             f.write(vprRoutingResource)
 
         vprConstrain = self.fabricGen.genModelVPRConstrains()
         logger.info(
-            f"Output file: {self.pathToCSVFile}/{metaDataDir}/fab_constraints.xml")
-        with open(f"{self.pathToCSVFile}/{metaDataDir}/fab_constraints.xml", "w") as f:
+            f"Output file: {self.projectDir}/{metaDataDir}/fab_constraints.xml")
+        with open(f"{self.projectDir}/{metaDataDir}/fab_constraints.xml", "w") as f:
             f.write(vprConstrain)
 
         logger.info("Generated vpr model")
@@ -634,9 +633,9 @@ To run the complete FABulous flow with the default project, run the following co
         path, name = os.path.split(args[0])
         name = name.split('.')[0]
         runCmd = ["yosys",
-                  "-p", f"synth_fabulous -top top_wrapper -json {self.pathToCSVFile}/{path}/{name}.json",
-                  f"{self.pathToCSVFile}/{args[0]}",
-                  f"{self.pathToCSVFile}/{path}/top_wrapper.v", ]
+                  "-p", f"synth_fabulous -top top_wrapper -json {self.projectDir}/{path}/{name}.json",
+                  f"{self.projectDir}/{args[0]}",
+                  f"{self.projectDir}/{path}/top_wrapper.v", ]
         sp.run(runCmd, check=True)
         logger.info("Synthesis completed")
 
@@ -654,9 +653,9 @@ To run the complete FABulous flow with the default project, run the following co
         path, name = os.path.split(args[0])
         name = name.split('.')[0]
         runCmd = ["yosys",
-                  "-p", f"synth_fabulous -top top_wrapper -blif {self.pathToCSVFile}/{path}/{name}.blif -vpr",
-                  f"{self.pathToCSVFile}/{args[0]}",
-                  f"{self.pathToCSVFile}/{path}/top_wrapper.v", ]
+                  "-p", f"synth_fabulous -top top_wrapper -blif {self.projectDir}/{path}/{name}.blif -vpr",
+                  f"{self.projectDir}/{args[0]}",
+                  f"{self.projectDir}/{path}/top_wrapper.v", ]
         sp.run(runCmd, check=True)
         logger.info("Synthesis completed")
 
@@ -674,20 +673,21 @@ To run the complete FABulous flow with the default project, run the following co
         path, name = os.path.split(args[0])
         name = name.split('.')[0]
 
-        if not os.path.exists(f"{self.pathToCSVFile}/.FABulous/pips.txt") or not os.path.exists(f"{self.pathToCSVFile}/.FABulous/bel.txt"):
+        if not os.path.exists(f"{self.projectDir}/.FABulous/pips.txt") or not os.path.exists(f"{self.projectDir}/.FABulous/bel.txt"):
             logger.error(
                 "Pips and Bel files are not found, please run model_gen_npnr first")
             return
 
+        print(self.projectDir)
         # TODO rewriting the fab_arch script so no need to copy file for work around
-        if f"{name}.json" in os.listdir(f"{self.pathToCSVFile}/{path}"):
-            runCmd = ["FAB_ROOT=`pwd`",
+        if f"{name}.json" in os.listdir(f"{self.projectDir}/{path}"):
+            runCmd = [f"FAB_ROOT={self.projectDir}",
                       f"nextpnr-generic",
                       "--uarch", "fabulous",
-                      "--json", f"{self.pathToCSVFile}/{path}/{name}.json",
-                      "-o", f"fasm={self.pathToCSVFile}/{path}/{name}_des.fasm",
+                      "--json", f"{self.projectDir}/{path}/{name}.json",
+                      "-o", f"fasm={self.projectDir}/{path}/{name}_des.fasm",
                       "--verbose",
-                      "--log", f"{self.pathToCSVFile}/{path}/{name}_npnr_log.txt"]
+                      "--log", f"{self.projectDir}/{path}/{name}_npnr_log.txt"]
             sp.run(" ".join(runCmd), stdout=sys.stdout,
                    stderr=sp.STDOUT, check=True, shell=True)
         else:
@@ -711,7 +711,7 @@ To run the complete FABulous flow with the default project, run the following co
         path, name = os.path.split(args[0])
         name = name.split('.')[0]
 
-        if os.path.exists(f"{self.pathToCSVFile}/user_design/{name}.blif"):
+        if os.path.exists(f"{self.projectDir}/user_design/{name}.blif"):
             if not os.getenv('VTR_ROOT'):
                 logger.error(
                     "VTR_ROOT is not set, please set it to the VPR installation directory")
@@ -721,7 +721,7 @@ To run the complete FABulous flow with the default project, run the following co
 
             runCmd = [f"{vtr_root}/vpr/vpr",
                       f".FABulous/architecture.xml",
-                      f"{self.pathToCSVFile}/user_design/{name}.blif",
+                      f"{self.projectDir}/user_design/{name}.blif",
                       "--read_rr_graph", f".FABulous/routing_resources.xml",
                       "--echo_file", "on",
                       "--route_chan_width", "16"]
@@ -743,24 +743,25 @@ To run the complete FABulous flow with the default project, run the following co
             return
         path, name = os.path.split(args[0])
         name = name.split('.')[0]
-        if not os.path.exists(f"{self.pathToCSVFile}/.FABulous/bitStreamSpec.bin"):
+        if not os.path.exists(f"{self.projectDir}/.FABulous/bitStreamSpec.bin"):
             logger.error(
                 "Cannot find bitStreamSpec.bin file, which is generated by running gen_bitStream_spec")
             return
 
-        if not os.path.exists(f"{self.pathToCSVFile}/{path}/{name}_des.fasm"):
+        if not os.path.exists(f"{self.projectDir}/{path}/{name}_des.fasm"):
             logger.error(
-                f"Cannot find {self.pathToCSVFile}/{path}/{name}_des.fasm file which is generated by running place_and_route_npnr or place_and_route_vpr. Potentially Place and Route Failed.")
+                f"Cannot find {self.projectDir}/{path}/{name}_des.fasm file which is generated by running place_and_route_npnr or place_and_route_vpr. Potentially Place and Route Failed.")
             return
 
-        logger.info(f"Generating Bitstream for design {args[0]}")
-        logger.info(f"Outputting to {path}/{name}.bin")
+        logger.info(
+            f"Generating Bitstream for design {self.projectDir}/{args[0]}")
+        logger.info(f"Outputting to {self.projectDir}/{path}/{name}.bin")
         name = name.split('.')[0]
         runCmd = ["python3", f"{fabulousRoot}/nextpnr/fabulous/fab_arch/bit_gen.py",
                   "-genBitstream",
-                  f"{self.pathToCSVFile}/{path}/{name}_des.fasm",
-                  f"{self.pathToCSVFile}/.FABulous/bitStreamSpec.bin",
-                  f"{self.pathToCSVFile}/{path}/{name}.bin"]
+                  f"{self.projectDir}/{path}/{name}_des.fasm",
+                  f"{self.projectDir}/.FABulous/bitStreamSpec.bin",
+                  f"{self.projectDir}/{path}/{name}.bin"]
 
         sp.run(runCmd, check=True)
         logger.info("Bitstream generated")
@@ -769,12 +770,17 @@ To run the complete FABulous flow with the default project, run the following co
         return self._complete_path(text)
 
     def do_run_FABulous_bitstream(self, *args):
-        "Run FABulous to generate a bitstream on a given design starting from synthesis. Usage: run_FABulous_bitstream <dir_to_top_module> (vpr flow currently not working)"
-        args = self.parse(args[0])
-        if len(args) != 2:
+        "Run FABulous to generate a bitstream on a given design starting from synthesis. Usage: run_FABulous_bitstream <npnr|vpr> <dir_to_top_module> (vpr flow currently not working)"
+        if len(args) == 1:
+            args = self.parse(args[0])
+            if len(args) != 2:
+                logger.error(
+                    "Usage: run_FABulous_bitstream <npnr|vpr> <dir_to_top>")
+        elif len(args) != 2:
             logger.error(
                 "Usage: run_FABulous_bitstream <npnr|vpr> <dir_to_top>")
             return
+
         if args[0] == "vpr":
             self.do_synthesis_blif(args[1])
             self.do_place_and_route_vpr(args[1])
@@ -783,6 +789,8 @@ To run the complete FABulous flow with the default project, run the following co
             self.do_synthesis_npnr(args[1])
             self.do_place_and_route_npnr(args[1])
             self.do_gen_bitStream_binary(args[1])
+
+        return 0
 
     def complete_run_FABulous_bitstream(self, text, line, *ignored):
         value = ["npnr", "vpr"]

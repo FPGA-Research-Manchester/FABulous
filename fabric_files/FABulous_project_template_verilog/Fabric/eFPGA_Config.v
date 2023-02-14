@@ -1,8 +1,8 @@
 module eFPGA_Config (CLK, resetn, Rx, ComActive, ReceiveLED, s_clk, s_data, SelfWriteData, SelfWriteStrobe, ConfigWriteData, ConfigWriteStrobe, FrameAddressRegister, LongFrameStrobe, RowSelect);
-	//parameter NumberOfRows = 16;
+	parameter NumberOfRows = 16;
 	parameter RowSelectWidth = 5;
 	parameter FrameBitsPerRow = 32;
-	//parameter desync_flag = 20;
+	parameter desync_flag = 20;
 	input CLK;
 	input resetn;
 	// UART configuration port
@@ -81,8 +81,14 @@ module eFPGA_Config (CLK, resetn, Rx, ComActive, ReceiveLED, s_clk, s_data, Self
 //	wire LongFrameStrobe;
 //	wire [RowSelectWidth-1:0] RowSelect;
 	
-	ConfigFSM ConfigFSM_inst (
-	.CLK(CLK),
+	ConfigFSM #(
+	.NumberOfRows(NumberOfRows),
+	.RowSelectWidth(RowSelectWidth),
+	.FrameBitsPerRow(FrameBitsPerRow),
+	.desync_flag(desync_flag)
+	)
+	ConfigFSM_inst
+	(.CLK(CLK),
 	.resetn(resetn),
 	.WriteData(UART_WriteData_Mux),
 	.WriteStrobe(UART_WriteStrobe_Mux),

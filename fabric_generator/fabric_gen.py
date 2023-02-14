@@ -1730,6 +1730,8 @@ class FabricGenerator:
                                                  "LongFrameStrobe"),
                                                  ("RowSelect", "RowSelect")],
                                      paramPairs=[("RowSelectWidth", "RowSelectWidth"),
+                                                 ("NumberOfRows", "NumberOfRows"),
+                                                 ("desync_flag", "desync_flag"),
                                                  ("FrameBitsPerRow",
                                                   "FrameBitsPerRow"), ])
         self.writer.addNewLine()

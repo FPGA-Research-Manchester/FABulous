@@ -31,19 +31,14 @@ pip3 install -r requirements.txt
 
 The following packages need to be installed for the CAD toolchain
  - [Yosys](https://github.com/YosysHQ/yosys)
- - FABulous' nextpnr fork (covered in instructions below)
+ - [nextpnr](https://github.com/YosysHQ/nextpnr)
  
- A flow using VPR, the place and route tool from the [VTR project](https://github.com/verilog-to-routing/vtr-verilog-to-routing) is also available. However, this still requires Yosys, as well as the FABulous nextpnr fork, since this contains files for design synthesis.
+ A flow using VPR, the place and route tool from the [VTR project](https://github.com/verilog-to-routing/vtr-verilog-to-routing) is also available. However, this still requires Yosys.
 
 ## Getting started
 ```
 git clone https://github.com/FPGA-Research-Manchester/FABulous
 cd FABulous
-git clone --branch fabulous https://github.com/FPGA-Research-Manchester/nextpnr
-cd nextpnr
-cmake . -DARCH=fabulous
-make -j$(nproc)
-sudo make install
 ```
 
 The fabric generator flow can be run using bash scripts based on the examples provided under ```/fabric_files```.
@@ -59,13 +54,4 @@ Then use the following command to build the entire FPGA fabric in both VHDL and 
 ```
 You are now ready to emulate or synthesise with the netlists in ```/vhdl_output``` or ```/verilog_output```.
 
-A simple example that runs to generate a bitstream can be found under ```nextpnr/fabulous/fab_arch/```
-
-Usage example:
-
-```
-cd ../nextpnr/fabulous/fab_arch/
-./fabulous_flow.sh sequential_16bit_en
-python3 bit_gen.py -genBitstream sequential_16bit_en.fasm meta_data.txt sequential_16bit_en_output.bin
-```
 More details on bitstream generation can be found [here](https://github.com/FPGA-Research-Manchester/FABulous/tree/master/fabric_generator/bitstream_npnr).

@@ -35,10 +35,11 @@ pip3 install -r requirements.txt
 sudo apt-get install python3-tk
 ```
 
-The following packages need to be installed for CAD toolchain
-
-- [Yosys](https://github.com/YosysHQ/yosys)
-- [Nextpnr-generic](https://github.com/YosysHQ/nextpnr#nextpnr-generic)
+The following packages need to be installed for the CAD toolchain
+ - [Yosys](https://github.com/YosysHQ/yosys)
+ - [Nextpnr-generic](https://github.com/YosysHQ/nextpnr#nextpnr-generic)
+ 
+ A flow using VPR, the place and route tool from the [VTR project](https://github.com/verilog-to-routing/vtr-verilog-to-routing) is also available. However, this still requires Yosys, as well as the FABulous nextpnr fork, since this contains files for design synthesis.
 
 ## Getting started
 
@@ -48,7 +49,6 @@ To set up FABulous:
 git clone https://github.com/FPGA-Research-Manchester/FABulous
 cd FABulous
 export FAB_ROOT=`pwd`
-git clone --branch fabulous https://github.com/FPGA-Research-Manchester/nextpnr
 ```
 
 We have provided a Python Command Line Interface (CLI) as well as a project structure for easy access of the FABulous toolchain.

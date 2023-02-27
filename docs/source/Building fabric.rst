@@ -26,7 +26,7 @@ This will create a new project named ``demo`` in the current directory.
 
         python3 FABulous.py demo
 
-And now, we will be in the FABulous shell. After running the above command, the current working directory we will be
+And now, we will be in the FABulous shell. After running the above command, the current working directory will be
 moved into the project directory, which is ``demo`` in this case.
 
 #. Load the fabric CSV definition file

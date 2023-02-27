@@ -10,8 +10,7 @@ User guide
 ----------
 
 We have provided two methods for the user to generate bitstreams. The first method is done using the CLI provided and 
-the second method which the user calls the script manually. The first method is the recommended method for the user to 
-use as it provided all the necessary information to generate the bitstream. The second method is provided if the user 
+the second method which the user calls the script manually. The first method is recommended, as it provides all the necessary information to generate the bitstream. The second method is provided for cases where the user has
 decided not to work with the FABulous project structure.
 
 Generate bitstream using CLI

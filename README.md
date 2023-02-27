@@ -75,7 +75,7 @@ We can initiate the FABulous shell with `python3 FABulous.py <project_dir>`. Aft
 To generate a model and bitstream for a specific design call `run_FABulous_bitstream npnr <dir_to_top>` which will
 generate a bitstream for the provided design in the same folder as the design.
 
-To exit the shell simply type `exit` and will terminate the shell.
+To exit the shell simply type `exit` and this will terminate the shell.
 
 A demo of the whole flow:
 
@@ -88,8 +88,8 @@ run_FABulous_bitstream npnr ./user_design/sequential_16bit_en.v
 exit
 ```
 
-The tool also support for using TCL script to driven the build process. Assuming you have created a demo project using
-`python3 FABulous.py -c demo`. You can call `python3 FABulous.py demo -s ./demo/FABulous.tcl` to run the demo flow with the TCL interface.
+The tool also supports using TCL script to drive the build process. Assuming you have created a demo project using
+`python3 FABulous.py -c demo`, you can call `python3 FABulous.py demo -s ./demo/FABulous.tcl` to run the demo flow with the TCL interface.
 
 More details on bitstream generation can be found [here](https://github.com/FPGA-Research-Manchester/FABulous/tree/master/fabric_generator/bitstream_npnr).
 

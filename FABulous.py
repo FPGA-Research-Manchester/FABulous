@@ -60,7 +60,7 @@ def create_project(project_dir, type: Literal["verilog", "vhdl"] = "verilog"):
         print('Project directory already exists!')
         sys.exit()
     else:
-        os.mkdir(f"./{project_dir}")
+        os.mkdir(f"{project_dir}")
 
     os.mkdir(f"{project_dir}/.FABulous")
 
@@ -152,7 +152,7 @@ class FABulousShell(cmd.Cmd):
 
 
 Welcome to FABulous shell
-You have started FABlous shell with following options:
+You have started the FABulous shell with following options:
 {' '.join(sys.argv[1:])}
 
 Type help or ? to list commands
@@ -247,7 +247,7 @@ To run the complete FABulous flow with the default project, run the following co
         sp.run(args, shell=True)
 
     def do_exit(self, *ignore):
-        "exit FABlous shell"
+        "exit FABulous shell"
         logger.info("Exiting FABulous shell")
         return True
 

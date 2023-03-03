@@ -3,38 +3,36 @@ Nextpnr compilation
 
 Compile JSON to FASM by nextpnr <-- bels.txt + pips.txt
 
-Our nextpnr implementation uses nextpnr's Python API for architecture generation, then packs, places and routes.
+Our nextpnr implementation uses nextpnr-generic for place and route. 
 
 Building
 --------
 
-.. code-block:: console
-
-   cd $FAB_ROOT/nextpnr
-   cmake . -DARCH=fabulous
-   make -j$(nproc)
-   sudo make install
+Please refer to the `Nextpnr-generic <https://github.com/YosysHQ/nextpnr#nextpnr-generic>`_:
 
 .. note:: Any new version architecture should be declared in ``$FAB_ROOT/nextpnr/CMakeLists.txt``
 
 User guide
 ----------
 
-To generate the FASM file using nextpnr, go into ``$FAB_ROOT/nextpnr/fabulous/fab_arch``,
+To generate the FASM file using nextpnr, run the following command:
 
 .. code-block:: console
 
-        nextpnr-fabulous --pre-pack fab_arch.py --pre-place fab_timing.py --json <JSON_file> --router router2 --post-route bitstream.py
+        FAB_ROOT=<Project_directory> nextpnr-generic --uarch fabulous --json <JSON_file> -o fasm=<output_FASM_file>
 
-+------------------+------------------------------------------------+
-| <JSON_file>      | the JSON file generated from Yosys compilation |
-+------------------+------------------------------------------------+
+
++---------------------+------------------------------------------------+
+| <Project_directory> | the directory to the project                   |
+| <JSON_file>         | the JSON file generated from Yosys compilation |
+| <output_FASM_file>  | the output directory of the FASM file          |
++---------------------+------------------------------------------------+
 
 Example,
 
 .. code-block:: console
         
-        nextpnr-fabulous --pre-pack fab_arch.py --pre-place fab_timing.py --json 16bit-sequential.json --router router2 --post-route bitstream.py
+        FAB_ROOT=demo nextpnr-generic --uarch fabulous --json demo/user_design/sequential_16bit_en.v -o fasm=demo/user_design/sequential_16bit_en.fasm
 
 Primitive instantiation
 -----------------------

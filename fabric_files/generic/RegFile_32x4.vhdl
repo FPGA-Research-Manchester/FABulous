@@ -3,6 +3,8 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 use work.my_package.all;
 
+-- pragma FABulous belMap AD_reg=0, BD_reg=1
+
 entity RegFile_32x4 is
     Generic ( NoConfigBits : integer := 2 );	-- has to be adjusted manually (we don't use an arithmetic parser for the value)
     Port (      -- IMPORTANT: this has to be in a dedicated line

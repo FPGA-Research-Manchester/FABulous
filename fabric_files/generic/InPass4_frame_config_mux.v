@@ -1,18 +1,39 @@
+// Copyright 2021 University of Manchester
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+
+(* FABulous, BelMap,
+I0_reg=0,
+I1_reg=1,
+I2_reg=2,
+I3_reg=3,
+*)
 module InPass4_frame_config (I0, I1, I2, I3, O0, O1, O2, O3, UserCLK, ConfigBits);
 	parameter NoConfigBits = 4;
 	// Pin0
-	input I0; //EXTERNAL
-	input I1; //EXTERNAL
-	input I2; //EXTERNAL
-	input I3; //EXTERNAL
-	output O0; //EXTERNAL
-	output O1; //EXTERNAL
-	output O2; //EXTERNAL
-	output O3; //EXTERNAL
+	(* FABulous, EXTERNAL *) input I0; //EXTERNAL
+	(* FABulous, EXTERNAL *) input I1; //EXTERNAL
+	(* FABulous, EXTERNAL *) input I2; //EXTERNAL
+	(* FABulous, EXTERNAL *) input I3; //EXTERNAL
+	(* FABulous, EXTERNAL *) output O0; //EXTERNAL
+	(* FABulous, EXTERNAL *) output O1; //EXTERNAL
+	(* FABulous, EXTERNAL *) output O2; //EXTERNAL
+	(* FABulous, EXTERNAL *) output O3; //EXTERNAL
 	// Tile IO ports from BELs
-	input UserCLK; //EXTERNAL -- SHARED_PORT -- ## the EXTERNAL keyword will send this signal all the way to top and the --SHARED Allows multiple BELs using the same port (e.g. for exporting a clock to the top)
+	(* FABulous, EXTERNAL, SHARED_PORT *) input UserCLK; //EXTERNAL -- SHARED_PORT -- ## the EXTERNAL keyword will send this signal all the way to top and the --SHARED Allows multiple BELs using the same port (e.g. for exporting a clock to the top)
 	// GLOBAL all primitive pins that are connected to the switch matrix have to go before the GLOBAL label
-	input [NoConfigBits - 1 : 0] ConfigBits;
+	(* FABulous, GLOBAL *) input [NoConfigBits - 1 : 0] ConfigBits;
 	//_____   ______
 	//    I----+--->|FLOP|-Q-|1 M |
 	//         |             |  U |-------> O

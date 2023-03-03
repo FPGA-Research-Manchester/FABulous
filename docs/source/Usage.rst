@@ -1,3 +1,5 @@
+.. _Quick start:
+
 Quick start
 ===========
 .. _setup:
@@ -14,7 +16,7 @@ The following packages need to be installed for generating fabric HDLs
     git clone --recurse-submodules https://github.com/FPGA-Research-Manchester/FABulous
 
 :Python: 
- version > 3.5
+ version >= 3.9
 
 :python dependencies:
 
@@ -22,74 +24,44 @@ The following packages need to be installed for generating fabric HDLs
 
     pip3 install -r requirements.txt
 
+This will also require to install `Tkinter` for the TCL facilities. To install `Tkinter` on Ubuntu, run:
+
+.. code-block:: console
+
+    sudo apt-get install python3-tk
+
 The following packages need to be installed for the CAD toolchain
 
 :`Yosys <https://github.com/YosysHQ/yosys>`_:
- version > 0.10
+ version > 0.26+0
+
+:`Nextpnr-generic <https://github.com/YosysHQ/nextpnr#nextpnr-generic>`_:
+ version > 0.4-28-gac17c36b
 
 
-.. note:: In the following, :term:`$FAB_ROOT` means the root directory of the Fabulous source code tree.
-
-:nextpnr-fabulous:
-
-.. code-block:: console
-
-   cd $FAB_ROOT/nextpnr
-   cmake . -DARCH=fabulous
-   make -j$(nproc)
-   sudo make install
-
-Building Fabric
----------------
+Building Fabric and Bitstream
+-----------------------------
 
 
 .. code-block:: console
 
-   cd $FAB_ROOT/fabric_generator
-   #<csv file> -- the user-defined csv file to generate the fabric. Ex. ./create_basic_files.sh ../fabric_files/generic/fabric.csv
-   ./create_basic_files.sh <csv file> 
-   #Both <number of columns> and <number of rows> are not including the terminal blocks. Ex. ./run_fab_flow.sh 8 14
-   ./run_fab_flow.sh <number of columns> <number of rows>
+   python3 FABulous.py -c <name_of_project>
+   python3 FABulous.py <name_of_project>
+   # inside the FABulous shell
+   load_fabric
+   run_FABulous_fabric
+   run_FABulous_bitstream npnr user_design/sequential_16bit_en.v
+   
 
-After the fabulous flow has run successfully, the RTL files can be found under ``$FAB_ROOT/fabric_generator/verilog_output`` or ``$FAB_ROOT/fabric_generator/vhdl_output``.
+After a successful call with the command ``run_FABulous_fabric`` the RTL file of each of the tiles can be found in the ``Tile`` folder and the fabric RTL file can be found in the ``Fabric`` folder. 
 
+After a successful call with the command ``run_FABulous_bitstream npnr user_design/sequential_16bit_en.v``. 
+The bitstream and all the log files generated during synthesis and place and route can be found under 
+the ``user_design`` folder. The bitstream will be named as ``sequential_16bit_en.bin`` The above command is using 
+the ``npnr`` options which suggest we are using Yosys for synthesis and Nextpnr for placement and routing. Another 
+option would be using ``vpr``, which will allow for using Yosys for synthesis and VPR for placement and routing.
+(currently, the VPR flow is not working after the refactoring)
 
-Generating Bitstream
---------------------
-
-Nextpnr models can be found under ``$FAB_ROOT/fabric_generator/npnroutput``
-
-To run nextpnr compilation
- 
-.. code-block:: console
-
-   cd $FAB_ROOT/nextpnr/fabulous/fab_arch/
-   ./fabulous_flow.sh <benchmark_name>
-
-Example:
-
-.. code-block:: console
-
-   ./fabulous_flow.sh sequential_16bit_en
-
-The output <benchmark_name>_output.bin can be used in further simulation.
-
-VPR models can be found under ``$FAB_ROOT/fabric_generator/vproutput``
-
-Build options
--------------
-
-Users can choose the script to run to generate different models under ``$FAB_ROOT/fabric_generator``.
-
-+------------------------------+------------------------------------------------------------------------------------------------+
-| run_fab_flow.sh              | Run FABulous flow and generate both Nexpnr and VPR model files (**default**)                   |
-+------------------------------+------------------------------------------------------------------------------------------------+
-| run_fab_flow_nextpnr.sh      | Run FABulous flow and generate Nexpnr model files                                              |
-+------------------------------+------------------------------------------------------------------------------------------------+
-| run_fab_flow_nextpnr_pair.sh | Run FABulous flow , generate Nexpnr model files and ``wirePairs.csv`` for timing model purposes|
-+------------------------------+------------------------------------------------------------------------------------------------+
-| run_fab_flow_vpr.sh          | Run FABulous flow and generate VPR model files                                                 |
-+------------------------------+------------------------------------------------------------------------------------------------+
 
 Running in a Docker container
 -----------------------------

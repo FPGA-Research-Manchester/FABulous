@@ -12,6 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+(*FABulous, BelMap,
+INIT[0]=0,
+INIT[1]=1,
+INIT[2]=2,
+INIT[3]=3,
+INIT[4]=4,
+INIT[5]=5,
+INIT[6]=6,
+INIT[7]=7,
+INIT[8]=8,
+INIT[9]=9,
+INIT[10]=10,
+INIT[11]=11,
+INIT[12]=12,
+INIT[13]=13,
+INIT[14]=14,
+INIT[15]=15,
+FF=16,
+IOmux=17,
+SET_NORESET=18
+*)
 module LUT4c_frame_config (I0, I1, I2, I3, O, Ci, Co, SR, EN, UserCLK, ConfigBits);
 	parameter NoConfigBits = 19 ; // has to be adjusted manually (we don't use an arithmetic parser for the value)
 	// IMPORTANT: this has to be in a dedicated line
@@ -24,9 +45,9 @@ module LUT4c_frame_config (I0, I1, I2, I3, O, Ci, Co, SR, EN, UserCLK, ConfigBit
 	output Co; // carry chain output
 	input SR; // SHARED_RESET
 	input EN; // SHARED_ENABLE
-	input UserCLK; // EXTERNAL // SHARED_PORT // ## the EXTERNAL keyword will send this sisgnal all the way to top and the //SHARED Allows multiple BELs using the same port (e.g. for exporting a clock to the top)
+	(* FABulous, EXTERNAL, SHARED_PORT *) input UserCLK; // EXTERNAL // SHARED_PORT // ## the EXTERNAL keyword will send this sisgnal all the way to top and the //SHARED Allows multiple BELs using the same port (e.g. for exporting a clock to the top)
 	// GLOBAL all primitive pins that are connected to the switch matrix have to go before the GLOBAL label
-	input [NoConfigBits-1 : 0] ConfigBits;
+	(* FABulous, GLOBAL *) input [NoConfigBits-1 : 0] ConfigBits;
 
 	localparam LUT_SIZE = 4; 
 	localparam N_LUT_flops = 2 ** LUT_SIZE; 

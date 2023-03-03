@@ -3,6 +3,8 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 use work.my_package.all;
 
+-- pragma FABulous belMap c0=0, c1=1
+
 entity MUX8LUT_frame_config is
     Generic ( NoConfigBits : integer := 2 );	-- has to be adjusted manually (we don't use an arithmetic parser for the value)
     Port (      -- IMPORTANT: this has to be in a dedicated line

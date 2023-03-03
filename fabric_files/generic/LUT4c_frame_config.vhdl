@@ -3,6 +3,8 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 use work.my_package.all;
 
+-- pragma FABulous belMap INIT[0]=0, INIT[1]=1, INIT[2]=2, INIT[3]=3, INIT[4]=4, INIT[5]=5, INIT[6]=6, INIT[7]=7, INIT[8]=8, INIT[9]=9, INIT[10]=10, INIT[11]=11,INIT[12]=12, INIT[13]=13, INIT[14]=14, INIT[15]=15, FF=16, IOmux=17, SET_NORESET=18
+
 entity LUT4c_frame_config is
     Generic ( NoConfigBits : integer := 19 );	-- has to be adjusted manually (we don't use an arithmetic parser for the value)
     Port (      -- IMPORTANT: this has to be in a dedicated line

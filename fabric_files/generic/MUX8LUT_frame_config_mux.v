@@ -1,3 +1,22 @@
+// Copyright 2021 University of Manchester
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+
+(* FABulous, BelMap,
+c0=0,
+c1=1
+*)
 module MUX8LUT_frame_config (A, B, C, D, E, F, G, H, S0, S1, S2, S3, M_AB, M_AD, M_AH, M_EF, ConfigBits);
 	parameter NoConfigBits = 2;// has to be adjusted manually (we don't use an arithmetic parser for the value)
 	// IMPORTANT: this has to be in a dedicated line
@@ -18,7 +37,7 @@ module MUX8LUT_frame_config (A, B, C, D, E, F, G, H, S0, S1, S2, S3, M_AB, M_AD,
 	output M_AH;
 	output M_EF;
 	// GLOBAL all primitive pins that are connected to the switch matrix have to go before the GLOBAL label
-	input [NoConfigBits-1:0] ConfigBits;
+	(* FABulous, GLOBAL *) input [NoConfigBits-1:0] ConfigBits;
 
 	wire AB, CD, EF, GH;
 	wire sCD, sEF, sGH, sEH;

@@ -53,6 +53,7 @@ module fab_tb;
         $dumpfile("fab_tb.fst");
         $dumpvars(0, fab_tb);
 `endif
+`ifndef EMULATION
         $readmemh("bitstream.hex", bitstream);
         #100;
         resetn = 1'b0;
@@ -69,6 +70,7 @@ module fab_tb;
             SelfWriteStrobe <= 1'b0;
             repeat (2) @(posedge CLK);
         end
+`endif
         repeat (100) @(posedge CLK);
         O_top = 28'b1; // reset
         repeat (5) @(posedge CLK);

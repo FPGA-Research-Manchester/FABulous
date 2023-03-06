@@ -125,7 +125,7 @@ class VHDLWriter(codeGenerator):
         self._add(
             f"{left} <= {right}( {widthL} downto {widthR} );", indentLevel)
 
-    def addInstantiation(self, compName, compInsName, portsPairs, paramPairs=[], indentLevel=0):
+    def addInstantiation(self, compName, compInsName, portsPairs, paramPairs=[], emulateParamPairs=[], indentLevel=0):
         self._add(f"{compInsName} : {compName}", indentLevel=indentLevel)
         if paramPairs:
             connectPair = []
@@ -211,3 +211,16 @@ CONFout <= ConfigBits(ConfigBits'high);
 
     """
         self._add(template, indentLevel)
+
+
+    def addPreprocIfDef(self, macro, indentLevel=0):
+        assert False, "preprocessor not supported in VHDL"
+
+    def addPreprocIfNotDef(self, macro, indentLevel=0):
+        assert False, "preprocessor not supported in VHDL"
+
+    def addPreprocElse(self, indentLevel=0):
+        assert False, "preprocessor not supported in VHDL"
+
+    def addPreprocEndif(self, indentLevel=0):
+        assert False, "preprocessor not supported in VHDL"

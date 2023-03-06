@@ -309,7 +309,7 @@ class codeGenerator(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def addInstantiation(self, compName: str, compInsName: str, portsPairs: List[Tuple[str, str]], paramPairs: List[Tuple[str, str]] = [], indentLevel=0):
+    def addInstantiation(self, compName: str, compInsName: str, portsPairs: List[Tuple[str, str]], paramPairs: List[Tuple[str, str]] = [], emulateParamPairs: List[Tuple[str, str]] = [], indentLevel=0):
         """
         Add an instantiation. This will line up the ports and signals. So ports[0] will have signals[0] and so on. This is also the same case for paramPorts and paramSignals.
 
@@ -347,6 +347,7 @@ class codeGenerator(abc.ABC):
             signals (List[str]): list of signals of the component
             paramPorts (List[str], optional): list of parameter ports of the component. Defaults to [].
             paramSignals (List[str], optional): list of parameter signals of the component. Defaults to [].
+            emulateParamPairs (List[str], optional): list of parameter signals of the component in emulation mode only. Defaults to [].
             indentLevel (int, optional): The indentation Level. Defaults to 0.
 
         Raises:
@@ -421,6 +422,67 @@ class codeGenerator(abc.ABC):
             right : The right hand side of the assign statement.
             widthL : The start index of the vector. Can be a string.
             widthR : The end index of the vector. Can be a string.
+            indentLevel (int, optional): The indentation Level. Defaults to 0.
+        """
+        pass
+
+    @abc.abstractmethod
+    def addPreprocIfDef(self, macro, indentLevel=0):
+        """
+        Add a preprocessor "ifdef"
+
+        Examples :
+            | Verilog: `ifdef **macro**
+            | VHDL: unsupported
+
+        Args:
+            macro : The macro to check for
+            indentLevel (int, optional): The indentation Level. Defaults to 0.
+        """
+        pass
+
+
+    @abc.abstractmethod
+    def addPreprocIfNotDef(self, macro, indentLevel=0):
+        """
+        Add a preprocessor "ifndef"
+
+        Examples :
+            | Verilog: `ifndef **macro**
+            | VHDL: unsupported
+
+        Args:
+            macro : The macro to check for
+            indentLevel (int, optional): The indentation Level. Defaults to 0.
+        """
+        pass
+
+    @abc.abstractmethod
+    def addPreprocElse(self, indentLevel=0):
+        """
+        Add a preprocessor "else"
+
+        Examples :
+            | Verilog: `else
+            | VHDL: unsupported
+
+        Args:
+            macro : The macro to check for
+            indentLevel (int, optional): The indentation Level. Defaults to 0.
+        """
+        pass
+
+    @abc.abstractmethod
+    def addPreprocEndif(self, indentLevel=0):
+        """
+        Add a preprocessor "endif"
+
+        Examples :
+            | Verilog: `endif
+            | VHDL: unsupported
+
+        Args:
+            macro : The macro to check for
             indentLevel (int, optional): The indentation Level. Defaults to 0.
         """
         pass

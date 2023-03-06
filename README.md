@@ -66,11 +66,19 @@ A demo of the whole flow:
 
 ```
 python3 FABulous.py -c demo
-# In the FABulous shell
+# In the FABulous shell (python3 FABulous.py demo)
 load_fabric
 run_FABulous_fabric
 run_FABulous_bitstream npnr ./user_design/sequential_16bit_en.v
 exit
+```
+
+To run a simulation of a test bitstream on the design with Icarus Verilog:
+
+```
+cd demo/Test
+./build_test_design.sh
+./run_simulation.sh
 ```
 
 The tool also supports using TCL script to drive the build process. Assuming you have created a demo project using

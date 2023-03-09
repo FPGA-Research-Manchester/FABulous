@@ -7,7 +7,7 @@
 FABulous is designed to fulfill the objectives of ease of use, maximum portability to different process nodes, good control for customization, and delivering good area, power, and performance characteristics of the generated FPGA fabrics. The framework provides templates for logic, arithmetic, memory, and I/O blocks that can be easily stitched together, whilst enabling users to add their own fully customized blocks and primitives.
 
 The FABulous ecosystem generates the embedded FPGA fabric for chip fabrication, integrates
-[SymbiFlow](https://symbiflow.github.io/)
+[YosysHQ](https://github.com/YosysHQ/oss-cad-suite-build)
 toolchain release packages, deals with the bitstream generation and provides after-fabrication tests. Additionally, we plan to provide an emulation path for system development.
 
 This guide describes everything you need to set up your system to use the FABulous ecosystem, and the full project documentation can be found [here](https://fabulous.readthedocs.io/en/latest/).
@@ -37,7 +37,7 @@ sudo apt-get install python3-tk
 
 The following packages need to be installed for the CAD toolchain
  - [Yosys](https://github.com/YosysHQ/yosys)
- - [Nextpnr-generic](https://github.com/YosysHQ/nextpnr#nextpnr-generic)
+ - [nextpnr-generic](https://github.com/YosysHQ/nextpnr#nextpnr-generic)
  
  A flow using VPR, the place and route tool from the [VTR project](https://github.com/verilog-to-routing/vtr-verilog-to-routing) is also available. However, this still requires Yosys, as well as the FABulous nextpnr fork, since this contains files for design synthesis.
 
@@ -84,6 +84,6 @@ cd demo/Test
 The tool also supports using TCL script to drive the build process. Assuming you have created a demo project using
 `python3 FABulous.py -c demo`, you can call `python3 FABulous.py demo -s ./demo/FABulous.tcl` to run the demo flow with the TCL interface.
 
-More details on bitstream generation can be found [here](https://github.com/FPGA-Research-Manchester/FABulous/tree/master/fabric_generator/bitstream_npnr).
+More details on bitstream generation can be found [here](https://fabulous.readthedocs.io/en/latest/FPGA-to-bitstream/Bitstream%20generation.html).
 
-A detailed documentation of the project can be found [here](https://fabulous.readthedocs.io/en/latest/index.html)
+Detailed documentation for the project can be found [here](https://fabulous.readthedocs.io/en/latest/index.html)

@@ -32,6 +32,7 @@ from fabric_generator.file_parser import parseMatrix, parseConfigMem, parseList
 from fabric_generator.fabric import IO, Direction, MultiplexerStyle, ConfigBitMode
 from fabric_generator.fabric import Fabric, Tile, Port, SuperTile, ConfigMem
 from fabric_generator.code_generation_VHDL import VHDLWriter
+from fabric_generator.code_generation_Verilog import VerilogWriter
 from fabric_generator.code_generator import codeGenerator
 
 SWITCH_MATRIX_DEBUG_SIGNAL = True
@@ -304,6 +305,12 @@ class FabricGenerator:
         # start writing the file
         self.writer.addHeader(f"{tile.name}_ConfigMem")
         self.writer.addParameterStart(indentLevel=1)
+        if isinstance(self.writer, VerilogWriter): # emulation only in Verilog
+            maxBits = self.fabric.frameBitsPerRow*self.fabric.maxFramesPerCol
+            self.writer.addPreprocIfDef("EMULATION")
+            self.writer.addParameter("Emulate_Bitstream", f"[{maxBits-1}:0]",
+                f"{maxBits}'b0", indentLevel=2)
+            self.writer.addPreprocEndif()
         if self.fabric.maxFramesPerCol != 0:
             self.writer.addParameter("MaxFramesPerCol", "integer",
                                      self.fabric.maxFramesPerCol, indentLevel=2)
@@ -336,6 +343,16 @@ class FabricGenerator:
                     i.frameName, f"{i.bitsUsedInFrame}-1")
         self.writer.addLogicStart()
 
+        if isinstance(self.writer, VerilogWriter): # emulation only in Verilog
+            self.writer.addPreprocIfDef("EMULATION")
+            for i in configMemList:
+                counter = 0
+                for k in range(self.fabric.frameBitsPerRow):
+                    if i.usedBitMask[k] == "1":
+                        self.writer.addAssignScalar(f"ConfigBits[{i.configBitRanges[counter]}]",
+                            f"Emulate_Bitstream[{i.frameIndex*self.fabric.frameBitsPerRow + (self.fabric.frameBitsPerRow-1-k)}]")
+                        counter += 1
+            self.writer.addPreprocElse()
         self.writer.addNewLine()
         self.writer.addNewLine()
         self.writer.addComment("instantiate frame latches", end="")
@@ -352,7 +369,8 @@ class FabricGenerator:
                                                              ("QN", f"ConfigBits_N[{i.configBitRanges[counter]}]")]
                                                  )
                     counter += 1
-
+        if isinstance(self.writer, VerilogWriter): # emulation only in Verilog
+            self.writer.addPreprocEndif()
         self.writer.addDesignDescriptionEnd()
         self.writer.writeToFile()
 
@@ -657,6 +675,12 @@ class FabricGenerator:
         # GenerateVHDL_Header(file, entity, NoConfigBits=str(GlobalConfigBitsCounter))
         self.writer.addHeader(f"{tile.name}")
         self.writer.addParameterStart(indentLevel=1)
+        if isinstance(self.writer, VerilogWriter): # emulation only in Verilog
+            maxBits = self.fabric.frameBitsPerRow*self.fabric.maxFramesPerCol
+            self.writer.addPreprocIfDef("EMULATION")
+            self.writer.addParameter("Emulate_Bitstream", f"[{maxBits-1}:0]",
+                f"{maxBits}'b0", indentLevel=2)
+            self.writer.addPreprocEndif()
         self.writer.addParameter("MaxFramesPerCol", "integer",
                                  self.fabric.maxFramesPerCol, indentLevel=2)
         self.writer.addParameter("FrameBitsPerRow", "integer",
@@ -914,7 +938,8 @@ class FabricGenerator:
                                                      ("FrameStrobe",
                                                       "FrameStrobe"),
                                                      ("ConfigBits", "ConfigBits"),
-                                                     ("ConfigBits_N", "ConfigBits_N")])
+                                                     ("ConfigBits_N", "ConfigBits_N")],
+                                         emulateParamPairs=[("Emulate_Bitstream", "Emulate_Bitstream")])
 
         # BEL component instantiations
         self.writer.addComment("BEL component instantiations", onNewLine=True)
@@ -1048,12 +1073,23 @@ class FabricGenerator:
 
         self.writer.addHeader(f"{superTile.name}")
         self.writer.addParameterStart(indentLevel=1)
+        if isinstance(self.writer, VerilogWriter):
+            self.writer.addPreprocIfDef("EMULATION")
+            maxBits = self.fabric.frameBitsPerRow*self.fabric.maxFramesPerCol
+            for y, row in enumerate(superTile.tileMap):
+                for x, tile in enumerate(row):
+                    if not tile:
+                        continue
+                    self.writer.addParameter(f"Tile_X{x}Y{y}_Emulate_Bitstream", f"[{maxBits-1}:0]",
+                        f"{maxBits}'b0", indentLevel=2)
+            self.writer.addPreprocEndif()
         self.writer.addParameter("MaxFramesPerCol", "integer",
                                  self.fabric.maxFramesPerCol, indentLevel=2)
         self.writer.addParameter("FrameBitsPerRow", "integer",
                                  self.fabric.frameBitsPerRow, indentLevel=2)
         self.writer.addParameter(
             "NoConfigBits", "integer", 0, indentLevel=2)
+
         self.writer.addParameterEnd(indentLevel=1)
         self.writer.addPortStart(indentLevel=1)
 
@@ -1239,9 +1275,14 @@ class FabricGenerator:
                     portsPairs.append(
                         ("FrameStrobe_O", f"Tile_X{x}Y{y}_FrameStrobe_O"))
 
+                emulateParamPairs = [
+                    ("Emulate_Bitstream", f"Tile_X{x}Y{y}_Emulate_Bitstream")
+                ]
+
                 self.writer.addInstantiation(compName=tile.name,
                                              compInsName=f"Tile_X{x}Y{y}_{tile.name}",
-                                             portsPairs=portsPairs)
+                                             portsPairs=portsPairs,
+                                             emulateParamPairs=emulateParamPairs)
         self.writer.addDesignDescriptionEnd()
         self.writer.writeToFile()
 
@@ -1585,14 +1626,21 @@ class FabricGenerator:
                                 (f"{pre}FrameStrobe_O", f"Tile_X{x+i}Y{y+j}_FrameStrobe_O"))
 
                 name = ""
+                emulateParamPairs = []
                 if superTile:
                     name = superTile.name
+                    for (i, j) in tileLocationOffset:
+                        if (y+j) not in (0, self.fabric.numberOfRows-1):
+                            emulateParamPairs.append((f"Tile_X{i}Y{j}_Emulate_Bitstream", f"`Tile_X{x+i}Y{y+j}_Emulate_Bitstream"))
                 else:
                     name = tile.name
+                    if y not in (0, self.fabric.numberOfRows-1):
+                        emulateParamPairs.append((f"Emulate_Bitstream", f"`Tile_X{x}Y{y}_Emulate_Bitstream"))
 
                 self.writer.addInstantiation(compName=name,
                                              compInsName=f"Tile_X{x}Y{y}_{name}",
-                                             portsPairs=portsPairs)
+                                             portsPairs=portsPairs,
+                                             emulateParamPairs=emulateParamPairs)
         self.writer.addDesignDescriptionEnd()
         self.writer.writeToFile()
 
@@ -1705,6 +1753,10 @@ class FabricGenerator:
                 "./Fabric/BlockRAM_1KB.vhdl")
 
         self.writer.addLogicStart()
+
+        if isinstance(self.writer, VerilogWriter):
+            self.writer.addPreprocIfNotDef("EMULATION")
+
         # the config module
         self.writer.addNewLine()
         self.writer.addInstantiation(compName="eFPGA_Config",
@@ -1763,6 +1815,9 @@ class FabricGenerator:
                                                       "FrameSelectWidth"),
                                                      ("Col", str(col))])
         self.writer.addNewLine()
+
+        if isinstance(self.writer, VerilogWriter):
+            self.writer.addPreprocEndif()
 
         # the fabric module
         portList = []

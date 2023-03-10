@@ -200,6 +200,17 @@ To run the complete FABulous flow with the default project, run the following co
             self.fabricLoaded = True
 
     def preloop(self) -> None:
+
+        def wrap_with_except_handling(fun_to_wrap):
+            def inter(*args, **varargs):
+                try:
+                    fun_to_wrap(*args, **varargs)
+                except:
+                    import traceback
+                    traceback.print_exc()
+                    sys.exit(1)
+            return inter
+
         tcl = tk.Tcl()
         script = ""
         if self.script != "":
@@ -208,7 +219,7 @@ To run the complete FABulous flow with the default project, run the following co
             for fun in dir(self.__class__):
                 if fun.startswith("do_"):
                     name = fun.strip("do_")
-                    tcl.createcommand(name, getattr(self, fun))
+                    tcl.createcommand(name, wrap_with_except_handling(getattr(self, fun)))
 
         # os.chdir(args.project_dir)
         tcl.eval(script)

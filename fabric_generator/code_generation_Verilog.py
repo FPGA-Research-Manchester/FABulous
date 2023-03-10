@@ -41,7 +41,10 @@ class VerilogWriter(codeGenerator):
         self._add(")", indentLevel)
 
     def addParameter(self, name, type, value, indentLevel=0):
-        self._add(f"parameter {name}={value},", indentLevel)
+        if type.startswith("["):
+            self._add(f"parameter {type} {name}={value},", indentLevel)
+        else:
+            self._add(f"parameter {name}={value},", indentLevel)
 
     def addPortStart(self, indentLevel=0):
         self._add(f"(", indentLevel)
@@ -90,7 +93,7 @@ class VerilogWriter(codeGenerator):
     def addLogicEnd(self, indentLevel=0):
         pass
 
-    def addInstantiation(self, compName, compInsName, portsPairs, paramPairs=[], indentLevel=0):
+    def addInstantiation(self, compName, compInsName, portsPairs, paramPairs=[], emulateParamPairs=[], indentLevel=0):
         if paramPairs:
             port = [f".{i[0]}({i[1]})" for i in paramPairs]
             self._add(
@@ -99,6 +102,18 @@ class VerilogWriter(codeGenerator):
             self._add(
                 (",\n"f"{' ':<{4*(indentLevel + 1)}}").join(port), indentLevel=indentLevel + 1)
             self._add(")", indentLevel=indentLevel+1)
+            self._add(f"{compInsName}", indentLevel=indentLevel+1)
+            self._add("(", indentLevel=indentLevel+1)
+        elif emulateParamPairs:
+            port = [f".{i[0]}({i[1]})" for i in emulateParamPairs]
+            self._add(
+                f"{compName}", indentLevel=indentLevel)
+            self._add("`ifdef EMULATION", indentLevel=0)
+            self._add("#(", indentLevel=indentLevel+1)
+            self._add(
+                (",\n"f"{' ':<{4*(indentLevel + 1)}}").join(port), indentLevel=indentLevel + 1)
+            self._add(")", indentLevel=indentLevel+1)
+            self._add("`endif", indentLevel=0)
             self._add(f"{compInsName}", indentLevel=indentLevel+1)
             self._add("(", indentLevel=indentLevel+1)
         else:
@@ -174,3 +189,15 @@ class VerilogWriter(codeGenerator):
     def addAssignVector(self, left, right, widthL, widthR, indentLevel=0):
         self._add(
             f"assign {left} = {right}[{widthL}:{widthR}];", indentLevel)
+
+    def addPreprocIfDef(self, macro, indentLevel=0):
+        self._add(f"`ifdef {macro}", indentLevel)
+
+    def addPreprocIfNotDef(self, macro, indentLevel=0):
+        self._add(f"`ifndef {macro}", indentLevel)
+
+    def addPreprocElse(self, indentLevel=0):
+        self._add("`else", indentLevel)
+
+    def addPreprocEndif(self, indentLevel=0):
+        self._add("`endif", indentLevel)

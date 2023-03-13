@@ -1118,6 +1118,8 @@ class FabricGenerator:
                 for p in b.externalOutput:
                     self.writer.addPortScalar(p, IO.INPUT, indentLevel=2)
                 for p in b.sharedPort:
+                    if p[0] == "UserCLK":
+                        continue
                     self.writer.addPortScalar(p[0], p[1], indentLevel=2)
 
         # add userCLK port
@@ -1144,7 +1146,12 @@ class FabricGenerator:
                         self.writer.addPortVector(
                             f"Tile_X{x}Y{y}_FrameData_O", IO.OUTPUT, "FrameBitsPerRow-1", indentLevel=2)
                         self.writer.addComment("CONFIG_PORT", onNewLine=False)
-
+        for y, row in enumerate(superTile.tileMap):
+            for x, tile in enumerate(row):
+                if y - 1 < 0 or superTile.tileMap[y-1][x] == None:
+                    self.writer.addPortScalar(f"Tile_X{x}Y{y}_UserCLKo", IO.OUTPUT, indentLevel=2)
+                if y + 1 >= len(superTile.tileMap) or superTile.tileMap[y+1][x] == None:
+                    self.writer.addPortScalar(f"Tile_X{x}Y{y}_UserCLK", IO.INPUT, indentLevel=2)
         self.writer.addPortEnd()
         self.writer.addHeaderEnd(f"{superTile.name}")
         self.writer.addDesignDescriptionStart(f"{superTile.name}")
@@ -1185,9 +1192,7 @@ class FabricGenerator:
                     self.writer.addConnectionVector(
                         f"Tile_X{x}Y{y}_FrameData_O", "FrameBitsPerRow-1", indentLevel=1)
 
-        # for grounding userCLKo in super tile
         self.writer.addNewLine()
-        self.writer.addConnectionScalar("userCLKo", indentLevel=1)
 
         self.writer.addLogicStart()
 
@@ -1250,9 +1255,14 @@ class FabricGenerator:
                         (p.name, f"Tile_X{x}Y{y}_{p.name}"))
 
                 # add clock to tile
-                portsPairs.append(("UserCLK", "userCLK"))
-                portsPairs.append(("UserCLKo", "userCLKo"))
-
+                if 0 <= y + 1 < len(superTile.tileMap) and superTile.tileMap[y+1][x] != None:
+                    portsPairs.append(
+                        ("UserCLK", f"Tile_X{x}Y{y+1}_UserCLKo"))
+                else:
+                    portsPairs.append(
+                        ("UserCLK", f"Tile_X{x}Y{y}_UserCLK"))
+                portsPairs.append(
+                    ("UserCLKo", f"Tile_X{x}Y{y}_UserCLKo"))
                 if self.fabric.configBitMode == ConfigBitMode.FRAME_BASED:
                     # add connection for frameData, frameStrobe and UserCLK
                     if 0 <= x - 1 < len(superTile.tileMap[0]) and superTile.tileMap[y][x-1] != None:
@@ -1569,11 +1579,29 @@ class FabricGenerator:
                     # for userCLKo
                     portsPairs.append(("UserCLKo", f"Tile_X{x}Y{y}_UserCLKo"))
                 else:
-                    if y + 1 < self.fabric.numberOfRows:
-                        portsPairs.append(
-                            ("UserCLK", f"Tile_X{x}Y{y+1}_UserCLKo"))
-                    else:
-                        portsPairs.append(("UserCLK", "UserCLK"))
+                    for (i, j) in tileLocationOffset:
+                        # prefix for super tile port
+                        if superTile:
+                            pre = f"Tile_X{i}Y{j}_"
+                        else:
+                            pre = ""
+                        # UserCLK signal
+                        if y + 1 >= self.fabric.numberOfRows:
+                            portsPairs.append(
+                                (f"{pre}UserCLK", f"UserCLK"))
+
+                        elif y + 1 < self.fabric.numberOfRows and self.fabric.tile[y+1][x] == None:
+                            portsPairs.append(
+                                (f"{pre}UserCLK", f"UserCLK"))
+
+                        elif (x+i, y+j+1) not in superTileLoc:
+                            portsPairs.append(
+                                (f"{pre}UserCLK", f"Tile_X{x+i}Y{y+j+1}_UserCLKo"))
+
+                        # UserCLKo signal
+                        if (x+i, y+j-1) not in superTileLoc:
+                            portsPairs.append(
+                                (f"{pre}UserCLKo", f"Tile_X{x+i}Y{y+j}_UserCLKo"))
 
                 if self.fabric.configBitMode == ConfigBitMode.FRAME_BASED:
                     for (i, j) in tileLocationOffset:

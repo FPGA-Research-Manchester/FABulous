@@ -158,9 +158,15 @@ module cus_mux41 (A0, A1, A2, A3, S0, S0N, S1, S1N, X);
 	input S1N;
 	output X; 
 	wire [1:0] SEL;
+	wire [3:0] AIN;
 
-	wire B0 = S0 ? A1 : A0;
-	wire B1 = S0 ? A3 : A2;
+	break_comb_loop break_comb_loop_inst0(.A (A0), .X (AIN[0]));
+	break_comb_loop break_comb_loop_inst1(.A (A1), .X (AIN[1]));
+	break_comb_loop break_comb_loop_inst2(.A (A2), .X (AIN[2]));
+	break_comb_loop break_comb_loop_inst3(.A (A3), .X (AIN[3]));
+
+	wire B0 = S0 ? AIN[1] : AIN[0];
+	wire B1 = S0 ? AIN[3] : AIN[2];
 	assign X =  S1 ? B1 : B0;
 endmodule
 
@@ -174,9 +180,15 @@ module cus_mux41_buf (A0, A1, A2, A3, S0, S0N, S1, S1N, X);
 	input S1;
 	input S1N;
 	output X; 
+	wire [3:0] AIN;
 
-	wire B0 = S0 ? A1 : A0;
-	wire B1 = S0 ? A3 : A2;
+	break_comb_loop break_comb_loop_inst0(.A (A0), .X (AIN[0]));
+	break_comb_loop break_comb_loop_inst1(.A (A1), .X (AIN[1]));
+	break_comb_loop break_comb_loop_inst2(.A (A2), .X (AIN[2]));
+	break_comb_loop break_comb_loop_inst3(.A (A3), .X (AIN[3]));
+
+	wire B0 = S0 ? AIN[1] : AIN[0];
+	wire B1 = S0 ? AIN[3] : AIN[2];
 	assign X =  S1 ? B1 : B0;
 endmodule
 
@@ -185,7 +197,12 @@ module my_mux2 (A0, A1, S, X);
 	input A1;
 	input S;
 	output X;
-	assign X = S ? A1 : A0;
+	wire [1:0] AIN;
+
+	break_comb_loop break_comb_loop_inst0(.A (A0), .X (AIN[0]));
+	break_comb_loop break_comb_loop_inst1(.A (A1), .X (AIN[1]));
+
+	assign X = S ? AIN[1] : AIN[0];
 endmodule 
 
 module cus_mux81 (A0, A1, A2, A3, A4, A5, A6, A7, S0, S0N, S1, S1N, S2, S2N, X);

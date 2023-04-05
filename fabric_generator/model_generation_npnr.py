@@ -61,7 +61,7 @@ def genNextpnrModel(fabric: Fabric):
                 if bel.name == "LUT4c_frame_config" or bel.name == "LUT4c_frame_config_dffesr":
                     cType = "FABULOUS_LC"
                 letter = string.ascii_uppercase[i]
-                belv2Str.append(f"BelBegin,X{x}Y{y},{letter},{cType}")
+                belv2Str.append(f"BelBegin,X{x}Y{y},{letter},{cType},{bel.prefix}")
                 def strip_prefix(x):
                     if x.startswith(bel.prefix):
                         return x[len(bel.prefix):]

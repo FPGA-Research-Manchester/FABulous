@@ -223,6 +223,12 @@ def parseFabricCSV(fileName: str) -> Fabric:
             print(
                 f"Tile {i} is not used in the fabric. Removing from tile dictionary.")
             del tileDic[i]
+    for i in list(superTileDic.keys()):
+        if any(j.name not in usedTile for j in superTileDic[i].tiles):
+            print(
+                f"Supertile {i} is not used in the fabric. Removing from tile dictionary.")
+            del superTileDic[i]
+
 
     # parse the parameters
     height = 0

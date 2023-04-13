@@ -432,7 +432,7 @@ class codeGenerator(abc.ABC):
         Add a preprocessor "ifdef"
 
         Examples :
-            | Verilog: `ifdef **macro**
+            | Verilog: \`ifdef **macro**
             | VHDL: unsupported
 
         Args:
@@ -448,7 +448,7 @@ class codeGenerator(abc.ABC):
         Add a preprocessor "ifndef"
 
         Examples :
-            | Verilog: `ifndef **macro**
+            | Verilog: \`ifndef **macro**
             | VHDL: unsupported
 
         Args:
@@ -463,7 +463,7 @@ class codeGenerator(abc.ABC):
         Add a preprocessor "else"
 
         Examples :
-            | Verilog: `else
+            | Verilog: \`else
             | VHDL: unsupported
 
         Args:
@@ -478,7 +478,7 @@ class codeGenerator(abc.ABC):
         Add a preprocessor "endif"
 
         Examples :
-            | Verilog: `endif
+            | Verilog: \`endif
             | VHDL: unsupported
 
         Args:

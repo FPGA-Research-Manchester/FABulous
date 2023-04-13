@@ -14,4 +14,4 @@ jobs:
     - uses: ammaraskar/sphinx-action@master
       with:
         docs-folder: "docs/"
-        build-command: "sphinx-build -M html source build -T -W --keep-going"
+        build-command: "sphinx-build -M html source build -T -E -W --keep-going"

@@ -1,7 +1,7 @@
 Nextpnr models
 ==============
 
-After the FABulous flow has run successfully, ``bel.txt`` and ``pips.txt`` are copied to ``$FAB_ROOT/nextpnr/fabulous/fab_arch``.
+After the FABulous flow has run successfully, the ``bel.txt`` and ``pips.txt`` which describe your fabric can be found in the directory ``$FAB_ROOT/<project-dir>/.FABulous``.
 
 ``bel.txt`` is the primitive description file in order of tiles
 
@@ -29,8 +29,6 @@ After the FABulous flow has run successfully, ``bel.txt`` and ``pips.txt`` are c
 +====+======+======+======+==============+====================================================+
 |X1Y1|X1    |Y1    |A     |FABULOUS_LC   |LA_I0,LA_I1,LA_I2,LA_I3,LA_Ci,LA_SR,LA_EN,LA_O,LA_Co|
 +----+------+------+------+--------------+----------------------------------------------------+
-
-To any changes in the primitives, user should also modify the architecture description in nextpnr files located at ``$FAB_ROOT/nextpnr/fabulous``.
 
 **arch.cc** 
 

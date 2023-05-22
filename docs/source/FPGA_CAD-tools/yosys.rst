@@ -1,7 +1,7 @@
 Yosys models
 ============
 
-** Yosys models files, all can be found in the :`Yosys repository <https://github.com/YosysHQ/yosys>`_: under ``$YOSYS_ROOT/techlibs/fabulous/`` **
+All Yosys model files can be found in the `Yosys repository <https://github.com/YosysHQ/yosys>`_ under ``$YOSYS_ROOT/techlibs/fabulous/``. These files are listed below.
 
 +---------------+-----------------------------------------------------------------------+
 | File Name     | Description                                                           |

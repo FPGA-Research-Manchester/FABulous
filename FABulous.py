@@ -524,11 +524,20 @@ To run the complete FABulous flow with the default project, run the following co
         with open(f"{self.projectDir}/{metaDataDir}/architecture.xml", "w") as f:
             f.write(vprModel)
 
-        vprRoutingResource = self.fabricGen.genModelVPRRoutingResource()
+        routingResourceInfo = self.fabricGen.genModelVPRRoutingResource()
+        # Write the routing resource graph
+        vprRoutingResource = routingResourceInfo[0]
         logger.info(
             f"Output file: {self.projectDir}/{metaDataDir}/routing_resource.xml")
         with open(f"{self.projectDir}/{metaDataDir}/routing_resource.xml", "w") as f:
             f.write(vprRoutingResource)
+
+        # Write maxWidth.txt
+        vprMaxWidth = routingResourceInfo[1]
+        logger.info(
+            f"Output file: {self.projectDir}/{metaDataDir}/maxWidth.txt")
+        with open(f"{self.projectDir}/{metaDataDir}/maxWidth.txt", "w") as f:
+            f.write(str(vprMaxWidth))
 
         vprConstrain = self.fabricGen.genModelVPRConstrains()
         logger.info(

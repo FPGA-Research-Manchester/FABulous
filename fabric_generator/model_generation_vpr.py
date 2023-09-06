@@ -258,7 +258,7 @@ def genVPRModel(fabric: Fabric, customXMLfile: str = "") -> str:
     return ET.tostring(root, encoding="unicode")
 
 
-def genVPRRoutingResourceGraph(fabric: Fabric) -> str:
+def genVPRRoutingResourceGraph(fabric: Fabric) -> (str, int):
     root = ET.Element("rr_graph")
     root.attrib = {"tool_name": "vpr",
                    "tool_version": "82a3c72",
@@ -640,11 +640,7 @@ def genVPRRoutingResourceGraph(fabric: Fabric) -> str:
 
     ET.indent(root, space="  ")
 
-    with open(".FABulous/maxWidth.txt", "w") as f:
-        logger.info("Output file: ./.FABulous/maxWidth.txt")
-        f.write(f"{maxWidth}")
-
-    return ET.tostring(root, encoding="unicode")
+    return ET.tostring(root, encoding="unicode"), maxWidth
 
 
 def genVPRConstrainsXML(fabric: Fabric) -> str:

@@ -4,8 +4,7 @@ import sys
 
 # -- Project information
 
-# project = 'FABulous Dokumentation'
-project = 'FABulous Dokumentation'
+project = 'FABulous Documentation'
 copyright = '2021, University of Manchester'
 author = 'Jing, Nguyen, Bea, Bardia, Dirk'
 

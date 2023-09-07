@@ -3,6 +3,6 @@ requires = ["flit_core >=3.2,<4"]
 build-backend = "flit_core.buildapi"
 
 [project]
-name = "FABulous Dokumentation"
+name = "FABulous Documentation"
 authors = [{name = "Jing, Nguyen, Bea, Bardia, Dirk", email = "dirk.koch@manchester.ac.uk"}]
 dynamic = ["version", "description"]

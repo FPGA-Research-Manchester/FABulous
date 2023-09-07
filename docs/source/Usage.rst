@@ -13,7 +13,7 @@ The following packages need to be installed for generating fabric HDLs
 
 .. code-block:: console
 
-    git clone --recurse-submodules https://github.com/FPGA-Research-Manchester/FABulous
+    git clone https://github.com/FPGA-Research-Manchester/FABulous
 
 :Python: 
  version >= 3.9

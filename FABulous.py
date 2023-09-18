@@ -38,10 +38,10 @@ import shutil
 from typing import List, Literal
 import docker
 import cmd
-#import readline
+import readline
 import logging
 import tkinter as tk
-#readline.set_completer_delims(' \t\n')
+readline.set_completer_delims(' \t\n')
 
 fabulousRoot = os.getenv('FAB_ROOT')
 if fabulousRoot is None:

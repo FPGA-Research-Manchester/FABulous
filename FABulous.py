@@ -25,6 +25,7 @@ import fabric_generator.code_generator as codeGen
 import fabric_generator.file_parser as fileParser
 from fabric_generator.fabric import Fabric, Tile
 from fabric_generator.fabric_gen import FabricGenerator
+from geometry_generator.geometry_gen import GeometryGenerator
 import csv
 from glob import glob
 import os
@@ -37,17 +38,16 @@ import shutil
 from typing import List, Literal
 import docker
 import cmd
-import readline
+#import readline
 import logging
 import tkinter as tk
-readline.set_completer_delims(' \t\n')
+#readline.set_completer_delims(' \t\n')
 
 fabulousRoot = os.getenv('FAB_ROOT')
 if fabulousRoot is None:
     print('FAB_ROOT environment variable not set!')
     print("Use 'export FAB_ROOT=<path to FABulous root>'")
     sys.exit(-1)
-
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -70,6 +70,7 @@ def create_project(project_dir, type: Literal["verilog", "vhdl"] = "verilog"):
 
 class FABulous:
     fabricGenerator: FabricGenerator
+    geometryGenerator: GeometryGenerator
     fabric: Fabric
     fileExtension: str = ".v"
 
@@ -78,6 +79,7 @@ class FABulous:
         if fabricCSV != "":
             self.fabric = fileParser.parseFabricCSV(fabricCSV)
             self.fabricGenerator = FabricGenerator(self.fabric, self.writer)
+            self.geometryGenerator = GeometryGenerator(self.fabric)
 
         if isinstance(self.writer, VHDLWriter):
             self.fileExtension = ".vhdl"
@@ -91,6 +93,7 @@ class FABulous:
         if dir.endswith(".csv"):
             self.fabric = fileParser.parseFabricCSV(dir)
             self.fabricGenerator = FabricGenerator(self.fabric, self.writer)
+            self.geometryGenerator = GeometryGenerator(self.fabric)
         else:
             logger.warning("Only .csv files are supported for fabric loading")
 
@@ -119,6 +122,10 @@ class FABulous:
 
     def genFabric(self):
         self.fabricGenerator.generateFabric()
+
+    def genGeometry(self, geomPadding: int = 8):
+        self.geometryGenerator.generateGeometry(geomPadding)
+        self.geometryGenerator.saveToCSV(self.writer.outFileName)
 
     def genTopWrapper(self):
         self.fabricGenerator.generateTopWrapper()
@@ -411,6 +418,37 @@ To run the complete FABulous flow with the default project, run the following co
         self.fabricGen.genFabric()
         logger.info("Fabric generation complete")
 
+    def do_gen_geometry(self, *vargs):
+        "Generate the geometry of the fabric for the FABulous Editor.    Usage: gen_geometry [padding]"
+
+        if not self.fabricLoaded:
+            logger.error("Fabric not loaded")
+            return ""
+
+        logger.info(f"Generating geometry for {self.fabricGen.fabric.name}")
+        geomFile = f"{self.projectDir}/{self.fabricGen.fabric.name}_geometry.csv"
+        self.fabricGen.setWriterOutputFile(geomFile)
+
+        paddingDefault = 8
+        if len(vargs) == 1 and vargs[0] != "":
+            try:
+                padding = int(vargs[0])
+                logger.info(f"Setting padding to {padding}")
+            except ValueError:
+                logger.warning(f"Faulty padding argument, defaulting to {paddingDefault}")
+                padding = paddingDefault
+        else:
+            logger.info(f"No padding specified, defaulting to {paddingDefault}")
+            padding = paddingDefault
+
+        if 4 <= padding <= 32:
+            self.fabricGen.genGeometry(padding)
+            logger.info("Geometry generation complete")
+            logger.info(f"{geomFile} can now be imported into the FABulous Editor")
+        else:
+            logger.error("padding has to be between 4 and 32 inclusively!")
+
+
     def do_gen_bitStream_spec(self, *ignored):
         "Generate the bitstream specification of the fabric"
         logger.info("Generating bitstream specification")
@@ -440,12 +478,13 @@ To run the complete FABulous flow with the default project, run the following co
         logger.info("Generated top wrapper")
 
     def do_run_FABulous_fabric(self, *ignored):
-        "Generate the fabric base on the CSV file, create the bitstream specification of the fabric, top wrapper of the fabric and Nextpnr model of the fabric"
+        "Generate the fabric base on the CSV file, create the bitstream specification of the fabric, top wrapper of the fabric, Nextpnr model of the fabric and geometry information of the fabric."
         logger.info("Running FABulous")
         self.do_gen_fabric()
         self.do_gen_bitStream_spec()
         self.do_gen_top_wrapper()
         self.do_gen_model_npnr()
+        self.do_gen_geometry()
         logger.info("FABulous fabric flow complete")
         return 0
 
@@ -586,7 +625,8 @@ To run the complete FABulous flow with the default project, run the following co
 
         client = docker.from_env()
         containers = client.containers.run(
-            "legup:latest", f'make -C /root/{name} ', volumes=[f"{os.path.abspath(os.getcwd())}/{self.projectDir}/HLS/:/root/{name}"])
+            "legup:latest", f'make -C /root/{name} ',
+            volumes=[f"{os.path.abspath(os.getcwd())}/{self.projectDir}/HLS/:/root/{name}"])
 
         print(containers.decode("utf-8"))
 
@@ -693,7 +733,8 @@ To run the complete FABulous flow with the default project, run the following co
         path, name = os.path.split(args[0])
         name = name.split('.')[0]
 
-        if not os.path.exists(f"{self.projectDir}/.FABulous/pips.txt") or not os.path.exists(f"{self.projectDir}/.FABulous/bel.txt"):
+        if not os.path.exists(f"{self.projectDir}/.FABulous/pips.txt") or not os.path.exists(
+                f"{self.projectDir}/.FABulous/bel.txt"):
             logger.error(
                 "Pips and Bel files are not found, please run model_gen_npnr first")
             return

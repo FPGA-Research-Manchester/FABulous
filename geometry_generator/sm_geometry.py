@@ -189,7 +189,7 @@ class SmGeometry:
                     0, 0,
                     firstPort.destinationName,
                     firstPort.wireCount,
-                    f"{firstPortName}/{partnerName}",
+                    f"{firstPortName}/{partnerName}/",
                     firstPort.inOut,
                     firstPort.sideOfTile
                 )

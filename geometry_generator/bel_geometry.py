@@ -49,7 +49,7 @@ class BelGeometry:
     def generateGeometry(self, bel: Bel, padding: int) -> None:
         self.name = bel.name        # might need:    readableName = os.path.basename(bel.name)
         self.src = bel.src
-        self.internalPorts = bel.inputs + bel.outputs                   # + shared + config?
+        self.internalPorts = bel.inputs + bel.outputs
         self.externalPorts = bel.externalInput + bel.externalOutput
 
         internalPortsAmount = len(self.internalPorts)
@@ -66,7 +66,7 @@ class BelGeometry:
         internalPortX = 0
         internalPortY = padding // 2
         for port in self.internalPorts:
-            portName = port.removeprefix(bel.prefix)
+            portName = port
             portGeom = PortGeometry()
             portGeom.generateGeometry(
                 portName, PortType.BEL,

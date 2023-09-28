@@ -229,7 +229,6 @@ def parseFabricCSV(fileName: str) -> Fabric:
                 f"Supertile {i} is not used in the fabric. Removing from tile dictionary.")
             del superTileDic[i]
 
-
     # parse the parameters
     height = 0
     width = 0
@@ -256,7 +255,7 @@ def parseFabricCSV(fileName: str) -> Fabric:
                     f"Invalid config bit mode {i[1]} in parameters. Valid options are frame_based and FlipFlopChain")
         elif i[0].startswith("FrameBitsPerRow"):
             frameBitsPerRow = int(i[1])
-        elif i[0].startswith("FrameBitsPerColumn"):
+        elif i[0].startswith("MaxFramesPerCol"):
             maxFramesPerCol = int(i[1])
         elif i[0].startswith("Package"):
             package = i[1]

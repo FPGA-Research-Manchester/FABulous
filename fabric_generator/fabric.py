@@ -571,8 +571,8 @@ class Fabric():
 
     def __repr__(self) -> str:
         fabric = ""
-        for i in range(self.numberOfColumns):
-            for j in range(self.numberOfRows):
+        for i in range(self.numberOfRows):
+            for j in range(self.numberOfColumns):
                 if self.tile[i][j] is None:
                     fabric += "Null".ljust(15)+"\t"
                 else:

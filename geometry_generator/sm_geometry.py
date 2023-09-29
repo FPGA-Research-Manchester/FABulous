@@ -178,10 +178,6 @@ class SmGeometry:
             else:
                 partnerName = firstPort.destinationName
 
-            if "/" in firstPortName or "/" in partnerName:
-                logger.error("Jump port names may not contain \"/\" for geometry generation!")
-                exit(1)
-
             if partnerName in portNameMap:
                 mergedPort = Port(
                     Direction.JUMP,
@@ -189,7 +185,7 @@ class SmGeometry:
                     0, 0,
                     firstPort.destinationName,
                     firstPort.wireCount,
-                    f"{firstPortName}/{partnerName}/",
+                    firstPortName,
                     firstPort.inOut,
                     firstPort.sideOfTile
                 )
@@ -270,7 +266,11 @@ class SmGeometry:
             for i in range(port.wireCount):
                 portGeom = PortGeometry()
                 portGeom.generateGeometry(
-                    port.name + str(i), PortType.SWITCH_MATRIX,
+                    f"{port.name}{i}",
+                    f"{port.sourceName}{i}",
+                    f"{port.destinationName}{i}",
+                    PortType.JUMP,
+                    port.inOut,
                     jumpPortX, jumpPortY
                 )
                 self.portGeoms.append(portGeom)
@@ -282,7 +282,11 @@ class SmGeometry:
             for i in range(port.wireCount):
                 portGeom = PortGeometry()
                 portGeom.generateGeometry(
-                    port.name + str(i), PortType.SWITCH_MATRIX,
+                    f"{port.name}{i}",
+                    f"{port.sourceName}{i}",
+                    f"{port.destinationName}{i}",
+                    PortType.SWITCH_MATRIX,
+                    port.inOut,
                     northPortX, northPortY
                 )
                 portGeom.sideOfTile = port.sideOfTile
@@ -301,7 +305,11 @@ class SmGeometry:
             for i in range(port.wireCount):
                 portGeom = PortGeometry()
                 portGeom.generateGeometry(
-                    port.name + str(i), PortType.SWITCH_MATRIX,
+                    f"{port.name}{i}",
+                    f"{port.sourceName}{i}",
+                    f"{port.destinationName}{i}",
+                    PortType.SWITCH_MATRIX,
+                    port.inOut,
                     southPortX, southPortY
                 )
                 portGeom.sideOfTile = port.sideOfTile
@@ -320,7 +328,11 @@ class SmGeometry:
             for i in range(port.wireCount):
                 portGeom = PortGeometry()
                 portGeom.generateGeometry(
-                    port.name + str(i), PortType.SWITCH_MATRIX,
+                    f"{port.name}{i}",
+                    f"{port.sourceName}{i}",
+                    f"{port.destinationName}{i}",
+                    PortType.SWITCH_MATRIX,
+                    port.inOut,
                     eastPortX, eastPortY
                 )     
                 portGeom.sideOfTile = port.sideOfTile
@@ -339,7 +351,11 @@ class SmGeometry:
             for i in range(port.wireCount):
                 portGeom = PortGeometry()
                 portGeom.generateGeometry(
-                    port.name + str(i), PortType.SWITCH_MATRIX,
+                    f"{port.name}{i}",
+                    f"{port.sourceName}{i}",
+                    f"{port.destinationName}{i}",
+                    PortType.SWITCH_MATRIX,
+                    port.inOut,
                     westPortX, westPortY
                 )
                 portGeom.sideOfTile = port.sideOfTile
@@ -361,7 +377,11 @@ class SmGeometry:
 
                 portGeom = PortGeometry()
                 portGeom.generateGeometry(
-                    belPortGeom.name, PortType.SWITCH_MATRIX,
+                    belPortGeom.name,
+                    belPortGeom.sourceName,
+                    belPortGeom.destName,
+                    PortType.SWITCH_MATRIX,
+                    belPortGeom.ioDirection,
                     portX, portY
                 )
                 self.portGeoms.append(portGeom)
@@ -373,10 +393,10 @@ class SmGeometry:
             ["Name"]    + [self.name],
             ["Src"]     + [self.src],
             ["Csv"]     + [self.csv],
-            ["RelX"]    + [self.relX],
-            ["RelY"]    + [self.relY],
-            ["Width"]   + [self.width],
-            ["Height"]  + [self.height],
+            ["RelX"]    + [str(self.relX)],
+            ["RelY"]    + [str(self.relY)],
+            ["Width"]   + [str(self.width)],
+            ["Height"]  + [str(self.height)],
             []
         ])
 

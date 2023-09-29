@@ -476,8 +476,8 @@ class TileGeometry:
         writer.writerows([
             ["TILE"],
             ["Name"]    + [self.name],
-            ["Width"]   + [self.width],
-            ["Height"]  + [self.height],
+            ["Width"]   + [str(self.width)],
+            ["Height"]  + [str(self.height)],
             []
         ])
         self.smGeometry.saveToCSV(writer)

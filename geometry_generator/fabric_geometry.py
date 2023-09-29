@@ -201,10 +201,10 @@ class FabricGeometry:
             writer.writerows([
                 ["PARAMS"],
                 ["Name"]    + [self.fabric.name],
-                ["Rows"]    + [self.fabric.numberOfRows],
-                ["Columns"] + [self.fabric.numberOfColumns],
-                ["Width"]   + [self.width],
-                ["Height"]  + [self.height],
+                ["Rows"]    + [str(self.fabric.numberOfRows)],
+                ["Columns"] + [str(self.fabric.numberOfColumns)],
+                ["Width"]   + [str(self.width)],
+                ["Height"]  + [str(self.height)],
                 []
             ])
 

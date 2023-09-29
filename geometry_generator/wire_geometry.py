@@ -33,8 +33,8 @@ class WireGeometry:
         ])
         for pathPoint in self.path:
             writer.writerows([
-                ["RelX"] + [pathPoint.x],
-                ["RelY"] + [pathPoint.y]
+                ["RelX"] + [str(pathPoint.x)],
+                ["RelY"] + [str(pathPoint.y)]
             ])
         writer.writerow([])
 
@@ -55,7 +55,7 @@ class StairWires:
         tileHeight  (int)               :   Height of the tile containing the wires
         wireGeoms   List[WireGeometry]  :   List of the wires geometries  
 
-    The refX,refY point refers to the following location(s) of the stair-like structure:
+    The (refX, refY) point refers to the following location(s) of the stair-like structure:
         
                @   @   @                  @@  @@  @@                
                @   @   @                  @@  @@  @@                
@@ -66,12 +66,12 @@ class StairWires:
                @   @         @@     @         @@  @@                
                @   @@@@@@@%  @@     @   @@@@@@@@  @@                
                @         @%  @@     @   @@        @@                
-               @@@@@@%@  @%  @@     @   @# #@@@@@@@@                
-       @@@@@@@       %@  @%  @@     @   @# #@       @@@@@@@       
-         &@@@@       %@  @%  @@     @   @# #@        @@@@           
-       @@#  @#       %@  @%  @@     @   @# #@        @@  @@         
-     @@              %@  @%  @@     @   @# #@              @@       
-    @#               %@  @@  @@     @   @# #@                @@     
+          -->  @@@@@@%@  @%  @@     @   @# #@@@@@@@@  <-- (refX, refY)
+                     %@  @%  @@     @   @# #@
+                     %@  @%  @@     @   @# #@
+                     %@  @%  @@     @   @# #@
+                     %@  @%  @@     @   @# #@
+                     %@  @@  @@     @   @# #@
 
     Depending on the orientation of the structure. Rotate right by 90° to get 
     the image for the corresponding left-right stair-ike wire structure.

@@ -1,5 +1,5 @@
 from typing import List
-from fabric_generator.fabric import Port, Tile, Direction, Side
+from fabric_generator.fabric import Port, Tile, Direction, Side, IO
 from geometry_generator.geometry_obj import Border
 from geometry_generator.bel_geometry import BelGeometry
 from geometry_generator.port_geometry import PortGeometry, PortType
@@ -186,7 +186,7 @@ class SmGeometry:
                     firstPort.destinationName,
                     firstPort.wireCount,
                     firstPortName,
-                    firstPort.inOut,
+                    IO.INOUT,
                     firstPort.sideOfTile
                 )
                 mergedJumpPorts.append(mergedPort)

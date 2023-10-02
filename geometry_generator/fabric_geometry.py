@@ -153,10 +153,30 @@ class FabricGeometry:
 
         # this step is for figuring out the fabric dimensions
         # as tile dimensions are fixed by now.
-        bottomRightTile = self.fabric.tile[-1][-1]
-        bottomRightTileGeom = self.tileGeomMap[bottomRightTile.name]
-        self.width = self.tileLocs[-1][-1].x + bottomRightTileGeom.width
-        self.height = self.tileLocs[-1][-1].y + bottomRightTileGeom.height
+        # Because of the top left point of the fabric being
+        # the origin (0, 0), the fabrics dimensions can be
+        # figured out by determining the rightmost and
+        # bottommost points of the fabric.
+        rightMostX = 0
+        bottomMostY = 0
+        for i in range(self.fabric.numberOfRows):
+            tile = self.fabric.tile[i][-1]
+            if tile is not None:
+                tileGeom = self.tileGeomMap[tile.name]
+                tileLoc = self.tileLocs[i][-1]
+                tileRightmostX = tileLoc.x + tileGeom.width
+                rightMostX = max(rightMostX, tileRightmostX)
+
+        for j in range(self.fabric.numberOfColumns):
+            tile = self.fabric.tile[-1][j]
+            if tile is not None:
+                tileGeom = self.tileGeomMap[tile.name]
+                tileLoc = self.tileLocs[-1][j]
+                tileBottommostY = tileLoc.y + tileGeom.height
+                bottomMostY = max(bottomMostY, tileBottommostY)
+
+        self.width = rightMostX
+        self.height = bottomMostY
 
         # this step is for rearranging the switch matrices by setting 
         # the relX/relY appropriately. This is done to ensure that

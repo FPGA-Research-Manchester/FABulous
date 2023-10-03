@@ -584,7 +584,7 @@ class Fabric():
         fabric += f"numberOfRows: {self.numberOfRows}\n"
         fabric += f"configBitMode: {self.configBitMode}\n"
         fabric += f"frameBitsPerRow: {self.frameBitsPerRow}\n"
-        fabric += f"frameBitsPerColumn: {self.maxFramesPerCol}\n"
+        fabric += f"maxFramesPerCol: {self.maxFramesPerCol}\n"
         fabric += f"package: {self.package}\n"
         fabric += f"generateDelayInSwitchMatrix: {self.generateDelayInSwitchMatrix}\n"
         fabric += f"multiplexerStyle: {self.multiplexerStyle}\n"

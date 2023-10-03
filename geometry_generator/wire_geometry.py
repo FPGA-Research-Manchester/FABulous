@@ -129,7 +129,7 @@ class StairWires:
         totalWires = self.groupWires * (abs(self.offset) - 1)
 
         for i in range(totalWires):
-            wireGeom    = WireGeometry(self.name + " #{}".format(i))       # TODO: proper name
+            wireGeom    = WireGeometry(f"{self.name} #{i}")
             start       = Location(self.refX, 0)
             nextToStart = Location(self.refX, self.refY)
             nextToEnd   = Location(self.refX - self.groupWires, self.refY)
@@ -149,7 +149,7 @@ class StairWires:
         totalWires = self.groupWires * (abs(self.offset) - 1)
 
         for i in range(totalWires):
-            wireGeom    = WireGeometry(self.name + " #{}".format(i))       # TODO: proper name
+            wireGeom    = WireGeometry(f"{self.name} #{i}")
             start       = Location(self.refX, 0)
             nextToStart = Location(self.refX, self.refY)
             nextToEnd   = Location(self.refX + self.groupWires, self.refY)
@@ -169,7 +169,7 @@ class StairWires:
         totalWires = self.groupWires * (abs(self.offset) - 1)
 
         for i in range(totalWires):
-            wireGeom    = WireGeometry(self.name + " #{}".format(i))       # TODO: proper name
+            wireGeom    = WireGeometry(f"{self.name} #{i}")
             start       = Location(self.tileWidth, self.refY)
             nextToStart = Location(self.refX, self.refY)
             nextToEnd   = Location(self.refX, self.refY + self.groupWires)
@@ -189,7 +189,7 @@ class StairWires:
         totalWires = self.groupWires * (abs(self.offset) - 1)
 
         for i in range(totalWires):
-            wireGeom    = WireGeometry(self.name + " #{}".format(i))       # TODO: proper name
+            wireGeom    = WireGeometry(f"{self.name} #{i}")
             start       = Location(self.tileWidth, self.refY)
             nextToStart = Location(self.refX, self.refY)
             nextToEnd   = Location(self.refX, self.refY - self.groupWires)

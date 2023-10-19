@@ -215,7 +215,7 @@ class FabricGeometry:
         """
         logger.info(f"Generating geometry csv file for {self.fabric.name} # file name: {fileName}")
 
-        with open(f"{fileName}", "w", newline="") as file:
+        with open(f"{fileName}", "w", newline="", encoding="utf-8") as file:
             writer = csvWriter(file)
 
             writer.writerows([

@@ -34,15 +34,15 @@ Let us take tile type LUT4AB as an example for the bitstream. This tile has the 
 |MATRIX|LUT4AB_switch_matrix.VHDL|
 |EndTILE|
 
-These are 8 LUT BELs (each of which use 18 configuration bits) and a MUX8LUT (which uses 2 configuration bits). The latter BEL is used to cascade multiple smaller LUTs to implement one or more larger LUTs, if needed. The LUT4AB tile also provides a switch matrix (which uses 392 configuration bits). 
+These are 8 LUT BELs (each of which use 18 configuration bits) and a MUX8LUT (which uses 2 configuration bits). The latter BEL is used to cascade multiple smaller LUTs to implement one or more larger LUTs, if needed. The LUT4AB tile also provides a switch matrix (which uses 392 configuration bits).
 
-The configuration bits for each LUT4c BEL are: 
+The configuration bits for each LUT4c BEL are:
 
 	- [15…0]	LUT init value (the truth table)
 	- [16]		c_out_mux; ‘1’: use flip flop output, ‘0’: use combinatorial LUT output
 	- [17]		c_I0mux; ‘1’: use I0 as Carry in; ‘0’ normal mode (I0 driven by  input routing multiplexer)
 
-The 2 configuration bits of the MUX8LUT BEL describe if we cascade to implement 4 x LUT5, 2 x LUT6 or 1 x LUT7. 
+The 2 configuration bits of the MUX8LUT BEL describe if we cascade to implement 4 x LUT5, 2 x LUT6 or 1 x LUT7.
 
 The switch matrix is generated from the adjacency table ```LUT4AB_switch_matrix.csv```.
 
@@ -53,7 +53,7 @@ The configuration bits of the individual switch matrix multiplexers are concaten
 -- switch matrix multiplexer  N1BEG0 		MUX-4
 N1BEG0_input 	 <= J_l_CD_END1 & JW2END3 & J2MID_CDb_END3 & LC_O after 80 ps;
 N1BEG0	<= N1BEG0_input(TO_INTEGER(UNSIGNED(ConfigBits(1 downto 0))));
- 
+
 -- switch matrix multiplexer  N1BEG1 		MUX-4
 N1BEG1_input 	 <= J_l_EF_END2 & JW2END0 & J2MID_EFb_END0 & LD_O after 80 ps;
 N1BEG1	<= N1BEG1_input(TO_INTEGER(UNSIGNED(ConfigBits(3 downto 2))));
@@ -84,7 +84,7 @@ For a LUT4AB tile, the concatenated tile bitstream is:
 |[145…144]|MUX8LUT|
 |[537…146]|Switch matrix|
 
-The bold numbers are the base configuration bit offsets for the different BELs and the switch matrix. For instance, to configure the C-LUT (LC) as a 4-input AND gate using the flip-flop output and not using the carry chain, we have to set the tile configuration bits: 
+The bold numbers are the base configuration bit offsets for the different BELs and the switch matrix. For instance, to configure the C-LUT (LC) as a 4-input AND gate using the flip-flop output and not using the carry chain, we have to set the tile configuration bits:
 
 | | |
 |---|---|
@@ -107,7 +107,7 @@ These configuration bits have to be packed into i configuration frames with a ti
 
 As a pragmatic solution, we defined the frame data width j=32 bits in FABulous. This fits well most practical requirements and makes it easy to interface the configuration logic with standard buses.
 
-For the LUT2AB tile with 538 tile configuration bits, we have selected i=20 configuration frames. This results in i x j = 620 addressable configuration bits. In this example, we will leave 620 – 538 = 82 addressable configuration bits unused in each LUT4AB tile. Note that no latches will be generated for those unused configuration bits.
+For the LUT2AB tile with 538 tile configuration bits, we have selected i=20 configuration frames. This results in i x j = 640 addressable configuration bits. In this example, we will leave 640 – 538 = 102 addressable configuration bits unused in each LUT4AB tile. Note that no latches will be generated for those unused configuration bits.
 
 By default, FABulous is tightly packing the used configuration bits (538 for the LUT4AB example) in their original order into 32-bit frames (starting with frame 0).
 However, a user can specify a tile configuration mapping file that looks as follows (see file LUT4AB_ConfigMem.csv for the full example):
@@ -120,9 +120,9 @@ frame2,2,32,1111_1111_1111_1111_0001_0001_0011_0011,51:36,52,53,515:514,517:516,
 frame3,3,32,1111_1111_1111_1111_0001_0001_0011_0011,69:54,70,71,519:518,521:520,#,J_l_CD_BEG2,J_l_CD_BEG3
 ```
 
-The important information in each line (i.e. a tile configuration frame) is a bitmask that is for each frame denoting which addressable configuration bits will be used. For instance in frame0, we are using 20 configuration bits (out of the 32 possible configuration bits). The bitmask is specified MSB to LSB index [31…0]. 
+The important information in each line (i.e. a tile configuration frame) is a bitmask that is for each frame denoting which addressable configuration bits will be used. For instance in frame0, we are using 20 configuration bits (out of the 32 possible configuration bits). The bitmask is specified MSB to LSB index [31…0].
 
-After the bit mask, we specify a list of tile configuration bits in exactly the same order as the bit mask. These tile configuration bits will be mapped to the frame configuration bits. 
+After the bit mask, we specify a list of tile configuration bits in exactly the same order as the bit mask. These tile configuration bits will be mapped to the frame configuration bits.
 
 For example, the 20 bits of frame0 are specified as:
 
@@ -135,20 +135,20 @@ Future versions of FABulous will use the bitstream mapping feature for optimizin
 ## Bitstream assembly and configuration frame addressing
 
 Configuration frames are composed by concatenating the same configuration frame index for an entire resource column. For instance, in our example, we are considering an FPGA fabric with 8 rows and 10 columns. This corresponds to resource columns with 8 CLBs, 8 RegFiles or 4 DSPs (DSPs take two vertically aligned tiles).
-Each configuration frame is masked by a frame_address_mask in 32 bits. ```frame_address_mask[31:27]``` performs as binary index to indicate the column index. ```frame_address_mask[19:0]``` performs as one-hot data code to index the frame address. 
+Each configuration frame is masked by a frame_address_mask in 32 bits. ```frame_address_mask[31:27]``` performs as binary index to indicate the column index. ```frame_address_mask[19:0]``` performs as one-hot data code to index the frame address.
 
 In the following example, the first line is the frame_address_mask, ```frame_address_mask[31:27] = 00100``` presents the 8th column (X7), ```frame_address_mask[19:0] = 0000_0000_0000_0000_0010``` presents 2nd frame (frame1). The rest 8 lines binary bits will be masked to all LUT4ABs' frame1 at column X7.
 
 ```
-20 00 00 02 
-FF FE FF FE 
-FF FE 00 00 
-FF FF FF FF 
-00 00 00 00 
-FF FF FF FF 
-00 00 00 00 
-FF FE FF FE 
-FF FE FF FE 
+20 00 00 02
+FF FE FF FE
+FF FE 00 00
+FF FF FF FF
+00 00 00 00
+FF FF FF FF
+00 00 00 00
+FF FE FF FE
+FF FE FF FE
 ```
 
 

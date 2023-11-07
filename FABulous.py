@@ -696,8 +696,11 @@ To run the complete FABulous flow with the default project, run the following co
                   "-p", f"synth_fabulous -top top_wrapper -json {self.projectDir}/{path}/{name}.json",
                   f"{self.projectDir}/{args[0]}",
                   f"{self.projectDir}/{path}/top_wrapper.v", ]
-        sp.run(runCmd, check=True)
-        logger.info("Synthesis completed")
+        try:
+            sp.run(runCmd, check=True)
+            logger.info("Synthesis completed")
+        except sp.CalledProcessError:
+            logger.error("Synthesis failed")
 
     def complete_synthesis_npnr(self, text, *ignored):
         return self._complete_path(text)
@@ -716,8 +719,11 @@ To run the complete FABulous flow with the default project, run the following co
                   "-p", f"synth_fabulous -top top_wrapper -blif {self.projectDir}/{path}/{name}.blif -vpr",
                   f"{self.projectDir}/{args[0]}",
                   f"{self.projectDir}/{path}/top_wrapper.v", ]
-        sp.run(runCmd, check=True)
-        logger.info("Synthesis completed")
+        try:
+            sp.run(runCmd, check=True)
+            logger.info("Synthesis completed")
+        except sp.CalledProcessError:
+            logger.error("Synthesis failed")
 
     def complete_synthesis_blif(self, text, *ignored):
         return self._complete_path(text)

@@ -766,7 +766,7 @@ To run the complete FABulous flow with the default project, run the following co
             logger.info("Placement and Routing completed")
         else:
             logger.error(
-                f"Directory {self.projectDir}/{path} does not exist)")
+                f"Directory {self.projectDir}/{path} does not exist.")
             return
 
     def complete_place_and_route_npnr(self, text, *ignored):

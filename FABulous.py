@@ -42,6 +42,8 @@ import readline
 import logging
 import tkinter as tk
 readline.set_completer_delims(' \t\n')
+histfile = os.path.expanduser('.fabulous_history')
+histfile_size = 1000
 
 fabulousRoot = os.getenv('FAB_ROOT')
 if fabulousRoot is None:
@@ -208,6 +210,9 @@ To run the complete FABulous flow with the default project, run the following co
 
     def preloop(self) -> None:
 
+        if os.path.exists(histfile):
+            readline.read_history_file(histfile)
+
         def wrap_with_except_handling(fun_to_wrap):
             def inter(*args, **varargs):
                 try:
@@ -233,6 +238,10 @@ To run the complete FABulous flow with the default project, run the following co
 
         if "exit" in script:
             exit(0)
+
+    def postloop(self):
+        readline.set_history_length(histfile_size)
+        readline.write_history_file(histfile)
 
     def precmd(self, line: str) -> str:
         if ("gen" in line or "run" in line) and not self.fabricLoaded and "help" not in line and "?" not in line:

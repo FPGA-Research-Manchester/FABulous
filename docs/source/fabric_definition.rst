@@ -329,7 +329,7 @@ The switch matrices see only the ``wires`` amount of wires, regardless of the sp
 
    TILE, CLB                  
    #direction  source_name  X-offset  Y-offset  destination_name  wires
-   EAST,       E1B,         6,        0,        E1E,              2
+   EAST,       E6B,         6,        0,        E6E,              2
 
 .. figure:: figs/wire_nesting_indexing.*
   :alt: Wire nesting and wire indexing

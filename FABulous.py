@@ -736,10 +736,10 @@ To run the complete FABulous flow with the default project, run the following co
         return self._complete_path(text)
 
     def do_place_and_route_npnr(self, args):
-        "Run place and route with Nextpnr. Need to generate a Nextpnr model first. Usage: place_and_route_npnr <fasm_file>"
+        "Run place and route with Nextpnr. Need to generate a Nextpnr model first. Usage: place_and_route_npnr <dir_to_top_module>"
         args = self.parse(args)
         if len(args) != 1:
-            logger.error("Usage: place_and_route_npnr <fasm_file>")
+            logger.error("Usage: place_and_route_npnr <dir_to_top_module>")
             return 1
         logger.info(
             f"Running Placement and Routing with Nextpnr for design {args[0]}")

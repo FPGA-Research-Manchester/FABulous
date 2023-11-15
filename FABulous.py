@@ -42,7 +42,7 @@ import readline
 import logging
 import tkinter as tk
 readline.set_completer_delims(' \t\n')
-histfile = os.path.expanduser('.fabulous_history')
+histfile = ""
 histfile_size = 1000
 
 fabulousRoot = os.getenv('FAB_ROOT')
@@ -210,6 +210,7 @@ To run the complete FABulous flow with the default project, run the following co
 
     def preloop(self) -> None:
 
+        # File does not exist when the shell is started the first time after creating a new project
         if os.path.exists(histfile):
             readline.read_history_file(histfile)
 
@@ -965,11 +966,14 @@ if __name__ == "__main__":
         if args.writer == "verilog":
             writer = VerilogWriter()
 
+
         fabShell = FABulousShell(
             FABulous(writer, fabricCSV=args.csv), args.project_dir, args.script)
 
         if args.metaDataDir:
             metaDataDir = args.metaDataDir
+
+        histfile = os.path.expanduser(f'{args.project_dir}/{metaDataDir}/.fabulous_history')
 
         if args.log:
             with open(args.log, "w") as log:

@@ -121,7 +121,8 @@ def genBitstream(fasmFile: str, specFile: str, bitstreamFile: str):
                 bit_array[x][frameIndex] += bit_hex
 
         #concatenatedTileDict[tileKey] = curStr
-        outStr += curStr + "\n"
+            outStr += curStr + "\n"
+
     #print(num_columns)
     for i in range(num_columns):
         for j in range(20):
@@ -141,9 +142,12 @@ def genBitstream(fasmFile: str, specFile: str, bitstreamFile: str):
     #Note - format in output file is line by line:
     #Tile Loc, Tile Type, X, Y, bits...... \n 
     #Each line is one tile
-    print(outStr, file = open(bitstreamFile.replace("bin","fasm"), "w+"))
+    # Write out bitstream CSV representation
+    print(outStr, file = open(bitstreamFile.replace("bin","csv"), "w+"))
+    # Write out HDL representations
     print(verilog_str, file = open(bitstreamFile.replace("bin","vh"), "w+"))
     print(vhdl_str, file = open(bitstreamFile.replace("bin","vhd"), "w+"))
+    # Write out binary representation
     with open(bitstreamFile, 'bw+') as f:
      f.write(bitStr)
 

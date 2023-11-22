@@ -923,8 +923,8 @@ To run the complete FABulous flow with the default project, run the following co
                 "Usage: run_FABulous_bitstream <npnr|vpr> <top_module_file>")
             return
 
-        verilog_file = args[1]
-        if len(args[1].split('.')) != 2 :
+        verilog_file_path = args[1]
+        if len(verilog_file_path.split('.')) != 2:
             logger.error(
                 """
                 No verilog file provided.
@@ -932,8 +932,7 @@ To run the complete FABulous flow with the default project, run the following co
                 """)
             return
 
-        top_module_name, file_ending = args[1].split('.')
-        print(top_module_name, file_ending)
+        file_ending = verilog_file_path.split('.')[1]
 
         if file_ending != "v":
             logger.error(
@@ -943,9 +942,9 @@ To run the complete FABulous flow with the default project, run the following co
                 """)
             return
 
-        json_file_path = args[1].split('.')[0] + ".json"
-        blif_file_path = args[1].split('.')[0] + ".blif"
-        fasm_file_path = args[1].split('.')[0] + ".fasm"
+        json_file_path = verilog_file_path.split('.')[0] + ".json"
+        blif_file_path = verilog_file_path.split('.')[0] + ".blif"
+        fasm_file_path = verilog_file_path.split('.')[0] + ".fasm"
 
         if args[0] == "vpr":
             self.do_synthesis_blif(verilog_file_path)

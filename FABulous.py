@@ -261,15 +261,8 @@ To run the complete FABulous flow with the default project, run the following co
     def onecmd(self, line):
         try:
             return super().onecmd(line)
-        except TypeError:
+        except:
             return False
-        except SynthesisError:
-            return False
-        except PlaceAndRouteError:
-            return False
-        except BitstreamGenerationError:
-            return False
-
 
     # override the emptyline method, so empty command will just do nothing
     def emptyline(self):
@@ -909,32 +902,13 @@ To run the complete FABulous flow with the default project, run the following co
             return
 
         if args[0] == "vpr":
-            try:
-                self.do_synthesis_blif(args[1])
-            except (SynthesisError, TypeError):
-                return
-            try:
-                self.do_place_and_route_vpr(args[1])
-            except (PlaceAndRouteError, TypeError, FileNotFoundError):
-                return
-            try:
-                self.do_gen_bitStream_binary(args[1])
-            except (BitstreamGenerationError, TypeError):
-                return
-
+            self.do_synthesis_blif(args[1])
+            self.do_place_and_route_vpr(args[1])
+            self.do_gen_bitStream_binary(args[1])
         else:
-            try:
-                self.do_synthesis_npnr(args[1])
-            except (SynthesisError, TypeError):
-                return
-            try:
-                self.do_place_and_route_npnr(args[1])
-            except (PlaceAndRouteError, TypeError, FileNotFoundError):
-                return
-            try:
-                self.do_gen_bitStream_binary(args[1])
-            except (BitstreamGenerationError, TypeError):
-                return
+            self.do_synthesis_npnr(args[1])
+            self.do_place_and_route_npnr(args[1])
+            self.do_gen_bitStream_binary(args[1])
 
         return 0
 

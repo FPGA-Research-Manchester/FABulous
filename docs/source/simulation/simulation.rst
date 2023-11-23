@@ -3,11 +3,11 @@ Simulation setup
 
 The following series of commands can be used to easily run a simulation with a test bitstream loaded, using Icarus Verilog:
 
-```
-cd demo/Test
-./build_test_design.sh
-./run_simulation.sh
-```
+.. code-block:: console
+
+        cd demo/Test
+        ./build_test_design.sh
+        ./run_simulation.sh
 
 FABulous comes with 3 different simulation methods _`configuration module`,
 

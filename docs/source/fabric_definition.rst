@@ -266,7 +266,7 @@ specifying:
      EAST,       NULL,        4,        0,        E4e,              N    # N is used for illustration only 
      WEST,       W4b,         -4,       0,        NULL,             N    # N is used for illustration only 
  
-  The ``NULL`` port entry for the EAST source_name and the WEST destination_name will prevent FABulous from creating the corresponding tile port names. Moreover, the ``NULL`` port entries also will tell FABulous to connect *all* wires or the corresponding entry, including the nested ones, to the switch matrix. This allows the implementation of the shown U-turn routing scheme for termination but also any other more sophisticated termination scheme. 
+  The ``NULL`` port entry for the EAST source_name and the WEST destination_name will prevent FABulous from creating the corresponding tile port names. Moreover, the ``NULL`` port entries also will tell FABulous to connect *all* wires of the corresponding entry, including the nested ones, to the switch matrix. This allows the implementation of the shown U-turn routing scheme for termination but also any other more sophisticated termination scheme. 
  
   For instance, in the FlexBex project, a FABulous eFPGA was coupled with the Ibex RISC V core for custom instruction set extensions (where the eFPGA fabric operates logically in parallel to the ALU) as shown in the following figure:
   

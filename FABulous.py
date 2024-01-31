@@ -864,7 +864,7 @@ To run the complete FABulous flow with the default project, run the following co
         else:
             logger.error(
                 f"Directory {self.projectDir}/{path} does not exist.")
-            return FileNotFoundError
+            raise FileNotFoundError
 
     def complete_place_and_route_npnr(self, text, *ignored):
         return self._complete_path(text)

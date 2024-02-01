@@ -41,6 +41,8 @@ import cmd
 import readline
 import logging
 import tkinter as tk
+from pathlib import PurePosixPath, PureWindowsPath
+import platform
 readline.set_completer_delims(' \t\n')
 histfile = ""
 histfile_size = 1000
@@ -68,6 +70,16 @@ def create_project(project_dir, type: Literal["verilog", "vhdl"] = "verilog"):
 
     shutil.copytree(f"{fabulousRoot}/fabric_files/FABulous_project_template_{type}/",
                     f"{project_dir}/", dirs_exist_ok=True)
+
+def get_path(path):
+    system = platform.system()
+    # Darwin corresponds to MacOS, which also uses POSIX-style paths
+    if system == "Linux" or system == "Darwin":
+        return PurePosixPath(path)
+    elif system == "Windows":
+        return PureWindowsPath(path)
+    else:
+        raise NotImplementedError(f"Unsupported operating system: {system}")
 
 class PlaceAndRouteError(Exception):
     """An exception to be thrown when place and route fails."""
@@ -625,7 +637,7 @@ To run the complete FABulous flow with the default project, run the following co
         with open(f"{self.projectDir}/HLS/config.tcl", "w") as f:
             f.write(f"source /root/legup-4.0/examples/legup.tcl\n")
 
-        name = self.projectDir.split('/')[-1]
+        name = get_path(self.projectDir).name
         with open(f"{self.projectDir}/HLS/Makefile", "w") as f:
             f.write(f"NAME = {name}\n")
             f.write(
@@ -644,7 +656,7 @@ To run the complete FABulous flow with the default project, run the following co
         os.chmod(f"./HLS/{name}.c", 0o666)
 
     def do_hls_generate_verilog(self):
-        name = self.projectDir.split('/')[-1]
+        name = get_path(self.projectDir).name
         # create folder for the generated file
         if not os.path.exists(f"./HLS/generated_file"):
             os.mkdir(f"{name}/generated_file")
@@ -719,18 +731,11 @@ To run the complete FABulous flow with the default project, run the following co
             raise TypeError(f"do_place_and_route_npnr takes exactly one argument ({len(args)} given)")
         logger.info(
             f"Running synthesis that targeting Nextpnr with design {args[0]}")
-        path, verilog_file = os.path.split(args[0])
-        if len(verilog_file.split('.')) != 2:
-            logger.error(
-                """
-                No verilog file provided.
-                Usage: synthesis_npnr <top_module_file>
-                """)
-            return
-
-        top_module_name, file_ending = verilog_file.split('.')
-
-        if file_ending != "v":
+        path = get_path(args[0])
+        parent = path.parent
+        verilog_file = path.name
+        top_module_name = path.stem
+        if path.suffix != ".v":
             logger.error(
                 """
                 No verilog file provided.
@@ -740,9 +745,9 @@ To run the complete FABulous flow with the default project, run the following co
 
         json_file = top_module_name + ".json"
         runCmd = ["yosys",
-                  "-p", f"synth_fabulous -top top_wrapper -json {self.projectDir}/{path}/{json_file}",
-                  f"{self.projectDir}/{path}/{verilog_file}",
-                  f"{self.projectDir}/{path}/top_wrapper.v", ]
+                  "-p", f"synth_fabulous -top top_wrapper -json {self.projectDir}/{parent}/{json_file}",
+                  f"{self.projectDir}/{parent}/{verilog_file}",
+                  f"{self.projectDir}/{parent}/top_wrapper.v", ]
         try:
             sp.run(runCmd, check=True)
             logger.info("Synthesis completed")
@@ -761,18 +766,12 @@ To run the complete FABulous flow with the default project, run the following co
             raise TypeError(f"do_place_and_route_npnr takes exactly one argument ({len(args)} given)")
         logger.info(
             f"Running synthesis that targeting BLIF with design {args[0]}")
-        path, verilog_file = os.path.split(args[0])
-        if len(verilog_file.split('.')) != 2:
-            logger.error(
-                """
-                No verilog file provided.
-                Usage: synthesis_blif <top_module_file>
-                """)
-            return
 
-        top_module_name, file_ending = verilog_file.split('.')
-
-        if file_ending != "v":
+        path = get_path(args[0])
+        parent = path.parent
+        verilog_file = path.name
+        top_module_name = path.stem
+        if path.suffix != ".v":
             logger.error(
                 """
                 No verilog file provided.
@@ -782,9 +781,9 @@ To run the complete FABulous flow with the default project, run the following co
 
         blif_file = top_module_name + ".blif"
         runCmd = ["yosys",
-                  "-p", f"synth_fabulous -top top_wrapper -blif {self.projectDir}/{path}/{blif_file} -vpr",
-                  f"{self.projectDir}/{path}/{verilog_file}",
-                  f"{self.projectDir}/{path}/top_wrapper.v", ]
+                  "-p", f"synth_fabulous -top top_wrapper -blif {self.projectDir}/{parent}/{blif_file} -vpr",
+                  f"{self.projectDir}/{parent}/{verilog_file}",
+                  f"{self.projectDir}/{parent}/top_wrapper.v", ]
         try:
             sp.run(runCmd, check=True)
             logger.info("Synthesis completed.")
@@ -807,8 +806,12 @@ To run the complete FABulous flow with the default project, run the following co
             raise TypeError(f"do_place_and_route_npnr takes exactly one argument ({len(args)} given)")
         logger.info(
             f"Running Placement and Routing with Nextpnr for design {args[0]}")
-        path, json_file = os.path.split(args[0])
-        if len(json_file.split('.')) != 2:
+        path = get_path(args[0])
+        parent = path.parent
+        json_file = path.name
+        top_module_name = path.stem
+
+        if path.suffix != ".json":
             logger.error(
                 """
                 No json file provided.
@@ -816,19 +819,11 @@ To run the complete FABulous flow with the default project, run the following co
                 """)
             return
 
-        top_module_name, file_ending = json_file.split('.')
-        if file_ending != "json":
-            logger.error(
-                """
-                No json file provided.
-                Usage: place_and_route_npnr <json_file> (<json_file> is generated by Yosys. Generate it by running synthesis_npnr.)
-                """)
-            return
         fasm_file = top_module_name + ".fasm"
         log_file = top_module_name + "_npnr_log.txt"
 
-        if path == "":
-            path = "."
+        if parent == "":
+            parent = "."
 
         if not os.path.exists(f"{self.projectDir}/.FABulous/pips.txt") or not os.path.exists(
                 f"{self.projectDir}/.FABulous/bel.txt"):
@@ -836,17 +831,16 @@ To run the complete FABulous flow with the default project, run the following co
                 "Pips and Bel files are not found, please run model_gen_npnr first")
             raise FileNotFoundError
 
-        print(self.projectDir)
-        if os.path.exists(f"{self.projectDir}/{path}"):
+        if os.path.exists(f"{self.projectDir}/{parent}"):
             # TODO rewriting the fab_arch script so no need to copy file for work around
-            if f"{json_file}" in os.listdir(f"{self.projectDir}/{path}"):
+            if f"{json_file}" in os.listdir(f"{self.projectDir}/{parent}"):
                 runCmd = [f"FAB_ROOT={self.projectDir}",
                           f"nextpnr-generic",
                           "--uarch", "fabulous",
-                          "--json", f"{self.projectDir}/{path}/{json_file}",
-                          "-o", f"fasm={self.projectDir}/{path}/{fasm_file}",
+                          "--json", f"{self.projectDir}/{parent}/{json_file}",
+                          "-o", f"fasm={self.projectDir}/{parent}/{fasm_file}",
                           "--verbose",
-                          "--log", f"{self.projectDir}/{path}/{log_file}"]
+                          "--log", f"{self.projectDir}/{parent}/{log_file}"]
                 try:
                     sp.run(" ".join(runCmd), stdout=sys.stdout,
                        stderr=sp.STDOUT, check=True, shell=True)
@@ -857,13 +851,13 @@ To run the complete FABulous flow with the default project, run the following co
 
             else:
                 logger.error(
-                    f"Cannot find file \"{json_file}\" in path \"./{path}/\", which is generated by running Yosys with Nextpnr backend (e.g. synthesis_npnr).")
+                    f"Cannot find file \"{json_file}\" in path \"./{parent}/\", which is generated by running Yosys with Nextpnr backend (e.g. synthesis_npnr).")
                 raise FileNotFoundError
 
             logger.info("Placement and Routing completed")
         else:
             logger.error(
-                f"Directory {self.projectDir}/{path} does not exist.")
+                f"Directory {self.projectDir}/{parent} does not exist.")
             raise FileNotFoundError
 
     def complete_place_and_route_npnr(self, text, *ignored):
@@ -877,7 +871,8 @@ To run the complete FABulous flow with the default project, run the following co
             raise TypeError(f"do_place_and_route_npnr takes exactly one argument ({len(args)} given)")
         logger.info(
             f"Running Placement and Routing with vpr for design {args[0]}")
-        path, blif_file = os.path.split(args[0])
+        path = get_path(args[0])
+        blif_file = path.name
 
         if os.path.exists(f"{self.projectDir}/user_design/{blif_file}"):
             if not os.getenv('VTR_ROOT'):
@@ -914,18 +909,12 @@ To run the complete FABulous flow with the default project, run the following co
         if len(args) != 1:
             logger.error("Usage: gen_bitStream_binary <fasm_file>")
             return
-        path, fasm_file = os.path.split(args[0])
-        if len(fasm_file.split('.')) != 2:
-            logger.error(
-                """
-                No fasm file provided.
-                Usage: gen_bitStream_binary <fasm_file>
-                """)
-            return
+        path = get_path(args[0])
+        parent = path.parent
+        fasm_file = path.name
+        top_module_name = path.stem
 
-        top_module_name, file_ending = fasm_file.split('.')
-
-        if file_ending != "fasm":
+        if path.suffix != ".fasm":
             logger.error(
                 """
                 No fasm file provided.
@@ -940,19 +929,19 @@ To run the complete FABulous flow with the default project, run the following co
                 "Cannot find bitStreamSpec.bin file, which is generated by running gen_bitStream_spec")
             return
 
-        if not os.path.exists(f"{self.projectDir}/{path}/{fasm_file}"):
+        if not os.path.exists(f"{self.projectDir}/{parent}/{fasm_file}"):
             logger.error(
-                f"Cannot find {self.projectDir}/{path}/{fasm_file} file which is generated by running place_and_route_npnr or place_and_route_vpr. Potentially Place and Route Failed.")
+                f"Cannot find {self.projectDir}/{parent}/{fasm_file} file which is generated by running place_and_route_npnr or place_and_route_vpr. Potentially Place and Route Failed.")
             return
 
         logger.info(
-            f"Generating Bitstream for design {self.projectDir}/{args[0]}")
-        logger.info(f"Outputting to {self.projectDir}/{path}/{bitstream_file}")
+            f"Generating Bitstream for design {self.projectDir}/{path}")
+        logger.info(f"Outputting to {self.projectDir}/{parent}/{bitstream_file}")
         runCmd = ["python3", f"{fabulousRoot}/fabric_cad/bit_gen.py",
                   "-genBitstream",
-                  f"{self.projectDir}/{path}/{fasm_file}",
+                  f"{self.projectDir}/{parent}/{fasm_file}",
                   f"{self.projectDir}/.FABulous/bitStreamSpec.bin",
-                  f"{self.projectDir}/{path}/{bitstream_file}"]
+                  f"{self.projectDir}/{parent}/{bitstream_file}"]
 
         try:
             sp.run(runCmd, check=True)
@@ -979,8 +968,10 @@ To run the complete FABulous flow with the default project, run the following co
                 "Usage: run_FABulous_bitstream <npnr|vpr> <top_module_file>")
             return
 
-        verilog_file_path = args[1]
-        if len(verilog_file_path.split('.')) != 2:
+        verilog_file_path = get_path(args[1])
+        file_path_no_suffix = verilog_file_path.parent / verilog_file_path.stem
+
+        if verilog_file_path.suffix != ".v":
             logger.error(
                 """
                 No verilog file provided.
@@ -988,28 +979,18 @@ To run the complete FABulous flow with the default project, run the following co
                 """)
             return
 
-        file_ending = verilog_file_path.split('.')[1]
-
-        if file_ending != "v":
-            logger.error(
-                """
-                No verilog file provided.
-                Usage: run_FABulous_bitstream <npnr|vpr> <top_module_file>
-                """)
-            return
-
-        json_file_path = verilog_file_path.split('.')[0] + ".json"
-        blif_file_path = verilog_file_path.split('.')[0] + ".blif"
-        fasm_file_path = verilog_file_path.split('.')[0] + ".fasm"
+        json_file_path = file_path_no_suffix.with_suffix(".json")
+        blif_file_path = file_path_no_suffix.with_suffix(".blif")
+        fasm_file_path = file_path_no_suffix.with_suffix(".fasm")
 
         if args[0] == "vpr":
-            self.do_synthesis_blif(verilog_file_path)
-            self.do_place_and_route_vpr(blif_file_path)
-            self.do_gen_bitStream_binary(fasm_file_path)
+            self.do_synthesis_blif(str(verilog_file_path))
+            self.do_place_and_route_vpr(str(blif_file_path))
+            self.do_gen_bitStream_binary(str(fasm_file_path))
         elif args[0] == "npnr":
-            self.do_synthesis_npnr(verilog_file_path)
-            self.do_place_and_route_npnr(json_file_path)
-            self.do_gen_bitStream_binary(fasm_file_path)
+            self.do_synthesis_npnr(str(verilog_file_path))
+            self.do_place_and_route_npnr(str(json_file_path))
+            self.do_gen_bitStream_binary(str(fasm_file_path))
         else:
             logger.error(
                 "Usage: run_FABulous_bitstream <npnr|vpr> <top_module_file>")
@@ -1029,21 +1010,22 @@ To run the complete FABulous flow with the default project, run the following co
         if len(args) != 1:
             logger.error("Usage: tcl <tcl_script>")
             return
-        path, name = os.path.split(args[0])
-        name = name.split('.')[0]
-        if not os.path.exists(args[0]):
+        path_str = args[0]
+        path = get_path(path_str)
+        name = path.stem
+        if not os.path.exists(path_str):
             logger.error(
-                f"Cannot find {args[0]}")
+                f"Cannot find {path_str}")
             return
 
-        logger.info(f"Execute TCL script {args[0]}")
+        logger.info(f"Execute TCL script {path_str}")
         tcl = tk.Tcl()
         for fun in dir(self.__class__):
             if fun.startswith("do_"):
                 name = fun.strip("do_")
                 tcl.createcommand(name, getattr(self, fun))
 
-        tcl.evalfile(args[0])
+        tcl.evalfile(path_str)
         logger.info("TCL script executed")
 
     def complete_tcl(self, text, *ignored):

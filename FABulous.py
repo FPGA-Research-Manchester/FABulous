@@ -108,6 +108,15 @@ def adjust_directory_in_verilog_tb(project_dir):
             for line in fin:
                 fout.write(line.replace("PROJECT_DIR", f"{project_dir}"))
 
+class PlaceAndRouteError(Exception):
+    """An exception to be thrown when place and route fails."""
+
+class SynthesisError(Exception):
+    """An exception to be thrown when synthesis fails."""
+
+class BitstreamGenerationError(Exception):
+    """An exception to be thrown when the bitstream generation fails."""
+
 class FABulous:
     fabricGenerator: FabricGenerator
     geometryGenerator: GeometryGenerator
@@ -288,6 +297,12 @@ To run the complete FABulous flow with the default project, run the following co
             return ""
         return line
 
+    def onecmd(self, line):
+        try:
+            return super().onecmd(line)
+        except:
+            return False
+
     # override the emptyline method, so empty command will just do nothing
     def emptyline(self):
         pass
@@ -310,7 +325,12 @@ To run the complete FABulous flow with the default project, run the following co
             print("Please provide a command to run")
             return
 
-        sp.run(args, shell=True)
+        try:
+            sp.run(args, shell=True)
+        except sp.CalledProcessError:
+            logger.error(
+                    "Could not execute the requested command.")
+            return
 
     def do_exit(self, *ignore):
         "exit FABulous shell"
@@ -731,107 +751,174 @@ To run the complete FABulous flow with the default project, run the following co
             exit(-1)
 
     def do_synthesis_npnr(self, args):
-        "Run synthesis with Yosys using Nextpnr JSON backend Usage: synthesis_npnr <dir_to_top_module>"
+        "Run synthesis with Yosys using Nextpnr JSON backend Usage: synthesis_npnr <top_module_file>"
         args = self.parse(args)
         if len(args) != 1:
-            logger.error("Usage: synthesis_npnr <dir_to_top_module>")
-            return
+            logger.error("Usage: synthesis_npnr <top_module_file>")
+            raise TypeError(f"do_place_and_route_npnr takes exactly one argument ({len(args)} given)")
         logger.info(
             f"Running synthesis that targeting Nextpnr with design {args[0]}")
-        path, name = os.path.split(args[0])
-        name = name.split('.')[0]
+        path, verilog_file = os.path.split(args[0])
+        if len(verilog_file.split('.')) != 2:
+            logger.error(
+                """
+                No verilog file provided.
+                Usage: synthesis_npnr <top_module_file>
+                """)
+            return
+
+        top_module_name, file_ending = verilog_file.split('.')
+
+        if file_ending != "v":
+            logger.error(
+                """
+                No verilog file provided.
+                Usage: synthesis_npnr <top_module_file>
+                """)
+            return
+
+        json_file = top_module_name + ".json"
         runCmd = ["yosys",
-                  "-p", f"synth_fabulous -top top_wrapper -json {self.projectDir}/{path}/{name}.json",
-                  f"{self.projectDir}/{args[0]}",
+                  "-p", f"synth_fabulous -top top_wrapper -json {self.projectDir}/{path}/{json_file}",
+                  f"{self.projectDir}/{path}/{verilog_file}",
                   f"{self.projectDir}/{path}/top_wrapper.v", ]
         try:
             sp.run(runCmd, check=True)
             logger.info("Synthesis completed")
         except sp.CalledProcessError:
             logger.error("Synthesis failed")
+            raise SynthesisError
 
     def complete_synthesis_npnr(self, text, *ignored):
         return self._complete_path(text)
 
     def do_synthesis_blif(self, args):
-        "Run synthesis with Yosys using VPR BLIF backend Usage: synthesis_blif <dir_to_top_module>"
+        "Run synthesis with Yosys using VPR BLIF backend Usage: synthesis_blif <top_module_file>"
         args = self.parse(args)
         if len(args) != 1:
-            logger.error("Usage: synthesis_blif <dir_to_top_module>")
-            return
+            logger.error("Usage: synthesis_blif <top_module_file>")
+            raise TypeError(f"do_place_and_route_npnr takes exactly one argument ({len(args)} given)")
         logger.info(
             f"Running synthesis that targeting BLIF with design {args[0]}")
-        path, name = os.path.split(args[0])
-        name = name.split('.')[0]
+        path, verilog_file = os.path.split(args[0])
+        if len(verilog_file.split('.')) != 2:
+            logger.error(
+                """
+                No verilog file provided.
+                Usage: synthesis_blif <top_module_file>
+                """)
+            return
+
+        top_module_name, file_ending = verilog_file.split('.')
+
+        if file_ending != "v":
+            logger.error(
+                """
+                No verilog file provided.
+                Usage: synthesis_blif <top_module_file>
+                """)
+            return
+
+        blif_file = top_module_name + ".blif"
         runCmd = ["yosys",
-                  "-p", f"synth_fabulous -top top_wrapper -blif {self.projectDir}/{path}/{name}.blif -vpr",
-                  f"{self.projectDir}/{args[0]}",
+                  "-p", f"synth_fabulous -top top_wrapper -blif {self.projectDir}/{path}/{blif_file} -vpr",
+                  f"{self.projectDir}/{path}/{verilog_file}",
                   f"{self.projectDir}/{path}/top_wrapper.v", ]
         try:
             sp.run(runCmd, check=True)
-            logger.info("Synthesis completed")
+            logger.info("Synthesis completed.")
         except sp.CalledProcessError:
-            logger.error("Synthesis failed")
+            logger.error("Synthesis failed.")
+            raise SynthesisError
 
     def complete_synthesis_blif(self, text, *ignored):
         return self._complete_path(text)
 
     def do_place_and_route_npnr(self, args):
-        "Run place and route with Nextpnr. Need to generate a Nextpnr model first. Usage: place_and_route_npnr <dir_to_top_module>"
+        """
+        Run place and route with Nextpnr. Need to generate a Nextpnr model first.
+        Usage: place_and_route_npnr <json_file>
+        <json_file> is generated by Yosys. Generate it by running synthesis_npnr
+        """
         args = self.parse(args)
         if len(args) != 1:
-            logger.error("Usage: place_and_route_npnr <dir_to_top_module>")
-            return
+            logger.error("Usage: place_and_route_npnr <json_file> (<json_file> is generated by Yosys. Generate it by running synthesis_npnr.)")
+            raise TypeError(f"do_place_and_route_npnr takes exactly one argument ({len(args)} given)")
         logger.info(
             f"Running Placement and Routing with Nextpnr for design {args[0]}")
-        path, name = os.path.split(args[0])
-        name = name.split('.')[0]
+        path, json_file = os.path.split(args[0])
+        if len(json_file.split('.')) != 2:
+            logger.error(
+                """
+                No json file provided.
+                Usage: place_and_route_npnr <json_file> (<json_file> is generated by Yosys. Generate it by running synthesis_npnr.)
+                """)
+            return
+
+        top_module_name, file_ending = json_file.split('.')
+        if file_ending != "json":
+            logger.error(
+                """
+                No json file provided.
+                Usage: place_and_route_npnr <json_file> (<json_file> is generated by Yosys. Generate it by running synthesis_npnr.)
+                """)
+            return
+        fasm_file = top_module_name + ".fasm"
+        log_file = top_module_name + "_npnr_log.txt"
+
+        if path == "":
+            path = "."
 
         if not os.path.exists(f"{self.projectDir}/.FABulous/pips.txt") or not os.path.exists(
                 f"{self.projectDir}/.FABulous/bel.txt"):
             logger.error(
                 "Pips and Bel files are not found, please run model_gen_npnr first")
-            return
+            raise FileNotFoundError
 
         print(self.projectDir)
         if os.path.exists(f"{self.projectDir}/{path}"):
             # TODO rewriting the fab_arch script so no need to copy file for work around
-            if f"{name}.json" in os.listdir(f"{self.projectDir}/{path}"):
+            if f"{json_file}" in os.listdir(f"{self.projectDir}/{path}"):
                 runCmd = [f"FAB_ROOT={self.projectDir}",
                           f"nextpnr-generic",
                           "--uarch", "fabulous",
-                          "--json", f"{self.projectDir}/{path}/{name}.json",
-                          "-o", f"fasm={self.projectDir}/{path}/{name}.fasm",
+                          "--json", f"{self.projectDir}/{path}/{json_file}",
+                          "-o", f"fasm={self.projectDir}/{path}/{fasm_file}",
                           "--verbose",
-                          "--log", f"{self.projectDir}/{path}/{name}_npnr_log.txt"]
-                sp.run(" ".join(runCmd), stdout=sys.stdout,
+                          "--log", f"{self.projectDir}/{path}/{log_file}"]
+                try:
+                    sp.run(" ".join(runCmd), stdout=sys.stdout,
                        stderr=sp.STDOUT, check=True, shell=True)
+                except sp.CalledProcessError:
+                    logger.error(
+                            f"Placement and Routing failed.")
+                    raise PlaceAndRouteError
+
             else:
                 logger.error(
-                    f"Cannot find {name}.json file in {path}, which is generated by running Yosys with Nextpnr backend")
-                return
+                    f"Cannot find file \"{json_file}\" in path \"./{path}/\", which is generated by running Yosys with Nextpnr backend (e.g. synthesis_npnr).")
+                raise FileNotFoundError
 
             logger.info("Placement and Routing completed")
         else:
             logger.error(
                 f"Directory {self.projectDir}/{path} does not exist.")
-            return
+            raise FileNotFoundError
 
     def complete_place_and_route_npnr(self, text, *ignored):
         return self._complete_path(text)
 
     def do_place_and_route_vpr(self, args):
-        "Run place and route with VPR. Need to generate a VPR model first. Usage: place_and_route_vpr <dir_to_top_module> (Currently not working)"
+        "Run place and route with VPR. Need to generate a VPR model first. Usage: place_and_route_vpr <blif_file> (Currently not working)"
         args = self.parse(args)
         if len(args) != 1:
-            logger.error("Usage: place_and_route_vpr <dir_to_top_module>")
-            return
+            logger.error("Usage: place_and_route_vpr <blif_file>")
+            raise TypeError(f"do_place_and_route_npnr takes exactly one argument ({len(args)} given)")
         logger.info(
             f"Running Placement and Routing with vpr for design {args[0]}")
-        path, name = os.path.split(args[0])
-        name = name.split('.')[0]
+        path, blif_file = os.path.split(args[0])
 
-        if os.path.exists(f"{self.projectDir}/user_design/{name}.blif"):
+        if os.path.exists(f"{self.projectDir}/user_design/{blif_file}"):
             if not os.getenv('VTR_ROOT'):
                 logger.error(
                     "VTR_ROOT is not set, please set it to the VPR installation directory")
@@ -840,50 +927,79 @@ To run the complete FABulous flow with the default project, run the following co
             vtr_root = os.getenv('VTR_ROOT')
 
             runCmd = [f"{vtr_root}/vpr/vpr",
-                      f".FABulous/architecture.xml",
-                      f"{self.projectDir}/user_design/{name}.blif",
+                      f"{self.projectDir}/.FABulous/architecture.xml",
+                      f"{self.projectDir}/user_design/{blif_file}",
                       "--read_rr_graph", f".FABulous/routing_resources.xml",
                       "--echo_file", "on",
                       "--route_chan_width", "16"]
-            sp.run(runCmd, check=True)
+            try:
+                sp.run(runCmd, check=True)
+            except sp.CalledProcessError:
+                logger.error(
+                        "Placement and Routing failed.")
+                raise PlaceAndRouteError
         else:
             logger.error(
-                f"Cannot find {name}.blif file, which is generated by running Yosys with blif backend")
-            return
+                f"Cannot find {blif_file}, which is generated by running Yosys with blif backend")
+            raise FileNotFoundError
         logger.info("Placement and Routing completed")
 
     def complete_place_and_route_vpr(self, text, *ignored):
         return self._complete_path(text)
 
     def do_gen_bitStream_binary(self, args):
-        "Generate the bitstream of a given design. Need to generate bitstream specification before use. Usage: gen_bitStream_binary <dir_to_top_module>"
+        "Generate the bitstream of a given design. Need to generate bitstream specification before use. Usage: gen_bitStream_binary <fasm_file>"
         args = self.parse(args)
         if len(args) != 1:
-            logger.error("Usage: gen_bitStream_binary <dir_to_top_module>")
+            logger.error("Usage: gen_bitStream_binary <fasm_file>")
             return
-        path, name = os.path.split(args[0])
-        name = name.split('.')[0]
+        path, fasm_file = os.path.split(args[0])
+        if len(fasm_file.split('.')) != 2:
+            logger.error(
+                """
+                No fasm file provided.
+                Usage: gen_bitStream_binary <fasm_file>
+                """)
+            return
+
+        top_module_name, file_ending = fasm_file.split('.')
+
+        if file_ending != "fasm":
+            logger.error(
+                """
+                No fasm file provided.
+                Usage: gen_bitStream_binary <fasm_file>
+                """)
+            return
+
+        bitstream_file = top_module_name + ".bin"
+
         if not os.path.exists(f"{self.projectDir}/.FABulous/bitStreamSpec.bin"):
             logger.error(
                 "Cannot find bitStreamSpec.bin file, which is generated by running gen_bitStream_spec")
             return
 
-        if not os.path.exists(f"{self.projectDir}/{path}/{name}.fasm"):
+        if not os.path.exists(f"{self.projectDir}/{path}/{fasm_file}"):
             logger.error(
-                f"Cannot find {self.projectDir}/{path}/{name}.fasm file which is generated by running place_and_route_npnr or place_and_route_vpr. Potentially Place and Route Failed.")
+                f"Cannot find {self.projectDir}/{path}/{fasm_file} file which is generated by running place_and_route_npnr or place_and_route_vpr. Potentially Place and Route Failed.")
             return
 
         logger.info(
             f"Generating Bitstream for design {self.projectDir}/{args[0]}")
-        logger.info(f"Outputting to {self.projectDir}/{path}/{name}.bin")
-        name = name.split('.')[0]
+        logger.info(f"Outputting to {self.projectDir}/{path}/{bitstream_file}")
         runCmd = ["python3", f"{fabulousRoot}/fabric_cad/bit_gen.py",
                   "-genBitstream",
-                  f"{self.projectDir}/{path}/{name}.fasm",
+                  f"{self.projectDir}/{path}/{fasm_file}",
                   f"{self.projectDir}/.FABulous/bitStreamSpec.bin",
-                  f"{self.projectDir}/{path}/{name}.bin"]
+                  f"{self.projectDir}/{path}/{bitstream_file}"]
 
-        sp.run(runCmd, check=True)
+        try:
+            sp.run(runCmd, check=True)
+        except sp.CalledProcessError:
+            logger.error(
+                    "Bitstream generation failed")
+            raise BitstreamGenerationError
+
         logger.info("Bitstream generated")
 
     def complete_gen_bitStream_binary(self, text, *ignored):
@@ -986,25 +1102,53 @@ To run the complete FABulous flow with the default project, run the following co
         return self._complete_path(text)
 
     def do_run_FABulous_bitstream(self, *args):
-        "Run FABulous to generate a bitstream on a given design starting from synthesis. Usage: run_FABulous_bitstream <npnr|vpr> <dir_to_top_module> (vpr flow currently not working)"
+        "Run FABulous to generate a bitstream on a given design starting from synthesis. Usage: run_FABulous_bitstream <npnr|vpr> <top_module_file> (vpr flow currently not working)"
         if len(args) == 1:
             args = self.parse(args[0])
             if len(args) != 2:
                 logger.error(
-                    "Usage: run_FABulous_bitstream <npnr|vpr> <dir_to_top>")
+                    "Usage: run_FABulous_bitstream <npnr|vpr> <top_module_file>")
+                return
         elif len(args) != 2:
             logger.error(
-                "Usage: run_FABulous_bitstream <npnr|vpr> <dir_to_top>")
+                "Usage: run_FABulous_bitstream <npnr|vpr> <top_module_file>")
             return
 
+        verilog_file_path = args[1]
+        if len(verilog_file_path.split('.')) != 2:
+            logger.error(
+                """
+                No verilog file provided.
+                Usage: run_FABulous_bitstream <npnr|vpr> <top_module_file>
+                """)
+            return
+
+        file_ending = verilog_file_path.split('.')[1]
+
+        if file_ending != "v":
+            logger.error(
+                """
+                No verilog file provided.
+                Usage: run_FABulous_bitstream <npnr|vpr> <top_module_file>
+                """)
+            return
+
+        json_file_path = verilog_file_path.split('.')[0] + ".json"
+        blif_file_path = verilog_file_path.split('.')[0] + ".blif"
+        fasm_file_path = verilog_file_path.split('.')[0] + ".fasm"
+
         if args[0] == "vpr":
-            self.do_synthesis_blif(args[1])
-            self.do_place_and_route_vpr(args[1])
-            self.do_gen_bitStream_binary(args[1])
+            self.do_synthesis_blif(verilog_file_path)
+            self.do_place_and_route_vpr(blif_file_path)
+            self.do_gen_bitStream_binary(fasm_file_path)
+        elif args[0] == "npnr":
+            self.do_synthesis_npnr(verilog_file_path)
+            self.do_place_and_route_npnr(json_file_path)
+            self.do_gen_bitStream_binary(fasm_file_path)
         else:
-            self.do_synthesis_npnr(args[1])
-            self.do_place_and_route_npnr(args[1])
-            self.do_gen_bitStream_binary(args[1])
+            logger.error(
+                "Usage: run_FABulous_bitstream <npnr|vpr> <top_module_file>")
+            return
 
         return 0
 

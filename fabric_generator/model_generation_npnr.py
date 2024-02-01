@@ -10,9 +10,9 @@ def genNextpnrModel(fabric: Fabric):
     belStr = []
     belv2Str = []
     belStr.append(
-        f"# BEL descriptions: bottom left corner Tile_X0Y0, top right Tile_X{fabric.numberOfColumns}Y{fabric.numberOfRows}")
+        f"# BEL descriptions: top left corner Tile_X0Y0, bottom right Tile_X{fabric.numberOfColumns}Y{fabric.numberOfRows}")
     belv2Str.append(
-        f"# BEL descriptions: bottom left corner Tile_X0Y0, top right Tile_X{fabric.numberOfColumns}Y{fabric.numberOfRows}")
+        f"# BEL descriptions: top left corner Tile_X0Y0, bottom right Tile_X{fabric.numberOfColumns}Y{fabric.numberOfRows}")
     constrainStr = []
 
     for y, row in enumerate(fabric.tile):

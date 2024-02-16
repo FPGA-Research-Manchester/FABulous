@@ -43,6 +43,7 @@ import logging
 import tkinter as tk
 from pathlib import PurePosixPath, PureWindowsPath
 import platform
+import traceback
 readline.set_completer_delims(' \t\n')
 histfile = ""
 histfile_size = 1000
@@ -274,6 +275,7 @@ To run the complete FABulous flow with the default project, run the following co
         try:
             return super().onecmd(line)
         except:
+            print(traceback.format_exc())
             return False
 
     # override the emptyline method, so empty command will just do nothing

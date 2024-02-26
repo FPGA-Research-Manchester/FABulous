@@ -1,6 +1,8 @@
 # FABulous: an Embedded FPGA Framework
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Python](https://img.shields.io/badge/Python-3.9-3776AB.svg?style=flat&logo=python&logoColor=white)](https://www.python.org)
+[![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 ## Introduction
 
@@ -22,6 +24,16 @@ Dirk Koch, Nguyen Dao, Bea Healy, Jing Yu, and Andrew Attwood. 2021. FABulous: A
 
 [Link to Paper](https://dl.acm.org/doi/pdf/10.1145/3431920.3439302)
 
+```
+@inproceedings{koch2021fabulous,
+  title={FABulous: An embedded FPGA framework},
+  author={Koch, Dirk and Dao, Nguyen and Healy, Bea and Yu, Jing and Attwood, Andrew},
+  booktitle={The 2021 ACM/SIGDA International Symposium on Field-Programmable Gate Arrays},
+  pages={45--56},
+  year={2021}
+}
+```
+
 ## Prerequisites
 
 The following packages need to be installed for generating fabric HDL models and using the FABulous front end:
@@ -36,10 +48,11 @@ sudo apt-get install python3-tk
 ```
 
 The following packages need to be installed for the CAD toolchain
- - [Yosys](https://github.com/YosysHQ/yosys)
- - [nextpnr-generic](https://github.com/YosysHQ/nextpnr#nextpnr-generic)
- 
- A flow using VPR, the place and route tool from the [VTR project](https://github.com/verilog-to-routing/vtr-verilog-to-routing) is also available. However, this still requires Yosys, as well as the FABulous nextpnr fork, since this contains files for design synthesis.
+
+- [Yosys](https://github.com/YosysHQ/yosys)
+- [nextpnr-generic](https://github.com/YosysHQ/nextpnr#nextpnr-generic)
+
+A flow using VPR, the place and route tool from the [VTR project](https://github.com/verilog-to-routing/vtr-verilog-to-routing) is also available. However, this still requires Yosys, as well as the FABulous nextpnr fork, since this contains files for design synthesis.
 
 ## Getting started
 
@@ -87,3 +100,19 @@ The tool also supports using TCL script to drive the build process. Assuming you
 More details on bitstream generation can be found [here](https://fabulous.readthedocs.io/en/latest/FPGA-to-bitstream/Bitstream%20generation.html).
 
 Detailed documentation for the project can be found [here](https://fabulous.readthedocs.io/en/latest/index.html)
+
+## Contribution Guidelines
+
+Thank you for considering contributing to FABulous! By contributing, you're helping us improve and grow the project for everyone. Before you start, please take a moment to review our guidelines to ensure a smooth contribution process.
+
+### Code Formatting
+
+We use [Black](https://github.com/psf/black) for code formatting. Please make sure your code adheres to Black's standards before submitting a pull request.
+
+### Code Review
+
+Once you've submitted a pull request, one of our maintainers will review your code. Please be patient during this process. We may suggest changes or improvements to ensure the quality and compatibility of your contribution.
+
+### License
+
+By contributing to this project, you agree that your contributions will be licensed under the project's [License](https://opensource.org/licenses/Apache-2.0).

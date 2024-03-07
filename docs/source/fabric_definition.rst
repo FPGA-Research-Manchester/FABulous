@@ -279,6 +279,17 @@ specifying:
   In summary, the example shows how a termination tile can be used to provide more complex interface blocks and all this can be easily modelled and implemented with FABulous.
   
   .. note::  The ``destination_name`` is refering to the port name used at the destination tile. FABulous will throw an error if the destination tile does not provide that port name.
+
+  Aside from ``BEGIN`` and ``END``, there also exist ``MID`` ports, which are used for wires spanning over two tiles.
+  Although they route over two tiles, they also have a tap on the middle tile.
+  On the middle tile, the sink is called ``MID`` while the source is still a ``BEG`` port with the addition of ``b``.
+  In the example below this is illustrated. The wire on the left goes from ``E2BEG0`` to ``E2MID`` which is the tap on the middle tile.
+  Inside the switch matrix, ``E2MID`` and ``E2BEGb`` are connected. The left wire the starts at ``E2BEGb`` and ends at ``E2END``.
+
+  .. figure:: figs/mid_wires.*
+    :alt: Basic tile illustration
+    :width: 100% 
+    :align: center
   
 * ``X-offset``, ``signed_int``
 

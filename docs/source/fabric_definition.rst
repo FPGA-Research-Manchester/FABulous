@@ -280,7 +280,7 @@ specifying:
   
   .. note::  The ``destination_name`` is refering to the port name used at the destination tile. FABulous will throw an error if the destination tile does not provide that port name.
 
-  Aside from ``BEGIN`` and ``END``, there also exist ``MID`` ports, which are used for wires spanning over two tiles.
+  Aside from ``BEGIN`` and ``END``, there also exist ``MID`` ports, which can be used for wires spanning more than two tiles.
   Although they route over two tiles, they also have a tap on the middle tile.
   On the middle tile, the sink is called ``MID`` while the source is still a ``BEG`` port with the addition of ``b``.
   In the example below this is illustrated. The wire on the left goes from ``E2BEG0`` to ``E2MID`` which is the tap on the middle tile.

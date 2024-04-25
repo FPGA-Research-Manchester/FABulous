@@ -16,7 +16,7 @@ oppositeDic = {"NORTH": "SOUTH", "SOUTH": "NORTH", "EAST": "WEST", "WEST": "EAST
 
 def parseFabricCSV(fileName: str) -> Fabric:
     """
-    Pares a csv file and returns a fabric object.
+    Parses a csv file and returns a fabric object.
 
     Args:
         fileName (str): the directory of the csv file.
@@ -65,22 +65,184 @@ def parseFabricCSV(fileName: str) -> Fabric:
     else:
         raise ValueError("Cannot find ParametersBegin and ParametersEnd in csv file")
 
-    tilesData = re.findall(r"TILE(.*?)EndTILE", file, re.MULTILINE | re.DOTALL)
-
-    superTile = re.findall(
-        r"SuperTILE(.*?)EndSuperTILE", file, re.MULTILINE | re.DOTALL
-    )
-
-    # parse the tile description
     fabricDescription = fabricDescription.split("\n")
     parameters = parameters.split("\n")
+
+    # Lists for tiles
     tileTypes = []
     tileDefs = []
     commonWirePair: List[Tuple[str, str]] = []
+
+    fabricTiles = []
+    tileDic = {}
+
+    # List for supertiles
+    superTileDic = {}
+
+    # For backwards compatibility parse tiles in fabric config
+    new_tiles, new_commonWirePair = parseTiles(fileName)
+    tileTypes += [new_tile.name for new_tile in new_tiles]
+    tileDefs += new_tiles
+    commonWirePair += new_commonWirePair
+    tileDic = dict(zip(tileTypes, tileDefs))
+
+    new_supertiles = parseSupertiles(fileName, tileDic)
+    for new_supertile in new_supertiles:
+        superTileDic[new_supertile.name] = new_supertile
+
+    if new_tiles or new_supertiles:
+        print(f"Deprecation warning: {fileName} should not contain tile descriptions.")
+
+    # parse the parameters
+    height = 0
+    width = 0
+    configBitMode = ConfigBitMode.FRAME_BASED
+    frameBitsPerRow = 32
+    maxFramesPerCol = 20
+    package = "use work.my_package.all;"
+    generateDelayInSwitchMatrix = 80
+    multiplexerStyle = MultiplexerStyle.CUSTOM
+    superTileEnable = True
+
+    for i in parameters:
+        i = i.split(",")
+        i = [j for j in i if j != ""]
+        if not i:
+            continue
+        if i[0].startswith("Tile"):
+            new_tiles, new_commonWirePair = parseTiles(
+                os.path.abspath(os.path.join(filePath, i[1]))
+            )
+            tileTypes += [new_tile.name for new_tile in new_tiles]
+            tileDefs += new_tiles
+            commonWirePair += new_commonWirePair
+            tileDic = dict(zip(tileTypes, tileDefs))
+        elif i[0].startswith("Supertile"):
+            new_supertiles = parseSupertiles(
+                os.path.abspath(os.path.join(filePath, i[1])), tileDic
+            )
+            for new_supertile in new_supertiles:
+                superTileDic[new_supertile.name] = new_supertile
+        elif i[0].startswith("ConfigBitMode"):
+            if i[1] == "frame_based":
+                configBitMode = ConfigBitMode.FRAME_BASED
+            elif i[1] == "FlipFlopChain":
+                configBitMode = ConfigBitMode.FLIPFLOP_CHAIN
+            else:
+                raise ValueError(
+                    f"Invalid config bit mode {i[1]} in parameters. Valid options are frame_based and FlipFlopChain"
+                )
+        elif i[0].startswith("FrameBitsPerRow"):
+            frameBitsPerRow = int(i[1])
+        elif i[0].startswith("MaxFramesPerCol"):
+            maxFramesPerCol = int(i[1])
+        elif i[0].startswith("Package"):
+            package = i[1]
+        elif i[0].startswith("GenerateDelayInSwitchMatrix"):
+            generateDelayInSwitchMatrix = int(i[1])
+        elif i[0].startswith("MultiplexerStyle"):
+            if i[1] == "custom":
+                multiplexerStyle = MultiplexerStyle.CUSTOM
+            elif i[1] == "generic":
+                multiplexerStyle = MultiplexerStyle.GENERIC
+            else:
+                raise ValueError(
+                    f"Invalid multiplexer style {i[1]} in parameters. Valid options are custom and generic"
+                )
+        elif i[0].startswith("SuperTileEnable"):
+            superTileEnable = i[1] == "TRUE"
+        else:
+            raise ValueError(f"The following parameter is not valid: {i}")
+
+    # form the fabric data structure
+    usedTile = set()
+    for f in fabricDescription:
+        fabricLineTmp = f.split(",")
+        fabricLineTmp = [i for i in fabricLineTmp if i != ""]
+        if not fabricLineTmp:
+            continue
+        fabricLine = []
+        for i in fabricLineTmp:
+            if i in tileDic:
+                fabricLine.append(deepcopy(tileDic[i]))
+                usedTile.add(i)
+            elif i == "Null" or i == "NULL" or i == "None":
+                fabricLine.append(None)
+            else:
+                raise ValueError(f"Unknown tile {i}")
+        fabricTiles.append(fabricLine)
+
+    for i in list(tileDic.keys()):
+        if i not in usedTile:
+            print(f"Tile {i} is not used in the fabric. Removing from tile dictionary.")
+            del tileDic[i]
+    for i in list(superTileDic.keys()):
+        if any(j.name not in usedTile for j in superTileDic[i].tiles):
+            print(
+                f"Supertile {i} is not used in the fabric. Removing from tile dictionary."
+            )
+            del superTileDic[i]
+
+    height = len(fabricTiles)
+    width = len(fabricTiles[0])
+
+    commonWirePair = list(dict.fromkeys(commonWirePair))
+    commonWirePair = [
+        (i, j) for (i, j) in commonWirePair if "NULL" not in i and "NULL" not in j
+    ]
+
+    return Fabric(
+        tile=fabricTiles,
+        numberOfColumns=width,
+        numberOfRows=height,
+        configBitMode=configBitMode,
+        frameBitsPerRow=frameBitsPerRow,
+        maxFramesPerCol=maxFramesPerCol,
+        package=package,
+        generateDelayInSwitchMatrix=generateDelayInSwitchMatrix,
+        multiplexerStyle=multiplexerStyle,
+        numberOfBRAMs=int(height / 2),
+        superTileEnable=superTileEnable,
+        tileDic=tileDic,
+        superTileDic=superTileDic,
+        commonWirePair=commonWirePair,
+    )
+
+
+def parseTiles(fileName: str) -> Tuple[List[Tile], List[Tuple[str, str]]]:
+    """
+    Parses a csv tile configuration file and returns all tile objects.
+
+    Args:
+        fileName (str): the path to the csv file.
+
+    Returns:
+        ([Tile], [(str, str)] : Tuple of tile objects and common wire pairs.
+    """
+
+    print(f"Reading tile configuration: {fileName}")
+
+    if not fileName.endswith(".csv"):
+        raise ValueError("File must be a csv file")
+
+    if not os.path.exists(fileName):
+        raise ValueError(f"File {fileName} does not exist")
+
+    filePath, _ = os.path.split(os.path.abspath(fileName))
+
+    with open(fileName, "r") as f:
+        file = f.read()
+        file = re.sub(r"#.*", "", file)
+
+    tilesData = re.findall(r"TILE(.*?)EndTILE", file, re.MULTILINE | re.DOTALL)
+
+    new_tiles = []
+    commonWirePair = []
+
+    # Parse each tile config
     for t in tilesData:
         t = t.split("\n")
         tileName = t[0].split(",")[1]
-        tileTypes.append(tileName)
         ports: List[Port] = []
         bels: List[Bel] = []
         matrixDir = ""
@@ -204,14 +366,47 @@ def parseFabricCSV(fileName: str) -> Fabric:
             else:
                 raise ValueError(f"Unknown tile description {temp[0]} in tile {t}")
 
-        tileDefs.append(Tile(tileName, ports, bels, matrixDir, withUserCLK, configBit))
+            new_tiles.append(
+                Tile(tileName, ports, bels, matrixDir, withUserCLK, configBit)
+            )
 
-    fabricTiles = []
-    tileDic = dict(zip(tileTypes, tileDefs))
+    return (new_tiles, commonWirePair)
 
-    # parse the super tile
-    superTileDic = {}
-    for t in superTile:
+
+def parseSupertiles(fileName: str, tileDic: Dict[str, Tile]) -> List[SuperTile]:
+    """
+    Parses a csv supertile configuration file and returns all SuperTile objects.
+
+    Args:
+        fileName (str): the path to the csv file.
+        tileDic ({str: Tile}): dict of tiles.
+
+    Returns:
+        [SuperTile]: List of supertile objects.
+    """
+
+    print(f"Reading supertile configuration: {fileName}")
+
+    if not fileName.endswith(".csv"):
+        raise ValueError("File must be a csv file")
+
+    if not os.path.exists(fileName):
+        raise ValueError(f"File {fileName} does not exist")
+
+    filePath, _ = os.path.split(os.path.abspath(fileName))
+
+    with open(fileName, "r") as f:
+        file = f.read()
+        file = re.sub(r"#.*", "", file)
+
+    superTilesData = re.findall(
+        r"SuperTILE(.*?)EndSuperTILE", file, re.MULTILINE | re.DOTALL
+    )
+
+    new_supertiles = []
+
+    # Parse each supertile config
+    for t in superTilesData:
         description = t.split("\n")
         name = description[0].split(",")[1]
         tileMap = []
@@ -262,108 +457,9 @@ def parseFabricCSV(fileName: str) -> Fabric:
                     )
             tileMap.append(row)
 
-        superTileDic[name] = SuperTile(name, tiles, tileMap, bels, withUserCLK)
+        new_supertiles.append(SuperTile(name, tiles, tileMap, bels, withUserCLK))
 
-    # form the fabric data structure
-    usedTile = set()
-    for f in fabricDescription:
-        fabricLineTmp = f.split(",")
-        fabricLineTmp = [i for i in fabricLineTmp if i != ""]
-        if not fabricLineTmp:
-            continue
-        fabricLine = []
-        for i in fabricLineTmp:
-            if i in tileDic:
-                fabricLine.append(deepcopy(tileDic[i]))
-                usedTile.add(i)
-            elif i == "Null" or i == "NULL" or i == "None":
-                fabricLine.append(None)
-            else:
-                raise ValueError(f"Unknown tile {i}")
-        fabricTiles.append(fabricLine)
-
-    for i in list(tileDic.keys()):
-        if i not in usedTile:
-            print(f"Tile {i} is not used in the fabric. Removing from tile dictionary.")
-            del tileDic[i]
-    for i in list(superTileDic.keys()):
-        if any(j.name not in usedTile for j in superTileDic[i].tiles):
-            print(
-                f"Supertile {i} is not used in the fabric. Removing from tile dictionary."
-            )
-            del superTileDic[i]
-
-    # parse the parameters
-    height = 0
-    width = 0
-    configBitMode = ConfigBitMode.FRAME_BASED
-    frameBitsPerRow = 32
-    maxFramesPerCol = 20
-    package = "use work.my_package.all;"
-    generateDelayInSwitchMatrix = 80
-    multiplexerStyle = MultiplexerStyle.CUSTOM
-    superTileEnable = True
-
-    for i in parameters:
-        i = i.split(",")
-        i = [j for j in i if j != ""]
-        if not i:
-            continue
-        if i[0].startswith("ConfigBitMode"):
-            if i[1] == "frame_based":
-                configBitMode = ConfigBitMode.FRAME_BASED
-            elif i[1] == "FlipFlopChain":
-                configBitMode = ConfigBitMode.FLIPFLOP_CHAIN
-            else:
-                raise ValueError(
-                    f"Invalid config bit mode {i[1]} in parameters. Valid options are frame_based and FlipFlopChain"
-                )
-        elif i[0].startswith("FrameBitsPerRow"):
-            frameBitsPerRow = int(i[1])
-        elif i[0].startswith("MaxFramesPerCol"):
-            maxFramesPerCol = int(i[1])
-        elif i[0].startswith("Package"):
-            package = i[1]
-        elif i[0].startswith("GenerateDelayInSwitchMatrix"):
-            generateDelayInSwitchMatrix = int(i[1])
-        elif i[0].startswith("MultiplexerStyle"):
-            if i[1] == "custom":
-                multiplexerStyle = MultiplexerStyle.CUSTOM
-            elif i[1] == "generic":
-                multiplexerStyle = MultiplexerStyle.GENERIC
-            else:
-                raise ValueError(
-                    f"Invalid multiplexer style {i[1]} in parameters. Valid options are custom and generic"
-                )
-        elif i[0].startswith("SuperTileEnable"):
-            superTileEnable = i[1] == "TRUE"
-        else:
-            raise ValueError(f"The following parameter is not valid: {i}")
-
-    height = len(fabricTiles)
-    width = len(fabricTiles[0])
-
-    commonWirePair = list(dict.fromkeys(commonWirePair))
-    commonWirePair = [
-        (i, j) for (i, j) in commonWirePair if "NULL" not in i and "NULL" not in j
-    ]
-
-    return Fabric(
-        tile=fabricTiles,
-        numberOfColumns=width,
-        numberOfRows=height,
-        configBitMode=configBitMode,
-        frameBitsPerRow=frameBitsPerRow,
-        maxFramesPerCol=maxFramesPerCol,
-        package=package,
-        generateDelayInSwitchMatrix=generateDelayInSwitchMatrix,
-        multiplexerStyle=multiplexerStyle,
-        numberOfBRAMs=int(height / 2),
-        superTileEnable=superTileEnable,
-        tileDic=tileDic,
-        superTileDic=superTileDic,
-        commonWirePair=commonWirePair,
-    )
+    return new_supertiles
 
 
 @overload

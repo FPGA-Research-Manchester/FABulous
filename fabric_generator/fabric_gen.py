@@ -1801,7 +1801,7 @@ class FabricGenerator:
         self.writer.addConnectionVector(
             "FrameData", "(FrameBitsPerRow*(NumberOfRows+2))-1")
         self.writer.addConnectionVector(
-            "FrameAddressRegister", "FrameBitsPerRow-1")
+            "FrameAddressRegister", "MaxFramesPerCol-1")
         self.writer.addConnectionScalar("LongFrameStrobe")
         self.writer.addConnectionVector("LocalWriteData", 31)
         self.writer.addConnectionScalar("LocalWriteStrobe")

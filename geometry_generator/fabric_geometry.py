@@ -21,8 +21,9 @@ class FabricGeometry:
         padding         (int)                       :   Padding used throughout the geometry, in multiples of the width between wires
         width           (int)                       :   Width of the fabric
         height          (int)                       :   Height of the fabric
-        
+
     """
+
     fabric: Fabric
     tileNames: Set[str]
     tileGeomMap: Dict[str, TileGeometry]
@@ -30,7 +31,6 @@ class FabricGeometry:
     padding: int
     width: int
     height: int
-
 
     def __init__(self, fabric: Fabric, padding: int = 8):
         self.fabric = fabric
@@ -43,18 +43,17 @@ class FabricGeometry:
 
         self.generateGeometry()
 
-
     def generateGeometry(self) -> None:
         """
         Generates the geometric information from the given fabric object
-        
+
         """
 
         # here, the border attribute is set for tiles that are
-        # located at a border of the tile. This is done to 
+        # located at a border of the tile. This is done to
         # ensure no stair-like wires being generated for these tiles.
-        # The distinction left/right and top/bottom is made, to 
-        # prevent generation of horizontal and vertical stair-like 
+        # The distinction left/right and top/bottom is made, to
+        # prevent generation of horizontal and vertical stair-like
         # wires respectively.
         for i in range(self.fabric.numberOfRows):
             for j in range(self.fabric.numberOfColumns):
@@ -67,12 +66,15 @@ class FabricGeometry:
                         self.tileGeomMap[tile.name] = TileGeometry()
 
                     tileGeom = self.tileGeomMap[tile.name]
-                    northSouth = (i == 0 or i+1 == self.fabric.numberOfRows)
-                    eastWest = (j == 0 or j+1 == self.fabric.numberOfColumns)
+                    northSouth = i == 0 or i + 1 == self.fabric.numberOfRows
+                    eastWest = j == 0 or j + 1 == self.fabric.numberOfColumns
 
-                    if northSouth and eastWest  : tileGeom.border = Border.CORNER
-                    elif northSouth             : tileGeom.border = Border.NORTHSOUTH
-                    elif eastWest               : tileGeom.border = Border.EASTWEST
+                    if northSouth and eastWest:
+                        tileGeom.border = Border.CORNER
+                    elif northSouth:
+                        tileGeom.border = Border.NORTHSOUTH
+                    elif eastWest:
+                        tileGeom.border = Border.EASTWEST
 
         for tileName in self.tileNames:
             tile = self.fabric.getTileByName(tileName)
@@ -137,7 +139,7 @@ class FabricGeometry:
                         maxWidthInColumn,
                         maxHeightInRow,
                         maxSmWidthInColumn,
-                        maxSmRelXInColumn
+                        maxSmRelXInColumn,
                     )
 
         for i in range(self.fabric.numberOfRows):
@@ -178,7 +180,7 @@ class FabricGeometry:
         self.width = rightMostX
         self.height = bottomMostY
 
-        # this step is for rearranging the switch matrices by setting 
+        # this step is for rearranging the switch matrices by setting
         # the relX/relY appropriately. This is done to ensure that
         # all inter-tile wires line up correctly.
         adjustedTileNames = set()
@@ -202,46 +204,55 @@ class FabricGeometry:
             tileGeom = self.tileGeomMap[tileName]
             tileGeom.generateWires(self.padding)
 
-
     def saveToCSV(self, fileName: str) -> None:
         """
-        Saves the generated geometric information of the 
+        Saves the generated geometric information of the
         given fabric to a .csv file that can be imported
         into the graphical frontend.
 
         Args:
             fileName (str): the name of the csv file
-            
+
         """
-        logger.info(f"Generating geometry csv file for {self.fabric.name} # file name: {fileName}")
+        logger.info(
+            f"Generating geometry csv file for {self.fabric.name} # file name: {fileName}"
+        )
 
         with open(f"{fileName}", "w", newline="", encoding="utf-8") as file:
             writer = csvWriter(file)
 
-            writer.writerows([
-                ["PARAMS"],
-                ["Name"]    + [self.fabric.name],
-                ["Rows"]    + [str(self.fabric.numberOfRows)],
-                ["Columns"] + [str(self.fabric.numberOfColumns)],
-                ["Width"]   + [str(self.width)],
-                ["Height"]  + [str(self.height)],
-                []
-            ])
+            writer.writerows(
+                [
+                    ["PARAMS"],
+                    ["Name"] + [self.fabric.name],
+                    ["Rows"] + [str(self.fabric.numberOfRows)],
+                    ["Columns"] + [str(self.fabric.numberOfColumns)],
+                    ["Width"] + [str(self.width)],
+                    ["Height"] + [str(self.height)],
+                    [],
+                ]
+            )
 
             writer.writerow(["FABRIC_DEF"])
             for i in range(self.fabric.numberOfRows):
-                writer.writerow([tile.name if tile is not None else "Null" for tile in self.fabric.tile[i]])
+                writer.writerow(
+                    [
+                        tile.name if tile is not None else "Null"
+                        for tile in self.fabric.tile[i]
+                    ]
+                )
             writer.writerow([])
 
             writer.writerow(["FABRIC_LOCS"])
             for i in range(self.fabric.numberOfRows):
-                writer.writerow([loc if loc is not None else "Null" for loc in self.tileLocs[i]])
+                writer.writerow(
+                    [loc if loc is not None else "Null" for loc in self.tileLocs[i]]
+                )
             writer.writerows([[], []])
 
             for tileName in self.tileNames:
                 tileGeometry = self.tileGeomMap[tileName]
                 tileGeometry.saveToCSV(writer)
-
 
     def __repr__(self) -> str:
         geometry = "Respective dimensions of tiles: \n"

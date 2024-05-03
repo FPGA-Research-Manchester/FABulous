@@ -15,17 +15,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from contextlib import redirect_stdout
-from fabric_generator.model_generation_vpr import genVPRModel
 from fabric_generator.utilities import genFabricObject, GetFabric
-import fabric_generator.model_generation_vpr as model_gen_vpr
 import fabric_generator.model_generation_npnr as model_gen_npnr
 from fabric_generator.code_generation_VHDL import VHDLWriter
 from fabric_generator.code_generation_Verilog import VerilogWriter
-import fabric_generator.code_generator as codeGen
-import fabric_generator.file_parser as fileParser
-from fabric_generator.fabric import Fabric, Tile
-from fabric_generator.fabric_gen import FabricGenerator
-from geometry_generator.geometry_gen import GeometryGenerator
+from FABulous_API import FABulous
 import csv
 from glob import glob
 import os
@@ -99,85 +93,6 @@ class SynthesisError(Exception):
 
 class BitstreamGenerationError(Exception):
     """An exception to be thrown when the bitstream generation fails."""
-
-
-class FABulous:
-    fabricGenerator: FabricGenerator
-    geometryGenerator: GeometryGenerator
-    fabric: Fabric
-    fileExtension: str = ".v"
-
-    def __init__(self, writer: codeGen.codeGenerator, fabricCSV: str = ""):
-        self.writer = writer
-        if fabricCSV != "":
-            self.fabric = fileParser.parseFabricCSV(fabricCSV)
-            self.fabricGenerator = FabricGenerator(self.fabric, self.writer)
-            self.geometryGenerator = GeometryGenerator(self.fabric)
-
-        if isinstance(self.writer, VHDLWriter):
-            self.fileExtension = ".vhdl"
-        # self.fabricGenerator = FabricGenerator(fabric, writer)
-
-    def setWriterOutputFile(self, outputDir):
-        logger.info(f"Output file: {outputDir}")
-        self.writer.outFileName = outputDir
-
-    def loadFabric(self, dir: str):
-        if dir.endswith(".csv"):
-            self.fabric = fileParser.parseFabricCSV(dir)
-            self.fabricGenerator = FabricGenerator(self.fabric, self.writer)
-            self.geometryGenerator = GeometryGenerator(self.fabric)
-        else:
-            logger.warning("Only .csv files are supported for fabric loading")
-
-    def bootstrapSwitchMatrix(self, tileName: str, outputDir: str):
-        tile = self.fabric.getTileByName(tileName)
-        self.fabricGenerator.bootstrapSwitchMatrix(tile, outputDir)
-
-    def addList2Matrix(self, list: str, matrix: str):
-        self.fabricGenerator.list2CSV(list, matrix)
-
-    def genConfigMem(self, tileName: str, configMem: str):
-        tile = self.fabric.getTileByName(tileName)
-        self.fabricGenerator.generateConfigMem(tile, configMem)
-
-    def genSwitchMatrix(self, tileName: str):
-        tile = self.fabric.getTileByName(tileName)
-        self.fabricGenerator.genTileSwitchMatrix(tile)
-
-    def genTile(self, tileName: str):
-        tile = self.fabric.getTileByName(tileName)
-        self.fabricGenerator.generateTile(tile)
-
-    def genSuperTile(self, tileName: str):
-        tile = self.fabric.getSuperTileByName(tileName)
-        self.fabricGenerator.generateSuperTile(tile)
-
-    def genFabric(self):
-        self.fabricGenerator.generateFabric()
-
-    def genGeometry(self, geomPadding: int = 8):
-        self.geometryGenerator.generateGeometry(geomPadding)
-        self.geometryGenerator.saveToCSV(self.writer.outFileName)
-
-    def genTopWrapper(self):
-        self.fabricGenerator.generateTopWrapper()
-
-    def genBitStreamSpec(self):
-        specObject = self.fabricGenerator.generateBitsStreamSpec()
-        return specObject
-
-    def genModelNpnr(self):
-        return model_gen_npnr.genNextpnrModel(self.fabric)
-
-    def genModelVPR(self, customXML: str = ""):
-        return model_gen_vpr.genVPRModel(self.fabric, customXML)
-
-    def genModelVPRRoutingResource(self):
-        return model_gen_vpr.genVPRRoutingResourceGraph(self.fabric)
-
-    def genModelVPRConstrains(self):
-        return model_gen_vpr.genVPRConstrainsXML(self.fabric)
 
 
 class FABulousShell(cmd.Cmd):
@@ -1027,6 +942,116 @@ To run the complete FABulous flow with the default project, run the following co
         logger.info("Bitstream generated")
 
     def complete_gen_bitStream_binary(self, text, *ignored):
+        return self._complete_path(text)
+
+    def do_run_simulation(self, args):
+        """
+        Simulate the given design. Need to generate the bitstream before use.
+        Usage: run_simulation [<fst|vcd>] <bitstream_file>
+        """
+        args = self.parse(args)
+        bitsream_arg = ""
+        optional_arg = ""
+        if len(args) == 1:
+            bitsream_arg = args[0]
+        elif len(args) == 2:
+            optional_arg = args[0]
+            bitsream_arg = args[1]
+        else:
+            logger.error("Usage: run_simulation [<fst|vcd>] <bitstream_file>")
+            return
+
+        path, bitstream = os.path.split(bitsream_arg)
+        if len(bitstream.split(".")) != 2:
+            logger.error(
+                """
+                No bitstream file specified.
+                Usage: run_simulation [<fst|vcd>] <bitstream_file>
+                """
+            )
+            return
+        top_module, file_ending = bitstream.split(".")
+        if file_ending != "bin":
+            logger.error(
+                """
+                No bitstream file specified.
+                Usage: run_simulation <bitstream_file>
+                """
+            )
+            return
+        if not os.path.exists(f"{self.projectDir}/{path}/"):
+            logger.error(
+                f"Cannot find {self.projectDir}/{path}/{bitstream} file which is generated by running gen_bitStream_binary. Potentially the bitstream generation failed."
+            )
+            return
+
+        defined_option = ""
+        if optional_arg == "fst":
+            defined_option = "CREATE_FST"
+        elif optional_arg == "vcd":
+            defined_option = "CREATE_VCD"
+        elif optional_arg == "":
+            defined_option = ""
+        else:
+            logger.error(
+                """
+                Wrong optional argument specified.
+                Usage: run_simulation <bitstream_file>
+                """
+            )
+            return
+
+        design_file = top_module + ".v"
+        top_module_tb = top_module + "_tb"
+        test_bench = top_module_tb + ".v"
+        vvp_file = top_module_tb + ".vvp"
+        bitstream_hex = top_module + ".hex"
+
+        tmp_dir = f"{self.projectDir}/{path}/tmp/"
+        os.makedirs(f"{self.projectDir}/{path}/tmp", exist_ok=True)
+        copy_verilog_files(f"{self.projectDir}/Tile/", tmp_dir)
+        copy_verilog_files(f"{self.projectDir}/Fabric/", tmp_dir)
+        file_list = [
+            os.path.join(tmp_dir, filename) for filename in os.listdir(tmp_dir)
+        ]
+
+        try:
+            runCmd = [
+                "iverilog",
+                "-D",
+                f"{defined_option}",
+                "-s",
+                f"{top_module_tb}",
+                "-o",
+                f"{self.projectDir}/{path}/{vvp_file}",
+                *file_list,
+                f"{self.projectDir}/{path}/{design_file}",
+                f"{self.projectDir}/Test/{test_bench}",
+            ]
+            sp.run(runCmd, check=True)
+
+        except sp.CalledProcessError:
+            logger.error("Simulation failed")
+            remove_dir(f"{self.projectDir}/{path}/tmp")
+            return
+
+        make_hex(
+            f"{self.projectDir}/{path}/{bitstream}",
+            f"{self.projectDir}/{path}/{bitstream_hex}",
+        )
+
+        try:
+            runCmd = ["vvp", f"{self.projectDir}/{path}/{vvp_file}"]
+            sp.run(runCmd, check=True)
+        except sp.CalledProcessError:
+            logger.error("Simulation failed")
+            remove_dir(f"{self.projectDir}/{path}/tmp")
+            return
+
+        remove_dir(f"{self.projectDir}/{path}/tmp")
+        logger.info("Simulation finished")
+
+    def complete_run_simulation(self, text, *ignored):
         return self._complete_path(text)
 
     def do_run_FABulous_bitstream(self, *args):

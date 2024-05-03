@@ -23,6 +23,7 @@ import string
 import csv
 from typing import Dict, List, Tuple
 import logging
+from pathlib import Path
 
 
 from fasm import *  # Remove this line if you do not have the fasm library installed and will not be generating a bitstream
@@ -768,30 +769,26 @@ class FabricGenerator:
 
         # insert switch matrix and config_mem component declaration
         if isinstance(self.writer, VHDLWriter):
-            tileName = tile.name
-            subFolder = "."
-            if tile.partOfSuperTile:
-                tileName = tile.name.rsplit("_", 1)[0]
-                subFolder = tile.name
-
-            if os.path.exists(f"Tile/{tileName}/{subFolder}/{tile.name}_switch_matrix.vhdl"):
+            basePath = Path(self.writer.outFileName).parent
+             
+            if os.path.exists(f"{basePath}/{tile.name}_switch_matrix.vhdl"):
                 self.writer.addComponentDeclarationForFile(
-                    f"Tile/{tileName}/{subFolder}/{tile.name}_switch_matrix.vhdl")
+                    f"{basePath}/{tile.name}_switch_matrix.vhdl")
             else:
                 raise ValueError(
-                    f"Could not find {tile.name}_switch_matrix.vhdl in Tile/{tileName}/{subFolder}/ Need to run matrix generation first")
+                    f"Could not find {tile.name}_switch_matrix.vhdl in {basePath} Need to run matrix generation first")
 
-            if os.path.exists(f"Tile/{tileName}/{subFolder}/{tile.name}_ConfigMem.vhdl"):
+            if os.path.exists(f"{basePath}/{tile.name}_ConfigMem.vhdl"):
                 self.writer.addComponentDeclarationForFile(
-                    f"Tile/{tileName}/{subFolder}/{tile.name}_ConfigMem.vhdl")
+                    f"{basePath}/{tile.name}_ConfigMem.vhdl")
             else:
                 raise ValueError(
-                    f"Could not find {tile.name}_ConfigMem.vhdl in Tile/{tileName}/{subFolder}/ config_mem generation first")
+                    f"Could not find {tile.name}_ConfigMem.vhdl in {basePath} config_mem generation first")
 
-        if self.fabric.configBitMode == ConfigBitMode.FRAME_BASED and tile.globalConfigBits > 0:
-            if os.path.exists(f"{tile.name}_ConfigMem.vhdl"):
-                self.writer.addComponentDeclarationForFile(
-                    f"{tile.name}_ConfigMem.vhdl")
+            if self.fabric.configBitMode == ConfigBitMode.FRAME_BASED and tile.globalConfigBits > 0:
+                if os.path.exists(f"{basePath}/{tile.name}_ConfigMem.vhdl"):
+                    self.writer.addComponentDeclarationForFile(
+                        f"{basePath}/{tile.name}_ConfigMem.vhdl")
 
         # VHDL signal declarations
         self.writer.addComment("signal declarations", onNewLine=True)
@@ -1161,7 +1158,7 @@ class FabricGenerator:
             for t in superTile.tiles:
                 # This is only relevant to VHDL code generation, will not affect Verilog code generation
                 self.writer.addComponentDeclarationForFile(
-                    f"Tile/{superTile.name}/{t.name}/{t.name}.vhdl")
+                    f"{Path(self.writer.outFileName).parent}/{t.name}/{t.name}.vhdl")
 
         # find all internal connections
         internalConnections = superTile.getInternalConnections()
@@ -1356,12 +1353,13 @@ class FabricGenerator:
                 if name in added:
                     continue
                 if name not in self.fabric.superTileDic.keys():
+                    print()
                     self.writer.addComponentDeclarationForFile(
-                        f"Tile/{t}/{t}.vhdl")
+                        f"{Path(self.writer.outFileName).parent.parent}/Tile/{t}/{t}.vhdl")
                     added.add(t)
                 else:
                     self.writer.addComponentDeclarationForFile(
-                        f"Tile/{name}/{name}.vhdl")
+                        f"{Path(self.writer.outFileName).parent.parent}/Tile/{name}/{name}.vhdl")
                     added.add(name)
 
         # VHDL signal declarations
@@ -1809,29 +1807,26 @@ class FabricGenerator:
         self.writer.addConnectionScalar("resten")
 
         if isinstance(self.writer, VHDLWriter):
-            if not os.path.exists("./Fabric/Frame_Data_Reg.vhdl"):
+            basePath = Path(self.writer.outFileName).parent
+            if not os.path.exists(f"{basePath}/Frame_Data_Reg.vhdl"):
                 raise FileExistsError(
                     "Frame_Data_Reg.vhdl not found in Fabric folder")
-            if not os.path.exists("./Fabric/Frame_Select.vhdl"):
+            if not os.path.exists(f"{basePath}/Frame_Select.vhdl"):
                 raise FileExistsError(
                     "Frame_Select.vhdl not found in Fabric folder")
-            if not os.path.exists("./Fabric/eFPGA_Config.vhdl"):
+            if not os.path.exists(f"{basePath}/eFPGA_Config.vhdl"):
                 raise FileExistsError("Config.vhdl not found in Fabric folder")
-            if not os.path.exists("./Fabric/eFPGA.vhdl"):
+            if not os.path.exists(f"{basePath}/eFPGA.vhdl"):
                 raise FileExistsError(
                     "eFPGA.vhdl not found in Fabric folder, need to generate the eFPGA first")
-            if not os.path.exists("./Fabric/BlockRAM_1KB.vhdl"):
+            if not os.path.exists(f"{basePath}/BlockRAM_1KB.vhdl"):
                 raise FileExistsError(
                     "BlockRAM_1KB.vhdl not found in Fabric folder")
-            self.writer.addComponentDeclarationForFile(
-                "./Fabric/Frame_Data_Reg.vhdl")
-            self.writer.addComponentDeclarationForFile(
-                "./Fabric/Frame_Select.vhdl")
-            self.writer.addComponentDeclarationForFile(
-                "./Fabric/eFPGA_Config.vhdl")
-            self.writer.addComponentDeclarationForFile("./Fabric/eFPGA.vhdl")
-            self.writer.addComponentDeclarationForFile(
-                "./Fabric/BlockRAM_1KB.vhdl")
+            self.writer.addComponentDeclarationForFile(f"{basePath}/Frame_Data_Reg.vhdl")
+            self.writer.addComponentDeclarationForFile(f"{basePath}/Frame_Select.vhdl")
+            self.writer.addComponentDeclarationForFile(f"{basePath}/eFPGA_Config.vhdl")
+            self.writer.addComponentDeclarationForFile(f"{basePath}/eFPGA.vhdl")
+            self.writer.addComponentDeclarationForFile(f"{basePath}/BlockRAM_1KB.vhdl")
 
         self.writer.addLogicStart()
 

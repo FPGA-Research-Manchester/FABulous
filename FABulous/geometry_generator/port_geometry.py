@@ -1,5 +1,5 @@
 from csv import writer as csvWriter
-from fabric_generator.fabric import Side, IO
+from ..fabric_definition.defines import Side, IO
 from enum import Enum
 
 

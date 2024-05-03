@@ -1,6 +1,6 @@
-from typing import List
-from fabric_generator.fabric import Bel, IO
-from geometry_generator.port_geometry import PortGeometry, PortType
+from ..fabric_definition.Bel import Bel
+from ..fabric_definition.defines import IO
+from .port_geometry import PortGeometry, PortType
 from csv import writer as csvWriter
 
 
@@ -15,12 +15,12 @@ class BelGeometry:
         height              (int)               :   Height of the bel
         relX                (int)               :   X coordinate of the bel, relative within the tile
         relY                (int)               :   Y coordinate of the bel, relative within the tile
-        internalInputs      (List[str])         :   Internal input port names of the bel
-        internalOutputs     (List[str])         :   Internal output port names of the bel
-        externalInputs      (List[str])         :   External input port names of the bel
-        externalOutputs     (List[str])         :   External output port names of the bel
-        internalPortGeoms   (List[PortGeometry]):   List of geometries of the internal ports of the bel
-        externalPortGeoms   (List[PortGeometry]):   List of geometries of the external ports of the bel
+        internalInputs      (list[str])         :   Internal input port names of the bel
+        internalOutputs     (list[str])         :   Internal output port names of the bel
+        externalInputs      (list[str])         :   External input port names of the bel
+        externalOutputs     (list[str])         :   External output port names of the bel
+        internalPortGeoms   (list[PortGeometry]):   list of geometries of the internal ports of the bel
+        externalPortGeoms   (list[PortGeometry]):   list of geometries of the external ports of the bel
 
     """
 
@@ -30,12 +30,12 @@ class BelGeometry:
     height: int
     relX: int
     relY: int
-    internalInputs: List[str]
-    internalOutputs: List[str]
-    externalInputs: List[str]
-    externalOutputs: List[str]
-    internalPortGeoms: List[PortGeometry]
-    externalPortGeoms: List[PortGeometry]
+    internalInputs: list[str]
+    internalOutputs: list[str]
+    externalInputs: list[str]
+    externalOutputs: list[str]
+    internalPortGeoms: list[PortGeometry]
+    externalPortGeoms: list[PortGeometry]
 
     def __init__(self):
         self.name = None

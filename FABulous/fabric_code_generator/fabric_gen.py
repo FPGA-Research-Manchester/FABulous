@@ -21,7 +21,6 @@ import math
 import os
 import string
 import csv
-from typing import Dict, List, Tuple
 import logging
 from pathlib import Path
 
@@ -29,12 +28,16 @@ from pathlib import Path
 from fasm import *  # Remove this line if you do not have the fasm library installed and will not be generating a bitstream
 
 
-from fabric_generator.file_parser import parseMatrix, parseConfigMem, parseList
-from fabric_generator.fabric import IO, Direction, MultiplexerStyle, ConfigBitMode
-from fabric_generator.fabric import Fabric, Tile, Port, SuperTile, ConfigMem
-from fabric_generator.code_generation_VHDL import VHDLWriter
-from fabric_generator.code_generation_Verilog import VerilogWriter
-from fabric_generator.code_generator import codeGenerator
+from .file_parser import parseMatrix, parseConfigMem, parseList
+from ..fabric_definition.defines import IO, Direction, MultiplexerStyle, ConfigBitMode
+from ..fabric_definition.Fabric import Fabric
+from ..fabric_definition.Tile import Tile
+from ..fabric_definition.ConfigMem import ConfigMem
+from ..fabric_definition.SuperTile import SuperTile
+
+from .code_generation_VHDL import VHDLWriter
+from .code_generation_Verilog import VerilogWriter
+from .code_generator import codeGenerator
 
 SWITCH_MATRIX_DEBUG_SIGNAL = True
 logger = logging.getLogger(__name__)
@@ -297,7 +300,7 @@ class FabricGenerator:
 
         # test if we have a bitstream mapping file
         # if not, we will take the default, which was passed on from  GenerateConfigMemInit
-        configMemList: List[ConfigMem] = []
+        configMemList: list[ConfigMem] = []
         if os.path.exists(configMemCsv):
             logger.info(
                 f"Found bitstream mapping file {tile.name}_configMem.csv for tile {tile.name}"
@@ -420,7 +423,7 @@ class FabricGenerator:
         """
 
         # convert the matrix to a dictionary map and performs entry check
-        connections: Dict[str, List[str]] = {}
+        connections: dict[str, list[str]] = {}
         if tile.matrixDir.endswith(".csv"):
             connections = parseMatrix(tile.matrixDir, tile.name)
         elif tile.matrixDir.endswith(".list"):
@@ -432,7 +435,7 @@ class FabricGenerator:
             self.bootstrapSwitchMatrix(tile, matrixDir)
             self.list2CSV(tile.matrixDir, matrixDir)
             logger.info(
-                f"Update matrix directory to {matrixDir} for Fabric Tile Dictionary"
+                f"Update matrix directory to {matrixDir} for Fabric Tile dictionary"
             )
             tile.matrixDir = matrixDir
             connections = parseMatrix(tile.matrixDir, tile.name)
@@ -1686,10 +1689,10 @@ class FabricGenerator:
         # Tile instantiations
         for y, row in enumerate(self.fabric.tile):
             for x, tile in enumerate(row):
-                tilePortList: List[str] = []
-                tilePortsInfo: List[Tuple[List[Port], int, int]] = []
+                tilePortList: list[str] = []
+                tilePortsInfo: list[tuple[list[Port], int, int]] = []
                 outputSignalList = []
-                tileLocationOffset: List[Tuple[int, int]] = []
+                tileLocationOffset: list[tuple[int, int]] = []
                 superTileLoc = []
                 superTile = None
                 if tile == None:
@@ -2335,7 +2338,7 @@ class FabricGenerator:
         self.writer.addDesignDescriptionEnd()
         self.writer.writeToFile()
 
-    def generateBitsStreamSpec(self) -> Dict[str, Dict]:
+    def generateBitsStreamSpec(self) -> dict[str, dict]:
         """
         Generate the bits stream specification of the fabric. This is need and will be further parsed by the bit_gen.py
 
@@ -2364,7 +2367,7 @@ class FabricGenerator:
                     tileMap[f"X{x}Y{y}"] = "NULL"
 
         specData["TileMap"] = tileMap
-        configMemList: List[ConfigMem] = []
+        configMemList: list[ConfigMem] = []
         for y, row in enumerate(self.fabric.tile):
             for x, tile in enumerate(row):
                 if tile == None:
@@ -2382,7 +2385,7 @@ class FabricGenerator:
                     )
                     exit(-1)
 
-                encodeDict = [-1] * (
+                encodedict = [-1] * (
                     self.fabric.maxFramesPerCol * self.fabric.frameBitsPerRow
                 )
                 maskDic = {}
@@ -2392,7 +2395,7 @@ class FabricGenerator:
                     # bit 0 in bit mask is the first value in the configBitRanges
                     for i, char in enumerate(cfm.usedBitMask):
                         if char == "1":
-                            encodeDict[cfm.configBitRanges.pop(0)] = (
+                            encodedict[cfm.configBitRanges.pop(0)] = (
                                 self.fabric.frameBitsPerRow - 1 - i
                             ) + self.fabric.frameBitsPerRow * cfm.frameIndex
 
@@ -2411,21 +2414,21 @@ class FabricGenerator:
                 curTileMapNoMask = {}
 
                 for i, bel in enumerate(tile.bels):
-                    for featureKey, keyDict in bel.belFeatureMap.items():
-                        for entry in keyDict:
+                    for featureKey, keydict in bel.belFeatureMap.items():
+                        for entry in keydict:
                             if isinstance(entry, int):
-                                for v in keyDict[entry]:
+                                for v in keydict[entry]:
                                     curTileMap[
                                         f"{string.ascii_uppercase[i]}.{featureKey}"
                                     ] = {
-                                        encodeDict[curBitOffset + v]: keyDict[entry][v]
+                                        encodedict[curBitOffset + v]: keydict[entry][v]
                                     }
                                     curTileMapNoMask[
                                         f"{string.ascii_uppercase[i]}.{featureKey}"
                                     ] = {
-                                        encodeDict[curBitOffset + v]: keyDict[entry][v]
+                                        encodedict[curBitOffset + v]: keydict[entry][v]
                                     }
-                                curBitOffset += len(keyDict[entry])
+                                curBitOffset += len(keydict[entry])
 
                 # All the generation will be working on the tile level with the tileDic
                 # This is added to propagate the updated switch matrix to each of the tile in the fabric
@@ -2449,9 +2452,9 @@ class FabricGenerator:
                                 curTileMap[pip] = {}
                                 curTileMapNoMask[pip] = {}
 
-                            curTileMap[pip][encodeDict[curBitOffset + c]] = curChar
+                            curTileMap[pip][encodedict[curBitOffset + c]] = curChar
                             curTileMapNoMask[pip][
-                                encodeDict[curBitOffset + c]
+                                encodedict[curBitOffset + c]
                             ] = curChar
 
                     curBitOffset += controlWidth

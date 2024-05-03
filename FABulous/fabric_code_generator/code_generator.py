@@ -1,6 +1,5 @@
 import abc
-from typing import List, Tuple
-from fabric_generator.fabric import Bel, IO, ConfigBitMode
+from ..fabric_definition.defines import IO
 
 
 class codeGenerator(abc.ABC):
@@ -313,9 +312,9 @@ class codeGenerator(abc.ABC):
         self,
         compName: str,
         compInsName: str,
-        portsPairs: List[Tuple[str, str]],
-        paramPairs: List[Tuple[str, str]] = [],
-        emulateParamPairs: List[Tuple[str, str]] = [],
+        portsPairs: list[tuple[str, str]],
+        paramPairs: list[tuple[str, str]] = [],
+        emulateParamPairs: list[tuple[str, str]] = [],
         indentLevel=0,
     ):
         """
@@ -351,11 +350,11 @@ class codeGenerator(abc.ABC):
         Args:
             compName (str): name of the component
             compInsName (str): name of the component instance
-            compPorts (List[str]): list of ports of the component
-            signals (List[str]): list of signals of the component
-            paramPorts (List[str], optional): list of parameter ports of the component. Defaults to [].
-            paramSignals (List[str], optional): list of parameter signals of the component. Defaults to [].
-            emulateParamPairs (List[str], optional): list of parameter signals of the component in emulation mode only. Defaults to [].
+            compPorts (list[str]): list of ports of the component
+            signals (list[str]): list of signals of the component
+            paramPorts (list[str], optional): list of parameter ports of the component. Defaults to [].
+            paramSignals (list[str], optional): list of parameter signals of the component. Defaults to [].
+            emulateParamPairs (list[str], optional): list of parameter signals of the component in emulation mode only. Defaults to [].
             indentLevel (int, optional): The indentation Level. Defaults to 0.
 
         Raises:

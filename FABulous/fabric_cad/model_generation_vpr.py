@@ -1,13 +1,12 @@
 import string
-from sys import prefix
-from typing import List
-from fabric_generator.fabric_gen import FabricGenerator
-from fabric_generator.utilities import *
-from fabric_generator.fabric import IO, Bel, Fabric
+from ..fabric_code_generator.fabric_gen import FabricGenerator
+from ..fabric_code_generator.utilities import *
+from ..fabric_definition.Fabric import Fabric
+from ..fabric_definition.Bel import Bel
+from ..fabric_definition.defines import IO
+
 import xml.etree.ElementTree as ET
-import os
-from xml.dom import minidom
-from fabric_generator.file_parser import parseMatrix, parseList
+from ..fabric_code_generator.file_parser import parseMatrix, parseList
 import logging
 
 logger = logging.getLogger(__name__)

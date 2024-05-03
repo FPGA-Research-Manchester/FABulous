@@ -15,11 +15,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from contextlib import redirect_stdout
-from fabric_generator.utilities import genFabricObject, GetFabric
-import fabric_generator.model_generation_npnr as model_gen_npnr
-from fabric_generator.code_generation_VHDL import VHDLWriter
-from fabric_generator.code_generation_Verilog import VerilogWriter
-from FABulous_API import FABulous
+from FABulous.fabric_code_generator.utilities import genFabricObject, GetFabric
+import FABulous.fabric_cad.model_generation_npnr as model_gen_npnr
+from FABulous.fabric_code_generator.code_generation_VHDL import VHDLWriter
+from FABulous.fabric_code_generator.code_generation_Verilog import VerilogWriter
+from FABulous.FABulous_API import FABulous
 import csv
 from glob import glob
 import os
@@ -926,7 +926,7 @@ To run the complete FABulous flow with the default project, run the following co
         logger.info(f"Outputting to {self.projectDir}/{parent}/{bitstream_file}")
         runCmd = [
             "python3",
-            f"{fabulousRoot}/fabric_cad/bit_gen.py",
+            f"{fabulousRoot}/FABulous/fabric_cad/bit_gen.py",
             "-genBitstream",
             f"{self.projectDir}/{parent}/{fasm_file}",
             f"{self.projectDir}/.FABulous/bitStreamSpec.bin",

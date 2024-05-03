@@ -1,11 +1,22 @@
 import re
 from copy import deepcopy
-from typing import Dict, List, Literal, Tuple, Union, overload
 import csv
 import os
+from typing import Any, overload, Literal
 
-from fabric_generator.fabric import Fabric, Port, Bel, Tile, SuperTile, ConfigMem
-from fabric_generator.fabric import IO, Direction, Side, MultiplexerStyle, ConfigBitMode
+from ..fabric_definition.Bel import Bel
+from ..fabric_definition.Port import Port
+from ..fabric_definition.SuperTile import SuperTile
+from ..fabric_definition.ConfigMem import ConfigMem
+from ..fabric_definition.Fabric import Fabric
+from ..fabric_definition.Tile import Tile
+from ..fabric_definition.defines import (
+    Direction,
+    IO,
+    MultiplexerStyle,
+    Side,
+    ConfigBitMode,
+)
 
 # from fabric import Fabric, Port, Bel, Tile, SuperTile, ConfigMem
 # from fabric import IO, Direction, Side, MultiplexerStyle, ConfigBitMode
@@ -68,15 +79,15 @@ def parseFabricCSV(fileName: str) -> Fabric:
     fabricDescription = fabricDescription.split("\n")
     parameters = parameters.split("\n")
 
-    # Lists for tiles
+    # lists for tiles
     tileTypes = []
     tileDefs = []
-    commonWirePair: List[Tuple[str, str]] = []
+    commonWirePair: list[tuple[str, str]] = []
 
     fabricTiles = []
     tileDic = {}
 
-    # List for supertiles
+    # list for supertiles
     superTileDic = {}
 
     # For backwards compatibility parse tiles in fabric config
@@ -209,7 +220,7 @@ def parseFabricCSV(fileName: str) -> Fabric:
     )
 
 
-def parseTiles(fileName: str) -> Tuple[List[Tile], List[Tuple[str, str]]]:
+def parseTiles(fileName: str) -> tuple[list[Tile], list[tuple[str, str]]]:
     """
     Parses a csv tile configuration file and returns all tile objects.
 
@@ -217,7 +228,7 @@ def parseTiles(fileName: str) -> Tuple[List[Tile], List[Tuple[str, str]]]:
         fileName (str): the path to the csv file.
 
     Returns:
-        ([Tile], [(str, str)] : Tuple of tile objects and common wire pairs.
+        ([Tile], [(str, str)] : tuple of tile objects and common wire pairs.
     """
 
     print(f"Reading tile configuration: {fileName}")
@@ -243,13 +254,13 @@ def parseTiles(fileName: str) -> Tuple[List[Tile], List[Tuple[str, str]]]:
     for t in tilesData:
         t = t.split("\n")
         tileName = t[0].split(",")[1]
-        ports: List[Port] = []
-        bels: List[Bel] = []
+        ports: list[Port] = []
+        bels: list[Bel] = []
         matrixDir = ""
         withUserCLK = False
         configBit = 0
         for item in t:
-            temp: List[str] = item.split(",")
+            temp: list[str] = item.split(",")
             if not temp or temp[0] == "":
                 continue
             if temp[0] in ["NORTH", "SOUTH", "EAST", "WEST"]:
@@ -373,7 +384,7 @@ def parseTiles(fileName: str) -> Tuple[List[Tile], List[Tuple[str, str]]]:
     return (new_tiles, commonWirePair)
 
 
-def parseSupertiles(fileName: str, tileDic: Dict[str, Tile]) -> List[SuperTile]:
+def parseSupertiles(fileName: str, tileDic: dict[str, Tile]) -> list[SuperTile]:
     """
     Parses a csv supertile configuration file and returns all SuperTile objects.
 
@@ -382,7 +393,7 @@ def parseSupertiles(fileName: str, tileDic: Dict[str, Tile]) -> List[SuperTile]:
         tileDic ({str: Tile}): dict of tiles.
 
     Returns:
-        [SuperTile]: List of supertile objects.
+        [SuperTile]: list of supertile objects.
     """
 
     print(f"Reading supertile configuration: {fileName}")
@@ -465,20 +476,20 @@ def parseSupertiles(fileName: str, tileDic: Dict[str, Tile]) -> List[SuperTile]:
 @overload
 def parseList(
     fileName: str, collect: Literal["pair"] = "pair"
-) -> List[Tuple[str, str]]:
+) -> list[tuple[str, str]]:
     pass
 
 
 @overload
 def parseList(
     fileName: str, collect: Literal["source", "sink"]
-) -> Dict[str, List[str]]:
+) -> dict[str, list[str]]:
     pass
 
 
 def parseList(
     fileName: str, collect: Literal["pair", "source", "sink"] = "pair"
-) -> Union[List[Tuple[str, str]], Dict[str, List[str]]]:
+) -> list[tuple[str, str] | dict[str, list[str]]]:
     """
     parse a list file and expand the list file information into a list of tuples.
 
@@ -491,13 +502,13 @@ def parseList(
         ValueError: Invalid format in the list file.
 
     Returns:
-        Union[List[Tuple[str, str]], Dict[str, List[str]]]: Return either a list of connection pair or a dictionary of lists which is collected by the specified option, source or sink.
+        Union[list[tuple[str, str]], dict[str, list[str]]]: Return either a list of connection pair or a dictionary of lists which is collected by the specified option, source or sink.
     """
 
     if not os.path.exists(fileName):
         raise ValueError(f"The file {fileName} does not exist.")
 
-    resultList = []
+    resultlist = []
     with open(fileName, "r") as f:
         file = f.read()
         file = re.sub(r"#.*", "", file)
@@ -512,13 +523,13 @@ def parseList(
             raise ValueError(f"Invalid list formatting in file: {fileName} at line {i}")
         left, right = line[0], line[1]
 
-        leftList = []
-        rightList = []
-        _expandListPorts(left, leftList)
-        _expandListPorts(right, rightList)
-        resultList += list(zip(leftList, rightList))
+        leftlist = []
+        rightlist = []
+        _expandlistPorts(left, leftlist)
+        _expandlistPorts(right, rightlist)
+        resultlist += list(zip(leftlist, rightlist))
 
-    result = list(dict.fromkeys(resultList))
+    result = list(dict.fromkeys(resultlist))
     resultDic = {}
     if collect == "source":
         for k, v in result:
@@ -538,7 +549,7 @@ def parseList(
     return result
 
 
-def _expandListPorts(port, PortList):
+def _expandlistPorts(port, Portlist):
     """
     expand the .list file entry into list of tuple.
     """
@@ -546,7 +557,7 @@ def _expandListPorts(port, PortList):
     if "[" in port:
         if "]" not in port:
             raise ValueError(
-                "\nError in function ExpandListPorts: cannot find closing ]\n"
+                "\nError in function ExpandlistPorts: cannot find closing ]\n"
             )
         # port.find gives us the first occurrence index in a string
         left_index = port.find("[")
@@ -554,26 +565,26 @@ def _expandListPorts(port, PortList):
         before_left_index = port[0:left_index]
         # right_index is the position of the ']' so we need everything after that
         after_right_index = port[(right_index + 1) :]
-        ExpandList = []
-        ExpandList = re.split(r"\|", port[left_index + 1 : right_index])
-        for entry in ExpandList:
-            ExpandListItem = before_left_index + entry + after_right_index
-            _expandListPorts(ExpandListItem, PortList)
+        Expandlist = []
+        Expandlist = re.split(r"\|", port[left_index + 1 : right_index])
+        for entry in Expandlist:
+            ExpandlistItem = before_left_index + entry + after_right_index
+            _expandlistPorts(ExpandlistItem, Portlist)
 
     else:
         # print('DEBUG: else, just:',port)
-        PortList.append(port)
+        Portlist.append(port)
     return
 
 
-def parseFileVHDL(filename: str, belPrefix: str = "") -> Tuple[
-    List[Tuple[str, IO]],
-    List[Tuple[str, IO]],
-    List[Tuple[str, IO]],
-    List[Tuple[str, IO]],
+def parseFileVHDL(filename: str, belPrefix: str = "") -> tuple[
+    list[tuple[str, IO]],
+    list[tuple[str, IO]],
+    list[tuple[str, IO]],
+    list[tuple[str, IO]],
     int,
     bool,
-    Dict[str, int],
+    dict[str, int],
 ]:
     """
     Parse a VHDL bel file and return all the related information of the bel. The tuple returned for relating to ports will
@@ -591,14 +602,14 @@ def parseFileVHDL(filename: str, belPrefix: str = "") -> Tuple[
         ValueError: Cannot find the port section in the file which defines the bel ports.
 
     Returns:
-        Tuple[List[Tuple[str, IO]], List[Tuple[str, IO]], List[Tuple[str, IO]], List[Tuple[str, IO]], int, bool, Dict[str, int]]:
+        tuple[list[tuple[str, IO]], list[tuple[str, IO]], list[tuple[str, IO]], list[tuple[str, IO]], int, bool, dict[str, int]]:
         Bel internal ports, bel external ports, bel config ports, bel shared ports, number of configuration bit in the bel,
         whether the bel have UserCLK, and the bel config bit mapping.
     """
-    internal: List[Tuple[str, IO]] = []
-    external: List[Tuple[str, IO]] = []
-    config: List[Tuple[str, IO]] = []
-    shared: List[Tuple[str, IO]] = []
+    internal: list[tuple[str, IO]] = []
+    external: list[tuple[str, IO]] = []
+    config: list[tuple[str, IO]] = []
+    shared: list[tuple[str, IO]] = []
     isExternal = False
     isConfig = False
     isShared = False
@@ -716,14 +727,14 @@ def parseFileVHDL(filename: str, belPrefix: str = "") -> Tuple[
     return internal, external, config, shared, noConfigBits, userClk, belMapDic
 
 
-def parseFileVerilog(filename: str, belPrefix: str = "") -> Tuple[
-    List[Tuple[str, IO]],
-    List[Tuple[str, IO]],
-    List[Tuple[str, IO]],
-    List[Tuple[str, IO]],
+def parseFileVerilog(filename: str, belPrefix: str = "") -> tuple[
+    list[tuple[str, IO]],
+    list[tuple[str, IO]],
+    list[tuple[str, IO]],
+    list[tuple[str, IO]],
     int,
     bool,
-    Dict[str, Dict],
+    dict[str, dict],
 ]:
     """
     Parse a Verilog bel file and return all the related information of the bel. The tuple returned for relating to ports
@@ -789,14 +800,14 @@ def parseFileVerilog(filename: str, belPrefix: str = "") -> Tuple[
         ValueError: No permission to access the file
 
     Returns:
-        Tuple[List[Tuple[str, IO]], List[Tuple[str, IO]], List[Tuple[str, IO]], List[Tuple[str, IO]], int, bool, Dict[str, Dict]]:
+        tuple[list[tuple[str, IO]], list[tuple[str, IO]], list[tuple[str, IO]], list[tuple[str, IO]], int, bool, dict[str, dict]]:
         Bel internal ports, bel external ports, bel config ports, bel shared ports, number of configuration bit in the bel,
         whether the bel have UserCLK, and the bel config bit mapping.
     """
-    internal: List[Tuple[str, IO]] = []
-    external: List[Tuple[str, IO]] = []
-    config: List[Tuple[str, IO]] = []
-    shared: List[Tuple[str, IO]] = []
+    internal: list[tuple[str, IO]] = []
+    external: list[tuple[str, IO]] = []
+    config: list[tuple[str, IO]] = []
+    shared: list[tuple[str, IO]] = []
     isExternal = False
     isConfig = False
     isShared = False
@@ -869,7 +880,7 @@ def parseFileVerilog(filename: str, belPrefix: str = "") -> Tuple[
 
 def _belMapProcessing(
     file: str, filename: str, syntax: Literal["vhdl", "verilog"]
-) -> Dict:
+) -> dict:
     pre = ""
     if syntax == "vhdl":
         pre = "--.*?"
@@ -943,7 +954,7 @@ def _belMapProcessing(
     return belMapDic
 
 
-def parseMatrix(fileName: str, tileName: str) -> Dict[str, List[str]]:
+def parseMatrix(fileName: str, tileName: str) -> dict[str, list[str]]:
     """
     parse the matrix csv into a dictionary from destination to source
 
@@ -955,7 +966,7 @@ def parseMatrix(fileName: str, tileName: str) -> Dict[str, List[str]]:
         ValueError: Non matching matrix file content and tile name
 
     Returns:
-        Dict[str, List[str]]: dictionary from destination to a list of source
+        dict[str, list[str]]: dictionary from destination to a list of source
     """
 
     connectionsDic = {}
@@ -972,7 +983,7 @@ def parseMatrix(fileName: str, tileName: str) -> Dict[str, List[str]]:
             "Tile name (top left element) in csv file does not match tile name in tile object"
         )
 
-    destList = file[0].split(",")[1:]
+    destlist = file[0].split(",")[1:]
 
     for i in file[1:]:
         i = i.split(",")
@@ -980,13 +991,13 @@ def parseMatrix(fileName: str, tileName: str) -> Dict[str, List[str]]:
         if portName == "":
             continue
         indices = [k for k, v in enumerate(connections) if v == "1"]
-        connectionsDic[portName] = [destList[j] for j in indices]
+        connectionsDic[portName] = [destlist[j] for j in indices]
     return connectionsDic
 
 
 def parseConfigMem(
     fileName: str, maxFramePerCol: int, frameBitPerRow: int, globalConfigBits: int
-) -> List[ConfigMem]:
+) -> list[ConfigMem]:
     """
     Parse the config memory csv file into a list of ConfigMem objects
 
@@ -1006,7 +1017,7 @@ def parseConfigMem(
         ValueError: Invalid range entry in config bit range
 
     Returns:
-        List[ConfigMem]: _description_
+        list[ConfigMem]: _description_
     """
     with open(fileName) as f:
         mappingFile = list(csv.DictReader(f))
@@ -1055,11 +1066,11 @@ def parseConfigMem(
                 left, right = int(left), int(right)
                 if right < left:
                     left, right = right, left
-                    numList = list(reversed(range(left, right + 1)))
+                    numlist = list(reversed(range(left, right + 1)))
                 else:
-                    numList = list(range(left, right + 1))
+                    numlist = list(range(left, right + 1))
 
-                for i in numList:
+                for i in numlist:
                     if i in allConfigBitsOrder:
                         raise ValueError(
                             f"Configuration bit index {i} already allocated in {fileName}, {entry['frame_name']}"
@@ -1100,7 +1111,7 @@ def parseConfigMem(
 
 if __name__ == "__main__":
     # result = parseFabricCSV('fabric.csv')
-    # result1 = parseList('RegFile_switch_matrix.list', collect="source")
+    # result1 = parselist('RegFile_switch_matrix.list', collect="source")
     # result = parseFileVerilog('./LUT4c_frame_config_dffesr.v')
 
     result2 = parseFileVerilog("./test.txt")

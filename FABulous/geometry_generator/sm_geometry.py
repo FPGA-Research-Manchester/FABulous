@@ -1,8 +1,11 @@
 from typing import List
-from fabric_generator.fabric import Port, Tile, Direction, Side, IO
-from geometry_generator.geometry_obj import Border
-from geometry_generator.bel_geometry import BelGeometry
-from geometry_generator.port_geometry import PortGeometry, PortType
+from ..fabric_definition.Port import Port
+from ..fabric_definition.Tile import Tile
+from ..fabric_definition.defines import Direction, Side, IO
+
+from .geometry_obj import Border
+from .bel_geometry import BelGeometry
+from .port_geometry import PortGeometry, PortType
 from csv import writer as csvWriter
 import logging
 

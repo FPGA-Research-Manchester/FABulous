@@ -1,9 +1,9 @@
 from typing import List, Dict, Set
 import logging
 from csv import writer as csvWriter
-from fabric_generator.fabric import Fabric
-from geometry_generator.geometry_obj import Location, Border
-from geometry_generator.tile_geometry import TileGeometry
+from ..fabric_definition.Fabric import Fabric
+from .geometry_obj import Location, Border
+from .tile_geometry import TileGeometry
 
 logger = logging.getLogger(__name__)
 

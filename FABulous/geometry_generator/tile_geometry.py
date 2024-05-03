@@ -1,10 +1,10 @@
-from typing import List
-from fabric_generator.fabric import Tile, Side, Direction
-from geometry_generator.geometry_obj import Border, Location
-from geometry_generator.sm_geometry import SmGeometry
-from geometry_generator.bel_geometry import BelGeometry
-from geometry_generator.wire_geometry import WireGeometry, StairWires
-from geometry_generator.port_geometry import PortGeometry
+from ..fabric_definition.Tile import Tile
+from ..fabric_definition.defines import IO, Direction, Side
+from .geometry_obj import Border, Location
+from .sm_geometry import SmGeometry
+from .bel_geometry import BelGeometry
+from .wire_geometry import WireGeometry, StairWires
+from .port_geometry import PortGeometry
 from csv import writer as csvWriter
 
 
@@ -18,9 +18,9 @@ class TileGeometry:
         height          (int)               :   Height of the tile
         border          (Border)            :   Border of the fabric the tile is on
         smGeometry      (SmGeometry)        :   Geometry of the tiles switch matrix
-        belGeomList     (List[BelGeometry]) :   List of the geometries of the tiles bels
-        wireGeomList    (List[WireGeometry]):   List of the geometries of the tiles wires
-        stairWiresList  (List[StairWires])  :   List of the stair-like wires of the tile
+        belGeomList     (list[BelGeometry]) :   list of the geometries of the tiles bels
+        wireGeomList    (list[WireGeometry]):   list of the geometries of the tiles wires
+        stairWiresList  (list[StairWires])  :   list of the stair-like wires of the tile
 
     """
 
@@ -29,9 +29,9 @@ class TileGeometry:
     height: int
     border: Border
     smGeometry: SmGeometry
-    belGeomList: List[BelGeometry]
-    wireGeomList: List[WireGeometry]
-    stairWiresList: List[StairWires]
+    belGeomList: list[BelGeometry]
+    wireGeomList: list[WireGeometry]
+    stairWiresList: list[StairWires]
 
     def __init__(self):
         self.name = None

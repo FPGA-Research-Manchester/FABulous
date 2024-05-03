@@ -1,11 +1,8 @@
-from typing import Literal, Tuple
-import os
 import math
 import re
 
-from fabric_generator.fabric import Fabric, Tile, Port, Bel, IO
-from fabric_generator.code_generator import codeGenerator
-from fabric_generator.fabric import ConfigBitMode
+from .code_generator import codeGenerator
+from ..fabric_definition.defines import IO
 
 
 class VHDLWriter(codeGenerator):

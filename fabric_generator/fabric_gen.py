@@ -1353,7 +1353,6 @@ class FabricGenerator:
                 if name in added:
                     continue
                 if name not in self.fabric.superTileDic.keys():
-                    print()
                     self.writer.addComponentDeclarationForFile(
                         f"{Path(self.writer.outFileName).parent.parent}/Tile/{t}/{t}.vhdl")
                     added.add(t)

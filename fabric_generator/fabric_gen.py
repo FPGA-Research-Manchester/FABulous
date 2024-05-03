@@ -21,7 +21,6 @@ import math
 import os
 import string
 import csv
-from time import sleep
 from typing import Dict, List, Tuple
 import logging
 from pathlib import Path

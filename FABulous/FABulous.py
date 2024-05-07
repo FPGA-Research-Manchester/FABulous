@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # Copyright 2021 University of Manchester
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,30 +16,31 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from contextlib import redirect_stdout
-from fabric_generator.utilities import genFabricObject, GetFabric
-import fabric_generator.model_generation_npnr as model_gen_npnr
-from fabric_generator.code_generation_VHDL import VHDLWriter
-from fabric_generator.code_generation_Verilog import VerilogWriter
-from FABulous_API import FABulous
-import csv
-from glob import glob
-import os
 import argparse
-import pickle
-import re
-import sys
-import subprocess as sp
-import shutil
-from typing import List, Literal
-import docker
 import cmd
-import readline
+import csv
 import logging
-import tkinter as tk
-from pathlib import PurePosixPath, PureWindowsPath
+import os
+import pickle
 import platform
+import re
+import readline
+import shutil
+import subprocess as sp
+import sys
+import tkinter as tk
 import traceback
+from contextlib import redirect_stdout
+from glob import glob
+from pathlib import PurePosixPath, PureWindowsPath
+from typing import List, Literal
+
+import docker
+import FABulous.fabric_generator.model_generation_npnr as model_gen_npnr
+from FABulous.fabric_generator.code_generation_Verilog import VerilogWriter
+from FABulous.fabric_generator.code_generation_VHDL import VHDLWriter
+from FABulous.fabric_generator.utilities import GetFabric, genFabricObject
+from FABulous.FABulous_API import FABulous
 
 readline.set_completer_delims(" \t\n")
 histfile = ""
@@ -45,16 +48,29 @@ histfile_size = 1000
 
 MAX_BITBYTES = 16384
 
-fabulousRoot = os.getenv("FAB_ROOT")
-if fabulousRoot is None:
-    print("FAB_ROOT environment variable not set!")
-    print("Use 'export FAB_ROOT=<path to FABulous root>'")
-    sys.exit(-1)
-
 logger = logging.getLogger(__name__)
 logging.basicConfig(
     format="[%(levelname)s]-%(asctime)s - %(message)s", level=logging.INFO
 )
+
+metaDataDir = ".FABulous"
+
+fabulousRoot = os.getenv("FAB_ROOT")
+if fabulousRoot is None:
+    fabulousRoot = os.path.dirname(os.path.realpath(__file__))
+    logger.warning("FAB_ROOT environment variable not set!")
+    logger.warning(f"Using {fabulousRoot} as FAB_ROOT")
+else:
+    if not os.path.exists(fabulousRoot):
+        logger.error(
+            f"FAB_ROOT environment variable set to {fabulousRoot} but the directory does not exist"
+        )
+        sys.exit()
+    else:
+        if os.path.exists(f"{fabulousRoot}/FABulous"):
+            fabulousRoot = f"{fabulousRoot}/FABulous"
+
+    logger.info(f"FAB_ROOT set to {fabulousRoot}")
 
 
 # Create a FABulous Verilog project that contains all the required files
@@ -70,6 +86,11 @@ def create_project(project_dir, type: Literal["verilog", "vhdl"] = "verilog"):
     shutil.copytree(
         f"{fabulousRoot}/fabric_files/FABulous_project_template_{type}/",
         f"{project_dir}/",
+        dirs_exist_ok=True,
+    )
+    shutil.copytree(
+        f"{fabulousRoot}/fabric_cad/synth",
+        f"{project_dir}/Test/synth",
         dirs_exist_ok=True,
     )
 
@@ -114,9 +135,7 @@ def adjust_directory_in_verilog_tb(project_dir):
         f"{fabulousRoot}/fabric_files/FABulous_project_template_verilog/Test/sequential_16bit_en_tb.v",
         "rt",
     ) as fin:
-        with open(
-            f"{fabulousRoot}/{project_dir}/Test/sequential_16bit_en_tb.v", "wt"
-        ) as fout:
+        with open(f"{project_dir}/Test/sequential_16bit_en_tb.v", "wt") as fout:
             for line in fin:
                 fout.write(line.replace("PROJECT_DIR", f"{project_dir}"))
 
@@ -161,8 +180,8 @@ You have started the FABulous shell with following options:
 
 Type help or ? to list commands
 To see documentation for a command type:
-    help <command> 
-or 
+    help <command>
+or
     ?<command>
 
 To execute a shell command type:
@@ -974,8 +993,7 @@ To run the complete FABulous flow with the default project, run the following co
         logger.info(f"Generating Bitstream for design {self.projectDir}/{path}")
         logger.info(f"Outputting to {self.projectDir}/{parent}/{bitstream_file}")
         runCmd = [
-            "python3",
-            f"{fabulousRoot}/fabric_cad/bit_gen.py",
+            "bit_gen",
             "-genBitstream",
             f"{self.projectDir}/{parent}/{fasm_file}",
             f"{self.projectDir}/.FABulous/bitStreamSpec.bin",
@@ -1179,7 +1197,7 @@ To run the complete FABulous flow with the default project, run the following co
         return self._complete_path(text)
 
 
-if __name__ == "__main__":
+def main():
     if sys.version_info < (3, 9, 0):
         print("Need Python 3.9 or above to run FABulous")
         exit(-1)
@@ -1232,7 +1250,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     args.top = args.project_dir.split("/")[-1]
-    metaDataDir = ".FABulous"
 
     if args.createProject:
         create_project(args.project_dir, args.writer)
@@ -1267,3 +1284,7 @@ if __name__ == "__main__":
                     fabShell.cmdloop()
         else:
             fabShell.cmdloop()
+
+
+if __name__ == "__main__":
+    main()

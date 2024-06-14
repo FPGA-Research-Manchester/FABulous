@@ -750,36 +750,61 @@ To run the complete FABulous flow with the default project, run the following co
         if len(args) != 1:
             logger.error("Usage: synthesis_npnr <top_module_file>")
             raise TypeError(
-                f"do_place_and_route_npnr takes exactly one argument ({len(args)} given)"
+                f"do_synthesis_npnr takes exactly one argument ({len(args)} given)"
             )
+        
         logger.info(f"Running synthesis that targeting Nextpnr with design {args[0]}")
         path = get_path(args[0])
         parent = path.parent
-        verilog_file = path.name
+        file_name = path.name
         top_module_name = path.stem
-        if path.suffix != ".v":
+        top_wrapper_path = f"{self.projectDir}/{parent}/top_wrapper.v"
+
+        if path.suffix not in [".v", ".vhdl"]:
             logger.error(
                 """
-                No verilog file provided.
+                No Verilog or VHDL file provided.
                 Usage: synthesis_npnr <top_module_file>
                 """
             )
             return
 
         json_file = top_module_name + ".json"
-        runCmd = [
-            "yosys",
-            "-p",
-            f"synth_fabulous -top top_wrapper -json {self.projectDir}/{parent}/{json_file}",
-            f"{self.projectDir}/{parent}/{verilog_file}",
-            f"{self.projectDir}/{parent}/top_wrapper.v",
-        ]
-        try:
-            sp.run(runCmd, check=True)
-            logger.info("Synthesis completed")
-        except sp.CalledProcessError:
-            logger.error("Synthesis failed")
-            raise SynthesisError
+        
+        if path.suffix == ".v":
+            runCmd = [
+                "yosys",
+                "-p",
+                f"synth_fabulous -top top_wrapper -json {self.projectDir}/{parent}/{json_file}",
+                f"{self.projectDir}/{parent}/{file_name}",
+                top_wrapper_path
+            ]
+            try:
+                logger.info(f"Running Yosys with the following command: {' '.join(runCmd)}")
+                sp.run(runCmd, check=True)
+                logger.info("Synthesis completed")
+            except sp.CalledProcessError:
+                logger.error("Synthesis failed")
+                raise SynthesisError
+
+        else:
+            #using yosys ghdl plugin for vhdl synthesis
+            runCmd = [
+                "yosys",
+                "-m", "ghdl",
+                "-p", f"ghdl {self.projectDir}/{parent}/{file_name} -e top; read_verilog {top_wrapper_path}; synth_fabulous -top top_wrapper -json {self.projectDir}/{parent}/{json_file}"
+            ]
+
+            try:
+                logger.info(f"Running Yosys with the following command: {' '.join(runCmd)}")
+                sp.run(runCmd, check=True)
+                logger.info("Synthesis completed")
+            except sp.CalledProcessError:
+                logger.error("Synthesis failed")
+                raise SynthesisError
+
+       
+
 
     def complete_synthesis_npnr(self, text, *ignored):
         return self._complete_path(text)
@@ -1135,13 +1160,13 @@ To run the complete FABulous flow with the default project, run the following co
             logger.error("Usage: run_FABulous_bitstream <npnr|vpr> <top_module_file>")
             return
 
-        verilog_file_path = get_path(args[1])
-        file_path_no_suffix = verilog_file_path.parent / verilog_file_path.stem
+        file_path = get_path(args[1])
+        file_path_no_suffix = file_path.parent / file_path.stem
 
-        if verilog_file_path.suffix != ".v":
+        if file_path.suffix not in [".v", ".vhdl"]:
             logger.error(
                 """
-                No verilog file provided.
+                No Verilog or VHDL file provided.
                 Usage: run_FABulous_bitstream <npnr|vpr> <top_module_file>
                 """
             )
@@ -1152,11 +1177,11 @@ To run the complete FABulous flow with the default project, run the following co
         fasm_file_path = file_path_no_suffix.with_suffix(".fasm")
 
         if args[0] == "vpr":
-            self.do_synthesis_blif(str(verilog_file_path))
+            self.do_synthesis_blif(str(file_path))
             self.do_place_and_route_vpr(str(blif_file_path))
             self.do_gen_bitStream_binary(str(fasm_file_path))
         elif args[0] == "npnr":
-            self.do_synthesis_npnr(str(verilog_file_path))
+            self.do_synthesis_npnr(str(file_path))
             self.do_place_and_route_npnr(str(json_file_path))
             self.do_gen_bitStream_binary(str(fasm_file_path))
         else:
@@ -1290,3 +1315,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

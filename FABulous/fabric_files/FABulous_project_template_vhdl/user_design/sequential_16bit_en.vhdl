@@ -5,15 +5,15 @@ use ieee.numeric_std.all;
 entity top is
     port (
         clk    : in  std_logic;
-        io_in  : in  std_logic_vector(30 downto 0);
-        io_out : out std_logic_vector(30 downto 0);
+        io_in  : in  std_logic_vector(27 downto 0);
+        io_out : out std_logic_vector(27 downto 0);
         io_oeb : out std_logic_vector(27 downto 0)
     );
 end top;
 
 architecture Behavioral of top is
     signal rst      : std_logic;
-    signal ctr      : unsigned(23 downto 0) := (others => '0');
+    signal ctr      : unsigned(26 downto 0) := (others => '0');
     
 begin
     rst <= io_in(0);
@@ -29,7 +29,7 @@ begin
         end if;
     end process;
 
-    io_out(30 downto 1) <= "111111" & std_logic_vector(ctr(23 downto 0));
+    io_out(27 downto 1) <= std_logic_vector(ctr(26 downto 0));
     io_out(0) <= '0';
     io_oeb(27 downto 1)<= (others => '1');
     io_oeb(0) <= '0';

@@ -96,8 +96,8 @@ def parseList(
 
         leftList = []
         rightList = []
-        _expandListPorts(left, leftList)
-        _expandListPorts(right, rightList)
+        expandListPorts(left, leftList)
+        expandListPorts(right, rightList)
         resultList += list(zip(leftList, rightList))
 
     result = list(dict.fromkeys(resultList))
@@ -120,7 +120,7 @@ def parseList(
     return result
 
 
-def _expandListPorts(port, PortList):
+def expandListPorts(port, PortList):
     """
     expand the .list file entry into list of tuple.
     """
@@ -140,12 +140,11 @@ def _expandListPorts(port, PortList):
         ExpandList = re.split(r"\|", port[left_index + 1 : right_index])
         for entry in ExpandList:
             ExpandListItem = before_left_index + entry + after_right_index
-            _expandListPorts(ExpandListItem, PortList)
+            expandListPorts(ExpandListItem, PortList)
 
     else:
         # print('DEBUG: else, just:',port)
         PortList.append(port)
-    return
 
 
 # Default parameters (will be overwritten if defined in fabric between 'ParametersBegin' and 'ParametersEnd'

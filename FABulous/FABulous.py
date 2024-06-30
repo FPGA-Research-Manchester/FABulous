@@ -752,7 +752,7 @@ To run the complete FABulous flow with the default project, run the following co
             raise TypeError(
                 f"do_synthesis_npnr takes exactly one argument ({len(args)} given)"
             )
-        
+
         logger.info(f"Running synthesis that targeting Nextpnr with design {args[0]}")
         path = get_path(args[0])
         parent = path.parent
@@ -770,17 +770,19 @@ To run the complete FABulous flow with the default project, run the following co
             return
 
         json_file = top_module_name + ".json"
-        
+
         if path.suffix == ".v":
             runCmd = [
                 "yosys",
                 "-p",
                 f"synth_fabulous -top top_wrapper -json {self.projectDir}/{parent}/{json_file}",
                 f"{self.projectDir}/{parent}/{file_name}",
-                top_wrapper_path
+                top_wrapper_path,
             ]
             try:
-                logger.info(f"Running Yosys with the following command: {' '.join(runCmd)}")
+                logger.info(
+                    f"Running Yosys with the following command: {' '.join(runCmd)}"
+                )
                 sp.run(runCmd, check=True)
                 logger.info("Synthesis completed")
             except sp.CalledProcessError:
@@ -788,23 +790,24 @@ To run the complete FABulous flow with the default project, run the following co
                 raise SynthesisError
 
         else:
-            #using yosys ghdl plugin for vhdl synthesis
+            # using yosys ghdl plugin for vhdl synthesis
             runCmd = [
                 "yosys",
-                "-m", "ghdl",
-                "-p", f"ghdl {self.projectDir}/{parent}/{file_name} -e top; read_verilog {top_wrapper_path}; synth_fabulous -top top_wrapper -json {self.projectDir}/{parent}/{json_file}"
+                "-m",
+                "ghdl",
+                "-p",
+                f"ghdl {self.projectDir}/{parent}/{file_name} -e top; read_verilog {top_wrapper_path}; synth_fabulous -top top_wrapper -json {self.projectDir}/{parent}/{json_file}",
             ]
 
             try:
-                logger.info(f"Running Yosys with the following command: {' '.join(runCmd)}")
+                logger.info(
+                    f"Running Yosys with the following command: {' '.join(runCmd)}"
+                )
                 sp.run(runCmd, check=True)
                 logger.info("Synthesis completed")
             except sp.CalledProcessError:
                 logger.error("Synthesis failed")
                 raise SynthesisError
-
-       
-
 
     def complete_synthesis_npnr(self, text, *ignored):
         return self._complete_path(text)
@@ -1315,4 +1318,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

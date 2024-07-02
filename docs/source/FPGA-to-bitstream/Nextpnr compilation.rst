@@ -1,7 +1,7 @@
 Nextpnr compilation
 ===================
 
-Compile JSON to FASM by nextpnr ..|larr| bels.txt + pips.txt
+Compile JSON to FASM by nextpnr ← bels.txt + pips.txt
 
 Our nextpnr implementation uses nextpnr-generic for place and route. 
 

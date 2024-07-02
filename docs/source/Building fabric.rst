@@ -114,7 +114,7 @@ tiles within the fabric.
 
         gen_model_vpr
 
-#. Generate the metadata list for FASM ..|rarr| Bitstream
+#. Generate the metadata list for FASM → Bitstream
 
    .. prompt:: bash FABulous>
 

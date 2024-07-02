@@ -67,7 +67,7 @@ Fabric CSV description
 
 * Empty lines will be ignored as well as everything that follows a ``#`` \(the **comment** symbol in all FABulous descriptions\).
 
-* Parameters that relate to the fabric specification are encapsulated between the key words ``ParametersBegin`` and ``ParametersEnd``.
+* Parameters that relate to the fabric specification are encapsulated between the keywords ``ParametersBegin`` and ``ParametersEnd``.
 
   Parameters that relate to the flow are passed as command line arguments.
   
@@ -77,7 +77,7 @@ Fabric CSV description
   
   * ``ConfigBitMode``, ``[frame_based|FlipFlopChain]``
 
-    FABulous can write to the configuration bits in a frame-based organisation, similarly to most commercial FPGAs. This supports partial reconfiguration and is (except for in tiny fabrics) superior in any sense (configuration speed, resource cost, power consumption) over flip flop scan chain configuration (the option selected by most other open source FPGA frameworks). 
+    FABulous can write to the configuration bits in a frame-based organisation, similarly to most commercial FPGAs. This supports partial reconfiguration and is (except for in tiny fabrics) superior in any sense (configuration speed, resource cost, power consumption) over flip-flop scan chain configuration (the option selected by most other open source FPGA frameworks).
     
     Configuration readback is not currently supported, as it was considered ineffective for embedded FPGA use cases.
 
@@ -87,7 +87,7 @@ Fabric CSV description
       
     Note that the specified size corresponds to the width of the parallel configuration port and 32 bits is the most sensible configuration for most systems.
 
-    Currently, we set ``FrameBitsPerRow`` globally for all rows but we plan to extend this to allow for resource-type specific adjustments in future versions. 
+    Currently, we set ``FrameBitsPerRow`` globally for all rows, but we plan to extend this to allow for resource-type specific adjustments in future versions.
     For instance, the tiles at the north border of a fabric may only provide some fixed U-turn routing without the need of any configuration bits, which could be reflected by removing all frame_data wires in the top row. This extension may include an automatic adjustment mode.
       
   * ``MaxFramesPerCol``, ``unsigned_int``
@@ -100,10 +100,10 @@ Fabric CSV description
       
     FABulous will generate the specified number of vertical frame_strobe wires in the fabric, which correspond to wordlines in memory organisation. 
       
-    ``FrameBitsPerRow`` and ``MaxFramesPerCol`` should be around the same number to minimize the wiring resources for driving the configuration bits into the fabric. In most cases, only ``MaxFramesPerCol`` will be adjusted to a number that can accomodate the number of configuration bits needed.
+    ``FrameBitsPerRow`` and ``MaxFramesPerCol`` should be around the same number to minimize the wiring resources for driving the configuration bits into the fabric. In most cases, only ``MaxFramesPerCol`` will be adjusted to a number that can accommodate the number of configuration bits needed.
       
     Currently, we set ``MaxFramesPerCol`` globally for all resource types (e.g., LUTs and DSP block columns) but we plan to extend this to allow for resource-type specific adjustments.
-    This feature may include an automatic adjustment mode.      
+    This feature may include an automatic adjustment mode.
 
   * ``Package``, ``string``
     
@@ -278,7 +278,7 @@ specifying:
   In this example, the CPU interface is located at the west border of the fabric. The fabric provides three slots, each being two CLB columns wide. The operands are routed into the fabric using double wires (so, each slot receives the operands at exactly the same position, which makes modules relocatable among the slots). The results are routed to the CPU using nested hex wires (again resulting in a homogeneous routing scheme that enables module relocation). The CPU therefore has access to the results of each slot and will multiplex results into the register file in case a custom instruction requires it to do so. For simplicity, the figure does not show the west termination tiles, which simply connect the internal routing wires to the top-level fabric wrapper that, in turn, is used to connect to the CPU.
   In summary, the example shows how a termination tile can be used to provide more complex interface blocks and all this can be easily modelled and implemented with FABulous.
   
-  .. note::  The ``destination_name`` is refering to the port name used at the destination tile. FABulous will throw an error if the destination tile does not provide that port name.
+  .. note::  The ``destination_name`` is referring to the port name used at the destination tile. FABulous will throw an error if the destination tile does not provide that port name.
 
   Aside from ``BEGIN`` and ``END``, there also exist ``MID`` ports, which can be used for wires spanning more than two tiles.
   Although they route over two tiles, they also have a tap on the middle tile.
@@ -437,7 +437,7 @@ For the rows, this denotes the size of the multiplexers (e.g., MUX4) and by chec
 
 .. note::  The multiplexers in the switch matrices are controlled by configuration bits only. 
 
- The multiplexers in :ref:`primitives` can either be controlled by configuration bits (e.g., to select if a LUT output is to be routed to a primitive output pin or through a flop) or by the user logic (e.g., to cascade adjacent LUTs for implementing larger LUTs (like the F7MUX and F8MUX multiplexers in Xilinx FPGAs with LUT6).
+ The multiplexers in :ref:`primitives` can either be controlled by configuration bits (e.g., to select if a LUT output is to be routed to a primitive output pin or through a flop) or by the user logic (e.g., to cascade adjacent LUTs for implementing larger LUTs, like the F7MUX and F8MUX multiplexers in Xilinx FPGAs with LUT6).
 
 .. note::  Defining the adjacency of a switch matrix (and the wires) is a difficult task. Too many connections and wires are expensive to implement and will result in poor density and potentially in poor performance. However, too few connections and wires may lead to an inability to implement the intended user circuits on the fabric in the first place. The latter issue is not easily solvable by leaving primitives unused because that requires, for example, the use of more CLBs. That, in turn, requires more wires between the tiles, and will therefore jeopardize the approach of underutilising the CLBs.
 
@@ -700,7 +700,7 @@ Supertiles
 Supertiles are grouping together multiple basic :ref:`tiles`. Basic tiles are the smallest tile exposed to users providing a switch matrix, wires to the surrounding, and usually one or more primitives (like in a CLB tile). 
 
 Supertiles are needed for blocks that require more logic and/or more wires to the routing fabric (e.g., as needed for DSP blocks). Therefore, supertiles will normally provide as many switch matrices as they integrate basic tiles. 
-However, larger supertiles (e.g., hosting a CPU or similar) may only provide switch matrices in basic tiles located at the border of such a supertile
+However, larger supertiles (e.g., hosting a CPU or similar) may only provide switch matrices in basic tiles located at the border of such a supertile.
 In any case: supertiles must provide wire interfaces that match the surroundings when stitching them into a fabric.
 
 Modelling
@@ -736,13 +736,13 @@ Supertiles are modelled from elementary tiles in a spreadsheet/csv file similar 
 
 Supertiles will be instantiated in the fabric (VHDL or Verilog) file, and supertiles themselves instantiate basic tiles (e.g., the ones shown in the figure). Therefore, supertiles define wires and switch matrices through their instantiated basic tiles. 
 
-Supertiles have an **anchor tile**, which is used to specify their position in the fabric. The anchor tile is determined by a row-by-row scan over the basic tiles and it will be the first non-NULL tile found. All other basic tiles will be placed relatively to the anchor tile. The anchor tiles in the figure above have been marked using a bold font. So far, anchor tiles are only used internally in FABulous, but it is planned to allow placing supertiles through their anchor tiles in the fabric layout, rather than through their basic tiles.
+Supertiles have an **anchor tile**, which is used to specify their position in the fabric. The anchor tile is determined by a row-by-row scan over the basic tiles, and it will be the first non-NULL tile found. All other basic tiles will be placed relatively to the anchor tile. The anchor tiles in the figure above have been marked using a bold font. So far, anchor tiles are only used internally in FABulous, but it is planned to allow placing supertiles through their anchor tiles in the fabric layout, rather than through their basic tiles.
 
 If a basic tile has a **border to the outside world** (i.e. the surrounding fabric), the interface to that border is exported to the supertile interface (i.e. the Entity in VHDL). Those borders are marked blue in the figure above. Internal edges are connected inside the supertile wrapper according to the entire tile specification.
 
 A basic tile instantiated in a supertile may not implement interfaces to all NORTH, EAST, SOUTH, WEST directions. For instance, a supertile may include basic terminate tiles if the supertile is supposed to be placed at the border of the fabric.
 
-Tile ports that are declared ``EXTERNAL`` in the basic tiles will be exported all the way to the top-level, in the same wayas is done for :ref:`tiles`
+Tile ports that are declared ``EXTERNAL`` in the basic tiles will be exported all the way to the top-level, in the same way it is done for :ref:`tiles`
 
 .. code-block:: VHDL
    :emphasize-lines: 1

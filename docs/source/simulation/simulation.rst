@@ -40,6 +40,3 @@ FABulous comes with 3 different simulation methods _`configuration module`,
    .. figure:: ../figs/bitbang2.*
        :alt: Bitbang schematic
        :align: center
-
-
-

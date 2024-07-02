@@ -1,7 +1,7 @@
 VPR models
 ==========
 
-To generate the necessary materials to program using VPR, run ``$FAB_ROOT/fabric_generator/fabric_gen.py`` with the -genVPRModel flag followed by the location of your custom information XML file (an description an example of which can be found below). In the ``$FAB_ROOT/fabric_generator/vproutput`` directory, two files will be created: ``architecture.xml`` and ``routing_resources.xml``. 
+To generate the necessary materials to program using VPR, run ``$FAB_ROOT/fabric_generator/fabric_gen.py`` with the -genVPRModel flag followed by the location of your custom information XML file (a description an example of which can be found below). In the ``$FAB_ROOT/fabric_generator/vproutput`` directory, two files will be created: ``architecture.xml`` and ``routing_resources.xml``.
 
 architecture.xml contains a description of the various tiles, ports and BELs - everything in the architecture except for the routing resources. 
 
@@ -16,7 +16,7 @@ The custom XML file should open and close with ``<custom_xml_spec>`` and ``</cus
 
 **<bel_pb> content <\bel_pb>**
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-This tag should contain the exact XML that should be inserted to define the second-level ``pb_type`` that represents this bel, including the ``<pb_type>`` tag itself. This should represent only one instance of the BEL (i.e. ``num_pb`` should be 1) as different instances are now represented by FABulous as individual subtiles, each of which has the ``pb_type`` as its equivalent site. Your XML will be automatically inserted inside a top-level wrapper ``pb_type``, and all inputs/outputs will be routed through into your description - therefore, it is required that your custom ``pb_type`` has at least the inputs and outputs described in your HDL model.
+This tag should contain the exact XML that should be inserted to define the second-level ``pb_type`` that represents this BEL, including the ``<pb_type>`` tag itself. This should represent only one instance of the BEL (i.e. ``num_pb`` should be 1) as different instances are now represented by FABulous as individual subtiles, each of which has the ``pb_type`` as its equivalent site. Your XML will be automatically inserted inside a top-level wrapper ``pb_type``, and all inputs/outputs will be routed through into your description - therefore, it is required that your custom ``pb_type`` has at least the inputs and outputs described in your HDL model.
 
 **<bel_model> content <\bel_model>**
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

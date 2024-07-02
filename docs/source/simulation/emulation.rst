@@ -1,7 +1,7 @@
 Emulation setup
 ===============
 
-(Emulation function is under built)
+(The emulation function is still under development)
 
 The script ``bit_gen.py`` in 
 :ref:`bitstream generation<bitstream generation>`

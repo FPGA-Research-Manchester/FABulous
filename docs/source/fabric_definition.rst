@@ -21,7 +21,7 @@ The following figure shows a small fabric, which we will model throughout this s
 The full model of a fabric is described by the following files:
 
 * A file :ref:`fabric_csv` providing the :ref:`fabric_layout`, some global settings, and the descriptions of the :ref:`tiles`-
-* A set of list files (\*.list) desribing the adjacency list of the switch matrix for each of the used tiles or the corresponding adjacency matrix as a CSV file
+* A set of list files (\*.list) describing the adjacency list of the switch matrix for each of the used tiles or the corresponding adjacency matrix as a CSV file
 * A set of optional bitstream mapping CSV files
 * A set of primitives used
 
@@ -85,7 +85,7 @@ Fabric CSV description
     
     In frame-based configuration mode, FABulous will build a configuration frame register over the height of the fabric and provide the specified number of data bits per row. This will generate frame_data wires in the fabric, which correspond to bitlines in a memory organisation. 
       
-    Note that the specified size corresponds to the width of the parallel configuraton port and 32 bits is the most sensible configuration for most systems.
+    Note that the specified size corresponds to the width of the parallel configuration port and 32 bits is the most sensible configuration for most systems.
 
     Currently, we set ``FrameBitsPerRow`` globally for all rows but we plan to extend this to allow for resource-type specific adjustments in future versions. 
     For instance, the tiles at the north border of a fabric may only provide some fixed U-turn routing without the need of any configuration bits, which could be reflected by removing all frame_data wires in the top row. This extension may include an automatic adjustment mode.
@@ -149,7 +149,7 @@ The following figure shows the fabric.csv representation of our example fabric a
    NULL,  S_term,   S_term,   S_term,  S_term,  NULL
    FabricEnd        
 
-* The fabric layout is encapsulated between the key words ``FabricBegin`` and ``FabricEnd``.
+* The fabric layout is encapsulated between the keywords ``FabricBegin`` and ``FabricEnd``.
 
   The specified tiles are references to tile descriptors (see :ref:`tiles`).
   The tiles form a coordinate system with the origin in the top-left:
@@ -185,7 +185,7 @@ A tile is the smallest unit in a fabric and a tile provides
 * A central configuration storage module 
 
 A tile typically hosts primitives like a CLB with LUTs or an I/O block.
-Multiple smaller tiles can be combined into :ref:`supertiles` to accomodate complex blocks like DSPs.
+Multiple smaller tiles can be combined into :ref:`supertiles` to accommodate complex blocks like DSPs.
 Each tile that is referred to in the :ref:`fabric_layout` requires specification of the corresponding tile description in the fabric.csv file that has the following format:  
 
 .. code-block:: python
@@ -236,7 +236,7 @@ specifying:
   For instance, a single wire in NORTH direction should use names such as *N1Beg* to *N1End* or *N1b* to *N1e*.
   
   The destination name refers to two ports: a port on the target tile and an expected port on the destination tile. This reflects that wires route between tiles and that the begin and end ports of a tile connect to different wires.
-  However, while this works for tiles inside the fabric (like CLBs), the tiles at the border do usually not extend to antennae outside the fabric but instead route wires back into the fabric as shown in the following figure:
+  However, while this works for tiles inside the fabric (like CLBs), the tiles at the border usually do not extend to antennae outside the fabric, but instead route wires back into the fabric as shown in the following figure:
   
   .. figure:: figs/east_terminate.*
     :alt: Basic tile illustration
@@ -310,7 +310,7 @@ specifying:
   
   FABulous will index the wires of each entry starting from [0].
 
-A metric that is important for FPGA ASIC implementations is the channel *cut* number, which denotes the number of wires that must be accomodated between two adjacent tiles. The cut number is an indicator for the congestion to be expected when stitching together the fabric. Let us take the following example: 
+A metric that is important for FPGA ASIC implementations is the channel *cut* number, which denotes the number of wires that must be accommodated between two adjacent tiles. The cut number is an indicator for the congestion to be expected when stitching together the fabric. Let us take the following example:
 
 .. code-block:: python
    :emphasize-lines: 1
@@ -392,7 +392,7 @@ is equivalent to
    S2BEG2,S2END2 # extend double wires in each direction
    W2BEG2,W2END2 # extend double wires in each direction
    
-The example shows how port names can be composed from string segments that can alternatively be provided in list form. The lists will be recursively unwrapped, which allows it to use multiple list operators together.
+The example shows how port names can be composed of string segments that can alternatively be provided in list form. The lists will be recursively unwrapped, which allows it to use multiple list operators together.
 
 An error message is generated if the number of composed port names differs for the number of input_ports and output_ports or if ports are not found.
 A warning will be generated if FABulous tries to set a connection that has already been specified.
@@ -452,7 +452,7 @@ For the rows, this denotes the size of the multiplexers (e.g., MUX4) and by chec
 Primitives
 ~~~~~~~~~~
 
-Primitives are used to manipulate, store and input/output data. Examples for primitives include LUTs, slices (a cluster of LUTs that share a clock and that can be cascaded for arithmetic), flip flops, individual gates or multiplexers, and complex blocks like DSPs, ALUs or BRAMs. A tile may have no primitives (e.g., the north and south terminate tiles in our example fabric) or as many as needed.
+Primitives are used to manipulate, store and input/output data. Examples for primitives include LUTs, slices (a cluster of LUTs that share a clock and that can be cascaded for arithmetic), flip-flops, individual gates or multiplexers, and complex blocks like DSPs, ALUs or BRAMs. A tile may have no primitives (e.g., the north and south terminate tiles in our example fabric) or as many as needed.
 
 Primitives are added with ``BEL`` statements (BEL stands for Basic Element of Logic and the phrase is adopted from Xilinx), as shown in the following tile definition fragment:
 
@@ -600,7 +600,7 @@ FABulous defines the following coding rules for BELs:
     
     TODO 
   
-  * ``SHARED_PORT``: this directive can only be used together optionally with ``EXTERNAL``. If a port is set ``EXTERNAL`` but not ``SHARED_PORT``, then , a TODO ( shared  ports flagged with this directive are not connected to the switch matrix but are exported through the tile entity to the top-level fabric wrapper.
+  * ``SHARED_PORT``: this directive can only be used together optionally with ``EXTERNAL``. If a port is set ``EXTERNAL`` but not ``SHARED_PORT``, then, a TODO ( shared  ports flagged with this directive are not connected to the switch matrix but are exported through the tile entity to the top-level fabric wrapper.
 
 .. _bitstream:
 
@@ -608,7 +608,7 @@ Bitstream remapping
 ~~~~~~~~~~~~~~~~~~~
 
 FABulous will take care when implementing the configuration logic and bitstream encoding and the mapping of this into configuration bitstreams. This can be done automatically.
-However, users can influence the mapping of configuration bits into the bitstream. For our first chip, we used remapping to create a human readable bitstream which is more convenient to modify in a hex editor, as described later in this subsection.
+However, users can influence the mapping of configuration bits into the bitstream. For our first chip, we used remapping to create a human-readable bitstream which is more convenient to modify in a hex editor, as described later in this subsection.
 
 In the code example for a LUT, it was shown that the configuration bits are exported into the LUT interface:
 
@@ -671,7 +671,7 @@ The following example is the FABulous-generated mapping file of the CLB implemen
    frame18,     18,          0,         0000_0000_0000_0000_0000_0000_0000_0000,
    frame19,     19,          0,         0000_0000_0000_0000_0000_0000_0000_0000,
 
-FABulous are will generate a default <tile_descriptor>_ConfigMem.csv, and users are not required to modify the <tile_descriptor>_ConfigMem.csv file. However, if FABulous finds a file called <tile_descriptor>_ConfigMem.csv before generating it, it will use the bitstream mapping provided instead. The following example shows the basic idea that was used to provide a human-readable bitstream encoding. It is not intended to understand the example in detail. The basic idea is to align configuration LUT function tables, settings and the switch matrix multiplexer encoding to be nibble aligned such that they are easy to find in a hex editor. For instance, in the example below, the first 8 frames are mostly encoding the LUTs where the 16 MSBs are the LUT tables and the next two nibbles are encoding a flop and carry-chain mode:
+FABulous will generate a default <tile_descriptor>_ConfigMem.csv, and users are not required to modify the <tile_descriptor>_ConfigMem.csv file. However, if FABulous finds a file called <tile_descriptor>_ConfigMem.csv before generating it, it will use the bitstream mapping provided instead. The following example shows the basic idea that was used to provide a human-readable bitstream encoding. It is not intended to understand the example in detail. The basic idea is to align configuration LUT function tables, settings and the switch matrix multiplexer encoding to be nibble aligned such that they are easy to find in a hex editor. For instance, in the example below, the first 8 frames are mostly encoding the LUTs where the 16 MSBs are the LUT tables and the next two nibbles are encoding a flop and carry-chain mode:
 
 .. code-block:: python
 
@@ -715,7 +715,7 @@ Supertiles are modelled from elementary tiles in a spreadsheet/csv file similar 
    myZ_00,  NULL
    myZ_01,  myZ_11
    NULL,    myZ_12
-   EndSuperTILE         # this is case insensitive
+   EndSuperTILE         # this is case-insensitive
 
    SuperTILE, my_I      # define supertile name            
    my_top
@@ -736,7 +736,7 @@ Supertiles are modelled from elementary tiles in a spreadsheet/csv file similar 
 
 Supertiles will be instantiated in the fabric (VHDL or Verilog) file, and supertiles themselves instantiate basic tiles (e.g., the ones shown in the figure). Therefore, supertiles define wires and switch matrices through their instantiated basic tiles. 
 
-Supertiles have an **anchor tile**, which is used to specify their position in the fabric. The anchor tile is determined by a row-by-row scan over the basic tiles and it will be the first non-NULL tile found. All other basic tiles will be placed relatively to the anchor tile. The anchor tiles in the figure above have been marked using a bold font. So far, anchor tiles are only used internally in FABulous but it is planned to allow placing supertiles through their anchor tiles in the fabric layout, rather than through their basic tiles.
+Supertiles have an **anchor tile**, which is used to specify their position in the fabric. The anchor tile is determined by a row-by-row scan over the basic tiles and it will be the first non-NULL tile found. All other basic tiles will be placed relatively to the anchor tile. The anchor tiles in the figure above have been marked using a bold font. So far, anchor tiles are only used internally in FABulous, but it is planned to allow placing supertiles through their anchor tiles in the fabric layout, rather than through their basic tiles.
 
 If a basic tile has a **border to the outside world** (i.e. the surrounding fabric), the interface to that border is exported to the supertile interface (i.e. the Entity in VHDL). Those borders are marked blue in the figure above. Internal edges are connected inside the supertile wrapper according to the entire tile specification.
 

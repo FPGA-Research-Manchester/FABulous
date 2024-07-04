@@ -2,13 +2,14 @@ from enum import Enum
 
 
 class Location:
-    """
-    A simple datastruct for storing a Location.
+    """A simple datastruct for storing a Location.
 
-    Attributes:
-        x (int): X coordinate
-        y (int): Y coordinate
-
+    Attributes
+    ----------
+    x : int
+        X coordinate
+    y : int
+        Y coordinate
     """
 
     x: int

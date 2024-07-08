@@ -46,6 +46,7 @@ readline.set_completer_delims(" \t\n")
 histfile = ""
 histfile_size = 1000
 
+simulation_decide = 0  # for verilog
 MAX_BITBYTES = 16384
 
 logger = logging.getLogger(__name__)
@@ -101,6 +102,15 @@ def copy_verilog_files(src, dst):
     for root, _, files in os.walk(src):
         for file in files:
             if file.endswith(".v"):
+                source_path = os.path.join(root, file)
+                destination_path = os.path.join(dst, file)
+                shutil.copy(source_path, destination_path)
+
+
+def copy_vhdl_files(src, dst):
+    for root, _, files in os.walk(src):
+        for file in files:
+            if file.endswith(".vhdl"):
                 source_path = os.path.join(root, file)
                 destination_path = os.path.join(dst, file)
                 shutil.copy(source_path, destination_path)
@@ -1097,52 +1107,76 @@ To run the complete FABulous flow with the default project, run the following co
             )
             return
 
-        design_file = top_module + ".v"
-        top_module_tb = top_module + "_tb"
-        test_bench = top_module_tb + ".v"
-        vvp_file = top_module_tb + ".vvp"
         bitstream_hex = top_module + ".hex"
-
-        tmp_dir = f"{self.projectDir}/{path}/tmp/"
-        os.makedirs(f"{self.projectDir}/{path}/tmp", exist_ok=True)
-        copy_verilog_files(f"{self.projectDir}/Tile/", tmp_dir)
-        copy_verilog_files(f"{self.projectDir}/Fabric/", tmp_dir)
-        file_list = [
-            os.path.join(tmp_dir, filename) for filename in os.listdir(tmp_dir)
-        ]
-
-        try:
-            runCmd = [
-                "iverilog",
-                "-D",
-                f"{defined_option}",
-                "-s",
-                f"{top_module_tb}",
-                "-o",
-                f"{self.projectDir}/{path}/{vvp_file}",
-                *file_list,
-                f"{self.projectDir}/{path}/{design_file}",
-                f"{self.projectDir}/Test/{test_bench}",
-            ]
-            sp.run(runCmd, check=True)
-
-        except sp.CalledProcessError:
-            logger.error("Simulation failed")
-            remove_dir(f"{self.projectDir}/{path}/tmp")
-            return
 
         make_hex(
             f"{self.projectDir}/{path}/{bitstream}",
             f"{self.projectDir}/{path}/{bitstream_hex}",
         )
 
-        try:
-            runCmd = ["vvp", f"{self.projectDir}/{path}/{vvp_file}"]
-            sp.run(runCmd, check=True)
-        except sp.CalledProcessError:
-            logger.error("Simulation failed")
-            remove_dir(f"{self.projectDir}/{path}/tmp")
-            return
+        if simulation_decide == 0:
+            design_file = top_module + ".v"
+            top_module_tb = top_module + "_tb"
+            test_bench = top_module_tb + ".v"
+            vvp_file = top_module_tb + ".vvp"
+
+            tmp_dir = f"{self.projectDir}/{path}/tmp/"
+            os.makedirs(f"{self.projectDir}/{path}/tmp", exist_ok=True)
+            copy_verilog_files(f"{self.projectDir}/Tile/", tmp_dir)
+            copy_verilog_files(f"{self.projectDir}/Fabric/", tmp_dir)
+            file_list = [
+                os.path.join(tmp_dir, filename) for filename in os.listdir(tmp_dir)
+            ]
+
+            try:
+                runCmd = [
+                    "iverilog",
+                    "-D",
+                    f"{defined_option}",
+                    "-s",
+                    f"{top_module_tb}",
+                    "-o",
+                    f"{self.projectDir}/{path}/{vvp_file}",
+                    *file_list,
+                    f"{self.projectDir}/{path}/{design_file}",
+                    f"{self.projectDir}/Test/{test_bench}",
+                ]
+                sp.run(runCmd, check=True)
+
+            except sp.CalledProcessError:
+                logger.error("Simulation failed")
+                remove_dir(f"{self.projectDir}/{path}/tmp")
+                return
+
+            try:
+                runCmd = ["vvp", f"{self.projectDir}/{path}/{vvp_file}"]
+                sp.run(runCmd, check=True)
+            except sp.CalledProcessError:
+                logger.error("Simulation failed")
+                remove_dir(f"{self.projectDir}/{path}/tmp")
+                return
+
+        elif simulation_decide == 1:
+            script_path = f"{self.projectDir}/Test/vhdl_simulation.sh"
+            design_file = top_module + ".vhdl"
+            top_module_tb = top_module + "_tb"
+            test_bench = top_module_tb + ".vhdl"
+
+            # tmp_dir = f"{self.projectDir}/{path}/tmp/"
+            # os.makedirs(f"{self.projectDir}/{path}/tmp", exist_ok=True)
+            # copy_vhdl_files(f"{self.projectDir}/Fabric/", tmp_dir)
+            # copy_vhdl_files(f"{self.projectDir}/Tile/", tmp_dir)
+            # file_list = [
+            #     os.path.join(tmp_dir, filename) for filename in os.listdir(tmp_dir)
+            # ]
+
+            try:
+                runCmd = [script_path, optional_arg, top_module, self.projectDir]
+                sp.run(runCmd, check=True)
+            except sp.CalledProcessError:
+                logger.error("Simulation failed")
+                #  remove_dir(f"{self.projectDir}/{path}/tmp")
+                return
 
         remove_dir(f"{self.projectDir}/{path}/tmp")
         logger.info("Simulation finished")
@@ -1227,6 +1261,7 @@ To run the complete FABulous flow with the default project, run the following co
 
 
 def main():
+    global simulation_decide
     if sys.version_info < (3, 9, 0):
         print("Need Python 3.9 or above to run FABulous")
         exit(-1)
@@ -1293,8 +1328,10 @@ def main():
         writer = VerilogWriter()
         if args.writer == "vhdl":
             writer = VHDLWriter()
+            simulation_decide = 1  # for vhdl simulation
         if args.writer == "verilog":
             writer = VerilogWriter()
+            simulation_decide = 0  # for verilog simulation
 
         fabShell = FABulousShell(
             FABulous(writer, fabricCSV=args.csv), args.project_dir, args.script

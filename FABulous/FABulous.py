@@ -34,6 +34,7 @@ from contextlib import redirect_stdout
 from glob import glob
 from pathlib import PurePosixPath, PureWindowsPath
 from typing import List, Literal
+from dotenv import load_dotenv
 
 import docker
 import FABulous.fabric_cad.model_generation_npnr as model_gen_npnr
@@ -94,7 +95,18 @@ def create_project(project_dir, type: Literal["verilog", "vhdl"] = "verilog"):
         dirs_exist_ok=True,
     )
 
+    with open(os.path.join(project_dir, ".env"), "w") as env_file:
+        env_file.write(f"language={type}\n")
+
     adjust_directory_in_verilog_tb(project_dir)
+
+
+def load_writer_from_env(project_dir):
+    env_path = os.path.join(project_dir, ".env")
+    if os.path.exists(env_path):
+        load_dotenv(env_path)
+        return os.getenv("language", "verilog")
+    return "verilog"  # Default writer
 
 
 def copy_verilog_files(src, dst):
@@ -1262,10 +1274,10 @@ def main():
         )
         exit(-1)
     else:
-        writer = VerilogWriter()
-        if args.writer == "vhdl":
+        language = load_writer_from_env(args.project_dir)
+        if language == "vhdl":
             writer = VHDLWriter()
-        if args.writer == "verilog":
+        if language == "verilog":
             writer = VerilogWriter()
 
         fabShell = FABulousShell(

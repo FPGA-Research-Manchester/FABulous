@@ -437,7 +437,7 @@ For the rows, this denotes the size of the multiplexers (e.g., MUX4) and by chec
 
 .. note::  The multiplexers in the switch matrices are controlled by configuration bits only. 
 
- The multiplexers in :ref:`primitives` can either be controlled by configuration bits (e.g., to select if a LUT output is to be routed to a primitive output pin or through a flop) or by the user logic (e.g., to cascade adjacent LUTs for implementing larger LUTs, like the F7MUX and F8MUX multiplexers in Xilinx FPGAs with LUT6).
+ The multiplexers in :ref:`primitives` can either be controlled by configuration bits (e.g., to select if a LUT output is to be routed to a primitive output pin or through a flop) or by the user logic (e.g., to cascade adjacent LUTs for implementing larger LUTs, like the F7MUX and F8MUX multiplexers in Xilinx FPGAs with LUT6s).
 
 .. note::  Defining the adjacency of a switch matrix (and the wires) is a difficult task. Too many connections and wires are expensive to implement and will result in poor density and potentially in poor performance. However, too few connections and wires may lead to an inability to implement the intended user circuits on the fabric in the first place. The latter issue is not easily solvable by leaving primitives unused because that requires, for example, the use of more CLBs. That, in turn, requires more wires between the tiles, and will therefore jeopardize the approach of underutilising the CLBs.
 

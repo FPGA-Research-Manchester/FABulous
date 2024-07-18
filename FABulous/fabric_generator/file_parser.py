@@ -4,7 +4,7 @@ import re
 from loguru import logger
 from copy import deepcopy
 
-
+from typing import Literal
 from FABulous.fabric_definition.Bel import Bel
 from FABulous.fabric_definition.Port import Port
 from FABulous.fabric_definition.Wire import Wire
@@ -13,7 +13,6 @@ from FABulous.fabric_definition.SuperTile import SuperTile
 from FABulous.fabric_definition.Fabric import Fabric
 from FABulous.fabric_definition.ConfigMem import ConfigMem
 from FABulous.fabric_generator.utilities import parseList, parseMatrix
-from typing import Literal
 from FABulous.fabric_definition.define import (
     IO,
     Direction,
@@ -21,10 +20,6 @@ from FABulous.fabric_definition.define import (
     ConfigBitMode,
     MultiplexerStyle,
 )
-
-
-# from fabric import Fabric, Port, Bel, Tile, SuperTile, ConfigMem
-# from fabric import IO, Direction, Side, MultiplexerStyle, ConfigBitMode
 
 
 oppositeDic = {"NORTH": "SOUTH", "SOUTH": "NORTH", "EAST": "WEST", "WEST": "EAST"}
@@ -317,9 +312,6 @@ def parseTiles(fileName: str) -> tuple[list[Tile], list[tuple[str, str]]]:
                         Side[oppositeDic[temp[0]].upper()],
                     )
                 )
-                # wireCount = (abs(int(temp[2])) +
-                #              abs(int(temp[3])))*int(temp[5])
-                # for i in range(wireCount):
                 commonWirePair.append((f"{temp[1]}", f"{temp[4]}"))
 
             elif temp[0] == "JUMP":
@@ -352,27 +344,13 @@ def parseTiles(fileName: str) -> tuple[list[Tile], list[tuple[str, str]]]:
             elif temp[0] == "BEL":
                 belFilePath = os.path.join(filePath, temp[1])
                 if temp[1].endswith(".vhdl"):
-                    result = parseFileVHDL(belFilePath, temp[2])
+                    bels.append(parseFile(belFilePath, temp[2], "vhdl"))
                 elif temp[1].endswith(".v"):
-                    result = parseFileVerilog(belFilePath, temp[2])
+                    bels.append(parseFile(belFilePath, temp[2], "verilog"))
                 else:
-                    logger.error("Invalid file type, only .vhdl and .v are supported")
-                    raise ValueError
-                internal, external, config, shared, configBit, userClk, belMap = result
-                bels.append(
-                    Bel(
-                        belFilePath,
-                        temp[2],
-                        internal,
-                        external,
-                        config,
-                        shared,
-                        configBit,
-                        belMap,
-                        userClk,
+                    raise ValueError(
+                        f"Invalid file type in {belFilePath} only .vhdl and .v are supported."
                     )
-                )
-                withUserCLK |= userClk
             elif temp[0] == "MATRIX":
                 matrixDir = os.path.join(filePath, temp[1])
                 configBit = 0
@@ -404,6 +382,7 @@ def parseTiles(fileName: str) -> tuple[list[Tile], list[tuple[str, str]]]:
                 logger.error(f"Unknown tile description {temp[0]} in tile {t}")
                 raise ValueError
 
+            withUserCLK = any(bel.withUserCLK for bel in bels)
             new_tiles.append(
                 Tile(tileName, ports, bels, matrixDir, withUserCLK, configBit)
             )
@@ -463,25 +442,14 @@ def parseSupertiles(fileName: str, tileDic: dict[str, Tile]) -> list[SuperTile]:
 
             if line[0] == "BEL":
                 belFilePath = os.path.join(filePath, line[1])
-                if line[0].endswith("VHDL"):
-                    result = parseFileVHDL(belFilePath, line[2])
+                if line[1].endswith(".vhdl"):
+                    bels.append(parseFile(belFilePath, line[2], "vhdl"))
+                elif line[1].endswith(".v"):
+                    bels.append(parseFile(belFilePath, line[2], "verilog"))
                 else:
-                    result = parseFileVerilog(belFilePath, line[2])
-                internal, external, config, shared, configBit, userClk, belMap = result
-                bels.append(
-                    Bel(
-                        belFilePath,
-                        line[2],
-                        internal,
-                        external,
-                        config,
-                        shared,
-                        configBit,
-                        belMap,
-                        userClk,
+                    raise ValueError(
+                        f"Invalid file type in {belFilePath} only .vhdl and .v are supported."
                     )
-                )
-                withUserCLK |= userClk
                 continue
 
             for j in line:
@@ -501,184 +469,16 @@ def parseSupertiles(fileName: str, tileDic: dict[str, Tile]) -> list[SuperTile]:
                     raise ValueError
             tileMap.append(row)
 
+        withUserCLK = any(bel.withUserCLK for bel in bels)
         new_supertiles.append(SuperTile(name, tiles, tileMap, bels, withUserCLK))
 
     return new_supertiles
 
 
-def parseFileVHDL(filename: str, belPrefix: str = "") -> tuple[
-    list[tuple[str, IO]],
-    list[tuple[str, IO]],
-    list[tuple[str, IO]],
-    list[tuple[str, IO]],
-    int,
-    bool,
-    dict[str, int],
-]:
-    """Parses a VHDL Bel file and returns all the the related information of the bel. The tuple returned relates to ports that will
-    be a list of (belName, IO) pairs.
-
-    Parameters
-    ----------
-    filename : str
-        The input file name.
-    belPrefix : str, optional
-        The bel prefix provided by the CSV file. Defualts to blank string "".
-
-    Returns
-    -------
-    Tuple containing
-        - List of Bel Internal ports (belName, IO).
-        - List of Bel External ports (belName, IO).
-        - List of Bel Config ports (belName, IO).
-        - List of Bel Shared ports (belName, IO).
-        - Number of configuration bits in the bel.
-        - Whether the bel has UserCLK.
-        - Bel config bit mapping as a dict {port_name: bit_number}.
-
-    Raises
-    ------
-    ValueError
-        - File not found.
-        - No permission to access the file.
-        - Cannot find the port section in the file which defines the bel ports.
+def parseFile(filename: str, belPrefix: str = "", filetype: str = "") -> Bel:
     """
-    internal: list[tuple[str, IO]] = []
-    external: list[tuple[str, IO]] = []
-    config: list[tuple[str, IO]] = []
-    shared: list[tuple[str, IO]] = []
-    isExternal = False
-    isConfig = False
-    isShared = False
-    userClk = False
-
-    try:
-        with open(filename, "r") as f:
-            file = f.read()
-    except FileNotFoundError:
-        logger.critical(f"File {filename} not found.")
-        exit(-1)
-    except PermissionError:
-        logger.critical(f"Permission denied to file {filename}.")
-        exit(-1)
-
-    belMapDic = _belMapProcessing(file, filename, "vhdl")
-
-    if result := re.search(r"NoConfigBits.*?=.*?(\d+)", file, re.IGNORECASE):
-        noConfigBits = int(result.group(1))
-    else:
-        logger.warning(
-            f"Cannot find NoConfigBits in {filename} assuming number of configBits is 0"
-        )
-        noConfigBits = 0
-
-    if len(belMapDic) != noConfigBits:
-        logger.error(
-            f"NoConfigBits does not match with the BEL map in file {filename}, length of BelMap is {len(belMapDic)}, but with {noConfigBits} config bits"
-        )
-        raise ValueError
-
-    portSection = ""
-    if result := re.search(
-        r"port.*?\((.*?)\);", file, re.MULTILINE | re.DOTALL | re.IGNORECASE
-    ):
-        portSection = result.group(1)
-    else:
-        logger.error(f"Could not find port section in file {filename}")
-        raise ValueError
-
-    preGlobal, postGlobal = portSection.split("-- GLOBAL")
-
-    for line in preGlobal.split("\n"):
-        if "IMPORTANT" in line:
-            continue
-        if "EXTERNAL" in line:
-            isExternal = True
-        if "CONFIG" in line:
-            isConfig = True
-        if "SHARED_PORT" in line:
-            isShared = True
-
-        line = re.sub(r"STD_LOGIC.*", "", line, flags=re.IGNORECASE)
-        line = re.sub(r";.*", "", line, flags=re.IGNORECASE)
-        line = re.sub(r"--*", "", line, flags=re.IGNORECASE)
-        line = line.replace(" ", "").replace("\t", "").replace(";", "")
-        result = re.search(r"(.*):(.*)", line)
-        if not result:
-            continue
-        portName = f"{belPrefix}{result.group(1)}"
-
-        if isExternal and not isShared:
-            if result.group(2).lower() == "in":
-                external.append((portName, IO.INPUT))
-            elif result.group(2).lower() == "out":
-                external.append((portName, IO.OUTPUT))
-        elif isConfig:
-            if result.group(2).lower() == "in":
-                config.append((portName, IO.INPUT))
-            elif result.group(2).lower() == "out":
-                config.append((portName, IO.OUTPUT))
-        elif isShared:
-            # shared port do not have a prefix
-            if result.group(2).lower() == "in":
-                shared.append((result.group(1), IO.INOUT))
-            elif result.group(2).lower() == "out":
-                shared.append((result.group(1), IO.OUTPUT))
-            elif result.group(2).lower() == "inout":
-                shared.append((result.group(1), IO.INOUT))
-            else:
-                logger.error(f"Invalid port type {result.group(2)} in file {filename}")
-                raise ValueError
-        else:
-            if result.group(2).lower() == "in":
-                internal.append((portName, IO.INPUT))
-            elif result.group(2).lower() == "out":
-                internal.append((portName, IO.OUTPUT))
-            elif result.group(2).lower() == "inout":
-                internal.append((portName, IO.INOUT))
-            else:
-                logger.error(f"Invalid port type {result.group(2)} in file {filename}")
-                raise ValueError
-
-        if "UserCLK" in portName:
-            userClk = True
-
-        isExternal = False
-        isConfig = False
-        isShared = False
-
-    result = re.search(
-        r"NoConfigBits\s*:\s*integer\s*:=\s*(\w+)", file, re.IGNORECASE | re.DOTALL
-    )
-    if result:
-        try:
-            noConfigBits = int(result.group(1))
-        except ValueError:
-            logger.warning(
-                f"NoConfigBits is not an integer: {result.group(1)} assuming number of configBits is 0"
-            )
-            noConfigBits = 0
-    else:
-        logger.warning(
-            f"Cannot find NoConfigBits in {filename} assuming number of configBits is 0"
-        )
-        noConfigBits = 0
-
-    return internal, external, config, shared, noConfigBits, userClk, belMapDic
-
-
-def parseFileVerilog(filename: str, belPrefix: str = "") -> tuple[
-    list[tuple[str, IO]],
-    list[tuple[str, IO]],
-    list[tuple[str, IO]],
-    list[tuple[str, IO]],
-    int,
-    bool,
-    dict[str, dict],
-]:
-    """
-    Parse a Verilog bel file and return all the related information of the bel. The tuple returned for relating to ports
-    will be a list of (belName, IO) pair.
+    Parse a Verilog or VHDL bel file and return all the related information of the bel.
+    The tuple returned for relating to ports will be a list of (belName, IO) pair.
 
     The function will also parse and record all the FABulous attribute which all starts with ::
 
@@ -778,7 +578,10 @@ def parseFileVerilog(filename: str, belPrefix: str = "") -> tuple[
         logger.critical(f"Permission denied to file {filename}.")
         exit(-1)
 
-    belMapDic = _belMapProcessing(file, filename, "verilog")
+    if filetype not in ("verilog", "vhdl"):
+        raise ValueError(f"{filetype} is not a valid type.")
+
+    belMapDic = _belMapProcessing(file, filename, filetype)
 
     if result := re.search(r"NoConfigBits.*?=.*?(\d+)", file, re.IGNORECASE):
         noConfigBits = int(result.group(1))
@@ -794,44 +597,84 @@ def parseFileVerilog(filename: str, belPrefix: str = "") -> tuple[
         )
         raise ValueError
 
-    file = file.split("\n")
+    if filetype == "vhdl":
+        if result := re.search(
+            r"port.*?\((.*?)\);", file, re.MULTILINE | re.DOTALL | re.IGNORECASE
+        ):
+            file, _ = result.group(1).split("-- GLOBAL")
+        else:
+            raise ValueError(f"Could not find port section in file {filename}")
 
-    for line in file:
-        if result := re.search(r".*(input|output|inout).*?(\w+);", line, re.IGNORECASE):
-            cleanedLine = line.replace(" ", "")
-            if attribute := re.search(r"\(\*FABulous,(.*)\*\)", cleanedLine):
-                if "EXTERNAL" in attribute.group(1):
-                    isExternal = True
-
-                if "CONFIG" in attribute.group(1):
-                    isConfig = True
-
-                if "SHARED_PORT" in attribute.group(1):
-                    isShared = True
-
-                if "GLOBAL" in attribute.group(1):
-                    break
-
-            portName = f"{belPrefix}{result.group(2)}"
-
-            if isExternal and not isShared:
-                external.append((portName, IO[result.group(1).upper()]))
-            elif isConfig:
-                config.append((portName, IO[result.group(1).upper()]))
-            elif isShared:
-                # shared port do not have a prefix
-                shared.append((result.group(2), IO[result.group(1).upper()]))
+    for line in file.split("\n"):
+        if filetype == "verilog":
+            if result := re.search(
+                r".*(input|output|inout).*?(\w+);", line, re.IGNORECASE
+            ):
+                portName = f"{belPrefix}{result.group(2)}"
+                direction = IO[result.group(1).upper()]
+                line = line.replace(" ", "")
+                if line := re.search(r"\(\*FABulous,(.*)\*\)", line):
+                    line = line.group(1)
             else:
-                internal.append((portName, IO[result.group(1).upper()]))
+                continue
+        else:  # VHDL
+            result = line
+            result = re.sub(r"STD_LOGIC.*|;.*|--*", "", result, flags=re.IGNORECASE)
+            result = result.replace(" ", "").replace("\t", "").replace(";", "")
+            if "IMPORTANT" in line:
+                continue
+            if result := re.search(r"(.*):(.*)", result):
+                portName = f"{belPrefix}{result.group(1)}"
+                if result.group(2).upper() == "IN":
+                    direction = IO["INPUT"]
+                elif result.group(2).upper() == "OUT":
+                    direction = IO["OUTPUT"]
+                elif result.group(2).upper() == "INOUT":
+                    direction = IO["INOUT"]
+                else:
+                    raise ValueError(
+                        f"Invalid or Unknown port direction {result.group(2).upper()} in line {line}."
+                    )
+            else:
+                continue
+        if line:
+            if "EXTERNAL" in line:
+                isExternal = True
+            if "CONFIG" in line:
+                isConfig = True
+            if "SHARED_PORT" in line:
+                isShared = True
+            if "GLOBAL" in line:
+                break
 
-            if "UserCLK" in portName:
-                userClk = True
+        if isExternal and not isShared:
+            external.append((portName, direction))
+        elif isConfig:
+            config.append((portName, direction))
+        elif isShared:
+            # shared port do not have a prefix
+            shared.append((portName.removeprefix(belPrefix), direction))
+        else:
+            internal.append((portName, direction))
 
-            isExternal = False
-            isConfig = False
-            isShared = False
+        if "UserCLK" in portName:
+            userClk = True
 
-    return internal, external, config, shared, noConfigBits, userClk, belMapDic
+        isExternal = False
+        isConfig = False
+        isShared = False
+
+    return Bel(
+        filename,
+        belPrefix,
+        internal,
+        external,
+        config,
+        shared,
+        noConfigBits,
+        belMapDic,
+        userClk,
+    )
 
 
 def _belMapProcessing(
@@ -1059,17 +902,3 @@ def parseConfigMem(
                 )
 
     return configMemEntry
-
-
-if __name__ == "__main__":
-    # result = parseFabricCSV('fabric.csv')
-    # result1 = parseList('RegFile_switch_matrix.list', collect="source")
-    # result = parseFileVerilog('./LUT4c_frame_config_dffesr.v')
-
-    result2 = parseFileVerilog("./test.txt")
-    # print(result[0])
-    # print(result[1])
-    # print(result[2])
-    # print(result[3])
-
-    # print(result.tileDic["W_IO"].portsInfo)

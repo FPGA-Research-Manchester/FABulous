@@ -24,13 +24,13 @@ The following packages need to be installed for generating fabric HDLs
 
     pip3 install -r requirements.txt
 
-This will also require to install `Tkinter` for the TCL facilities. To install `Tkinter` on Ubuntu, run:
+This will also require installing `Tkinter` for the TCL facilities. To install `Tkinter` on Ubuntu, run:
 
 .. code-block:: console
 
     sudo apt-get install python3-tk
 
-The following packages need to be installed for the CAD toolchain
+The following packages need to be installed for the CAD toolchain:
 
 :`Yosys <https://github.com/YosysHQ/yosys>`_:
  version > 0.26+0

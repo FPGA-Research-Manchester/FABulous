@@ -1,3 +1,5 @@
+.. _fpga_cad_tool_parametrization:
+
 FPGA CAD-tool parameterization
 ==============================
 

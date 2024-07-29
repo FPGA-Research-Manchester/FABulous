@@ -15,7 +15,7 @@ architecture from_verilog of LHQD1 is
 begin
   process (E, D) is
   begin
-    if rising_edge(E) then
+    if E = '1' then
       Q <= D;
       QN <= not D;
     end if;
@@ -99,7 +99,7 @@ begin
          IN2  when "01",
          IN3  when "10",
          IN4  when "11",
-         'U'  when others ;
+         '0'  when others ;
   
 end architecture;
 
@@ -249,14 +249,45 @@ architecture from_verilog of cus_mux41 is
   signal X_reg : std_logic;
   signal LPM_d0_ivl_1 : std_logic;
   signal LPM_d1_ivl_1 : std_logic;
+
+  component my_buf is 
+  port
+  (
+    A : in std_logic;
+    X : out std_logic
+  );
+  end component;
+  signal AIN : std_logic_vector(3 downto 0);
+
 begin
   SEL <= S1 & S0;
 
+  my_buf_inst0: my_buf
+    port map (
+      A => A0,
+      X => AIN(0)
+    );
+  my_buf_inst1: my_buf
+    port map (
+      A => A1,
+      X => AIN(1)
+    );
+  my_buf_inst2: my_buf
+    port map (
+      A => A2,
+      X => AIN(2)
+    );
+  my_buf_inst3: my_buf
+    port map (
+      A => A3,
+      X => AIN(3)
+    );  
+
   with SEL select
-    X <= A0  when "00",
-         A1  when "01",
-         A2  when "10",
-         A3  when "11",
+    X <= AIN(0)  when "00",
+         AIN(1)  when "01",
+         AIN(2)  when "10",
+         AIN(3)  when "11",
          'U'  when others;
 
 end architecture;
@@ -406,15 +437,46 @@ architecture from_verilog of cus_mux41_buf is
   signal SEL : unsigned(1 downto 0); 
   signal LPM_d0_ivl_1 : std_logic;
   signal LPM_d1_ivl_1 : std_logic;
+
+  component my_buf is
+  port
+  (
+    A : in std_logic;
+    X : out std_logic
+  );
+  end component;
+  signal AIN : std_logic_vector(3 downto 0);
+
 begin
   SEL <= S1 & S0;
-  with SEL select
-    X <= A0  when "00",
-         A1  when "01",
-         A2  when "10",
-         A3  when "11",
-        'U'  when others;
 
+  my_buf_inst0: my_buf
+    port map (
+      A => A0,
+      X => AIN(0)
+    );
+  my_buf_inst1: my_buf  
+    port map (
+      A => A1,
+      X => AIN(1)
+    );
+  my_buf_inst2: my_buf
+    port map (
+      A => A2,
+      X => AIN(2)
+    );
+  my_buf_inst3: my_buf
+   port map (
+      A => A3,
+      X => AIN(3)
+    );
+
+  with SEL select
+    X <= AIN(0)  when "00",
+         AIN(1)  when "01",
+         AIN(2)  when "10",
+         AIN(3)  when "11",
+        'U'  when others;
 end architecture;
 
 library ieee;
@@ -521,12 +583,33 @@ end entity;
 
 architecture from_verilog of my_mux2 is
   signal SEL : std_logic;
+  
+  component my_buf is
+  port
+  (
+    A : in std_logic;
+    X : out std_logic
+  );
+  end component;
+  signal AIN : std_logic_vector(1 downto 0);
+
 begin
   SEL <= S;
 
+  my_buf_inst0: my_buf
+    port map (
+      A => A0,
+      X => AIN(0)
+    );
+  my_buf_inst1: my_buf
+    port map (
+      A => A1,
+      X => AIN(1)
+    );
+
   with SEL select
-    X <= A0  when '0',
-         A1  when '1',
+    X <= AIN(0)  when '0',
+         AIN(1)  when '1',
         'U'  when others;
   
 end architecture;

@@ -1079,7 +1079,10 @@ To run the complete FABulous flow with the default project, run the following co
         make_hex(f"{self.projectDir}/{path}/{bitstream}", f"{self.projectDir}/{path}/{bitstream_hex}")
 
         try:
-            runCmd = ["vvp", f"{self.projectDir}/{path}/{vvp_file}"]
+            if optional_arg  == "fst":
+                runCmd = ["vvp", f"{self.projectDir}/{path}/{vvp_file}", "-fst"]
+            else:
+                runCmd = ["vvp", f"{self.projectDir}/{path}/{vvp_file}"]
             sp.run(runCmd, check=True)
         except sp.CalledProcessError:
             logger.error("Simulation failed")

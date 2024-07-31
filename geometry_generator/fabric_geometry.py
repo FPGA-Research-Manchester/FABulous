@@ -7,6 +7,8 @@ from geometry_generator.tile_geometry import TileGeometry
 
 logger = logging.getLogger(__name__)
 
+GENERATOR_VERSION = "1.0.0"
+
 
 class FabricGeometry:
     """
@@ -21,7 +23,7 @@ class FabricGeometry:
         padding         (int)                       :   Padding used throughout the geometry, in multiples of the width between wires
         width           (int)                       :   Width of the fabric
         height          (int)                       :   Height of the fabric
-        
+
     """
     fabric: Fabric
     tileNames: Set[str]
@@ -30,7 +32,6 @@ class FabricGeometry:
     padding: int
     width: int
     height: int
-
 
     def __init__(self, fabric: Fabric, padding: int = 8):
         self.fabric = fabric
@@ -43,18 +44,44 @@ class FabricGeometry:
 
         self.generateGeometry()
 
+    def genNeighbourConstraints(self, queried: TileGeometry) -> None:
+        for i in range(self.fabric.numberOfRows):
+            for j in range(self.fabric.numberOfColumns):
+                tile = self.fabric.tile[i][j]
+                if tile is None:
+                    continue
+                tileName = tile.name
+                tileGeom = self.tileGeomMap[tileName]
+
+                if tileGeom == queried:
+                    searchedTile = None
+                    if queried.border == Border.NORTHSOUTH:
+                        if i == 0:
+                            searchedTile = self.fabric.tile[i + 1][j]
+                        else:
+                            searchedTile = self.fabric.tile[i - 1][j]
+
+                    elif queried.border == Border.EASTWEST:
+                        if j == 0:
+                            searchedTile = self.fabric.tile[i][j + 1]
+                        else:
+                            searchedTile = self.fabric.tile[i][j - 1]
+
+                    if searchedTile is not None:
+                        searchedTileName = searchedTile.name
+                        queried.neighbourConstraints = self.tileGeomMap[searchedTileName].wireConstraints
 
     def generateGeometry(self) -> None:
         """
         Generates the geometric information from the given fabric object
-        
+
         """
 
         # here, the border attribute is set for tiles that are
-        # located at a border of the tile. This is done to 
+        # located at a border of the tile. This is done to
         # ensure no stair-like wires being generated for these tiles.
-        # The distinction left/right and top/bottom is made, to 
-        # prevent generation of horizontal and vertical stair-like 
+        # The distinction left/right and top/bottom is made, to
+        # prevent generation of horizontal and vertical stair-like
         # wires respectively.
         for i in range(self.fabric.numberOfRows):
             for j in range(self.fabric.numberOfColumns):
@@ -67,12 +94,32 @@ class FabricGeometry:
                         self.tileGeomMap[tile.name] = TileGeometry()
 
                     tileGeom = self.tileGeomMap[tile.name]
-                    northSouth = (i == 0 or i+1 == self.fabric.numberOfRows)
-                    eastWest = (j == 0 or j+1 == self.fabric.numberOfColumns)
+                    northSouth = (i == 0 or i + 1 == self.fabric.numberOfRows)
+                    eastWest = (j == 0 or j + 1 == self.fabric.numberOfColumns)
 
-                    if northSouth and eastWest  : tileGeom.border = Border.CORNER
-                    elif northSouth             : tileGeom.border = Border.NORTHSOUTH
-                    elif eastWest               : tileGeom.border = Border.EASTWEST
+                    if northSouth and eastWest:
+                        tileGeom.border = Border.CORNER
+                    elif northSouth:
+                        tileGeom.border = Border.NORTHSOUTH
+                    elif eastWest:
+                        tileGeom.border = Border.EASTWEST
+
+        # generate geometry for central tiles first
+        # to avoid conflicts at outer tiles:
+        # with the geometry of inner tiles already
+        # generated, outer tiles can simply generate
+        # their wires such that everything lines up.
+        innerTileNames = []
+        outerTileNames = []
+
+        for tileName in self.tileNames:
+            tileGeom = self.tileGeomMap[tileName]
+            self.genNeighbourConstraints(tileGeom)
+
+            if tileGeom.border == Border.NONE:
+                innerTileNames.append(tileName)
+            else:
+                outerTileNames.append(tileName)
 
         for tileName in self.tileNames:
             tile = self.fabric.getTileByName(tileName)
@@ -178,7 +225,7 @@ class FabricGeometry:
         self.width = rightMostX
         self.height = bottomMostY
 
-        # this step is for rearranging the switch matrices by setting 
+        # this step is for rearranging the switch matrices by setting
         # the relX/relY appropriately. This is done to ensure that
         # all inter-tile wires line up correctly.
         adjustedTileNames = set()
@@ -198,20 +245,49 @@ class FabricGeometry:
 
         # By now, the geometry of the whole fabric is fixed,
         # hence we can start generating the inter-tile wires.
-        for tileName in self.tileNames:
+        for tileName in innerTileNames:
             tileGeom = self.tileGeomMap[tileName]
             tileGeom.generateWires(self.padding)
 
+        for tileName in outerTileNames:
+            tileGeom = self.tileGeomMap[tileName]
+            tileGeom.generateWires(self.padding)
+
+    def totalWireLines(self) -> int:
+        """
+        Returns the total amount of lines (segments)
+        of wires of the fabrics routing.
+        Can, for instance, be used to initialize
+        the size of datastructures in the frontend.
+
+        """
+        lineGeomMap = {}
+        totalWireLines = 0
+
+        for i in range(self.fabric.numberOfRows):
+            for j in range(self.fabric.numberOfColumns):
+                tile = self.fabric.tile[i][j]
+                if tile is None: continue
+
+                if tile.name not in lineGeomMap:
+                    tileGeom = self.tileGeomMap[tile.name]
+                    tileLines = tileGeom.totalWireLines()
+                    lineGeomMap[tile.name] = tileLines
+                    totalWireLines += tileLines
+                else:
+                    totalWireLines += lineGeomMap[tile.name]
+
+        return totalWireLines
 
     def saveToCSV(self, fileName: str) -> None:
         """
-        Saves the generated geometric information of the 
+        Saves the generated geometric information of the
         given fabric to a .csv file that can be imported
         into the graphical frontend.
 
         Args:
             fileName (str): the name of the csv file
-            
+
         """
         logger.info(f"Generating geometry csv file for {self.fabric.name} # file name: {fileName}")
 
@@ -220,11 +296,13 @@ class FabricGeometry:
 
             writer.writerows([
                 ["PARAMS"],
-                ["Name"]    + [self.fabric.name],
-                ["Rows"]    + [str(self.fabric.numberOfRows)],
+                ["GeneratorVersion"] + [GENERATOR_VERSION],
+                ["Name"] + [self.fabric.name],
+                ["Rows"] + [str(self.fabric.numberOfRows)],
                 ["Columns"] + [str(self.fabric.numberOfColumns)],
-                ["Width"]   + [str(self.width)],
-                ["Height"]  + [str(self.height)],
+                ["Width"] + [str(self.width)],
+                ["Height"] + [str(self.height)],
+                ["Lines"] + [str(self.totalWireLines())],
                 []
             ])
 
@@ -241,7 +319,6 @@ class FabricGeometry:
             for tileName in self.tileNames:
                 tileGeometry = self.tileGeomMap[tileName]
                 tileGeometry.saveToCSV(writer)
-
 
     def __repr__(self) -> str:
         geometry = "Respective dimensions of tiles: \n"

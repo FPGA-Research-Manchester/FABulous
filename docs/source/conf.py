@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 Bea Healey <https://github.com/TaoBi22>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 import os
 import sys
 # Configuration file for the Sphinx documentation builder.

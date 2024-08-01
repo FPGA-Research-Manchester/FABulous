@@ -1,7 +1,8 @@
 Nextpnr compilation
 ===================
 
-Compile JSON to FASM by nextpnr <-- bels.txt + pips.txt
+Nextpnr can compile a JSON description of a circuit to FASM [#]_ using the
+architectural description in bels.txt and pips.txt
 
 Our nextpnr implementation uses nextpnr-generic for place and route. 
 
@@ -144,7 +145,8 @@ The following example is a 16-bit counter output to Block_RAM, and then Block_RA
 
         endmodule
 
+Footnotes
+---------
 
-
-
-
+.. [#] The FPGA Assembly format, describing a concrete list of features on a
+   specific FPGA fabric to be enabled

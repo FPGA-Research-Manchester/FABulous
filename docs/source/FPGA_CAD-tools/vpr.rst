@@ -1,7 +1,7 @@
 VPR models
 ==========
 
-To generate the necessary materials to program using VPR, run ``$FAB_ROOT/fabric_generator/fabric_gen.py`` with the -genVPRModel flag followed by the location of your custom information XML file (an description an example of which can be found below). In the ``$FAB_ROOT/fabric_generator/vproutput`` directory, two files will be created: ``architecture.xml`` and ``routing_resources.xml``. 
+To generate the necessary materials to program using VPR, run ``$FAB_ROOT/fabric_generator/fabric_gen.py`` with the -genVPRModel flag followed by the location of your custom information XML file (a description an example of which can be found below). In the ``$FAB_ROOT/fabric_generator/vproutput`` directory, two files will be created: ``architecture.xml`` and ``routing_resources.xml``.
 
 architecture.xml contains a description of the various tiles, ports and BELs - everything in the architecture except for the routing resources. 
 
@@ -16,7 +16,7 @@ The custom XML file should open and close with ``<custom_xml_spec>`` and ``</cus
 
 **<bel_pb> content <\bel_pb>**
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-This tag should contain the exact XML that should be inserted to define the second-level ``pb_type`` that represents this bel, including the ``<pb_type>`` tag itself. This should represent only one instance of the BEL (i.e. ``num_pb`` should be 1) as different instances are now represented by FABulous as individual subtiles, each of which has the ``pb_type`` as its equivalent site. Your XML will be automatically inserted inside a top-level wrapper ``pb_type``, and all inputs/outputs will be routed through into your description - therefore, it is required that your custom ``pb_type`` has at least the inputs and outputs described in your HDL model.
+This tag should contain the exact XML that should be inserted to define the second-level ``pb_type`` that represents this BEL, including the ``<pb_type>`` tag itself. This should represent only one instance of the BEL (i.e. ``num_pb`` should be 1) as different instances are now represented by FABulous as individual subtiles, each of which has the ``pb_type`` as its equivalent site. Your XML will be automatically inserted inside a top-level wrapper ``pb_type``, and all inputs/outputs will be routed through into your description - therefore, it is required that your custom ``pb_type`` has at least the inputs and outputs described in your HDL model.
 
 **<bel_model> content <\bel_model>**
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -153,7 +153,7 @@ Notes for developers
 
 The ptc number provided for each node in the routing resource (RR) graph represents the pin, track or class of the node. With SOURCE, SINK, IPIN and OPIN nodes, this is the ptc of the appropriate pin in the block type definition, however with CHANY and CHANX nodes it is more arbitrary. Here, each wire's ptc number should be different from any wire it overlaps with **anywhere along its length**. Previously, every wire had a separate PTC number, but this was recently updated so that no horizontal wire has the same number as any vertical wire, no two horizontal wires in the same row share a number, and no two vertical wires in the same column share a number. More information on the meaning of the PTC number can be found in `this Google Group discussion <https://groups.google.com/g/vtr-users/c/ZFXPn-W3SxA/m/ROkfD2oEAQAJ>`_.
 
-Although no meaningful routing connections are specified in the architecture.xml file, it is important that all pins do not have an Fc value of 0. This is because VPR uses the Fc value to gauge how well connected to the fabric a pin is, and so will not be able to find any routing candidates with 0 Fc pins. Currently FABulous is set up with a default fractional Fc of 1 such that all pins are connected to the fabric and are viable candidates.
+Although no meaningful routing connections are specified in the architecture.xml file, it is important that all pins do not have an Fc value of 0. This is because VPR uses the Fc value to gauge how well-connected to the fabric a pin is, and so will not be able to find any routing candidates with 0 Fc pins. Currently, FABulous is set up with a default fractional Fc of 1 such that all pins are connected to the fabric and are viable candidates.
 
 Due to the techmapping complexity, the multiplexers in the LUT4AB tiles are currently ignored and it is assumed each LUT is routed to a separate output - at the time of writing, the same assumption is made for the nextpnr model.
 

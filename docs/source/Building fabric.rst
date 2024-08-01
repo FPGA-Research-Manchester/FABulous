@@ -78,7 +78,7 @@ The above command will generate the configuration storage for the ``LUT4AB`` til
 
 The above command will generate the actual tiles for the ``LUT4AB`` tile and the ``RAM_IO`` tile.
 
-All the files generated will be located in the respective tile directory. i.e RTL for ``LUT4AB`` will be in ``Tile/LUT4AB/``
+All the files generated will be located in the respective tile directory. i.e. RTL for ``LUT4AB`` will be in ``Tile/LUT4AB/``
 
 We will need to run the above commands for all the tiles to get all the RTL of all the tiles, which is quite tedious to 
 do. As a result, the following command will generate all the RTL for all the tiles in the fabric including all the super 
@@ -114,7 +114,7 @@ tiles within the fabric.
 
         gen_model_vpr
 
-#. Generate the meta data list for FASM --> Bitstream
+#. Generate the metadata list for FASM → Bitstream
 
    .. prompt:: bash FABulous>
 

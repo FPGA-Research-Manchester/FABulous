@@ -26,3 +26,21 @@
 	location = {Virtual Event, USA},
 	series = {FPGA '21}
 }
+
+@inproceedings{10.1145/3490422.3502371,
+author = {Chung, King Lok and Dao, Nguyen and Yu, Jing and Koch, Dirk},
+title = {How to Shrink My FPGAs — Optimizing Tile Interfaces and the Configuration Logic in FABulous FPGA Fabrics},
+year = {2022},
+isbn = {9781450391498},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3490422.3502371},
+doi = {10.1145/3490422.3502371},
+abstract = {Commercial FPGAs from major vendors are extensively optimized, and fabrics use many hand-crafted custom cells, including switch matrix multiplexers and configuration memory cells. The physical design optimizations commonly improve area, latency (=speed), and power consumption together. This paper is dedicated to improving the physical implementation of FPGA tiles and the configuration storage in SRAM FPGAs. This paper proposes to remap configuration bits and interface wires to implement tightly packed tiles. Using the FABulous FPGA framework, we show that our optimizations are virtually for free but can save over 20\% in area and improve latency at the same time. We will evaluate our approach in different scenarios by changing the available metal layers or the requested channel capacity. Our optimizations consider all tiles and we propose a flow that resolves dependencies between the CLBs and other tiles. Moreover, we will show that frame-based reconfiguration is, in almost all cases, better than shift register configuration.},
+booktitle = {Proceedings of the 2022 ACM/SIGDA International Symposium on Field-Programmable Gate Arrays},
+pages = {13–23},
+numpages = {11},
+keywords = {optimization, open source, open hardware, fpgas},
+location = {Virtual Event, USA},
+series = {FPGA '22}
+}

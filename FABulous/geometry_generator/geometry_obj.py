@@ -2,7 +2,7 @@ from enum import Enum
 
 
 class Location:
-    """A simple datastruct for storing a Location.
+    """A simple data structure for storing a location.
 
     Attributes
     ----------

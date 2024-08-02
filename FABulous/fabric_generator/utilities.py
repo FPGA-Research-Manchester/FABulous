@@ -5,14 +5,14 @@ import os
 
 
 def parseMatrix(fileName: str, tileName: str) -> dict[str, list[str]]:
-    """parse the matrix csv into a dictionary from destination to source
+    """Parse the matrix CSV into a dictionary from destination to source.
 
     Parameters
     ----------
     fileName : str
-        directory of the matrix csv file
+        Directory of the matrix CSV file.
     tileName : str
-        name of the tile need to be parsed
+        Name of the tile needed to be parsed.
 
     Raises
     ------
@@ -22,7 +22,7 @@ def parseMatrix(fileName: str, tileName: str) -> dict[str, list[str]]:
     Returns
     -------
     dict : [str, list[str]]
-        dictionary from destination to a list of source
+        Dictionary from destination to a list of sources.
     """
 
     connectionsDic = {}
@@ -68,7 +68,7 @@ def parseList(
 def parseList(
     fileName: str, collect: Literal["pair", "source", "sink"] = "pair"
 ) -> list[tuple[str, str]] | dict[str, list[str]]:
-    """parse a list file and expand the list file information into a list of tuples.
+    """Parse a list file and expand the list file information into a list of tuples.
 
     Parameters
     ----------
@@ -87,7 +87,7 @@ def parseList(
     Returns
     -------
     Union : [list[tuple[str, str]], dict[str, list[str]]]
-        Return either a list of connection pair or a dictionary of lists which is collected by the specified option, source or sink.
+        Return either a list of connection pairs or a dictionary of lists which is collected by the specified option, source or sink.
     """
 
     if not os.path.exists(fileName):
@@ -142,7 +142,7 @@ def expandListPorts(port, PortList):
     Parameters
     ----------
     port : str
-        The port entry to epand. if it contains "[", it's split
+        The port entry to expand. If it contains "[", it's split
         into multiple entries based on "|".
     PortList : list
         The list where expanded port entries are appended.

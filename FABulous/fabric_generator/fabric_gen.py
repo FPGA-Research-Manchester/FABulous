@@ -24,6 +24,7 @@ import string
 from loguru import logger
 from pathlib import Path
 from typing import Dict, List, Tuple
+from collections import defaultdict
 
 from FABulous.fabric_generator.code_generation_Verilog import VerilogWriter
 from FABulous.fabric_generator.code_generation_VHDL import VHDLWriter
@@ -1085,23 +1086,44 @@ class FabricGenerator:
         belCounter = 0
         belConfigBitsCounter = 0
         for bel in tile.bels:
+            port_dict = defaultdict(list)
             portsPairs = []
             portList = []
             signal = []
 
             # internal port
             for port in bel.inputs + bel.outputs:
-                port = port.removeprefix(bel.prefix)
-                portsPairs.append((port, f"{bel.prefix}{port}"))
+                port_name = port.removeprefix(bel.prefix)
+                match = re.match(r"([a-zA-Z_]+)(\d*)", port_name)
+                if match:
+                    portname = match.group(1)
+                    number = match.group(2)
+                    port_dict[portname].append((port, number))
 
             # external port
             for port in bel.externalInput + bel.externalOutput:
-                port = port.removeprefix(bel.prefix)
-                portsPairs.append((port, f"{bel.prefix}{port}"))
+                port_name = port.removeprefix(bel.prefix)
+                match = re.match(r"([a-zA-Z_]+)(\d*)", port_name)
+                if match:
+                    portname = match.group(1)
+                    number = match.group(2)
+                    port_dict[portname].append((port, number))
 
             # shared port
             for port in bel.sharedPort:
                 portsPairs.append((port[0], port[0]))
+
+            for portname, ports in port_dict.items():
+                if len(ports) > 1:
+                    # Sort ports based on their numbers
+                    ports.sort(key=lambda x: int(x[1]) if x[1] else -1)
+                    concatenated_ports = ", ".join(port for port, _ in ports)
+                    portsPairs.append((portname, f"{{{concatenated_ports}}}"))
+                else:
+                    # Single port, no need for concatenation
+                    portsPairs.append((portname, ports[0][0]))
+
+            # print(portsPairs)
 
             if self.fabric.configBitMode == ConfigBitMode.FRAME_BASED:
                 if bel.configBit > 0:

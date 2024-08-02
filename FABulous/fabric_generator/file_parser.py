@@ -1,10 +1,12 @@
 import csv
 import os
 import re
+import subprocess
+import json
 from loguru import logger
 from copy import deepcopy
 
-from typing import Literal
+from typing import Literal, Dict
 from FABulous.fabric_definition.Bel import Bel
 from FABulous.fabric_definition.Port import Port
 from FABulous.fabric_definition.Wire import Wire
@@ -579,25 +581,22 @@ def parseFile(filename: str, belPrefix: str = "", filetype: str = "") -> Bel:
         exit(-1)
 
     if filetype not in ("verilog", "vhdl"):
-        raise ValueError(f"{filetype} is not a valid type.")
-
-    belMapDic = _belMapProcessing(file, filename, filetype)
-
-    if result := re.search(r"NoConfigBits.*?=.*?(\d+)", file, re.IGNORECASE):
-        noConfigBits = int(result.group(1))
-    else:
-        logger.warning(
-            f"Cannot find NoConfigBits in {filename} assuming number of configBits is 0"
-        )
-        noConfigBits = 0
-
-    if len(belMapDic) != noConfigBits:
-        logger.error(
-            f"NoConfigBits does not match with the BEL map in file {filename}, length of BelMap is {len(belMapDic)}, but with {noConfigBits} config bits"
-        )
+        logger.error(f"{filetype} is not a valid type.")
         raise ValueError
 
     if filetype == "vhdl":
+        belMapDic = vhdl_belMapProcessing(file, filename, filetype)
+        if result := re.search(r"NoConfigBits.*?=.*?(\d+)", file, re.IGNORECASE):
+            noConfigBits = int(result.group(1))
+        else:
+            logger.warning(f"Cannot find NoConfigBits in {filename}")
+            logger.warning("Assume the number of configBits is 0")
+            noConfigBits = 0
+        if len(belMapDic) != noConfigBits:
+            logger.error(
+                f"NoConfigBits does not match with the BEL map in file {filename}, length of BelMap is {len(belMapDic)}, but with {noConfigBits} config bits"
+            )
+            raise ValueError
         if result := re.search(
             r"port.*?\((.*?)\);", file, re.MULTILINE | re.DOTALL | re.IGNORECASE
         ):
@@ -605,19 +604,7 @@ def parseFile(filename: str, belPrefix: str = "", filetype: str = "") -> Bel:
         else:
             raise ValueError(f"Could not find port section in file {filename}")
 
-    for line in file.split("\n"):
-        if filetype == "verilog":
-            if result := re.search(
-                r".*(input|output|inout).*?(\w+);", line, re.IGNORECASE
-            ):
-                portName = f"{belPrefix}{result.group(2)}"
-                direction = IO[result.group(1).upper()]
-                line = line.replace(" ", "")
-                if line := re.search(r"\(\*FABulous,(.*)\*\)", line):
-                    line = line.group(1)
-            else:
-                continue
-        else:  # VHDL
+        for line in file.split("\n"):
             result = line
             result = re.sub(r"STD_LOGIC.*|;.*|--*", "", result, flags=re.IGNORECASE)
             result = result.replace(" ", "").replace("\t", "").replace(";", "")
@@ -632,20 +619,21 @@ def parseFile(filename: str, belPrefix: str = "", filetype: str = "") -> Bel:
                 elif result.group(2).upper() == "INOUT":
                     direction = IO["INOUT"]
                 else:
-                    raise ValueError(
+                    logger.error(
                         f"Invalid or Unknown port direction {result.group(2).upper()} in line {line}."
                     )
+                    raise ValueError
             else:
                 continue
-        if line:
-            if "EXTERNAL" in line:
-                isExternal = True
-            if "CONFIG" in line:
-                isConfig = True
-            if "SHARED_PORT" in line:
-                isShared = True
-            if "GLOBAL" in line:
-                break
+            if line:
+                if "EXTERNAL" in line:
+                    isExternal = True
+                if "CONFIG" in line:
+                    isConfig = True
+                if "SHARED_PORT" in line:
+                    isShared = True
+                if "GLOBAL" in line:
+                    break
 
         if isExternal and not isShared:
             external.append((portName, direction))
@@ -664,6 +652,79 @@ def parseFile(filename: str, belPrefix: str = "", filetype: str = "") -> Bel:
         isConfig = False
         isShared = False
 
+    if filetype == "verilog":
+        # Runs yosys on verilog file, splits ports, saves to json in same directory.
+        json_file = filename.replace(".v", ".json")
+        runCmd = [
+            "yosys",
+            "-qp" f"read_verilog {filename}; proc; write_json -compat-int {json_file}",
+        ]
+        try:
+            subprocess.run(runCmd, check=True)
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Failed to run yosys command: {e}")
+            raise ValueError
+
+        with open(f"{json_file}", "r") as f:
+            data_dict = json.load(f)
+        # Default yosys list names added.
+        modules = data_dict.get("modules", {})
+        sub_modules = ["parameter_default_values", "cells", "memories", "netnames"]
+        filtered_ports: Dict[str, IO] = {}
+        # Gatheres port name and direction, filters out configbits as they show in ports.
+        for module_name, module_info in modules.items():
+            ports = module_info["ports"]
+            for port_name, details in ports.items():
+                if "ConfigBits" in port_name:
+                    continue
+                if "UserCLK" in port_name:
+                    userClk = True
+                direction = IO[details["direction"].upper()]
+                bits = details.get("bits", [])
+                filtered_ports[port_name] = (direction, bits)
+        # Passed attributes dont show in port list, checks for attributes in other lists.
+        for submodule in sub_modules:
+            if submodule not in module_info:
+                continue
+            item_info = module_info.get(submodule, {})
+            for item, details in item_info.items():
+                if item == "NoConfigBits":
+                    noConfigBits = details
+                if item in filtered_ports:
+                    direction, bits = filtered_ports[item]
+                    attributes = details.get("attributes", {})
+                    for index in range(len(bits)):
+                        if len(bits) > 1:
+                            new_port_name = (
+                                f"{item}{index}"  # Multi-bit ports get index
+                            )
+                        else:
+                            new_port_name = (
+                                item  # Single-bit port uses the original name
+                            )
+                        match attributes:
+                            case (
+                                _
+                            ) if "EXTERNAL" in attributes and "SHARED_PORT" not in attributes:
+                                external.append(
+                                    (f"{belPrefix}{new_port_name}", direction)
+                                )
+                            case _ if "CONFIG" in attributes:
+                                config.append(
+                                    (f"{belPrefix}{new_port_name}", direction)
+                                )
+                            case _ if "SHARED_PORT" in attributes:
+                                shared.append((new_port_name, direction))
+                            case _:
+                                internal.append(
+                                    (f"{belPrefix}{new_port_name}", direction)
+                                )
+
+        belMapDic = verilog_belMapProcessing(module_info)
+        if len(belMapDic) != noConfigBits:
+            raise ValueError(
+                f"NoConfigBits does not match with the BEL map in file {filename}, length of BelMap is {len(belMapDic)}, but with {noConfigBits} config bits"
+            )
     return Bel(
         filename,
         belPrefix,
@@ -677,9 +738,53 @@ def parseFile(filename: str, belPrefix: str = "", filetype: str = "") -> Bel:
     )
 
 
-def _belMapProcessing(
-    file: str, filename: str, syntax: Literal["vhdl", "verilog"]
-) -> dict:
+def verilog_belMapProcessing(module_info):
+    """Extracts and transforms BEL mapping attributes in the JSON created from a Verilog module.
+
+    Parameters
+    ----------
+    module_info : dict
+        A dictionary containing the module's attributes, including
+        potential BEL mapping information.
+
+    Returns
+    -------
+    dic
+        Dictionary containing the parsed bel mapping information.
+    """
+    belMapDic = {}
+    attributes = module_info.get("attributes", {})
+
+    if "BelMap" not in attributes:
+        return belMapDic
+    # Passed attributes that dont need appending. (May need refining.)
+    exclude_attributes = {
+        "BelMap",
+        "FABulous",
+        "dynports",
+        "cells_not_processed",
+        "src",
+    }
+
+    for key, value in attributes.items():
+        if key in exclude_attributes:
+            continue
+        match key:
+            case key if key.startswith("INIT_") and key[5:].isdigit():
+                index = key[5:]
+                new_key = f"INIT[{index}]"
+            case "INIT":
+                new_key = "INIT"
+            case key if key.isupper() and "_" not in key:
+                new_key = key
+            case _:
+                new_key = key
+
+        belMapDic[new_key] = {0: {0: "1"}}
+    return belMapDic
+
+
+def vhdl_belMapProcessing(file: str, filename: str, syntax: Literal["vhdl"]) -> dict:
     """Processes bel mapping information from file contents.
 
     Parameters
@@ -688,7 +793,7 @@ def _belMapProcessing(
         Conent of the file as a string
     filename : str
         Name of the file being processed
-    syntax : Literal['vhdl', 'verilog']
+    syntax : Literal['vhdl']
         Syntax type of the file.
 
     Returns
@@ -701,9 +806,7 @@ def _belMapProcessing(
     ValueError
         If invalid enum is encounted in the file.
     """
-    pre = ""
-    if syntax == "vhdl":
-        pre = "--.*?"
+    pre = "--.*?"
 
     belEnumsDic = {}
     if belEnums := re.findall(

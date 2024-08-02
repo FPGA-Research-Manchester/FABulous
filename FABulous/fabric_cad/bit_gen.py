@@ -4,8 +4,8 @@ import pickle
 import re
 import sys
 
-from loguru import logger
 from fasm import *  # Remove this line if you do not have the fasm library installed and will not be generating a bitstream
+from loguru import logger
 
 
 def replace(string, substitutions):
@@ -79,7 +79,7 @@ def genBitstream(fasmFile: str, specFile: str, bitstreamFile: str):
                 raise Exception
 
     # Write output string and introduce mask
-    coordsRE = re.compile("X(\d*)Y(\d*)")
+    coordsRE = re.compile(r"X(\d*)Y(\d*)")
     num_columns = 0
     num_rows = 0
 
@@ -134,8 +134,9 @@ def genBitstream(fasmFile: str, specFile: str, bitstreamFile: str):
                                 str,
                                 (
                                     tileDict[tileKey][
-                                        FrameBitsPerRow
-                                        * frameIndex : (FrameBitsPerRow * frameIndex)
+                                        FrameBitsPerRow * frameIndex : (
+                                            FrameBitsPerRow * frameIndex
+                                        )
                                         + FrameBitsPerRow
                                     ]
                                 ),
@@ -262,7 +263,7 @@ def bit_gen():
     # Strip arguments
     caseProcessedArguments = list(map(lambda x: x.strip(), sys.argv))
     processedArguments = list(map(lambda x: x.lower(), caseProcessedArguments))
-    flagRE = re.compile("-\S*")
+    flagRE = re.compile(r"-\S*")
     if "-genBitstream".lower() in str(sys.argv).lower():
         argIndex = processedArguments.index("-genBitstream".lower())
         if len(processedArguments) <= argIndex + 3:

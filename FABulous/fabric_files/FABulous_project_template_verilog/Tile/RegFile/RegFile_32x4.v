@@ -56,6 +56,9 @@ module RegFile_32x4 #(parameter NoConfigBits = 2)(
 		end
 	end
 
+	assign AD = mem[A_ADR];	
+	assign BD = mem[B_ADR];
+
     always @ (posedge UserCLK) begin
         AD_reg <= AD;
         BD_reg <= BD;

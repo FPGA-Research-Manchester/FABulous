@@ -653,11 +653,12 @@ def parseFile(filename: str, belPrefix: str = "", filetype: str = "") -> Bel:
         isShared = False
 
     if filetype == "verilog":
-        # Runs yosys on verilog file, splits ports, saves to json in same directory.
+        # Runs yosys on verilog file, creates netlist, saves to json in same directory.
         json_file = filename.replace(".v", ".json")
         runCmd = [
             "yosys",
-            "-qp" f"read_verilog {filename}; proc; write_json -compat-int {json_file}",
+            "-qp"
+            f"read_verilog {filename}; proc -noopt; write_json -compat-int {json_file}",
         ]
         try:
             subprocess.run(runCmd, check=True)
@@ -719,7 +720,6 @@ def parseFile(filename: str, belPrefix: str = "", filetype: str = "") -> Bel:
                                 internal.append(
                                     (f"{belPrefix}{new_port_name}", direction)
                                 )
-
         belMapDic = verilog_belMapProcessing(module_info)
         if len(belMapDic) != noConfigBits:
             raise ValueError(
@@ -754,7 +754,7 @@ def verilog_belMapProcessing(module_info):
     """
     belMapDic = {}
     attributes = module_info.get("attributes", {})
-
+    # if BelMap not present defaults belMapDic to {}
     if "BelMap" not in attributes:
         return belMapDic
     # Passed attributes that dont need appending. (May need refining.)
@@ -765,7 +765,7 @@ def verilog_belMapProcessing(module_info):
         "cells_not_processed",
         "src",
     }
-
+    # match case for INIT. (may need modifying for other naming conventions.)
     for key, value in attributes.items():
         if key in exclude_attributes:
             continue
@@ -781,6 +781,10 @@ def verilog_belMapProcessing(module_info):
                 new_key = key
 
         belMapDic[new_key] = {0: {0: "1"}}
+
+    # yosys reverses belmap, reverse back to keep original belmap.
+    belMapDic = dict(reversed(list(belMapDic.items())))
+
     return belMapDic
 
 

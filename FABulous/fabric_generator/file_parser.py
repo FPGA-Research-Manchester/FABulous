@@ -568,6 +568,7 @@ def parseFile(filename: str, belPrefix: str = "", filetype: str = "") -> Bel:
     isConfig = False
     isShared = False
     userClk = False
+    individually_declared = False
     noConfigBits = 0
 
     try:
@@ -680,6 +681,8 @@ def parseFile(filename: str, belPrefix: str = "", filetype: str = "") -> Bel:
                     continue
                 if "UserCLK" in port_name:
                     userClk = True
+                if port_name[-1].isdigit():
+                    individually_declared = True
                 direction = IO[details["direction"].upper()]
                 bits = details.get("bits", [])
                 filtered_ports[port_name] = (direction, bits)
@@ -725,6 +728,7 @@ def parseFile(filename: str, belPrefix: str = "", filetype: str = "") -> Bel:
             raise ValueError(
                 f"NoConfigBits does not match with the BEL map in file {filename}, length of BelMap is {len(belMapDic)}, but with {noConfigBits} config bits"
             )
+
     return Bel(
         filename,
         belPrefix,
@@ -735,6 +739,7 @@ def parseFile(filename: str, belPrefix: str = "", filetype: str = "") -> Bel:
         noConfigBits,
         belMapDic,
         userClk,
+        individually_declared,
     )
 
 

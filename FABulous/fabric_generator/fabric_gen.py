@@ -1095,19 +1095,15 @@ class FabricGenerator:
             # Internal ports
             for port in bel.inputs + bel.outputs:
                 port_name = port.removeprefix(bel.prefix)
-                match = re.match(r"([a-zA-Z_]+)(\d*)", port_name)
-                if match:
-                    portname = match.group(1)
-                    number = match.group(2)
+                if r := re.match(r"([a-zA-Z_]+)(\d*)", port_name):
+                    portname, number = r.groups()
                     port_dict[portname].append((port, number))
 
             # External ports
             for port in bel.externalInput + bel.externalOutput:
                 port_name = port.removeprefix(bel.prefix)
-                match = re.match(r"([a-zA-Z_]+)(\d*)", port_name)
-                if match:
-                    portname = match.group(1)
-                    number = match.group(2)
+                if r := re.match(r"([a-zA-Z_]+)(\d*)", port_name):
+                    portname, number = r.groups()
                     port_dict[portname].append((port, number))
 
             # Shared ports

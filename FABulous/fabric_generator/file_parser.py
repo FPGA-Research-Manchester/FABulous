@@ -6,7 +6,7 @@ import json
 from loguru import logger
 from copy import deepcopy
 
-from typing import Literal, Dict
+from typing import Literal
 from FABulous.fabric_definition.Bel import Bel
 from FABulous.fabric_definition.Port import Port
 from FABulous.fabric_definition.Wire import Wire
@@ -477,7 +477,9 @@ def parseSupertiles(fileName: str, tileDic: dict[str, Tile]) -> list[SuperTile]:
     return new_supertiles
 
 
-def parseFile(filename: str, belPrefix: str = "", filetype: str = "") -> Bel:
+def parseFile(
+    filename: str, belPrefix: str = "", filetype: Literal["verilog", "vhdl"] = ""
+) -> Bel:
     """
     Parse a Verilog or VHDL bel file and return all the related information of the bel.
     The tuple returned for relating to ports will be a list of (belName, IO) pair.
@@ -581,10 +583,6 @@ def parseFile(filename: str, belPrefix: str = "", filetype: str = "") -> Bel:
         logger.critical(f"Permission denied to file {filename}.")
         exit(-1)
 
-    if filetype not in ("verilog", "vhdl"):
-        logger.error(f"{filetype} is not a valid type.")
-        raise ValueError
-
     if filetype == "vhdl":
         belMapDic = vhdl_belMapProcessing(file, filename, filetype)
         if result := re.search(r"NoConfigBits.*?=.*?(\d+)", file, re.IGNORECASE):
@@ -671,8 +669,7 @@ def parseFile(filename: str, belPrefix: str = "", filetype: str = "") -> Bel:
             data_dict = json.load(f)
         # Default yosys list names added.
         modules = data_dict.get("modules", {})
-        sub_modules = ["parameter_default_values", "cells", "memories", "netnames"]
-        filtered_ports: Dict[str, IO] = {}
+        filtered_ports: dict[str, IO] = {}
         # Gatheres port name and direction, filters out configbits as they show in ports.
         for module_name, module_info in modules.items():
             ports = module_info["ports"]
@@ -686,43 +683,29 @@ def parseFile(filename: str, belPrefix: str = "", filetype: str = "") -> Bel:
                 direction = IO[details["direction"].upper()]
                 bits = details.get("bits", [])
                 filtered_ports[port_name] = (direction, bits)
-        # Passed attributes dont show in port list, checks for attributes in other lists.
-        for submodule in sub_modules:
-            if submodule not in module_info:
-                continue
-            item_info = module_info.get(submodule, {})
-            for item, details in item_info.items():
-                if item == "NoConfigBits":
-                    noConfigBits = details
-                if item in filtered_ports:
-                    direction, bits = filtered_ports[item]
-                    attributes = details.get("attributes", {})
-                    for index in range(len(bits)):
-                        if len(bits) > 1:
-                            new_port_name = (
-                                f"{item}{index}"  # Multi-bit ports get index
-                            )
-                        else:
-                            new_port_name = (
-                                item  # Single-bit port uses the original name
-                            )
-                        match attributes:
-                            case (
-                                _
-                            ) if "EXTERNAL" in attributes and "SHARED_PORT" not in attributes:
-                                external.append(
-                                    (f"{belPrefix}{new_port_name}", direction)
-                                )
-                            case _ if "CONFIG" in attributes:
-                                config.append(
-                                    (f"{belPrefix}{new_port_name}", direction)
-                                )
-                            case _ if "SHARED_PORT" in attributes:
-                                shared.append((new_port_name, direction))
-                            case _:
-                                internal.append(
-                                    (f"{belPrefix}{new_port_name}", direction)
-                                )
+
+        param_defaults = module_info.get("parameter_default_values")
+        if param_defaults and "NoConfigBits" in param_defaults:
+            noConfigBits = param_defaults["NoConfigBits"]
+        # Passed attributes dont show in port list, checks for attributes in netnames.
+        # (If passed attributes missing, may need to expand to check other lists e.g "memories".)
+        netnames = module_info.get("netnames", {})
+        for item, details in netnames.items():
+            if item in filtered_ports:
+                direction, bits = filtered_ports[item]
+                attributes = details.get("attributes", {})
+                for index in range(len(bits)):
+                    new_port_name = (
+                        f"{item}{index}" if len(bits) > 1 else item
+                    )  # Multi-bit ports get index
+                    if "EXTERNAL" in attributes and "SHARED_PORT" not in attributes:
+                        external.append((f"{belPrefix}{new_port_name}", direction))
+                    elif "CONFIG" in attributes:
+                        config.append((f"{belPrefix}{new_port_name}", direction))
+                    elif "SHARED_PORT" in attributes:
+                        shared.append((new_port_name, direction))
+                    else:
+                        internal.append((f"{belPrefix}{new_port_name}", direction))
         belMapDic = verilog_belMapProcessing(module_info)
         if len(belMapDic) != noConfigBits:
             raise ValueError(
@@ -730,16 +713,16 @@ def parseFile(filename: str, belPrefix: str = "", filetype: str = "") -> Bel:
             )
 
     return Bel(
-        filename,
-        belPrefix,
-        internal,
-        external,
-        config,
-        shared,
-        noConfigBits,
-        belMapDic,
-        userClk,
-        individually_declared,
+        src=filename,
+        prefix=belPrefix,
+        internal=internal,
+        external=external,
+        configPort=config,
+        sharedPort=shared,
+        configBit=noConfigBits,
+        belMap=belMapDic,
+        userCLK=userClk,
+        individually_declared=individually_declared,
     )
 
 
@@ -793,7 +776,7 @@ def verilog_belMapProcessing(module_info):
     return belMapDic
 
 
-def vhdl_belMapProcessing(file: str, filename: str, syntax: Literal["vhdl"]) -> dict:
+def vhdl_belMapProcessing(file: str, filename: str) -> dict:
     """Processes bel mapping information from file contents.
 
     Parameters

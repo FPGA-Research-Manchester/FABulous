@@ -19,8 +19,6 @@ def bitstring_to_bytes(s):
 
 
 # CAD methods from summer vacation project 2020
-
-
 # Method to generate bitstream in the output format - more detail at the end
 def genBitstream(fasmFile: str, specFile: str, bitstreamFile: str):
     lGen = parse_fasm_filename(fasmFile)
@@ -50,8 +48,7 @@ def genBitstream(fasmFile: str, specFile: str, bitstreamFile: str):
             tileLoc = tileVals[0]
             featureName = ".".join((tileVals[1], tileVals[2]))
             if tileLoc not in specDict["TileMap"].keys():
-                logger.critical(
-                    "Tile found in fasm file not found in bitstream spec")
+                logger.critical("Tile found in fasm file not found in bitstream spec")
                 raise Exception
             # Set the necessary bits high
             tileType = specDict["TileMap"][tileLoc]
@@ -121,8 +118,7 @@ def genBitstream(fasmFile: str, specFile: str, bitstreamFile: str):
     for y in range(num_rows - 2, 0, -1):
         for x in range(num_columns):
             tileKey = f"X{x}Y{y}"
-            curStr = ",".join(
-                (tileKey, specDict["TileMap"][tileKey], str(x), str(y)))
+            curStr = ",".join((tileKey, specDict["TileMap"][tileKey], str(x), str(y)))
             curStr += "\n"
             bitPos = 0
 
@@ -138,7 +134,7 @@ def genBitstream(fasmFile: str, specFile: str, bitstreamFile: str):
                                 (
                                     tileDict[tileKey][
                                         FrameBitsPerRow
-                                        * frameIndex: (FrameBitsPerRow * frameIndex)
+                                        * frameIndex : (FrameBitsPerRow * frameIndex)
                                         + FrameBitsPerRow
                                     ]
                                 ),

@@ -556,8 +556,7 @@ To run the complete FABulous flow with the default project, run the following co
         ]
         tileByFabric = list(self.fabricGen.fabric.tileDic.keys())
         superTileByFabric = list(self.fabricGen.fabric.superTileDic.keys())
-        self.allTile = list(set(tileByPath) & set(
-            tileByFabric + superTileByFabric))
+        self.allTile = list(set(tileByPath) & set(tileByFabric + superTileByFabric))
         logger.info("Complete")
 
     def complete_load_fabric(self, text, *ignored):
@@ -867,15 +866,13 @@ To run the complete FABulous flow with the default project, run the following co
                 )
                 padding = paddingDefault
         else:
-            logger.info(
-                f"No padding specified, defaulting to {paddingDefault}")
+            logger.info(f"No padding specified, defaulting to {paddingDefault}")
             padding = paddingDefault
 
         if 4 <= padding <= 32:
             self.fabricGen.genGeometry(padding)
             logger.info("Geometry generation complete")
-            logger.info(
-                f"{geomFile} can now be imported into the FABulous Editor")
+            logger.info(f"{geomFile} can now be imported into the FABulous Editor")
         else:
             logger.error("padding has to be between 4 and 32 inclusively!")
 
@@ -896,15 +893,13 @@ To run the complete FABulous flow with the default project, run the following co
         logger.info("Generating bitstream specification")
         specObject = self.fabricGen.genBitStreamSpec()
 
-        logger.info(
-            f"output file: {self.projectDir}/{metaDataDir}/bitStreamSpec.bin")
+        logger.info(f"output file: {self.projectDir}/{metaDataDir}/bitStreamSpec.bin")
         with open(
             f"{self.projectDir}/{metaDataDir}/bitStreamSpec.bin", "wb"
         ) as outFile:
             pickle.dump(specObject, outFile)
 
-        logger.info(
-            f"output file: {self.projectDir}/{metaDataDir}/bitStreamSpec.csv")
+        logger.info(f"output file: {self.projectDir}/{metaDataDir}/bitStreamSpec.csv")
         with open(f"{self.projectDir}/{metaDataDir}/bitStreamSpec.csv", "w") as f:
             w = csv.writer(f)
             for key1 in specObject["TileSpecs"]:
@@ -985,8 +980,7 @@ To run the complete FABulous flow with the default project, run the following co
         with open(f"{self.projectDir}/{metaDataDir}/bel.v2.txt", "w") as f:
             f.write(npnrModel[2])
 
-        logger.info(
-            f"output file: {self.projectDir}/{metaDataDir}/template.pcf")
+        logger.info(f"output file: {self.projectDir}/{metaDataDir}/template.pcf")
         with open(f"{self.projectDir}/{metaDataDir}/template.pcf", "w") as f:
             f.write(npnrModel[3])
 
@@ -1063,8 +1057,7 @@ To run the complete FABulous flow with the default project, run the following co
             raise TypeError(
                 f"do_synthesis takes exactly one argument ({len(args)} given)"
             )
-        logger.info(
-            f"Running synthesis that targeting Nextpnr with design {args[0]}")
+        logger.info(f"Running synthesis that targeting Nextpnr with design {args[0]}")
         path = get_path(args[0])
         parent = path.parent
         verilog_file = path.name
@@ -1141,8 +1134,7 @@ To run the complete FABulous flow with the default project, run the following co
             raise TypeError(
                 f"do_place_and_route takes exactly one argument ({len(args)} given)"
             )
-        logger.info(
-            f"Running Placement and Routing with Nextpnr for design {args[0]}")
+        logger.info(f"Running Placement and Routing with Nextpnr for design {args[0]}")
         path = get_path(args[0])
         parent = path.parent
         json_file = path.name
@@ -1207,8 +1199,7 @@ To run the complete FABulous flow with the default project, run the following co
 
             logger.info("Placement and Routing completed")
         else:
-            logger.error(
-                f"Directory {self.projectDir}/{parent} does not exist.")
+            logger.error(f"Directory {self.projectDir}/{parent} does not exist.")
             raise FileNotFoundError
 
     def complete_place_and_route(self, text, *ignored):
@@ -1276,10 +1267,8 @@ To run the complete FABulous flow with the default project, run the following co
             )
             return
 
-        logger.info(
-            f"Generating Bitstream for design {self.projectDir}/{path}")
-        logger.info(
-            f"Outputting to {self.projectDir}/{parent}/{bitstream_file}")
+        logger.info(f"Generating Bitstream for design {self.projectDir}/{path}")
+        logger.info(f"Outputting to {self.projectDir}/{parent}/{bitstream_file}")
         runCmd = [
             "bit_gen",
             "-genBitstream",
@@ -1598,8 +1587,7 @@ def main():
         description="The command line interface for FABulous"
     )
 
-    parser.add_argument(
-        "project_dir", help="The directory to the project folder")
+    parser.add_argument("project_dir", help="The directory to the project folder")
 
     parser.add_argument(
         "-c",

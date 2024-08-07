@@ -15,7 +15,7 @@ class FABulous:
     """Class for managing fabric and geometry generation.
 
     This class parses fabric data from 'fabric.csv', generates fabric layouts,
-    geometries, models for place and route tool, as well as
+    geometries, models for nextpnr, as well as
     other fabric-related functions.
 
     Attributes
@@ -202,7 +202,7 @@ class FABulous:
         specObject = self.fabricGenerator.generateBitsStreamSpec()
         return specObject
 
-    def genModel(self):
+    def genRoutingModel(self):
         """Generates model for Nextpnr based on fabric data.
 
         Returns

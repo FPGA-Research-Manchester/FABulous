@@ -59,10 +59,15 @@ def genBitstream(fasmFile: str, specFile: str, bitstreamFile: str):
                 if specDict["TileSpecs"][tileLoc][featureName]:
                     for bitIndex in specDict["TileSpecs"][tileLoc][featureName]:
                         tileDict[tileLoc][bitIndex] = int(
-                            specDict["TileSpecs"][tileLoc][featureName][bitIndex])
-                    for bitIndex_No_Mask in specDict["TileSpecs_No_Mask"][tileLoc][featureName]:
+                            specDict["TileSpecs"][tileLoc][featureName][bitIndex]
+                        )
+                    for bitIndex_No_Mask in specDict["TileSpecs_No_Mask"][tileLoc][
+                        featureName
+                    ]:
                         tileDict_No_Mask[tileLoc][bitIndex_No_Mask] = int(
-                            specDict["TileSpecs_No_Mask"][tileLoc][featureName][bitIndex_No_Mask]
+                            specDict["TileSpecs_No_Mask"][tileLoc][featureName][
+                                bitIndex_No_Mask
+                            ]
                         )
 
             else:
@@ -71,7 +76,8 @@ def genBitstream(fasmFile: str, specFile: str, bitstreamFile: str):
                 print(tileLoc)
                 print(featureName)
                 logger.critical(
-                    "Feature found in fasm file was not found in the bitstream spec")
+                    "Feature found in fasm file was not found in the bitstream spec"
+                )
                 raise Exception
 
     # Write output string and introduce mask
@@ -88,9 +94,14 @@ def genBitstream(fasmFile: str, specFile: str, bitstreamFile: str):
     bit_array = [[b"" for x in range(20)] for y in range(num_columns)]
 
     verilog_str = ""
-    vhdl_str = "library IEEE;\nuse IEEE.STD_LOGIC_1164.ALL;\n\npackage emulate_bitstream is\n"
+    vhdl_str = (
+        "library IEEE;\nuse IEEE.STD_LOGIC_1164.ALL;\n\npackage emulate_bitstream is\n"
+    )
     for tileKey in tileDict_No_Mask:
-        if specDict["TileMap"][tileKey] == "NULL" or len(specDict["FrameMap"][specDict["TileMap"][tileKey]]) == 0:
+        if (
+            specDict["TileMap"][tileKey] == "NULL"
+            or len(specDict["FrameMap"][specDict["TileMap"][tileKey]]) == 0
+        ):
             continue
         verilog_str += f"// {tileKey}, {specDict['TileMap'][tileKey]}\n"
         verilog_str += f"`define Tile_{tileKey}_Emulate_Bitstream {MaxFramesPerCol*FrameBitsPerRow}'b"
@@ -126,7 +137,9 @@ def genBitstream(fasmFile: str, specFile: str, bitstreamFile: str):
                                 str,
                                 (
                                     tileDict[tileKey][
-                                        FrameBitsPerRow * frameIndex: (FrameBitsPerRow * frameIndex) + FrameBitsPerRow
+                                        FrameBitsPerRow
+                                        * frameIndex: (FrameBitsPerRow * frameIndex)
+                                        + FrameBitsPerRow
                                     ]
                                 ),
                             )
@@ -238,7 +251,9 @@ class Fabric:
                         destx = tile.x + int(wire["xoffset"])
                         desttileLoc = f"X{destx}Y{desty}"
 
-                        if (desttileLoc == loc) and (wire["destination"] + str(i) == dest):
+                        if (desttileLoc == loc) and (
+                            wire["destination"] + str(i) == dest
+                        ):
                             return (tile, wire, i)
 
         return None
@@ -256,7 +271,8 @@ def bit_gen():
         argIndex = processedArguments.index("-genBitstream".lower())
         if len(processedArguments) <= argIndex + 3:
             logger.error(
-                "genBitstream expects three file names - the fasm file, the spec file and the output file")
+                "genBitstream expects three file names - the fasm file, the spec file and the output file"
+            )
             raise ValueError
         elif (
             flagRE.match(caseProcessedArguments[argIndex + 1])

@@ -73,7 +73,7 @@ class Bel:
     ) -> None:
         self.src = src
         self.prefix = prefix
-        self.name = src.name
+        self.name = src.stem
         self.inputs = [p for p, io in internal if io == IO.INPUT]
         self.outputs = [p for p, io in internal if io == IO.OUTPUT]
         self.externalInput = [p for p, io in external if io == IO.INPUT]

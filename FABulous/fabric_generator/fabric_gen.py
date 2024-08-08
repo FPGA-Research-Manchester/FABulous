@@ -444,21 +444,15 @@ class FabricGenerator:
             connections = parseMatrix(tile.matrixDir, tile.name)
         elif tile.matrixDir.suffix == ".list":
             logger.info(f"{tile.name} matrix is a list file")
-            logger.info(
-                f"bootstrapping {tile.name} to matrix form and adding the list file to the matrix"
-            )
+            logger.info(f"bootstrapping {tile.name} to matrix form and adding the list file to the matrix")
             matrixDir = tile.matrixDir.with_suffix( ".csv")
             self.bootstrapSwitchMatrix(tile, matrixDir)
             self.list2CSV(tile.matrixDir, matrixDir)
-            logger.info(
-                f"Update matrix directory to {matrixDir} for Fabric Tile Dictionary"
-            )
+            logger.info(f"Update matrix directory to {matrixDir} for Fabric Tile Dictionary")
             tile.matrixDir = matrixDir
             connections = parseMatrix(tile.matrixDir, tile.name)
         elif tile.matrixDir.suffix == ".v" or tile.matrixDir.suffix == ".vhdl":
-            logger.info(
-                f"A switch matrix file is provided in {tile.name}, will skip the matrix generation process"
-            )
+            logger.info(f"A switch matrix file is provided in {tile.name}, will skip the matrix generation process")
             return
         else:
             logger.error("Invalid matrix file format.")

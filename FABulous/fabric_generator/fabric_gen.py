@@ -167,17 +167,23 @@ class FabricGenerator:
             try:
                 s_index = source.index(s)
             except ValueError:
-                logger.critical(f"{s} is not in the source column of the matrix csv file")
+                logger.critical(
+                    f"{s} is not in the source column of the matrix csv file"
+                )
                 exit(-1)
 
             try:
                 d_index = destination.index(d)
             except ValueError:
-                logger.critical(f"{d} is not in the destination row of the matrix csv file")
+                logger.critical(
+                    f"{d} is not in the destination row of the matrix csv file"
+                )
                 exit(-1)
 
             if matrix[s_index][d_index] != 0:
-                logger.warning(f"connection ({s}, {d}) already exists in the original matrix")
+                logger.warning(
+                    f"connection ({s}, {d}) already exists in the original matrix"
+                )
             matrix[s_index][d_index] = 1
 
         # writing the matrix back to the given out file
@@ -444,15 +450,21 @@ class FabricGenerator:
             connections = parseMatrix(tile.matrixDir, tile.name)
         elif tile.matrixDir.suffix == ".list":
             logger.info(f"{tile.name} matrix is a list file")
-            logger.info(f"bootstrapping {tile.name} to matrix form and adding the list file to the matrix")
-            matrixDir = tile.matrixDir.with_suffix( ".csv")
+            logger.info(
+                f"bootstrapping {tile.name} to matrix form and adding the list file to the matrix"
+            )
+            matrixDir = tile.matrixDir.with_suffix(".csv")
             self.bootstrapSwitchMatrix(tile, matrixDir)
             self.list2CSV(tile.matrixDir, matrixDir)
-            logger.info(f"Update matrix directory to {matrixDir} for Fabric Tile Dictionary")
+            logger.info(
+                f"Update matrix directory to {matrixDir} for Fabric Tile Dictionary"
+            )
             tile.matrixDir = matrixDir
             connections = parseMatrix(tile.matrixDir, tile.name)
         elif tile.matrixDir.suffix == ".v" or tile.matrixDir.suffix == ".vhdl":
-            logger.info(f"A switch matrix file is provided in {tile.name}, will skip the matrix generation process")
+            logger.info(
+                f"A switch matrix file is provided in {tile.name}, will skip the matrix generation process"
+            )
             return
         else:
             logger.error("Invalid matrix file format.")
@@ -2413,7 +2425,9 @@ class FabricGenerator:
             for x, tile in enumerate(row):
                 if tile == None:
                     continue
-                configMemPath = tile.tileDir.parent.joinpath(f"{tile.name}_ConfigMem.csv")
+                configMemPath = tile.tileDir.parent.joinpath(
+                    f"{tile.name}_ConfigMem.csv"
+                )
                 if configMemPath.exists():
                     configMemList = parseConfigMem(
                         configMemPath,
@@ -2422,7 +2436,9 @@ class FabricGenerator:
                         tile.globalConfigBits,
                     )
                 elif tile.globalConfigBits > 0:
-                    logger.critical(f"No ConfigMem csv file found for {tile.name} which have config bits")
+                    logger.critical(
+                        f"No ConfigMem csv file found for {tile.name} which have config bits"
+                    )
 
                 encodeDict = [-1] * (
                     self.fabric.maxFramesPerCol * self.fabric.frameBitsPerRow

@@ -58,7 +58,7 @@ def parseFabricCSV(fileName: str) -> Fabric:
     Fabric
         The fabric object.
     """
-    
+
     fName = pathlib.Path(fileName)
     if fName.suffix != ".csv":
         logger.error("File must be a csv file")
@@ -299,7 +299,9 @@ def parseList(
 
 
 def parseList(
-    filePath: pathlib.Path, collect: Literal["pair", "source", "sink"] = "pair", prefix: str = ""
+    filePath: pathlib.Path,
+    collect: Literal["pair", "source", "sink"] = "pair",
+    prefix: str = "",
 ) -> list[tuple[str, str]] | dict[str, list[str]]:
     """Parse a list file and expand the list file information into a list of tuples.
 
@@ -341,7 +343,7 @@ def parseList(
             logger.error(f"Line: {line}")
             raise ValueError
         left, right = line[0], line[1]
-        
+
         if left == "INCLUDE":
             resultList.extend(parseList(filePath.parent.joinpath(right), "pair"))
             continue
@@ -371,9 +373,10 @@ def parseList(
 
     return result
 
-def parsePortLine(line: str) -> tuple[list[Port], tuple[str, str]|None]:
+
+def parsePortLine(line: str) -> tuple[list[Port], tuple[str, str] | None]:
     ports = []
-    commonWirePair: tuple[str, str]|None
+    commonWirePair: tuple[str, str] | None
     temp: list[str] = line.split(",")
     if temp[0] in ["NORTH", "SOUTH", "EAST", "WEST"]:
         ports.append(
@@ -452,10 +455,10 @@ def parseTiles(fileName: pathlib.Path) -> tuple[list[Tile], list[tuple[str, str]
     Tuple[List[Tile], List[Tuple[str, str]]]
         A tuple containing a list of Tile objects and a list of common wire pairs.
     """
-    
+
     logger.info(f"Reading tile configuration: {fileName}")
 
-    if fileName.suffix!= ".csv":
+    if fileName.suffix != ".csv":
         logger.error("File must be a CSV file.")
         raise ValueError
 
@@ -480,14 +483,14 @@ def parseTiles(fileName: pathlib.Path) -> tuple[list[Tile], list[tuple[str, str]
         tileName = t[0].split(",")[1]
         ports: list[Port] = []
         bels: list[Bel] = []
-        matrixDir:pathlib.Path | None = None
+        matrixDir: pathlib.Path | None = None
         withUserCLK = False
         configBit = 0
         for item in t:
             temp: list[str] = item.split(",")
             if not temp or temp[0] == "":
                 continue
-            if temp[0] in ["NORTH", "SOUTH", "EAST", "WEST" , "JUMP"]:
+            if temp[0] in ["NORTH", "SOUTH", "EAST", "WEST", "JUMP"]:
                 port, commonWirePair = parsePortLine(item)
                 ports.extend(port)
                 if commonWirePair:
@@ -505,7 +508,7 @@ def parseTiles(fileName: pathlib.Path) -> tuple[list[Tile], list[tuple[str, str]
             elif temp[0] == "MATRIX":
                 matrixDir = fileName.parent.joinpath(temp[1])
                 configBit = 0
-                
+
                 match matrixDir.suffix:
                     case ".list":
                         for _, v in parseList(matrixDir, "source").items():
@@ -530,8 +533,7 @@ def parseTiles(fileName: pathlib.Path) -> tuple[list[Tile], list[tuple[str, str]
                     case _:
                         logger.error("Unknown file extension for matrix.")
                         raise ValueError("Unknown file extension for matrix.")
-                
-            
+
             elif temp[0] == "INCLUDE":
                 p = fileName.parent.joinpath(temp[1])
                 if not p.exists():
@@ -544,7 +546,7 @@ def parseTiles(fileName: pathlib.Path) -> tuple[list[Tile], list[tuple[str, str]
                     lineItem = line.split(",")
                     if not lineItem[0]:
                         continue
-                    
+
                     port, commonWirePair = parsePortLine(line)
                     ports.extend(port)
                     if commonWirePair:
@@ -556,19 +558,23 @@ def parseTiles(fileName: pathlib.Path) -> tuple[list[Tile], list[tuple[str, str]
 
             withUserCLK = any(bel.withUserCLK for bel in bels)
             new_tiles.append(
-                Tile(name=tileName, 
-                     ports=ports, 
-                     bels=bels,
-                     tileDir=fileName,
-                     matrixDir=matrixDir, 
-                     userCLK=withUserCLK, 
-                     configBit=configBit)
+                Tile(
+                    name=tileName,
+                    ports=ports,
+                    bels=bels,
+                    tileDir=fileName,
+                    matrixDir=matrixDir,
+                    userCLK=withUserCLK,
+                    configBit=configBit,
+                )
             )
 
     return (new_tiles, commonWirePairs)
 
 
-def parseSupertiles(fileName: pathlib.Path, tileDic: dict[str, Tile]) -> list[SuperTile]:
+def parseSupertiles(
+    fileName: pathlib.Path, tileDic: dict[str, Tile]
+) -> list[SuperTile]:
     """Parses a CSV supertile configuration file and returns all SuperTile objects.
 
     Parameters
@@ -593,7 +599,7 @@ def parseSupertiles(fileName: pathlib.Path, tileDic: dict[str, Tile]) -> list[Su
         logger.error(f"File {fileName} does not exist.")
         raise ValueError
 
-    filePath = fileName.parent 
+    filePath = fileName.parent
 
     with open(fileName, "r") as f:
         file = f.read()
@@ -654,7 +660,9 @@ def parseSupertiles(fileName: pathlib.Path, tileDic: dict[str, Tile]) -> list[Su
 
 
 def parseBelFile(
-    filename: pathlib.Path, belPrefix: str = "", filetype: Literal["verilog", "vhdl"] = ""
+    filename: pathlib.Path,
+    belPrefix: str = "",
+    filetype: Literal["verilog", "vhdl"] = "",
 ) -> Bel:
     """
     Parse a Verilog or VHDL bel file and return all the related information of the bel.
@@ -1047,7 +1055,10 @@ def vhdl_belMapProcessing(file: str, filename: str) -> dict:
 
 
 def parseConfigMem(
-    fileName: pathlib.Path, maxFramePerCol: int, frameBitPerRow: int, globalConfigBits: int
+    fileName: pathlib.Path,
+    maxFramePerCol: int,
+    frameBitPerRow: int,
+    globalConfigBits: int,
 ) -> list[ConfigMem]:
     """Parse the config memory CSV file into a list of ConfigMem objects.
 

@@ -6,9 +6,6 @@ import pathlib
 from loguru import logger
 
 
-
-
-
 def expandListPorts(port, PortList):
     """Expand the .list file entry into a list of tuples.
 

@@ -238,8 +238,8 @@ class SmGeometry:
         self, tile: Tile, tileBorder: Border, belGeoms: List[BelGeometry], padding: int
     ) -> None:
         self.name = tile.name + "_switch_matrix"
-        self.src = tile.filePath + "/" + self.name + ".v"
-        self.csv = tile.filePath + "/" + self.name + ".csv"
+        self.src = tile.tileDir + "/" + self.name + ".v"
+        self.csv = tile.tileDir + "/" + self.name + ".csv"
 
         self.jumpPorts = [
             port for port in tile.portsInfo if port.wireDirection == Direction.JUMP

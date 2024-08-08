@@ -545,9 +545,6 @@ def parseTiles(fileName: pathlib.Path) -> tuple[list[Tile], list[tuple[str, str]
                     if not lineItem[0]:
                         continue
                     
-                    if lineItem[0] not in ["NORTH", "SOUTH", "EAST", "WEST" , "JUMP"]:
-                        logger.error(f"Include file cannot have key other than NORTH, SOUTH, EAST, WEST, JUMP")
-                        raise ValueError
                     port, commonWirePair = parsePortLine(line)
                     ports.extend(port)
                     if commonWirePair:

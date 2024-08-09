@@ -243,7 +243,7 @@ Each tile that is referred to in the :ref:`fabric_layout` requires specification
    EndTILE  
 
 
-The ``INCLUDE`` Specify a path to another tile configuration, and the configuration in that file will be added. The 
+The ``INCLUDE`` keyword specifies a path to another tile configuration, and the configuration in that file will be added. The 
 entry within the target path will be appended to the file. For example if ``../include/Base.csv`` contains:
 
 .. code-block:: python

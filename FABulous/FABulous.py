@@ -569,14 +569,13 @@ To run the complete FABulous flow with the default project, run the following co
 
     def complete_load_fabric(self, text, *ignored):
         return self._complete_path(text)
-    
-    
+
     def do_print_bel(self, args):
         """Prints a Bel object to the console.
-        
+
         Usage:
             print_bel <bel_name>
-            
+
         Parameters
         ----------
         args : str
@@ -586,27 +585,27 @@ To run the complete FABulous flow with the default project, run the following co
         if len(args) != 1:
             logger.error("Please provide a Bel name")
             return
-        
+
         if not self.fabricLoaded:
             logger.error("Need to load fabric first")
             return
-        
+
         bels = self.fabricGen.getBels()
         for i in bels:
             if i.name == args[0]:
                 logger.info(f"\n{pprint.pformat(i, width=200)}")
                 return
         logger.error("Bel not found")
-        
+
     def complete_print_bel(self, text, *ignored):
         return [i.name for i in self.fabricGen.getBels() if i.name.startswith(text)]
-    
+
     def do_print_tile(self, args):
         """Prints a tile object to the console.
-            
+
         Usage:
             print_tile <tile_name>
-            
+
         Parameters
         ----------
         args : str
@@ -616,18 +615,18 @@ To run the complete FABulous flow with the default project, run the following co
         if len(args) != 1:
             logger.error("Please provide a tile name")
             return
-        
+
         if not self.fabricLoaded:
             logger.error("Need to load fabric first")
             return
-        
+
         if tile := self.fabricGen.getTile(args[0]):
             logger.info(f"\n{pprint.pformat(tile, width=200)}")
         elif tile := self.fabricGen.getSuperTile(args[0]):
             logger.info(f"\n{pprint.pformat(tile, width=200)}")
         else:
             logger.error("Tile not found")
-        
+
     def complete_print_tile(self, text, *ignored):
         return self._complete_tileName(text)
 

@@ -215,31 +215,31 @@ class FABulous:
         """
         return model_gen_npnr.genNextpnrModel(self.fabric)
 
-    def getBels(self) -> list[Bel] :
+    def getBels(self) -> list[Bel]:
         """Returns all unique Bels within a fabric.
-            
+
         Returns
         -------
         Bel
             Bel object based on bel name.
         """
         return self.fabric.getAllUniqueBels()
-    
+
     def getTile(self, tileName: str) -> Tile | None:
         """Returns Tile object based on tile name.
         Parameters
         ----------
             tileName : str
                 Name of the Tile.
-                
+
         Returns
         -------
         Tile
             Tile object based on tile name.
         """
-        
+
         return self.fabric.getTileByName(tileName)
-    
+
     def getTiles(self):
         """Returns all Tiles within a fabric.
 
@@ -249,7 +249,7 @@ class FABulous:
             Tile object based on tile name.
         """
         return self.fabric.tileDic.values()
-    
+
     def getSuperTile(self, tileName: str) -> SuperTile | None:
         """Returns SuperTile object based on tile name.
         Parameters
@@ -264,7 +264,7 @@ class FABulous:
         """
 
         return self.fabric.getSuperTileByName(tileName)
-    
+
     def getSuperTiles(self):
         """Returns all SuperTiles within a fabric.
         Returns
@@ -273,4 +273,3 @@ class FABulous:
             SuperTile object based on tile name.
         """
         return self.fabric.superTileDic.values()
-        

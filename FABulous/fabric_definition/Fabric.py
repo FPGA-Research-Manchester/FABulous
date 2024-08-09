@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from email.policy import default
 from FABulous.fabric_definition.define import (
     Direction,
     ConfigBitMode,

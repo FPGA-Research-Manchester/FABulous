@@ -599,7 +599,7 @@ To run the complete FABulous flow with the default project, run the following co
         logger.error("Bel not found")
         
     def complete_print_bel(self, text, *ignored):
-        return [i.name for i in self.fabricGen.getBels()]
+        return [i.name for i in self.fabricGen.getBels() if i.name.startswith(text)]
     
     def do_print_tile(self, args):
         """Prints a tile object to the console.

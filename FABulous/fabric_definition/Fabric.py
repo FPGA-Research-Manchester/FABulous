@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from email.policy import default
 from FABulous.fabric_definition.define import (
     Direction,
     ConfigBitMode,
@@ -246,11 +247,11 @@ class Fabric:
         fabric += f"tileDic: {list(self.tileDic.keys())}\n"
         return fabric
 
-    def getTileByName(self, name: str) -> Tile:
-        return self.tileDic[name]
+    def getTileByName(self, name: str) -> Tile | None:
+        return self.tileDic.get(name)
 
-    def getSuperTileByName(self, name: str) -> SuperTile:
-        return self.superTileDic[name]
+    def getSuperTileByName(self, name: str) -> SuperTile | None:
+        return self.superTileDic.get(name)
     
     def getAllUniqueBels(self) -> list[Bel]:
         bels = list()

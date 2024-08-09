@@ -623,6 +623,8 @@ To run the complete FABulous flow with the default project, run the following co
         
         if tile := self.fabricGen.getTile(args[0]):
             logger.info(f"\n{pprint.pformat(tile, width=200)}")
+        elif tile := self.fabricGen.getSuperTile(args[0]):
+            logger.info(f"\n{pprint.pformat(tile, width=200)}")
         else:
             logger.error("Tile not found")
         

@@ -252,7 +252,7 @@ class Fabric:
 
     def getSuperTileByName(self, name: str) -> SuperTile | None:
         return self.superTileDic.get(name)
-    
+
     def getAllUniqueBels(self) -> list[Bel]:
         bels = list()
         for tile in self.tileDic.values():

@@ -471,7 +471,7 @@ A switch matrix multiplexer is modelled by having multiple connections for the s
    N2BEG[0|0|0|0],[N2END3|E2END2|S2END1|LB_O]
 
 
-The ``INCLUDE`` keyword can also be used to include another list file to the current list file. For example:
+The ``INCLUDE`` keyword can also be used to include another list file in the current list file. For example:
 
 .. code-block:: python
 
@@ -499,7 +499,7 @@ The base file is equivalent to:
    N2BEG0,S2END1 # U-turn
    N2BEG0,LB_O   # route LUT B output north
 
-The directory where the ``INCLUDE`` is relative to where the list file is located. For example if the file is located 
+The directory defined by the ``INCLUDE`` keyword is relative to where the list file is located. For example if the file is located 
 at ``foo/bar/far.list`` then the load directory will be pointing to ``foo/bar/../include/Bar.list``.
 
 Adjacency lists are better for specifying and maintaining the connections while an adjacency matrix is better for monitoring and debug. 

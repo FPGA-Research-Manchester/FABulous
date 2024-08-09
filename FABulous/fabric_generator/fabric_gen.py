@@ -451,7 +451,7 @@ class FabricGenerator:
         elif tile.matrixDir.suffix == ".list":
             logger.info(f"{tile.name} matrix is a list file")
             logger.info(
-                f"bootstrapping {tile.name} to matrix form and adding the list file to the matrix"
+                f"Bootstrapping {tile.name} to matrix form and adding the list file to the matrix"
             )
             matrixDir = tile.matrixDir.with_suffix(".csv")
             self.bootstrapSwitchMatrix(tile, matrixDir)

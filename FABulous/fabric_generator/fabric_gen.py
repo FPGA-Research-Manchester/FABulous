@@ -182,7 +182,7 @@ class FabricGenerator:
 
             if matrix[s_index][d_index] != 0:
                 logger.warning(
-                    f"connection ({s}, {d}) already exists in the original matrix"
+                    f"Connection ({s}, {d}) already exists in the original matrix"
                 )
             matrix[s_index][d_index] = 1
 

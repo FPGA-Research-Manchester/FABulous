@@ -273,7 +273,7 @@ The above configuration is equivalent to:
    MATRIX,   LUT4AB_switch_matrix.list               
    EndTILE  
 
-The path of the ``INCLUDE`` will relative to where the base file is. For example if the base file is located 
+The path of the ``INCLUDE`` will be relative to where the base file is. For example if the base file is located 
 at ``foo/bar/LUT4AB.csv`` then the ``INCLUDE`` path will point to ``foo/bar/../Base.csv``.
 
 .. _wires:

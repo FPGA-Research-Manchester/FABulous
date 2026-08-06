@@ -66,8 +66,8 @@ jobs:
               - 'nix/**'
               - '.github/workflows/nix-env.yml'
               - '.github/workflows/ci.yml'
-            # AutoAPI reads the package, and docs/uv.lock carries the root
-            # requires-dist, so both stale the docs build.
+            # AutoAPI reads the package, and the docs group resolves through
+            # the root pyproject.toml/uv.lock, so both stale the docs build.
             docs:
               - 'docs/**'
               - 'fabulous/**'

@@ -8,7 +8,8 @@ import cocotb
 from cocotb.handle import LogicObject
 from cocotb.triggers import Timer
 
-# NOTE: cocotb-coverage integration prepared but not active due to environment dependency
+# NOTE: cocotb-coverage integration prepared but not
+# active due to environment dependency
 from tests.conftest import VERILOG_SOURCE_PATH, VHDL_SOURCE_PATH, CocotbRunner
 
 
@@ -64,7 +65,8 @@ async def cocotb_test_frame_select_basic(dut: FrameSelectProtocol) -> None:
 
     # When FrameSelect matches Col and FrameStrobe is high, output should match input
     assert int(dut.FrameStrobe_O.value) == test_pattern, (
-        f"Expected FrameStrobe_O = 0x{test_pattern:05x}, got 0x{int(dut.FrameStrobe_O.value):05x} "
+        f"Expected FrameStrobe_O = 0x{test_pattern:05x}, "
+        f"got 0x{int(dut.FrameStrobe_O.value):05x} "
         f"when FrameSelect ({int(dut.FrameSelect.value)}) matches Col"
     )
 
@@ -85,7 +87,8 @@ async def cocotb_test_frame_select_basic(dut: FrameSelectProtocol) -> None:
 
     # Output should be 0 when FrameStrobe is low, even if FrameSelect matches
     assert int(dut.FrameStrobe_O.value) == 0, (
-        f"Expected FrameStrobe_O = 0, got 0x{int(dut.FrameStrobe_O.value):05x} when FrameStrobe is low"
+        f"Expected FrameStrobe_O = 0, got 0x{int(dut.FrameStrobe_O.value):05x} "
+        f"when FrameStrobe is low"
     )
 
     # Test case 4: Different test patterns
@@ -98,7 +101,8 @@ async def cocotb_test_frame_select_basic(dut: FrameSelectProtocol) -> None:
         await Timer(Decimal(10), units="ps")
 
         assert int(dut.FrameStrobe_O.value) == pattern, (
-            f"Pattern 0x{pattern:05x}: Expected FrameStrobe_O = 0x{pattern:05x}, got 0x{int(dut.FrameStrobe_O.value):05x}"
+            f"Pattern 0x{pattern:05x}: Expected FrameStrobe_O = 0x{pattern:05x}, "
+            f"got 0x{int(dut.FrameStrobe_O.value):05x}"
         )
 
 
@@ -122,7 +126,8 @@ async def cocotb_test_frame_select_col_sweep(dut: FrameSelectProtocol) -> None:
         expected = test_pattern if frame_select == 18 else 0
         actual = int(dut.FrameStrobe_O.value)
         assert actual == expected, (
-            f"FrameSelect {frame_select}: Expected FrameStrobe_O = 0x{expected:05x}, got 0x{actual:05x}"
+            f"FrameSelect {frame_select}: Expected FrameStrobe_O = 0x{expected:05x}, "
+            f"got 0x{actual:05x}"
         )
 
 
@@ -141,7 +146,8 @@ async def cocotb_test_frame_select_bit_patterns(dut: FrameSelectProtocol) -> Non
         await Timer(Decimal(10), units="ps")
 
         assert int(dut.FrameStrobe_O.value) == pattern, (
-            f"Bit {bit_pos}: Expected FrameStrobe_O = 0x{pattern:05x}, got 0x{int(dut.FrameStrobe_O.value):05x}"
+            f"Bit {bit_pos}: Expected FrameStrobe_O = 0x{pattern:05x}, "
+            f"got 0x{int(dut.FrameStrobe_O.value):05x}"
         )
 
     # Test walking zeros (all bits high except one)
@@ -152,7 +158,8 @@ async def cocotb_test_frame_select_bit_patterns(dut: FrameSelectProtocol) -> Non
         await Timer(Decimal(10), units="ps")
 
         assert int(dut.FrameStrobe_O.value) == pattern, (
-            f"Walking zero bit {bit_pos}: Expected FrameStrobe_O = 0x{pattern:05x}, got 0x{int(dut.FrameStrobe_O.value):05x}"
+            f"Walking zero bit {bit_pos}: Expected FrameStrobe_O = 0x{pattern:05x}, "
+            f"got 0x{int(dut.FrameStrobe_O.value):05x}"
         )
 
 
@@ -176,7 +183,8 @@ async def cocotb_test_frame_select_edge_cases(dut: FrameSelectProtocol) -> None:
     await Timer(Decimal(10), units="ps")
 
     assert int(dut.FrameStrobe_O.value) == all_ones, (
-        f"All ones input should produce all ones output: expected 0x{all_ones:05x}, got 0x{int(dut.FrameStrobe_O.value):05x}"
+        f"All ones input should produce all ones output: expected 0x{all_ones:05x}, "
+        f"got 0x{int(dut.FrameStrobe_O.value):05x}"
     )
 
     # Test case 3: Rapid FrameStrobe toggling

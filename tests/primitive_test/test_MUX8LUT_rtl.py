@@ -324,14 +324,18 @@ async def cocotb_test_mux8lut_selection(dut: MUX8LUTProtocol) -> None:
 
             # Check all MUX outputs
             assert int(dut.M_AB.value) == model.M_AB, (
-                f"Select {s}, Config {c}: M_AB expected {model.M_AB}, got {int(dut.M_AB.value)}"
+                f"Select {s}, Config {c}: M_AB expected {model.M_AB}, "
+                f"got {int(dut.M_AB.value)}"
             )
             assert int(dut.M_AD.value) == model.M_AD, (
-                f"Select {s}, Config {c}: M_AD expected {model.M_AD}, got {int(dut.M_AD.value)}"
+                f"Select {s}, Config {c}: M_AD expected {model.M_AD}, "
+                f"got {int(dut.M_AD.value)}"
             )
             assert int(dut.M_AH.value) == model.M_AH, (
-                f"Select {s}, Config {c}: M_AH expected {model.M_AH}, got {int(dut.M_AH.value)}"
+                f"Select {s}, Config {c}: M_AH expected {model.M_AH}, "
+                f"got {int(dut.M_AH.value)}"
             )
             assert int(dut.M_EF.value) == model.M_EF, (
-                f"Select {s}, Config {c}: M_EF expected {model.M_EF}, got {int(dut.M_EF.value)}"
+                f"Select {s}, Config {c}: M_EF expected {model.M_EF}, "
+                f"got {int(dut.M_EF.value)}"
             )

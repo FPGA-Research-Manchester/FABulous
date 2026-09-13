@@ -1,4 +1,6 @@
-"""RTL behavior validation for IO_1_bidirectional_frame_config_pass module using cocotb-native model (aligned with MULADD style)."""
+"""RTL behavior validation for IO_1_bidirectional_frame_config_pass module
+using cocotb-native model (aligned with MULADD style).
+"""
 
 from decimal import Decimal
 from pathlib import Path
@@ -51,7 +53,7 @@ def test_IO_vhdl_rtl(cocotb_runner: CocotbRunner) -> None:
             / "W_IO"
             / "IO_1_bidirectional_frame_config_pass.vhdl"
         ],
-        hdl_top_level="io_1_bidirectional_frame_config_pass",  # GHDL converts to lowercase
+        hdl_top_level="io_1_bidirectional_frame_config_pass",
         test_module_path=Path(__file__),
     )
 
@@ -85,7 +87,8 @@ class IOModel:
         while True:
             # Combinational behavior
             self.T_top = 0 if (self.T & 1) else 1  # T_top = ~T
-            # When T=0: output mode, I drives I_top; When T=1: tri-state (we represent as 0)
+            # When T=0: output mode, I drives I_top;
+            # When T=1: tri-state (we represent as 0)
             self.I_top = self.I_in & 1 if (self.T == 0) else 0
             # O reflects O_top always
             self.O_int = self.O_top & 1
@@ -305,7 +308,8 @@ async def cocotb_test_io_simultaneous_signals(dut: IOProtocol) -> None:
         # In output mode, check I_top
         if case["T"] == 0:
             assert int(dut.I_top.value) == model.I_top, (
-                f"{case['desc']}: Expected I_top={model.I_top}, got {int(dut.I_top.value)}"
+                f"{case['desc']}: Expected I_top={model.I_top},"
+                f"got {int(dut.I_top.value)}"
             )
 
 

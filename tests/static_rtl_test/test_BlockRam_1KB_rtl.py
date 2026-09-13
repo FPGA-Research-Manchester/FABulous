@@ -80,7 +80,9 @@ async def cocotb_test_configfsm_basic(dut: ConfigFSMProtocol) -> None:
     await RisingEdge(dut.CLK)
 
     # Check initial state
-    assert int(dut.long_frame_strobe.value) == 0, "long_frame_strobe should be 0 initially"
+    assert int(dut.long_frame_strobe.value) == 0, (
+        "long_frame_strobe should be 0 initially"
+    )
     assert int(dut.frame_address_register.value) == 0, (
         "frame_address_register should be 0 initially"
     )
@@ -92,8 +94,10 @@ async def cocotb_test_configfsm_basic(dut: ConfigFSMProtocol) -> None:
     await Timer(Decimal(1), units="ps")  # Wait for NBA to complete
     dut.write_strobe.value = 0
 
-    # Step 2: Send frame address (header) - this should latch into frame_address_register
-    # NOTE: Bit 20 is the desync flag, so we must NOT set it (0x12345678 has bit 20 set!)
+    # Step 2: Send frame address (header) - this should latch into
+    # frame_address_register
+    # NOTE: Bit 20 is the desync flag, so we must NOT
+    # set it (0x12345678 has bit 20 set!)
     frame_address = 0x12045678  # Address with bit 20 cleared (no desync)
     dut.write_data.value = frame_address
     dut.write_strobe.value = 1
@@ -206,7 +210,8 @@ async def cocotb_test_configfsm_desync(dut: ConfigFSMProtocol) -> None:
     await Timer(Decimal(10), units="ps")
 
     assert int(dut.frame_address_register.value) == normal_header, (
-        f"After desync recovery: Expected frame_address_register = 0x{normal_header:08x}, "
+        f"After desync recovery: Expected frame_address_register = "
+        f"0x{normal_header:08x}, "
         f"got 0x{int(dut.frame_address_register.value):08x}"
     )
 
@@ -238,7 +243,8 @@ async def cocotb_test_configfsm_row_select_invalid(dut: ConfigFSMProtocol) -> No
     await Timer(Decimal(10), units="ps")
     expected_invalid_row = 0b11111  # All 1s for 5-bit width
     assert int(dut.row_select.value) == expected_invalid_row, (
-        f"With write_strobe inactive: Expected row_select = {expected_invalid_row}, got {int(dut.row_select.value)}"
+        f"With write_strobe inactive: Expected row_select = "
+        f"{expected_invalid_row}, got {int(dut.row_select.value)}"
     )
 
     # Activate write_strobe and check row_select becomes valid
@@ -246,5 +252,6 @@ async def cocotb_test_configfsm_row_select_invalid(dut: ConfigFSMProtocol) -> No
     await Timer(Decimal(10), units="ps")
     # Should not be all 1s anymore
     assert int(dut.row_select.value) != expected_invalid_row, (
-        f"With write_strobe active: row_select should not be {expected_invalid_row}, got {int(dut.row_select.value)}"
+        f"With write_strobe active: row_select should not be "
+        f"{expected_invalid_row}, got {int(dut.row_select.value)}"
     )

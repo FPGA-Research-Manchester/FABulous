@@ -96,7 +96,7 @@ architecture from_verilog of eFPGA_Config is
   end component ConfigFSM;
 
   signal FrameAddressRegister_Readable : unsigned(31 downto 0); -- Needed to connect outputs
-  signal LongFrameStrobe_Readable      : std_logic;                     -- Needed to connect outputs
+  signal LongFrameStrobe_Readable      : std_logic;             -- Needed to connect outputs
   signal RowSelect_Readable            : unsigned(4 downto 0);  -- Needed to connect outputs
 
   component config_UART is
@@ -114,26 +114,26 @@ architecture from_verilog of eFPGA_Config is
 
   component bitbang is
     port (
-      active : out   std_logic;
-      clk    : in    std_logic;
-      data   : out   unsigned(31 downto 0);
-      reset_n: in    std_logic;
-      s_clk  : in    std_logic;
-      s_data : in    std_logic;
-      strobe : out   std_logic
+      active  : out   std_logic;
+      clk     : in    std_logic;
+      data    : out   unsigned(31 downto 0);
+      reset_n : in    std_logic;
+      s_clk   : in    std_logic;
+      s_data  : in    std_logic;
+      strobe  : out   std_logic
     );
   end component bitbang;
 
   component config_SPI is
     port (
-      active : out   std_logic;
-      clk    : in    std_logic;
-      data   : out   std_logic_vector(31 downto 0);
-      mosi   : in    std_logic;
-      reset_n: in    std_logic;
-      sck    : in    std_logic;
-      ss_n   : in    std_logic;
-      strobe : out   std_logic
+      active  : out   std_logic;
+      clk     : in    std_logic;
+      data    : out   std_logic_vector(31 downto 0);
+      mosi    : in    std_logic;
+      reset_n : in    std_logic;
+      sck     : in    std_logic;
+      ss_n    : in    std_logic;
+      strobe  : out   std_logic
     );
   end component config_SPI;
 
@@ -190,7 +190,7 @@ begin
         Rx          => Rx,
         WriteData   => UART_WriteData,
         WriteStrobe => UART_WriteStrobe,
-        reset_n      => resetn
+        reset_n     => resetn
       );
 
   end generate gen_uart_enabled;
@@ -211,13 +211,13 @@ begin
 
     inst_bitbang : component bitbang
       port map (
-        active => BitBangActive,
-        clk    => CLK,
-        data   => BitBangWriteData,
-        reset_n=> resetn,
-        s_clk  => s_clk,
-        s_data => s_data,
-        strobe => BitBangWriteStrobe
+        active  => BitBangActive,
+        clk     => CLK,
+        data    => BitBangWriteData,
+        reset_n => resetn,
+        s_clk   => s_clk,
+        s_data  => s_data,
+        strobe  => BitBangWriteStrobe
       );
 
   end generate gen_bitbang_enabled;
@@ -234,14 +234,14 @@ begin
 
     inst_config_spi : component config_SPI
       port map (
-        active => spi_active,
-        clk    => CLK,
-        data   => spi_write_data,
-        mosi   => mosi,
-        reset_n=> resetn,
-        sck    => sck,
-        ss_n   => ss_n,
-        strobe => spi_strobe
+        active  => spi_active,
+        clk     => CLK,
+        data    => spi_write_data,
+        mosi    => mosi,
+        reset_n => resetn,
+        sck     => sck,
+        ss_n    => ss_n,
+        strobe  => spi_strobe
       );
 
   end generate gen_spi_enabled;

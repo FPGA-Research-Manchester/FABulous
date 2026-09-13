@@ -31,6 +31,7 @@ def generateTopWrapper(writer: CodeGenerator, fabric: Fabric) -> None:
         or fabric.bitbang_enable
         or fabric.spi_enable
         or fabric.parallel_enable
+        or fabric.axi_enable
     ):
         raise ValueError(
             "ERROR: No configuration protocol is selected. "
@@ -188,6 +189,26 @@ def generateTopWrapper(writer: CodeGenerator, fabric: Fabric) -> None:
         writer.addPortScalar("mosi", IO.INPUT, indentLevel=2)
         writer.addPortScalar("ss_n", IO.INPUT, indentLevel=2)
 
+    if fabric.axi_enable:
+        # AXI4-Lite slave interface
+        writer.addPortVector("s_axi_awaddr", IO.INPUT, 31, indentLevel=2)
+        writer.addPortScalar("s_axi_awvalid", IO.INPUT, indentLevel=2)
+        writer.addPortScalar("s_axi_awready", IO.OUTPUT, indentLevel=2)
+        writer.addPortVector("s_axi_wdata", IO.INPUT, 31, indentLevel=2)
+        writer.addPortVector("s_axi_wstrb", IO.INPUT, 3, indentLevel=2)
+        writer.addPortScalar("s_axi_wvalid", IO.INPUT, indentLevel=2)
+        writer.addPortScalar("s_axi_wready", IO.OUTPUT, indentLevel=2)
+        writer.addPortVector("s_axi_bresp", IO.OUTPUT, 1, indentLevel=2)
+        writer.addPortScalar("s_axi_bvalid", IO.OUTPUT, indentLevel=2)
+        writer.addPortScalar("s_axi_bready", IO.INPUT, indentLevel=2)
+        writer.addPortVector("s_axi_araddr", IO.INPUT, 31, indentLevel=2)
+        writer.addPortScalar("s_axi_arvalid", IO.INPUT, indentLevel=2)
+        writer.addPortScalar("s_axi_arready", IO.OUTPUT, indentLevel=2)
+        writer.addPortVector("s_axi_rdata", IO.OUTPUT, 31, indentLevel=2)
+        writer.addPortVector("s_axi_rresp", IO.OUTPUT, 1, indentLevel=2)
+        writer.addPortScalar("s_axi_rvalid", IO.OUTPUT, indentLevel=2)
+        writer.addPortScalar("s_axi_rready", IO.INPUT, indentLevel=2)
+
     writer.addPortEnd()
     writer.addHeaderEnd(f"{fabric.name}_top")
     writer.addDesignDescriptionStart(f"{fabric.name}_top")
@@ -246,11 +267,14 @@ def generateTopWrapper(writer: CodeGenerator, fabric: Fabric) -> None:
 
     if isinstance(writer, VHDLCodeGenerator):
         tie_low = "'0'"
+        tie_low_32 = 'X"00000000"'
         unconnected = "open"
+        tie_low_4 = '"0000"'
     else:  # Verilog
         tie_low = "1'b0"
         tie_low_32 = "32'b0"
         unconnected = ""
+        tie_low_4 = "4'b0"
 
     config_ports_pairs = [
         ("CLK", "CLK"),
@@ -326,6 +350,51 @@ def generateTopWrapper(writer: CodeGenerator, fabric: Fabric) -> None:
             ]
         )
 
+    if fabric.axi_enable:
+        config_ports_pairs.extend(
+            [
+                ("s_axi_awaddr", "s_axi_awaddr"),
+                ("s_axi_awvalid", "s_axi_awvalid"),
+                ("s_axi_awready", "s_axi_awready"),
+                ("s_axi_wdata", "s_axi_wdata"),
+                ("s_axi_wstrb", "s_axi_wstrb"),
+                ("s_axi_wvalid", "s_axi_wvalid"),
+                ("s_axi_wready", "s_axi_wready"),
+                ("s_axi_bresp", "s_axi_bresp"),
+                ("s_axi_bvalid", "s_axi_bvalid"),
+                ("s_axi_bready", "s_axi_bready"),
+                ("s_axi_araddr", "s_axi_araddr"),
+                ("s_axi_arvalid", "s_axi_arvalid"),
+                ("s_axi_arready", "s_axi_arready"),
+                ("s_axi_rdata", "s_axi_rdata"),
+                ("s_axi_rresp", "s_axi_rresp"),
+                ("s_axi_rvalid", "s_axi_rvalid"),
+                ("s_axi_rready", "s_axi_rready"),
+            ]
+        )
+    else:
+        config_ports_pairs.extend(
+            [
+                ("s_axi_awaddr", tie_low_32),
+                ("s_axi_awvalid", tie_low),
+                ("s_axi_awready", unconnected),
+                ("s_axi_wdata", tie_low_32),
+                ("s_axi_wstrb", tie_low_4),
+                ("s_axi_wvalid", tie_low),
+                ("s_axi_wready", unconnected),
+                ("s_axi_bresp", unconnected),
+                ("s_axi_bvalid", unconnected),
+                ("s_axi_bready", tie_low),
+                ("s_axi_araddr", tie_low_32),
+                ("s_axi_arvalid", tie_low),
+                ("s_axi_arready", unconnected),
+                ("s_axi_rdata", unconnected),
+                ("s_axi_rresp", unconnected),
+                ("s_axi_rvalid", unconnected),
+                ("s_axi_rready", tie_low),
+            ]
+        )
+
     # the config module
     writer.addNewLine()
     writer.addInstantiation(
@@ -341,6 +410,7 @@ def generateTopWrapper(writer: CodeGenerator, fabric: Fabric) -> None:
             ("uart_enable", fabric.uart_enable),
             ("spi_enable", fabric.spi_enable),
             ("parallel_enable", fabric.parallel_enable),
+            ("axi_enable", fabric.axi_enable),
         ],
     )
     writer.addNewLine()

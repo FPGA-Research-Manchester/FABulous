@@ -919,6 +919,7 @@ def parseFabricCSV(fileName: str) -> Fabric:
     uart_enable = 1
     spi_enable = 0
     parallel_enable = 1
+    axi_enable = 0
 
     for i in parameters:
         i = i.split(",")
@@ -987,7 +988,10 @@ def parseFabricCSV(fileName: str) -> Fabric:
             logger.info(f"SPI mode set to: {spi_enable}")
         elif i[0].startswith("Parallel_enable"):
             parallel_enable = int(i[1]) if i[1].isdigit() else 0
-            logger.info(f"SPI mode set to: {parallel_enable}")
+            logger.info(f"Parallel mode set to: {parallel_enable}")
+        elif i[0].startswith("AXI_enable"):
+            axi_enable = int(i[1]) if i[1].isdigit() else 0
+            logger.info(f"AXI-Lite mode set to: {axi_enable}")
         elif i[0].startswith("PreserveListOrder"):
             # Consumed and validated by the pre-scan above (it must be known
             # before any tile is parsed); accepted here so it is not rejected.
@@ -1060,6 +1064,7 @@ def parseFabricCSV(fileName: str) -> Fabric:
         uart_enable=uart_enable,
         spi_enable=spi_enable,
         parallel_enable=parallel_enable,
+        axi_enable=axi_enable,
         tileDic=tileDic,
         superTileDic=superTileDic,
         unusedTileDic=unusedTileDic,

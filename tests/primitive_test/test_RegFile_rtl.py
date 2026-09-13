@@ -1,4 +1,6 @@
-"""RTL behavior validation for RegFile_32x4 using a cocotb-native model (like MULADD)."""
+"""RTL behavior validation for RegFile_32x4 using
+a cocotb-native model (like MULADD).
+"""
 
 from decimal import Decimal
 from pathlib import Path
@@ -246,7 +248,8 @@ async def cocotb_test_regfile_registered_output_port_a(dut: RegFileProtocol) -> 
 
     # In registered mode, output should not change until next clock
     assert int(dut.AD.value) == old_ad, (
-        f"Registered output changed immediately: Expected AD = {old_ad}, got {int(dut.AD.value)}"
+        f"Registered output changed immediately: "
+        f"Expected AD = {old_ad}, got {int(dut.AD.value)}"
     )
 
 

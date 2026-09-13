@@ -1,4 +1,6 @@
-"""RTL behavior validation for LUT4c_frame_config_dffesr module using cocotb-native model style (like MULADD)."""
+"""RTL behavior validation for LUT4c_frame_config_dffesr module using
+cocotb-native model style (like MULADD).
+"""
 
 from decimal import Decimal
 from pathlib import Path
@@ -24,7 +26,8 @@ class LUT4cProtocol(Protocol):
     ConfigBits: LogicObject  # Configuration bits (handle)
 
     # Outputs
-    O: LogicObject  # LUT output (can be combinational or registered based on config) (handle)  # noqa: E741
+    O: LogicObject  # noqa: E741
+    # LUT output (can be combinational or registered based on config) (handle)
     Co: LogicObject  # Carry output (handle)
 
 
@@ -163,10 +166,12 @@ async def cocotb_test_lut4c_model_alignment_basic(dut: LUT4cProtocol) -> None:
         model.Ci = 0
         await Timer(Decimal(100), units="ps")
         assert int(dut.O.value) == model.O_val, (
-            f"LUT O mismatch for I={vec:04b}: HDL={int(dut.O.value)} model={model.O_val}"
+            f"LUT O mismatch for I={vec:04b}: "
+            f"HDL={int(dut.O.value)} model={model.O_val}"
         )
         assert int(dut.Co.value) == model.Co, (
-            f"Carry Co mismatch for I={vec:04b}: HDL={int(dut.Co.value)} model={model.Co}"
+            f"Carry Co mismatch for I={vec:04b}: "
+            f"HDL={int(dut.Co.value)} model={model.Co}"
         )
 
 
@@ -226,7 +231,8 @@ async def cocotb_test_flip_flop_functionality(dut: LUT4cProtocol) -> None:
     # In FF mode, output should not change immediately without clock
     new_output = dut.O.value
     assert new_output == old_output, (
-        f"In FF mode, output should not change without clock: expected {old_output}, got {new_output}"
+        f"In FF mode, output should not change without clock: "
+        f"expected {old_output}, got {new_output}"
     )
 
 
@@ -273,7 +279,8 @@ async def cocotb_test_lut4c_set_reset_functionality(dut: LUT4cProtocol) -> None:
     dut.SR.value = 0
     await Timer(Decimal(100), units="ps")
 
-    # After reset, O should be at reset value (0 or 1 depending on set vs reset configuration)
+    # After reset, O should be at reset value
+    # (0 or 1 depending on set vs reset configuration)
     reset_value = dut.O.value
 
     # Set some data
@@ -327,5 +334,7 @@ async def cocotb_test_lut4c_enable_functionality(dut: LUT4cProtocol) -> None:
 
     # Now O should update when EN=1 (exact value depends on LUT configuration)
     _updated_output = dut.O.value
-    # Verify that output changed after re-enabling (unless new input happens to give same LUT output)
-    # For comprehensive testing, we expect the output to reflect the new input after enable
+    # Verify that output changed after re-enabling
+    # (unless new input happens to give same LUT output)
+    # For comprehensive testing, we expect the output
+    # to reflect the new input after enable

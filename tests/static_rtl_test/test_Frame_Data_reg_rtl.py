@@ -66,7 +66,8 @@ async def cocotb_test_frame_data_reg_basic(dut: FrameDataRegProtocol) -> None:
 
     # Check that FrameData_O matches FrameData_I when RowSelect == Row
     assert int(dut.FrameData_O.value) == test_data, (
-        f"Expected FrameData_O = 0x{test_data:08x}, got 0x{int(dut.FrameData_O.value):08x} "
+        f"Expected FrameData_O = 0x{test_data:08x}, "
+        f"got 0x{int(dut.FrameData_O.value):08x} "
         f"when RowSelect ({int(dut.RowSelect.value)}) matches Row"
     )
 
@@ -80,7 +81,8 @@ async def cocotb_test_frame_data_reg_basic(dut: FrameDataRegProtocol) -> None:
 
     # FrameData_O should remain the same (previous value) when RowSelect != Row
     assert int(dut.FrameData_O.value) == test_data, (
-        f"Expected FrameData_O to remain 0x{test_data:08x}, got 0x{int(dut.FrameData_O.value):08x} "
+        f"Expected FrameData_O to remain 0x{test_data:08x}, "
+        f"got 0x{int(dut.FrameData_O.value):08x} "
         f"when RowSelect ({int(dut.RowSelect.value)}) does not match Row"
     )
 
@@ -96,16 +98,19 @@ async def cocotb_test_frame_data_reg_basic(dut: FrameDataRegProtocol) -> None:
         expected = pattern if row_val == 1 else int(dut.FrameData_O.value)
         actual = int(dut.FrameData_O.value)
         assert actual == expected, (
-            f"Row {row_val}: Expected FrameData_O = 0x{expected:08x}, got 0x{actual:08x}"
+            f"Row {row_val}: Expected FrameData_O = 0x{expected:08x}, "
+            f"got 0x{actual:08x}"
         )
 
 
 @cocotb.test
 async def cocotb_test_frame_data_reg_row_sweep(dut: FrameDataRegProtocol) -> None:
-    """Test all valid RowSelect values to verify data latching only happens when RowSelect matches Row.
+    """Test all valid RowSelect values to verify data latching
+    only happens when RowSelect matches Row.
 
     This test sweeps through all valid RowSelect values (0-15 for default 5-bit width)
-    and verifies that data is only latched when RowSelect matches the configured Row parameter (default=1).
+    and verifies that data is only latched when RowSelect matches
+    the configured Row parameter (default=1).
     """
     # Start clock
     clock = Clock(dut.CLK, 10, unit="ns")
@@ -142,19 +147,22 @@ async def cocotb_test_frame_data_reg_row_sweep(dut: FrameDataRegProtocol) -> Non
             # Data should be latched when RowSelect matches configured Row
             assert current_output == test_pattern, (
                 f"RowSelect={row_select} (matches Row={configured_row}): "
-                f"Expected FrameData_O = 0x{test_pattern:08x}, got 0x{current_output:08x}"
+                f"Expected FrameData_O = 0x{test_pattern:08x}, "
+                f"got 0x{current_output:08x}"
             )
         else:
             # Data should NOT be latched when RowSelect doesn't match
             assert current_output == prev_output, (
                 f"RowSelect={row_select} (doesn't match Row={configured_row}): "
-                f"FrameData_O should remain 0x{prev_output:08x}, got 0x{current_output:08x}"
+                f"FrameData_O should remain 0x{prev_output:08x}, "
+                f"got 0x{current_output:08x}"
             )
 
 
 @cocotb.test
 async def cocotb_test_frame_data_reg_bit_patterns(dut: FrameDataRegProtocol) -> None:
-    """Test various bit patterns for FrameData_I to ensure all bits are correctly latched.
+    """Test various bit patterns for FrameData_I to ensure
+    all bits are correctly latched.
 
     Tests include:
     - Walking ones (single bit high, shifts across all positions)
@@ -184,17 +192,21 @@ async def cocotb_test_frame_data_reg_bit_patterns(dut: FrameDataRegProtocol) -> 
 
     # Walking zeros pattern (single bit low)
     for bit_pos in range(32):
-        test_patterns.append((0xFFFFFFFF ^ (1 << bit_pos), f"Walking zeros bit {bit_pos}"))
+        test_patterns.append(
+            (0xFFFFFFFF ^ (1 << bit_pos), f"Walking zeros bit {bit_pos}")
+        )
 
     # Common patterns
-    test_patterns.extend([
-        (0x00000000, "All zeros"),
-        (0xFFFFFFFF, "All ones"),
-        (0xAAAAAAAA, "Alternating 1010..."),
-        (0x55555555, "Alternating 0101..."),
-        (0xF0F0F0F0, "Nibble alternating 1111/0000"),
-        (0x0F0F0F0F, "Nibble alternating 0000/1111"),
-    ])
+    test_patterns.extend(
+        [
+            (0x00000000, "All zeros"),
+            (0xFFFFFFFF, "All ones"),
+            (0xAAAAAAAA, "Alternating 1010..."),
+            (0x55555555, "Alternating 0101..."),
+            (0xF0F0F0F0, "Nibble alternating 1111/0000"),
+            (0x0F0F0F0F, "Nibble alternating 0000/1111"),
+        ]
+    )
 
     for pattern, description in test_patterns:
         dut.FrameData_I.value = pattern
@@ -204,7 +216,8 @@ async def cocotb_test_frame_data_reg_bit_patterns(dut: FrameDataRegProtocol) -> 
 
         actual_output = int(dut.FrameData_O.value)
         assert actual_output == pattern, (
-            f"{description}: Expected FrameData_O = 0x{pattern:08x}, got 0x{actual_output:08x}"
+            f"{description}: Expected FrameData_O = 0x{pattern:08x}, "
+            f"got 0x{actual_output:08x}"
         )
 
 
@@ -242,7 +255,8 @@ async def cocotb_test_frame_data_reg_edge_cases(dut: FrameDataRegProtocol) -> No
     await Timer(Decimal(1), unit="ps")
 
     assert int(dut.FrameData_O.value) == test_data_1, (
-        f"Rapid switch test 1: Expected 0x{test_data_1:08x}, got 0x{int(dut.FrameData_O.value):08x}"
+        f"Rapid switch test 1: Expected 0x{test_data_1:08x}, "
+        f"got 0x{int(dut.FrameData_O.value):08x}"
     )
 
     # Immediately switch to non-matching row
@@ -255,7 +269,8 @@ async def cocotb_test_frame_data_reg_edge_cases(dut: FrameDataRegProtocol) -> No
 
     # Should still have old data
     assert int(dut.FrameData_O.value) == test_data_1, (
-        f"Rapid switch test 2: Expected to hold 0x{test_data_1:08x}, got 0x{int(dut.FrameData_O.value):08x}"
+        f"Rapid switch test 2: Expected to hold 0x{test_data_1:08x}, "
+        f"got 0x{int(dut.FrameData_O.value):08x}"
     )
 
     # Test 2: Back-to-back data writes when RowSelect matches
@@ -269,7 +284,8 @@ async def cocotb_test_frame_data_reg_edge_cases(dut: FrameDataRegProtocol) -> No
         await Timer(Decimal(1), unit="ps")
 
         assert int(dut.FrameData_O.value) == pattern, (
-            f"Back-to-back write: Expected 0x{pattern:08x}, got 0x{int(dut.FrameData_O.value):08x}"
+            f"Back-to-back write: Expected 0x{pattern:08x}, "
+            f"got 0x{int(dut.FrameData_O.value):08x}"
         )
 
     # Test 3: Maximum data value
@@ -281,7 +297,8 @@ async def cocotb_test_frame_data_reg_edge_cases(dut: FrameDataRegProtocol) -> No
     await Timer(Decimal(1), unit="ps")
 
     assert int(dut.FrameData_O.value) == max_value, (
-        f"Maximum value test: Expected 0x{max_value:08x}, got 0x{int(dut.FrameData_O.value):08x}"
+        f"Maximum value test: Expected 0x{max_value:08x}, "
+        f"got 0x{int(dut.FrameData_O.value):08x}"
     )
 
     # Test 4: RowSelect at boundary values
@@ -295,7 +312,8 @@ async def cocotb_test_frame_data_reg_edge_cases(dut: FrameDataRegProtocol) -> No
 
     # Should not latch (RowSelect != configured_row)
     assert int(dut.FrameData_O.value) == max_value, (
-        f"Boundary test (RowSelect=0): Expected to hold 0x{max_value:08x}, got 0x{int(dut.FrameData_O.value):08x}"
+        f"Boundary test (RowSelect=0): Expected to hold 0x{max_value:08x}, "
+        f"got 0x{int(dut.FrameData_O.value):08x}"
     )
 
     # Test RowSelect = 15 (maximum for 5-bit width)
@@ -308,7 +326,8 @@ async def cocotb_test_frame_data_reg_edge_cases(dut: FrameDataRegProtocol) -> No
 
     # Should not latch (RowSelect != configured_row)
     assert int(dut.FrameData_O.value) == max_value, (
-        f"Boundary test (RowSelect=15): Expected to hold 0x{max_value:08x}, got 0x{int(dut.FrameData_O.value):08x}"
+        f"Boundary test (RowSelect=15): Expected to hold 0x{max_value:08x}, "
+        f"got 0x{int(dut.FrameData_O.value):08x}"
     )
 
     # Test 5: Multiple consecutive clocks with same RowSelect value (matching)
@@ -320,7 +339,8 @@ async def cocotb_test_frame_data_reg_edge_cases(dut: FrameDataRegProtocol) -> No
     await Timer(Decimal(1), unit="ps")
 
     assert int(dut.FrameData_O.value) == consecutive_data, (
-        f"Consecutive clock 1: Expected 0x{consecutive_data:08x}, got 0x{int(dut.FrameData_O.value):08x}"
+        f"Consecutive clock 1: Expected 0x{consecutive_data:08x}, "
+        f"got 0x{int(dut.FrameData_O.value):08x}"
     )
 
     # Keep same inputs, clock again
@@ -328,7 +348,8 @@ async def cocotb_test_frame_data_reg_edge_cases(dut: FrameDataRegProtocol) -> No
     await Timer(Decimal(1), unit="ps")
 
     assert int(dut.FrameData_O.value) == consecutive_data, (
-        f"Consecutive clock 2: Expected 0x{consecutive_data:08x}, got 0x{int(dut.FrameData_O.value):08x}"
+        f"Consecutive clock 2: Expected 0x{consecutive_data:08x}, "
+        f"got 0x{int(dut.FrameData_O.value):08x}"
     )
 
     # Clock once more
@@ -336,5 +357,6 @@ async def cocotb_test_frame_data_reg_edge_cases(dut: FrameDataRegProtocol) -> No
     await Timer(Decimal(1), unit="ps")
 
     assert int(dut.FrameData_O.value) == consecutive_data, (
-        f"Consecutive clock 3: Expected 0x{consecutive_data:08x}, got 0x{int(dut.FrameData_O.value):08x}"
+        f"Consecutive clock 3: Expected 0x{consecutive_data:08x}, "
+        f"got 0x{int(dut.FrameData_O.value):08x}"
     )

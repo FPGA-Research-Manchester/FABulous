@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.1](https://github.com/FPGA-Research/FABulous/compare/v2.2.0...v2.2.1) (2026-09-15)
+
+
+### Bug Fixes
+
+* colour the log only when the sink is a terminal ([#1035](https://github.com/FPGA-Research/FABulous/issues/1035)) ([ad7cc96](https://github.com/FPGA-Research/FABulous/commit/ad7cc96c34e94078a4c320b40f1ad6f1f63adc97))
+
 ## [2.2.0](https://github.com/FPGA-Research/FABulous/compare/v2.1.0...v2.2.0) (2026-09-11)
 
 

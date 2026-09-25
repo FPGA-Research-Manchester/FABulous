@@ -301,24 +301,17 @@ class UserDesignCommandSet(ReplCommandSet):
         files: Annotated[list[Path], Argument(help_text="Verilog source files")],
         top: Annotated[str, Option("-top")] = "top_wrapper",
         auto_top: Annotated[bool, Option("-auto-top")] = False,
-        blif: Annotated[Path | None, Option("-blif")] = None,
-        edif: Annotated[Path | None, Option("-edif")] = None,
         json_file: Annotated[Path | None, Option("-json")] = None,
         lut: Annotated[str, Option("-lut")] = "4",
-        plib: Annotated[str | None, Option("-plib")] = None,
         extra_plib: Annotated[
             list[Path] | None, Option("-extra-plib", action="append")
         ] = None,
         extra_map: Annotated[
             list[Path] | None, Option("-extra-map", action="append")
         ] = None,
-        encfile: Annotated[Path | None, Option("-encfile")] = None,
         nofsm: Annotated[bool, Option("-nofsm")] = False,
         noalumacc: Annotated[bool, Option("-noalumacc")] = False,
         carry: Annotated[Literal["none", "ha"], Option("-carry")] = "none",
-        noregfile: Annotated[bool, Option("-noregfile")] = False,
-        iopad: Annotated[bool, Option("-iopad")] = False,
-        complex_dff: Annotated[bool, Option("-complex-dff")] = False,
         noflatten: Annotated[bool, Option("-noflatten")] = False,
         nordff: Annotated[bool, Option("-nordff")] = False,
         noshare: Annotated[bool, Option("-noshare")] = False,
@@ -337,32 +330,18 @@ class UserDesignCommandSet(ReplCommandSet):
 
         # Translate legacy flags into --synth-extra-args for compile_design
         extra = []
-        if blif:
-            extra.append(f"-blif {blif}")
-        if edif:
-            extra.append(f"-edif {edif}")
         if lut:
             extra.append(f"-lut {lut}")
-        if plib:
-            extra.append(f"-plib {plib}")
         if extra_plib:
             extra.extend(f"-extra-plib {p}" for p in extra_plib)
         if extra_map:
             extra.extend(f"-extra-map {m}" for m in extra_map)
-        if encfile:
-            extra.append(f"-encfile {encfile}")
         if nofsm:
             extra.append("-nofsm")
         if noalumacc:
             extra.append("-noalumacc")
         if carry and carry != "none":
             extra.append(f"-carry {carry}")
-        if noregfile:
-            extra.append("-noregfile")
-        if iopad:
-            extra.append("-iopad")
-        if complex_dff:
-            extra.append("-complex-dff")
         if noflatten:
             extra.append("-noflatten")
         if nordff:

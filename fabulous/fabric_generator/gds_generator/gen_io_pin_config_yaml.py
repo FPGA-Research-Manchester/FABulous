@@ -14,10 +14,9 @@ from fabulous.fabric_definition.fabric import Fabric
 from fabulous.fabric_definition.supertile import SuperTile
 from fabulous.fabric_definition.tile import Tile
 
-# `body=` hashes the body as generated, so a mismatch marks a user edit.
-# `fabric=` also hashes the concrete routing wires, since the indexed pin
-# regexes stay identical when a bus width changes.
-GENERATED_HEADER = "# fabulous-generated"
+# The hash of the body as generated tells a user edit (body no longer matches)
+# apart from a fabric change (fresh body no longer matches).
+GENERATED_HEADER = "# fabulous-generated sha256="
 
 
 @dataclass
@@ -253,29 +252,6 @@ def _serialize_supertile_ports(
     return config_payload
 
 
-def _routing_wires(tile_or_super_tile: Tile | SuperTile, prefix: str) -> list[str]:
-    """List the concrete routing wire names behind the indexed pin regexes."""
-    wires: list[str] = []
-    if isinstance(tile_or_super_tile, SuperTile):
-        for coord_key, port_lists in tile_or_super_tile.get_ports_around_tile().items():
-            x, y = coord_key.split(",")
-            for port_list in port_lists:
-                for port in port_list:
-                    wires += port.expand_port_info_by_name(
-                        indexed=True, prefix=f"Tile_X{x}Y{y}_{prefix}"
-                    )
-        return wires
-
-    for port in (
-        tile_or_super_tile.getNorthSidePorts()
-        + tile_or_super_tile.getEastSidePorts()
-        + tile_or_super_tile.getSouthSidePorts()
-        + tile_or_super_tile.getWestSidePorts()
-    ):
-        wires += port.expand_port_info_by_name(indexed=True, prefix=prefix)
-    return wires
-
-
 def generate_IO_pin_order_config(
     tile_or_super_tile: Tile | SuperTile,
     outfile: Path,
@@ -290,12 +266,11 @@ def generate_IO_pin_order_config(
     (sub)tile's placement within the fabric; otherwise `external_port_side`
     is used as the fallback for every concrete (sub)tile.
 
-    The file starts with a `GENERATED_HEADER` line holding a hash of the
-    generated body and a hash of the body plus the concrete routing wires. An
-    existing `outfile` is overwritten only when its body still matches the
-    recorded body hash, or already matches the fresh body. A body the user
-    edited is kept while the fabric hash is unchanged. A file without the
-    header is treated as user-owned and kept unchanged.
+    The file starts with a `GENERATED_HEADER` line holding the hash of the
+    generated body. An existing `outfile` is overwritten only when its body
+    still matches that hash, or already matches the fresh body. A body the user
+    edited is kept while the fresh body matches the recorded hash. A file
+    without the header is treated as user-owned and kept unchanged.
 
     Parameters
     ----------
@@ -364,9 +339,7 @@ def generate_IO_pin_order_config(
         }
 
     body = yaml.dump(payload)
-    fresh_body_hash = hashlib.sha256(body.encode()).hexdigest()
-    wires = "\n".join(_routing_wires(tile_or_super_tile, prefix))
-    fresh_fabric_hash = hashlib.sha256(f"{body}\n{wires}".encode()).hexdigest()
+    fresh_hash = hashlib.sha256(body.encode()).hexdigest()
     if outfile.exists():
         header, _, existing_body = outfile.read_text().partition("\n")
         if not header.startswith(GENERATED_HEADER):
@@ -375,12 +348,10 @@ def generate_IO_pin_order_config(
                 "treated as user-owned"
             )
             return
-        body_field, fabric_field = header.removeprefix(GENERATED_HEADER).split()
-        recorded_body_hash = body_field.removeprefix("body=")
-        recorded_fabric_hash = fabric_field.removeprefix("fabric=")
+        recorded_hash = header.removeprefix(GENERATED_HEADER)
         existing_hash = hashlib.sha256(existing_body.encode()).hexdigest()
-        if existing_hash not in (recorded_body_hash, fresh_body_hash):
-            if fresh_fabric_hash != recorded_fabric_hash:
+        if existing_hash not in (recorded_hash, fresh_hash):
+            if fresh_hash != recorded_hash:
                 raise StaleIOPinConfigError(
                     f"{outfile} has user edits but the fabric changed since it "
                     "was generated. Move it aside, rerun to regenerate it, then "
@@ -389,6 +360,4 @@ def generate_IO_pin_order_config(
             logger.info(f"Keeping user-edited {outfile}")
             return
 
-    outfile.write_text(
-        f"{GENERATED_HEADER} body={fresh_body_hash} fabric={fresh_fabric_hash}\n{body}"
-    )
+    outfile.write_text(f"{GENERATED_HEADER}{fresh_hash}\n{body}")

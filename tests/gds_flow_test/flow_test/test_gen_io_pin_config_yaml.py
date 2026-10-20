@@ -553,20 +553,37 @@ class TestGenerateIOPinOrderConfig:
 
         assert (outfile.read_text() == existing) == expect_kept
 
+    @pytest.mark.parametrize(
+        "widen_bus",
+        [
+            pytest.param(False, id="user-clk-side-moved"),
+            pytest.param(True, id="bus-widened"),
+        ],
+    )
     def test_generate_io_pin_order_config_edited_and_stale_raises(
-        self, mock_tile: Tile, mock_fabric: Fabric, tmp_path: Path
+        self,
+        mocker: MockerFixture,
+        mock_tile: Tile,
+        mock_fabric: Fabric,
+        tmp_path: Path,
+        widen_bus: bool,
     ) -> None:
         """Test that user edits made against an older fabric raise."""
         outfile = tmp_path / "io_pin_order.yaml"
         mock_fabric.userCLKSide = Side.SOUTH
+        port = mocker.MagicMock()
+        port.get_port_regex.return_value = r"N1BEG\[\d+\]"
+        port.expand_port_info_by_name.return_value = ["N1BEG[0]", "N1BEG[1]"]
+        mock_tile.getNorthSidePorts.return_value = [port]
         generate_IO_pin_order_config(mock_tile, outfile, fabric=mock_fabric)
-        outfile.write_text(
-            outfile.read_text().replace(
-                "reverse_result: false", "reverse_result: true", 1
-            )
-        )
+        outfile.write_text(outfile.read_text().replace(r"N1BEG\[\d+\]", "N1BEG[1]", 1))
 
-        mock_fabric.userCLKSide = Side.WEST
+        if widen_bus:
+            port.expand_port_info_by_name.return_value = [
+                f"N1BEG[{i}]" for i in range(4)
+            ]
+        else:
+            mock_fabric.userCLKSide = Side.WEST
         with pytest.raises(StaleIOPinConfigError):
             generate_IO_pin_order_config(mock_tile, outfile, fabric=mock_fabric)
 

@@ -48,8 +48,12 @@ updates:
       prefix: "chore"
       include: "scope"
     # librelane is pinned to a dev rev until 3.1.0; see pyproject.toml.
+    # flake.nix follows librelane's nix-eda and nixpkgs; moving either off
+    # librelane's lock misses the FOSSi binary cache and rebuilds the EDA tools.
     ignore:
       - dependency-name: "librelane"
+      - dependency-name: "nix-eda"
+      - dependency-name: "nixpkgs"
 
   - package-ecosystem: "github-actions"
     directories:

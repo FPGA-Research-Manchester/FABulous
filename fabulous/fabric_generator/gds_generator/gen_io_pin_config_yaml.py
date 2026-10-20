@@ -1,15 +1,22 @@
 """Generate IO pin order configuration files for FABulous tiles and fabrics."""
 
+import hashlib
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Self
 
 import yaml
+from loguru import logger
 
+from fabulous.custom_exception import StaleIOPinConfigError
 from fabulous.fabric_definition.define import PinSortMode, Side
 from fabulous.fabric_definition.fabric import Fabric
 from fabulous.fabric_definition.supertile import SuperTile
 from fabulous.fabric_definition.tile import Tile
+
+# The hash of the body as generated tells a user edit (body no longer matches)
+# apart from a fabric change (fresh body no longer matches).
+GENERATED_HEADER = "# fabulous-generated sha256="
 
 
 @dataclass
@@ -256,6 +263,12 @@ def generate_IO_pin_order_config(
     (sub)tile's placement within the fabric; otherwise `external_port_side`
     is used as the fallback for every concrete (sub)tile.
 
+    The file starts with a `GENERATED_HEADER` line holding the hash of the
+    generated body. An existing `outfile` is overwritten only when its body
+    still matches that hash, or already matches the fresh body. A body the user
+    edited is kept while the fresh body matches the recorded hash. A file
+    without the header is treated as user-owned and kept unchanged.
+
     Parameters
     ----------
     tile_or_super_tile : Tile | SuperTile
@@ -269,6 +282,12 @@ def generate_IO_pin_order_config(
     external_port_side : Side
         Fallback side used for BEL external ports when no fabric placement
         context applies.
+
+    Raises
+    ------
+    StaleIOPinConfigError
+        If `outfile` holds user edits and the fabric has changed since it was
+        generated.
     """
     user_clk_side = fabric.userCLKSide if fabric is not None else Side.SOUTH
     if isinstance(tile_or_super_tile, SuperTile):
@@ -316,5 +335,26 @@ def generate_IO_pin_order_config(
             ),
         }
 
-    with outfile.open("w") as file_descriptor:
-        yaml.dump(payload, file_descriptor)
+    body = yaml.dump(payload)
+    fresh_hash = hashlib.sha256(body.encode()).hexdigest()
+    if outfile.exists():
+        header, _, existing_body = outfile.read_text().partition("\n")
+        if not header.startswith(GENERATED_HEADER):
+            logger.info(
+                f"Keeping {outfile}: no FABulous generation header, "
+                "treated as user-owned"
+            )
+            return
+        recorded_hash = header.removeprefix(GENERATED_HEADER)
+        existing_hash = hashlib.sha256(existing_body.encode()).hexdigest()
+        if existing_hash not in (recorded_hash, fresh_hash):
+            if fresh_hash != recorded_hash:
+                raise StaleIOPinConfigError(
+                    f"{outfile} has user edits but the fabric changed since it "
+                    "was generated. Move it aside, rerun to regenerate it, then "
+                    "reapply the edits to the new file."
+                )
+            logger.info(f"Keeping user-edited {outfile}")
+            return
+
+    outfile.write_text(f"{GENERATED_HEADER}{fresh_hash}\n{body}")

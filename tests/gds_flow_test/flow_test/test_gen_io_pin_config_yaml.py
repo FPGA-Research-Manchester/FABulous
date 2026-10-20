@@ -13,6 +13,7 @@ import pytest
 import yaml
 from pytest_mock import MockerFixture
 
+from fabulous.custom_exception import StaleIOPinConfigError
 from fabulous.fabric_definition.define import PinSortMode, Side
 from fabulous.fabric_definition.fabric import Fabric
 from fabulous.fabric_definition.supertile import SuperTile
@@ -517,6 +518,57 @@ class TestGenerateIOPinOrderConfig:
             config = yaml.safe_load(f)
 
         assert "X0Y0" in config
+
+    @pytest.mark.parametrize(
+        ("user_edit", "keep_header", "fabric_changed", "expect_kept"),
+        [
+            pytest.param(False, True, True, False, id="untouched-regenerated"),
+            pytest.param(True, True, False, True, id="edited-kept"),
+            pytest.param(True, False, True, True, id="no-header-kept"),
+        ],
+    )
+    def test_generate_io_pin_order_config_existing_file(
+        self,
+        mock_tile: Tile,
+        mock_fabric: Fabric,
+        tmp_path: Path,
+        user_edit: bool,
+        keep_header: bool,
+        fabric_changed: bool,
+        expect_kept: bool,
+    ) -> None:
+        """Test which existing files are regenerated and which are kept."""
+        outfile = tmp_path / "io_pin_order.yaml"
+        mock_fabric.userCLKSide = Side.SOUTH
+        generate_IO_pin_order_config(mock_tile, outfile, fabric=mock_fabric)
+        header, _, body = outfile.read_text().partition("\n")
+        if user_edit:
+            body = body.replace("reverse_result: false", "reverse_result: true", 1)
+        outfile.write_text(f"{header}\n{body}" if keep_header else body)
+        existing = outfile.read_text()
+
+        if fabric_changed:
+            mock_fabric.userCLKSide = Side.WEST
+        generate_IO_pin_order_config(mock_tile, outfile, fabric=mock_fabric)
+
+        assert (outfile.read_text() == existing) == expect_kept
+
+    def test_generate_io_pin_order_config_edited_and_stale_raises(
+        self, mock_tile: Tile, mock_fabric: Fabric, tmp_path: Path
+    ) -> None:
+        """Test that user edits made against an older fabric raise."""
+        outfile = tmp_path / "io_pin_order.yaml"
+        mock_fabric.userCLKSide = Side.SOUTH
+        generate_IO_pin_order_config(mock_tile, outfile, fabric=mock_fabric)
+        outfile.write_text(
+            outfile.read_text().replace(
+                "reverse_result: false", "reverse_result: true", 1
+            )
+        )
+
+        mock_fabric.userCLKSide = Side.WEST
+        with pytest.raises(StaleIOPinConfigError):
+            generate_IO_pin_order_config(mock_tile, outfile, fabric=mock_fabric)
 
     def test_generate_io_pin_order_config_tile_structure(
         self, mock_tile: Tile, tmp_path: Path

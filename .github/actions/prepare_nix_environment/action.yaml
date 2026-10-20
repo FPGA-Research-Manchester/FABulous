@@ -69,4 +69,9 @@ runs:
 
     - name: Build nix environment
       shell: bash
+      # nix-eda fetches some sources (magic) through the GitHub API; anonymous calls
+      # share the runner IP's 60/h quota and fail with 403. Single-user Nix passes this
+      # to the fixed-output derivation; a multi-user daemon ignores it.
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
       run: nix develop --command true

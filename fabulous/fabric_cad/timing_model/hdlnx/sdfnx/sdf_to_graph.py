@@ -99,6 +99,8 @@ class SDFTimingGraph(SDFTimingGraphBase):
         target: str,
         max_paths: int = 10,
         clock_pin: str | None = None,
+        *,
+        include_timing_checks: bool = True,
     ) -> list[SDFPathTiming]:
         """Return complete timing information for the shortest structural paths.
 
@@ -111,7 +113,9 @@ class SDFTimingGraph(SDFTimingGraphBase):
         adjusted for the data path before that edge and the clock path from
         `clock_pin` to the matching register clock. Clock-to-target propagation uses
         that clock path and the selected sequential path's exact output suffix. Raw
-        standard-cell timing checks remain available separately.
+        standard-cell timing checks remain available separately. A direct
+        clock-to-output path also reports clock-to-output propagation, without
+        requiring a synthetic data-to-clock edge or producing setup/hold checks.
 
         The current SDF parser stores one transition triple as `nominal`, two as
         `fast` and `slow`, and three as `fast`, `nominal`, and `slow`. This method
@@ -132,6 +136,10 @@ class SDFTimingGraph(SDFTimingGraphBase):
             Optional graph pin representing the BEL-level clock source. Without it,
             raw timing checks and propagation delays are still returned, but effective
             setup/hold and clock-to-target delays are unavailable.
+        include_timing_checks : bool
+            Whether discovery may cross synthetic data-to-clock edges. Disable
+            for clock-to-output queries so unrelated data paths cannot consume
+            the bounded search results.
 
         Returns
         -------
@@ -152,10 +160,10 @@ class SDFTimingGraph(SDFTimingGraphBase):
         if max_paths < 1:
             raise ValueError("max_paths must be at least 1.")
 
-        path_timings: list[SDFPathTiming] = self._query_structural_timing_paths(
-            source,
-            target,
-            max_paths,
+        path_timings: list[SDFPathTiming] = (
+            self._query_structural_timing_paths(source, target, max_paths)
+            if include_timing_checks
+            else self.query_clock_paths(source, target, max_paths)
         )
         if clock_pin is None:
             return path_timings
@@ -170,28 +178,26 @@ class SDFTimingGraph(SDFTimingGraphBase):
             clock_to_output_fall: SDFTimingTriplet | None = None
             if register_clock_pin is not None:
                 if register_clock_pin not in clock_paths:
-                    clock_paths[register_clock_pin] = (
-                        self._first_structural_timing_path(
-                            clock_pin,
-                            register_clock_pin,
-                        )
+                    clock_paths[register_clock_pin] = self._first_clock_path(
+                        clock_pin,
+                        register_clock_pin,
                     )
                 register_clock_path: SDFPathTiming | None = clock_paths[
                     register_clock_pin
                 ]
                 if register_clock_path is not None:
-                    effective_setup, effective_hold = self._effective_timing_checks(
-                        path_timing,
-                        register_clock_path,
-                    )
-                    timing_check_index: int = next(
-                        index
-                        for index, component in enumerate(path_timing.components)
-                        if component.is_timing_check
-                    )
+                    if any(
+                        component.is_timing_check
+                        for component in path_timing.components
+                    ):
+                        effective_setup, effective_hold = self._effective_timing_checks(
+                            path_timing,
+                            register_clock_path,
+                        )
+                    clock_index = path_timing.nodes.index(register_clock_pin)
                     clock_to_output_components: tuple[Component, ...] = (
                         *register_clock_path.components,
-                        *path_timing.components[timing_check_index + 1 :],
+                        *path_timing.components[clock_index:],
                     )
                     rise_values, fall_values, _ = self._transition_delays(
                         clock_to_output_components
@@ -210,6 +216,144 @@ class SDFTimingGraph(SDFTimingGraphBase):
             )
 
         return clocked_path_timings
+
+    @cached_property
+    def clock_graph(self) -> nx.DiGraph:
+        """Return clock propagation, including integrated clock-gating cells.
+
+        Returns
+        -------
+        nx.DiGraph
+            A graph view without synthetic data-to-clock timing-check edges.
+        """
+
+        def include_edge(source: str, target: str) -> bool:
+            """Keep physical propagation through buffers and clock gates."""
+            return not self.graph.edges[source, target]["component"].is_timing_check
+
+        return nx.subgraph_view(self.graph, filter_edge=include_edge)
+
+    def query_clock_paths(
+        self, source: str, target: str, max_paths: int = 10
+    ) -> list[SDFPathTiming]:
+        """Trace a clock without following synthetic data-to-clock edges.
+
+        Parameters
+        ----------
+        source : str
+            Clock source pin.
+        target : str
+            Clock destination pin.
+        max_paths : int
+            Maximum number of paths, ordered by edge count.
+
+        Returns
+        -------
+        list[SDFPathTiming]
+            Clock propagation paths, retaining clock-gate delays.
+
+        Raises
+        ------
+        ValueError
+            If `max_paths` is less than one.
+        """
+        if max_paths < 1:
+            raise ValueError("max_paths must be at least 1.")
+        paths = nx.shortest_simple_paths(self.clock_graph, source, target)
+        return [
+            self._decode_timing_path(path, self._sequential_instances)
+            for path in islice(paths, max_paths)
+        ]
+
+    @cached_property
+    def combinational_graph(self) -> nx.DiGraph:
+        """Return the propagation graph with register boundaries removed.
+
+        Returns
+        -------
+        nx.DiGraph
+            A view excluding synthetic timing checks and sequential cell arcs.
+        """
+
+        def include_edge(source: str, target: str) -> bool:
+            """Stop traversal at a register instead of crossing a clock boundary."""
+            component = self.graph.edges[source, target]["component"]
+            return not component.is_timing_check and not (
+                component.c_type == SDFCellType.IOPATH
+                and component.from_cell_instance in self._sequential_instances
+            )
+
+        return nx.subgraph_view(self.graph, filter_edge=include_edge)
+
+    def query_combinational_paths(
+        self, source: str, target: str, max_paths: int = 10
+    ) -> list[SDFPathTiming]:
+        """Query propagation paths without crossing a sequential cell.
+
+        Parameters
+        ----------
+        source : str
+            Source graph pin.
+        target : str
+            Target graph pin.
+        max_paths : int
+            Maximum number of paths, ordered by edge count.
+
+        Returns
+        -------
+        list[SDFPathTiming]
+            Combinational paths, including the zero-length path for identical pins.
+
+        Raises
+        ------
+        ValueError
+            If `max_paths` is less than one.
+        """
+        if max_paths < 1:
+            raise ValueError("max_paths must be at least 1.")
+        paths = nx.shortest_simple_paths(self.combinational_graph, source, target)
+        return [
+            self._decode_timing_path(path, self._sequential_instances)
+            for path in islice(paths, max_paths)
+        ]
+
+    def query_register_input_timing(
+        self,
+        source: str,
+        data_pin: str,
+        register_clock_pin: str,
+        clock_pin: str,
+        max_paths: int = 10,
+    ) -> list[SDFPathTiming]:
+        """Characterize setup and hold independently of any register output.
+
+        Parameters
+        ----------
+        source : str
+            BEL data input resolved to a graph pin.
+        data_pin : str
+            Register pin with a setup or hold check.
+        register_clock_pin : str
+            Clock endpoint of that check.
+        clock_pin : str
+            BEL clock source, before any internal clock buffers.
+        max_paths : int
+            Maximum number of combinational data paths to characterize.
+
+        Returns
+        -------
+        list[SDFPathTiming]
+            Register input paths with effective setup and hold values.
+        """
+        clock_path = self.query_clock_paths(clock_pin, register_clock_pin, 1)[0]
+        timings = []
+        for data_path in self.query_combinational_paths(source, data_pin, max_paths):
+            path = self._decode_timing_path(
+                [*data_path.nodes, register_clock_pin], self._sequential_instances
+            )
+            setup, hold = self._effective_timing_checks(path, clock_path)
+            timings.append(replace(path, effective_setup=setup, effective_hold=hold))
+        return timings
 
     def _query_structural_timing_paths(
         self,
@@ -263,12 +407,12 @@ class SDFTimingGraph(SDFTimingGraphBase):
             )
         )
 
-    def _first_structural_timing_path(
+    def _first_clock_path(
         self,
         source: str,
         target: str,
     ) -> SDFPathTiming | None:
-        """Return the first structural timing path between two graph nodes.
+        """Return the first clock path without crossing a synthetic timing check.
 
         Parameters
         ----------
@@ -287,7 +431,7 @@ class SDFTimingGraph(SDFTimingGraphBase):
         NetworkX `NodeNotFound` errors remain visible to identify invalid caller input.
         """
         try:
-            paths: list[SDFPathTiming] = self._query_structural_timing_paths(
+            paths: list[SDFPathTiming] = self.query_clock_paths(
                 source,
                 target,
                 max_paths=1,
@@ -352,6 +496,23 @@ class SDFTimingGraph(SDFTimingGraphBase):
             if timing_check_index is not None
             else None
         )
+        if register_clock_pin is None:
+            # A clock-to-Q query has no synthetic data-to-clock edge.
+            register_clock_pin = next(
+                (
+                    node_path[index]
+                    for index, component in enumerate(components)
+                    if component.c_type == SDFCellType.IOPATH
+                    and any(
+                        check.c_type in {SDFCellType.SETUP, SDFCellType.HOLD}
+                        and check.from_cell_pin == component.from_cell_pin
+                        for check in self.instances.get(
+                            component.from_cell_instance, []
+                        )
+                    )
+                ),
+                None,
+            )
         is_sequential: bool = any(
             component.is_timing_check
             or (
@@ -857,7 +1018,7 @@ class SDFTimingGraph(SDFTimingGraphBase):
         total_tied = [v for v in common_tied if total_scores[v] == max_total_score]
 
         # Final deterministic fallback.
-        chosen = sorted(total_tied)[0]
+        chosen = min(total_tied)
         return [chosen], best_cost, dists
 
     def follow_first_fanout_from_pins(

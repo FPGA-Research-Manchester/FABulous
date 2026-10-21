@@ -494,3 +494,29 @@ def test_nearest_ports_from_instance_pin_nets(
         "N2": ["OUT2"],
     }
     assert flat == ["OUT1", "OUT2"]
+
+
+def test_resolve_hier_pin_handles_ascending_slices_and_aliases() -> None:
+    graph = VerilogGateLevelTimingGraph.__new__(VerilogGateLevelTimingGraph)
+    graph.top_name = "Top"
+    graph.hier_sep = "/"
+    graph.verilog_netlist_content = r"""
+module \Child$  (I, O);
+    input [0:3] I;
+    output O;
+    BUF low (.A(I[3]), .Y(O));
+    BUF high (.A(I[0]), .Y(unused));
+endmodule
+module Parent (A, O);
+    input [7:4] A;
+    output O;
+    wire [3:0] alias;
+    assign alias = A;
+    \Child$  child (.I({alias[3:2], alias[1:0]}), .O(O));
+endmodule
+module Top (A, O);
+    Parent parent (.A(A), .O(O));
+endmodule
+"""
+    assert graph.resolve_hier_pin("parent/A[4]") == ["parent/child/low/A"]
+    assert graph.resolve_hier_pin("parent/A[7]") == ["parent/child/high/A"]
